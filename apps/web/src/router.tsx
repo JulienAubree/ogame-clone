@@ -49,6 +49,18 @@ export const router = createBrowserRouter([
         path: 'defense',
         lazy: () => import('./pages/Defense').then((m) => ({ Component: m.default })),
       },
+      {
+        path: 'galaxy',
+        lazy: () => import('./pages/Galaxy').then((m) => ({ Component: m.default })),
+      },
+      {
+        path: 'fleet',
+        lazy: () => import('./pages/Fleet').then((m) => ({ Component: m.default })),
+      },
+      {
+        path: 'movements',
+        lazy: () => import('./pages/Movements').then((m) => ({ Component: m.default })),
+      },
     ],
   },
 ]);

@@ -11,7 +11,12 @@ import { createResearchService } from '../modules/research/research.service.js';
 import { createResearchRouter } from '../modules/research/research.router.js';
 import { createShipyardService } from '../modules/shipyard/shipyard.service.js';
 import { createShipyardRouter } from '../modules/shipyard/shipyard.router.js';
-import { buildingCompletionQueue, researchCompletionQueue, shipyardCompletionQueue } from '../queues/queue.js';
+import { buildingCompletionQueue, researchCompletionQueue, shipyardCompletionQueue, fleetArrivalQueue, fleetReturnQueue } from '../queues/queue.js';
+import { createGalaxyService } from '../modules/galaxy/galaxy.service.js';
+import { createGalaxyRouter } from '../modules/galaxy/galaxy.router.js';
+import { createFleetService } from '../modules/fleet/fleet.service.js';
+import { createFleetRouter } from '../modules/fleet/fleet.router.js';
+import { UNIVERSE_CONFIG } from '../modules/universe/universe.config.js';
 import type { Database } from '@ogame-clone/db';
 
 export function buildAppRouter(db: Database) {
@@ -21,6 +26,8 @@ export function buildAppRouter(db: Database) {
   const buildingService = createBuildingService(db, resourceService, buildingCompletionQueue);
   const researchService = createResearchService(db, resourceService, researchCompletionQueue);
   const shipyardService = createShipyardService(db, resourceService, shipyardCompletionQueue);
+  const galaxyService = createGalaxyService(db);
+  const fleetService = createFleetService(db, resourceService, fleetArrivalQueue, fleetReturnQueue, UNIVERSE_CONFIG.speed);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -28,6 +35,8 @@ export function buildAppRouter(db: Database) {
   const buildingRouter = createBuildingRouter(buildingService);
   const researchRouter = createResearchRouter(researchService);
   const shipyardRouter = createShipyardRouter(shipyardService);
+  const galaxyRouter = createGalaxyRouter(galaxyService);
+  const fleetRouter = createFleetRouter(fleetService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -40,6 +49,8 @@ export function buildAppRouter(db: Database) {
     building: buildingRouter,
     research: researchRouter,
     shipyard: shipyardRouter,
+    galaxy: galaxyRouter,
+    fleet: fleetRouter,
   });
 }
 

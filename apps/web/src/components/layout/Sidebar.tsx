@@ -10,6 +10,7 @@ const navItems = [
   { label: 'Défense', path: '/defense', icon: '🛡️' },
   { label: 'Flotte', path: '/fleet', icon: '🛸' },
   { label: 'Galaxie', path: '/galaxy', icon: '🌌' },
+  { label: 'Mouvements', path: '/movements', icon: '🔄' },
   { label: 'Messages', path: '/messages', icon: '✉️' },
   { label: 'Classement', path: '/ranking', icon: '🏆' },
 ];
