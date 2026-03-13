@@ -1,0 +1,41 @@
+{
+  "name": "@ogame-clone/api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./trpc": {
+      "import": "./src/trpc/app-router.ts",
+      "types": "./src/trpc/app-router.ts"
+    }
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "worker": "tsx watch src/workers/worker.ts",
+    "worker:start": "node dist/workers/worker.js",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@ogame-clone/db": "workspace:*",
+    "@ogame-clone/game-engine": "workspace:*",
+    "@ogame-clone/shared": "workspace:*",
+    "@trpc/server": "^11.0.0-rc.682",
+    "argon2": "^0.41.1",
+    "bullmq": "^5.71.0",
+    "drizzle-orm": "^0.38.3",
+    "fastify": "^5.2.1",
+    "ioredis": "^5.4.2",
+    "jose": "^6.0.8",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,15 @@
+import { pgTable, uuid, smallint } from 'drizzle-orm/pg-core';
+import { users } from './users.js';
+
+export const userResearch = pgTable('user_research', {
+  userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  espionageTech: smallint('espionage_tech').notNull().default(0),
+  computerTech: smallint('computer_tech').notNull().default(0),
+  energyTech: smallint('energy_tech').notNull().default(0),
+  combustion: smallint('combustion').notNull().default(0),
+  impulse: smallint('impulse').notNull().default(0),
+  hyperspaceDrive: smallint('hyperspace_drive').notNull().default(0),
+  weapons: smallint('weapons').notNull().default(0),
+  shielding: smallint('shielding').notNull().default(0),
+  armor: smallint('armor').notNull().default(0),
+});
