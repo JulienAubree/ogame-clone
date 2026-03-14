@@ -15,7 +15,7 @@
     "build": "tsc",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
+    "db:push": "node --env-file=../../.env node_modules/.bin/drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.30.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
 }
