@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface TimerProps {
   endTime: Date;
@@ -16,27 +16,27 @@ function formatTimeLeft(seconds: number): string {
 }
 
 export function Timer({ endTime, totalDuration, onComplete, className }: TimerProps) {
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
   const [secondsLeft, setSecondsLeft] = useState(() =>
     Math.max(0, Math.floor((endTime.getTime() - Date.now()) / 1000)),
   );
 
   useEffect(() => {
-    if (secondsLeft <= 0) {
-      onComplete?.();
-      return;
-    }
-
-    const interval = setInterval(() => {
+    const tick = () => {
       const remaining = Math.max(0, Math.floor((endTime.getTime() - Date.now()) / 1000));
       setSecondsLeft(remaining);
       if (remaining <= 0) {
-        clearInterval(interval);
-        onComplete?.();
+        clearInterval(id);
+        onCompleteRef.current?.();
       }
-    }, 1000);
+    };
 
-    return () => clearInterval(interval);
-  }, [endTime, onComplete, secondsLeft]);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [endTime]);
 
   const progress = totalDuration && totalDuration > 0
     ? Math.min(100, ((totalDuration - secondsLeft) / totalDuration) * 100)
@@ -46,9 +46,9 @@ export function Timer({ endTime, totalDuration, onComplete, className }: TimerPr
     <div className={className}>
       <span className="text-xs font-mono">{formatTimeLeft(secondsLeft)}</span>
       {progress !== null && (
-        <div className="mt-1 h-1 w-full rounded-full bg-muted">
+        <div className="mt-1 h-1.5 w-full rounded-full bg-muted">
           <div
-            className="h-1 rounded-full bg-primary transition-all duration-1000 ease-linear"
+            className="h-1.5 rounded-full bg-primary transition-[width] duration-1000 ease-linear"
             style={{ width: `${progress}%` }}
           />
         </div>
