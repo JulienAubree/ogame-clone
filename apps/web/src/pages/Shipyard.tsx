@@ -11,11 +11,15 @@ import { GameImage } from '@/components/common/GameImage';
 import { formatDuration } from '@/lib/format';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
+import { EntityDetailOverlay, InfoButton } from '@/components/common/EntityDetailOverlay';
+import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent';
+import { SHIPS, type ShipId } from '@ogame-clone/game-engine';
 
 export default function Shipyard() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const { data: ships, isLoading } = trpc.shipyard.ships.useQuery(
     { planetId: planetId! },
@@ -111,7 +115,8 @@ export default function Shipyard() {
             resources.deuterium >= totalCost.deuterium;
 
           return (
-            <Card key={ship.id} className={!ship.prerequisitesMet ? 'opacity-50' : ''}>
+            <Card key={ship.id} className={`relative ${!ship.prerequisitesMet ? 'opacity-50' : ''}`}>
+              <InfoButton onClick={() => setDetailId(ship.id)} />
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <GameImage
@@ -180,6 +185,13 @@ export default function Shipyard() {
           );
         })}
       </div>
+      <EntityDetailOverlay
+        open={!!detailId}
+        onClose={() => setDetailId(null)}
+        title={detailId ? SHIPS[detailId as ShipId]?.name ?? '' : ''}
+      >
+        {detailId && <ShipDetailContent shipId={detailId} />}
+      </EntityDetailOverlay>
     </div>
   );
 }

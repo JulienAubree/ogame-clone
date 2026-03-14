@@ -10,11 +10,15 @@ import { GameImage } from '@/components/common/GameImage';
 import { formatDuration } from '@/lib/format';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
+import { EntityDetailOverlay, InfoButton } from '@/components/common/EntityDetailOverlay';
+import { DefenseDetailContent } from '@/components/entity-details/DefenseDetailContent';
+import { DEFENSES, type DefenseId } from '@ogame-clone/game-engine';
 
 export default function Defense() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const { data: defenses, isLoading } = trpc.shipyard.defenses.useQuery(
     { planetId: planetId! },
@@ -82,7 +86,8 @@ export default function Defense() {
             resources.deuterium >= totalCost.deuterium;
 
           return (
-            <Card key={defense.id} className={!defense.prerequisitesMet ? 'opacity-50' : ''}>
+            <Card key={defense.id} className={`relative ${!defense.prerequisitesMet ? 'opacity-50' : ''}`}>
+              <InfoButton onClick={() => setDetailId(defense.id)} />
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <GameImage
@@ -165,6 +170,13 @@ export default function Defense() {
           );
         })}
       </div>
+      <EntityDetailOverlay
+        open={!!detailId}
+        onClose={() => setDetailId(null)}
+        title={detailId ? DEFENSES[detailId as DefenseId]?.name ?? '' : ''}
+      >
+        {detailId && <DefenseDetailContent defenseId={detailId} />}
+      </EntityDetailOverlay>
     </div>
   );
 }

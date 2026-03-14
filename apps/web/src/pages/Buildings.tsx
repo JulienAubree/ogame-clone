@@ -12,11 +12,15 @@ import { formatDuration } from '@/lib/format';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PageHeader } from '@/components/common/PageHeader';
+import { EntityDetailOverlay, InfoButton } from '@/components/common/EntityDetailOverlay';
+import { BuildingDetailContent } from '@/components/entity-details/BuildingDetailContent';
+import { BUILDINGS, type BuildingId } from '@ogame-clone/game-engine';
 
 export default function Buildings() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
   const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const { data: buildings, isLoading } = trpc.building.list.useQuery(
     { planetId: planetId! },
@@ -83,7 +87,8 @@ export default function Buildings() {
             resources.deuterium >= building.nextLevelCost.deuterium;
 
           return (
-            <Card key={building.id} className="hover:shadow-glow-metal/20">
+            <Card key={building.id} className="relative hover:shadow-glow-metal/20">
+              <InfoButton onClick={() => setDetailId(building.id)} />
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <GameImage
@@ -162,6 +167,14 @@ export default function Buildings() {
           );
         })}
       </div>
+
+      <EntityDetailOverlay
+        open={!!detailId}
+        onClose={() => setDetailId(null)}
+        title={detailId ? BUILDINGS[detailId as BuildingId]?.name ?? '' : ''}
+      >
+        {detailId && <BuildingDetailContent buildingId={detailId} />}
+      </EntityDetailOverlay>
 
       <ConfirmDialog
         open={cancelConfirm}

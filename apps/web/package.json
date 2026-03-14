@@ -23,7 +23,8 @@
     "lucide-react": "^0.474.0",
     "zustand": "^5.0.3",
     "@ogame-clone/shared": "workspace:*",
-    "@ogame-clone/api": "workspace:*"
+    "@ogame-clone/api": "workspace:*",
+    "@ogame-clone/game-engine": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.0.8",

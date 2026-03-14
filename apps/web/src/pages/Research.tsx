@@ -12,11 +12,15 @@ import { formatDuration } from '@/lib/format';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PageHeader } from '@/components/common/PageHeader';
+import { EntityDetailOverlay, InfoButton } from '@/components/common/EntityDetailOverlay';
+import { ResearchDetailContent } from '@/components/entity-details/ResearchDetailContent';
+import { RESEARCH, type ResearchId } from '@ogame-clone/game-engine';
 
 export default function Research() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
   const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const { data: techs, isLoading } = trpc.research.list.useQuery(
     { planetId: planetId! },
@@ -83,7 +87,8 @@ export default function Research() {
             resources.deuterium >= tech.nextLevelCost.deuterium;
 
           return (
-            <Card key={tech.id} className={!tech.prerequisitesMet ? 'opacity-50' : ''}>
+            <Card key={tech.id} className={`relative ${!tech.prerequisitesMet ? 'opacity-50' : ''}`}>
+              <InfoButton onClick={() => setDetailId(tech.id)} />
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <GameImage
@@ -168,6 +173,14 @@ export default function Research() {
           );
         })}
       </div>
+
+      <EntityDetailOverlay
+        open={!!detailId}
+        onClose={() => setDetailId(null)}
+        title={detailId ? RESEARCH[detailId as ResearchId]?.name ?? '' : ''}
+      >
+        {detailId && <ResearchDetailContent researchId={detailId} />}
+      </EntityDetailOverlay>
 
       <ConfirmDialog
         open={cancelConfirm}
