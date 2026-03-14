@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { Toaster } from '@/components/ui/Toaster';
 import { trpc } from '@/trpc';
 import { usePlanetStore } from '@/stores/planet.store';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export function Layout() {
   const { data: planets } = trpc.planet.list.useQuery();
@@ -22,6 +24,8 @@ export function Layout() {
     }
   }, [resolvedPlanetId, activePlanetId, setActivePlanet]);
 
+  useNotifications();
+
   return (
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar />
@@ -31,6 +35,7 @@ export function Layout() {
           <Outlet context={{ planetId: resolvedPlanetId }} />
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

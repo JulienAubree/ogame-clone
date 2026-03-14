@@ -13,6 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/trpc': 'http://localhost:3000',
+      '/sse': 'http://localhost:3000',
     },
   },
 });
