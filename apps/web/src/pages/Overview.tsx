@@ -54,6 +54,13 @@ export default function Overview() {
     { enabled: !!planetId },
   );
 
+  const renameMutation = trpc.planet.rename.useMutation({
+    onSuccess: () => {
+      utils.planet.list.invalidate();
+      setIsRenaming(false);
+    },
+  });
+
   if (isLoading) {
     return <div className="p-6 text-muted-foreground">Chargement...</div>;
   }
@@ -62,13 +69,6 @@ export default function Overview() {
   if (!planet) {
     return <div className="p-6 text-muted-foreground">Aucune planète trouvée.</div>;
   }
-
-  const renameMutation = trpc.planet.rename.useMutation({
-    onSuccess: () => {
-      utils.planet.list.invalidate();
-      setIsRenaming(false);
-    },
-  });
 
   const activeBuilding = buildings?.find((b) => b.isUpgrading);
   const activeResearch = techs?.find((t) => t.isResearching);
