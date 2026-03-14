@@ -1,5 +1,6 @@
 import { useNavigate, useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
+import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Timer } from '@/components/common/Timer';
@@ -10,6 +11,28 @@ export default function Overview() {
   const utils = trpc.useUtils();
 
   const { data: planets, isLoading } = trpc.planet.list.useQuery();
+
+  const { data: resourceData } = trpc.resource.production.useQuery(
+    { planetId: planetId! },
+    { enabled: !!planetId },
+  );
+
+  const resources = useResourceCounter(
+    resourceData
+      ? {
+          metal: resourceData.metal,
+          crystal: resourceData.crystal,
+          deuterium: resourceData.deuterium,
+          resourcesUpdatedAt: resourceData.resourcesUpdatedAt,
+          metalPerHour: resourceData.rates.metalPerHour,
+          crystalPerHour: resourceData.rates.crystalPerHour,
+          deutPerHour: resourceData.rates.deutPerHour,
+          storageMetalCapacity: resourceData.rates.storageMetalCapacity,
+          storageCrystalCapacity: resourceData.rates.storageCrystalCapacity,
+          storageDeutCapacity: resourceData.rates.storageDeutCapacity,
+        }
+      : undefined,
+  );
 
   const { data: buildings } = trpc.building.list.useQuery(
     { planetId: planetId! },
@@ -155,15 +178,15 @@ export default function Overview() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-metal">Métal</span>
-              <span>{Number(planet.metal).toLocaleString('fr-FR')}</span>
+              <span>{resources.metal.toLocaleString('fr-FR')}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-crystal">Cristal</span>
-              <span>{Number(planet.crystal).toLocaleString('fr-FR')}</span>
+              <span>{resources.crystal.toLocaleString('fr-FR')}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-deuterium">Deutérium</span>
-              <span>{Number(planet.deuterium).toLocaleString('fr-FR')}</span>
+              <span>{resources.deuterium.toLocaleString('fr-FR')}</span>
             </div>
           </CardContent>
         </Card>
