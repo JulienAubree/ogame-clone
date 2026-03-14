@@ -28,10 +28,11 @@ export function createAuthRouter(
         z.object({
           email: z.string().email(),
           password: z.string(),
+          rememberMe: z.boolean().optional().default(false),
         }),
       )
       .mutation(async ({ input }) => {
-        return authService.login(input.email, input.password);
+        return authService.login(input.email, input.password, input.rememberMe);
       }),
 
     refresh: publicProcedure

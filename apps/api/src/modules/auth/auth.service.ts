@@ -35,7 +35,7 @@ export function createAuthService(db: Database) {
       return user;
     },
 
-    async login(email: string, password: string) {
+    async login(email: string, password: string, rememberMe = false) {
       const [user] = await db
         .select()
         .from(users)
@@ -53,7 +53,8 @@ export function createAuthService(db: Database) {
         .sign(JWT_SECRET);
 
       const rawRefresh = randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + parseExpiry(env.REFRESH_TOKEN_EXPIRES_IN) * 1000);
+      const refreshExpiry = rememberMe ? '30d' : env.REFRESH_TOKEN_EXPIRES_IN;
+      const expiresAt = new Date(Date.now() + parseExpiry(refreshExpiry) * 1000);
 
       await db.insert(refreshTokens).values({
         userId: user.id,

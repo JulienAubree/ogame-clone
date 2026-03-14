@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth.store';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -25,7 +26,7 @@ export default function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    loginMutation.mutate({ email, password });
+    loginMutation.mutate({ email, password, rememberMe });
   };
 
   return (
@@ -51,6 +52,15 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <span className="text-sm text-muted-foreground">Se souvenir de moi</span>
+            </label>
             <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
               {loginMutation.isPending ? 'Connexion...' : 'Se connecter'}
             </Button>
