@@ -12,7 +12,7 @@ echo "==> Pulling latest changes..."
 git pull origin main
 
 echo "==> Installing dependencies..."
-pnpm install --frozen-lockfile
+NODE_ENV=development pnpm install --frozen-lockfile
 
 echo "==> Building all packages..."
 pnpm exec turbo build
