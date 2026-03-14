@@ -66,5 +66,17 @@ export function createPlanetService(db: Database) {
       }
       return planet;
     },
+
+    async rename(userId: string, planetId: string, name: string) {
+      const planet = await this.getPlanet(userId, planetId);
+      if (!planet) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      await db
+        .update(planets)
+        .set({ name })
+        .where(eq(planets.id, planetId));
+
+      return { ok: true };
+    },
   };
 }

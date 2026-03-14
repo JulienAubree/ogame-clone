@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Timer } from '@/components/common/Timer';
 
 export default function Overview() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const navigate = useNavigate();
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newName, setNewName] = useState('');
   const utils = trpc.useUtils();
 
   const { data: planets, isLoading } = trpc.planet.list.useQuery();
@@ -57,6 +62,13 @@ export default function Overview() {
   if (!planet) {
     return <div className="p-6 text-muted-foreground">Aucune planète trouvée.</div>;
   }
+
+  const renameMutation = trpc.planet.rename.useMutation({
+    onSuccess: () => {
+      utils.planet.list.invalidate();
+      setIsRenaming(false);
+    },
+  });
 
   const activeBuilding = buildings?.find((b) => b.isUpgrading);
   const activeResearch = techs?.find((t) => t.isResearching);
@@ -149,7 +161,39 @@ export default function Overview() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>{planet.name}</CardTitle>
+            {isRenaming ? (
+              <form
+                className="flex items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newName.trim()) {
+                    renameMutation.mutate({ planetId: planet.id, name: newName.trim() });
+                  }
+                }}
+              >
+                <Input
+                  autoFocus
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  maxLength={30}
+                  className="h-8"
+                />
+                <Button type="submit" size="sm" disabled={renameMutation.isPending}>
+                  OK
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setIsRenaming(false)}>
+                  Annuler
+                </Button>
+              </form>
+            ) : (
+              <CardTitle
+                className="cursor-pointer hover:text-primary transition-colors"
+                onClick={() => { setNewName(planet.name); setIsRenaming(true); }}
+                title="Cliquer pour renommer"
+              >
+                {planet.name}
+              </CardTitle>
+            )}
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">

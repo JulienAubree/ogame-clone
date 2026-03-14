@@ -13,5 +13,14 @@ export function createPlanetRouter(planetService: ReturnType<typeof createPlanet
       .query(async ({ ctx, input }) => {
         return planetService.getPlanet(ctx.userId!, input.planetId);
       }),
+
+    rename: protectedProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        name: z.string().min(1).max(30),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return planetService.rename(ctx.userId!, input.planetId, input.name);
+      }),
   });
 }
