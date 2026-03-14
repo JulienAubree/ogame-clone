@@ -24,8 +24,9 @@ import { createAllianceService } from '../modules/alliance/alliance.service.js';
 import { createAllianceRouter } from '../modules/alliance/alliance.router.js';
 import { UNIVERSE_CONFIG } from '../modules/universe/universe.config.js';
 import type { Database } from '@ogame-clone/db';
+import type Redis from 'ioredis';
 
-export function buildAppRouter(db: Database) {
+export function buildAppRouter(db: Database, redis: Redis) {
   const authService = createAuthService(db);
   const planetService = createPlanetService(db);
   const resourceService = createResourceService(db);
@@ -33,7 +34,7 @@ export function buildAppRouter(db: Database) {
   const researchService = createResearchService(db, resourceService, researchCompletionQueue);
   const shipyardService = createShipyardService(db, resourceService, shipyardCompletionQueue);
   const galaxyService = createGalaxyService(db);
-  const messageService = createMessageService(db);
+  const messageService = createMessageService(db, redis);
   const rankingService = createRankingService(db);
   const fleetService = createFleetService(db, resourceService, fleetArrivalQueue, fleetReturnQueue, UNIVERSE_CONFIG.speed, messageService);
   const allianceService = createAllianceService(db, messageService);

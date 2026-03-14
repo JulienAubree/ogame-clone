@@ -2,8 +2,10 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { messages, users } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
+import type Redis from 'ioredis';
+import { publishNotification } from '../notification/notification.publisher.js';
 
-export function createMessageService(db: Database) {
+export function createMessageService(db: Database, redis: Redis) {
   return {
     async sendMessage(senderId: string, recipientUsername: string, subject: string, body: string) {
       const [recipient] = await db
@@ -31,6 +33,17 @@ export function createMessageService(db: Database) {
         })
         .returning();
 
+      const [sender] = await db
+        .select({ username: users.username })
+        .from(users)
+        .where(eq(users.id, senderId))
+        .limit(1);
+
+      publishNotification(redis, recipient.id, {
+        type: 'new-message',
+        payload: { messageId: msg.id, type: 'player', subject, senderUsername: sender?.username ?? null },
+      });
+
       return msg;
     },
 
@@ -50,6 +63,11 @@ export function createMessageService(db: Database) {
           body,
         })
         .returning();
+
+      publishNotification(redis, recipientId, {
+        type: 'new-message',
+        payload: { messageId: msg.id, type, subject, senderUsername: null },
+      });
 
       return msg;
     },
