@@ -79,7 +79,7 @@ export default function Fleet() {
 
     // Clear params from URL
     setSearchParams({}, { replace: true });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-select ships and jump to step 2 when ships data loads
   useEffect(() => {
