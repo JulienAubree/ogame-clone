@@ -24,18 +24,20 @@ export function Timer({ endTime, totalDuration, onComplete, className }: TimerPr
   );
 
   useEffect(() => {
+    let id: ReturnType<typeof setInterval> | null = null;
+
     const tick = () => {
       const remaining = Math.max(0, Math.floor((endTime.getTime() - Date.now()) / 1000));
       setSecondsLeft(remaining);
       if (remaining <= 0) {
-        clearInterval(id);
+        if (id) clearInterval(id);
         onCompleteRef.current?.();
       }
     };
 
     tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    id = setInterval(tick, 1000);
+    return () => { if (id) clearInterval(id); };
   }, [endTime]);
 
   const progress = totalDuration && totalDuration > 0
