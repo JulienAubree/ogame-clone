@@ -70,10 +70,11 @@ export function createPlanetService(db: Database) {
     async rename(userId: string, planetId: string, name: string) {
       const planet = await this.getPlanet(userId, planetId);
       if (!planet) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (planet.renamed) throw new TRPCError({ code: 'FORBIDDEN', message: 'Planète déjà renommée' });
 
       await db
         .update(planets)
-        .set({ name })
+        .set({ name, renamed: true })
         .where(eq(planets.id, planetId));
 
       return { ok: true };

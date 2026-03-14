@@ -187,9 +187,9 @@ export default function Overview() {
               </form>
             ) : (
               <CardTitle
-                className="cursor-pointer hover:text-primary transition-colors"
-                onClick={() => { setNewName(planet.name); setIsRenaming(true); }}
-                title="Cliquer pour renommer"
+                className={!planet.renamed ? 'cursor-pointer hover:text-primary transition-colors' : ''}
+                onClick={!planet.renamed ? () => { setNewName(planet.name); setIsRenaming(true); } : undefined}
+                title={!planet.renamed ? 'Cliquer pour renommer' : undefined}
               >
                 {planet.name}
               </CardTitle>

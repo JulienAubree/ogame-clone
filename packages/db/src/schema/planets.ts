@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, smallint, integer, numeric, timestamp, uniqueIndex, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, smallint, integer, numeric, timestamp, uniqueIndex, pgEnum, boolean } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
 export const planetTypeEnum = pgEnum('planet_type', ['planet', 'moon']);
@@ -7,6 +7,7 @@ export const planets = pgTable('planets', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 64 }).notNull().default('Homeworld'),
+  renamed: boolean('renamed').notNull().default(false),
   galaxy: smallint('galaxy').notNull(),
   system: smallint('system').notNull(),
   position: smallint('position').notNull(),
