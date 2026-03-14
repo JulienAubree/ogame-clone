@@ -15,7 +15,7 @@ echo "==> Installing dependencies..."
 pnpm install --frozen-lockfile
 
 echo "==> Building all packages..."
-pnpm build
+pnpm exec turbo build
 
 echo "==> Pushing database schema..."
 export $(grep -v '^#' .env | xargs)
