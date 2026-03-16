@@ -120,7 +120,7 @@ async function seed() {
 
   // 1. Building definitions (upsert)
   for (const b of BUILDINGS) {
-    const { prerequisites, ...row } = b;
+    const { prerequisites: _bp, ...row } = b;
     await db.insert(buildingDefinitions).values(row)
       .onConflictDoUpdate({ target: buildingDefinitions.id, set: { ...row } });
   }
@@ -142,7 +142,7 @@ async function seed() {
 
   // 3. Research definitions
   for (const r of RESEARCH) {
-    const { prerequisites, ...row } = r;
+    const { prerequisites: _rp, ...row } = r;
     await db.insert(researchDefinitions).values(row)
       .onConflictDoUpdate({ target: researchDefinitions.id, set: { ...row } });
   }
@@ -166,7 +166,7 @@ async function seed() {
 
   // 5. Ship definitions
   for (const s of SHIPS) {
-    const { prerequisites, ...row } = s;
+    const { prerequisites: _sp, ...row } = s;
     await db.insert(shipDefinitions).values(row)
       .onConflictDoUpdate({ target: shipDefinitions.id, set: { ...row } });
   }
@@ -190,7 +190,7 @@ async function seed() {
 
   // 7. Defense definitions
   for (const d of DEFENSES) {
-    const { prerequisites, ...row } = d;
+    const { prerequisites: _dp, ...row } = d;
     await db.insert(defenseDefinitions).values(row)
       .onConflictDoUpdate({ target: defenseDefinitions.id, set: { ...row } });
   }
