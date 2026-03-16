@@ -45,20 +45,20 @@ export function useNotifications() {
       case 'building-done':
         utils.building.list.invalidate();
         utils.resource.production.invalidate();
-        addToast(`Construction terminée : ${event.payload.buildingId} niv. ${event.payload.level}`);
-        showBrowserNotification('Construction terminée', `${event.payload.buildingId} niveau ${event.payload.level}`);
+        addToast(`Construction terminée : ${event.payload.name ?? event.payload.buildingId} niv. ${event.payload.level}`);
+        showBrowserNotification('Construction terminée', `${event.payload.name ?? event.payload.buildingId} niveau ${event.payload.level}`);
         break;
       case 'research-done':
         utils.research.list.invalidate();
-        addToast(`Recherche terminée : ${event.payload.techId} niv. ${event.payload.level}`);
-        showBrowserNotification('Recherche terminée', `${event.payload.techId} niveau ${event.payload.level}`);
+        addToast(`Recherche terminée : ${event.payload.name ?? event.payload.techId} niv. ${event.payload.level}`);
+        showBrowserNotification('Recherche terminée', `${event.payload.name ?? event.payload.techId} niveau ${event.payload.level}`);
         break;
       case 'shipyard-done':
         utils.shipyard.queue.invalidate();
         utils.shipyard.ships.invalidate();
         utils.shipyard.defenses.invalidate();
-        addToast(`Chantier terminé : ${event.payload.unitId} (x${event.payload.count})`);
-        showBrowserNotification('Production terminée', `${event.payload.count}x ${event.payload.unitId}`);
+        addToast(`Chantier terminé : ${event.payload.name ?? event.payload.unitId} (x${event.payload.count})`);
+        showBrowserNotification('Production terminée', `${event.payload.count}x ${event.payload.name ?? event.payload.unitId}`);
         break;
       case 'fleet-arrived':
         utils.fleet.movements.invalidate();

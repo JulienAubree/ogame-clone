@@ -24,9 +24,9 @@ export function formatEventText(event: { type: string; payload?: unknown }, opti
   const p = event.payload as any;
   const planet = options?.includePlanet && p.planetName ? ` sur ${p.planetName}` : '';
   switch (event.type) {
-    case 'building-done': return `${p.buildingId} niveau ${p.level}${planet}`;
-    case 'research-done': return `${p.techId} niveau ${p.level}${planet}`;
-    case 'shipyard-done': return `${p.count}x ${p.unitId}${planet}`;
+    case 'building-done': return `${p.name ?? p.buildingId} niveau ${p.level}${planet}`;
+    case 'research-done': return `${p.name ?? p.techId} niveau ${p.level}${planet}`;
+    case 'shipyard-done': return `${p.count}x ${p.name ?? p.unitId}${planet}`;
     case 'fleet-arrived': return `Mission ${p.mission} arrivée en ${p.targetCoords}`;
     case 'fleet-returned': return `Flotte rentrée sur ${p.originName}`;
     default: return 'Événement';

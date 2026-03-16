@@ -31,22 +31,25 @@ export function startShipyardCompletionWorker(db: ReturnType<typeof createDb>) {
       if (result) {
         console.log(`[shipyard-completion] ${result.itemId}: ${result.totalCompleted} completed, done=${result.completed}`);
         if (entry && result.completed) {
-          publishNotification(redis, entry.userId, {
-            type: 'shipyard-done',
-            payload: { planetId: entry.planetId, unitId: result.itemId, count: result.totalCompleted },
-          });
-
           const [planet] = await db
             .select({ name: planets.name })
             .from(planets)
             .where(eq(planets.id, entry.planetId))
             .limit(1);
 
+          const config = await gameConfigService.getFullConfig();
+          const unitName = config.ships[result.itemId]?.name ?? config.defenses[result.itemId]?.name ?? result.itemId;
+
+          publishNotification(redis, entry.userId, {
+            type: 'shipyard-done',
+            payload: { planetId: entry.planetId, unitId: result.itemId, name: unitName, count: result.totalCompleted },
+          });
+
           await db.insert(gameEvents).values({
             userId: entry.userId,
             planetId: entry.planetId,
             type: 'shipyard-done',
-            payload: { unitId: result.itemId, count: result.totalCompleted, planetName: planet?.name ?? 'Planète' },
+            payload: { unitId: result.itemId, name: unitName, count: result.totalCompleted, planetName: planet?.name ?? 'Planète' },
           });
         }
       }

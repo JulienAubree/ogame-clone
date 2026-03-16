@@ -31,22 +31,25 @@ export function startResearchCompletionWorker(db: ReturnType<typeof createDb>) {
       if (result) {
         console.log(`[research-completion] ${result.researchId} upgraded to level ${result.newLevel}`);
         if (entry) {
-          publishNotification(redis, entry.userId, {
-            type: 'research-done',
-            payload: { techId: result.researchId, level: result.newLevel },
-          });
-
           const [planet] = await db
             .select({ name: planets.name })
             .from(planets)
             .where(eq(planets.id, entry.planetId))
             .limit(1);
 
+          const config = await gameConfigService.getFullConfig();
+          const techName = config.research[result.researchId]?.name ?? result.researchId;
+
+          publishNotification(redis, entry.userId, {
+            type: 'research-done',
+            payload: { techId: result.researchId, name: techName, level: result.newLevel },
+          });
+
           await db.insert(gameEvents).values({
             userId: entry.userId,
             planetId: entry.planetId,
             type: 'research-done',
-            payload: { techId: result.researchId, level: result.newLevel, planetName: planet?.name ?? 'Planète' },
+            payload: { techId: result.researchId, name: techName, level: result.newLevel, planetName: planet?.name ?? 'Planète' },
           });
         }
       }

@@ -33,22 +33,25 @@ export function startBuildingCompletionWorker(db: ReturnType<typeof createDb>) {
           `[building-completion] ${result.buildingId} upgraded to level ${result.newLevel}`,
         );
         if (entry) {
-          publishNotification(redis, entry.userId, {
-            type: 'building-done',
-            payload: { planetId: entry.planetId, buildingId: result.buildingId, level: result.newLevel },
-          });
-
           const [planet] = await db
             .select({ name: planets.name })
             .from(planets)
             .where(eq(planets.id, entry.planetId))
             .limit(1);
 
+          const config = await gameConfigService.getFullConfig();
+          const buildingName = config.buildings[result.buildingId]?.name ?? result.buildingId;
+
+          publishNotification(redis, entry.userId, {
+            type: 'building-done',
+            payload: { planetId: entry.planetId, buildingId: result.buildingId, name: buildingName, level: result.newLevel },
+          });
+
           await db.insert(gameEvents).values({
             userId: entry.userId,
             planetId: entry.planetId,
             type: 'building-done',
-            payload: { buildingId: result.buildingId, level: result.newLevel, planetName: planet?.name ?? 'Planète' },
+            payload: { buildingId: result.buildingId, name: buildingName, level: result.newLevel, planetName: planet?.name ?? 'Planète' },
           });
         }
       } else {
