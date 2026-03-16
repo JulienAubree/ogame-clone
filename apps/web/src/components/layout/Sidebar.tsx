@@ -1,8 +1,5 @@
-import { NavLink, useLocation } from 'react-router';
+import { NavLink } from 'react-router';
 import { cn } from '@/lib/utils';
-import { useUIStore } from '@/stores/ui.store';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useEffect } from 'react';
 import {
   OverviewIcon,
   ResourcesIcon,
@@ -27,21 +24,26 @@ interface NavItem {
 
 const sections: { title: string; items: NavItem[] }[] = [
   {
-    title: 'Economie',
+    title: 'Accueil',
     items: [
       { label: "Vue d'ensemble", path: '/', icon: OverviewIcon },
-      { label: 'Ressources', path: '/resources', icon: ResourcesIcon },
-      { label: 'Bâtiments', path: '/buildings', icon: BuildingsIcon },
-      { label: 'Recherche', path: '/research', icon: ResearchIcon },
     ],
   },
   {
-    title: 'Militaire',
+    title: 'Base',
     items: [
+      { label: 'Ressources', path: '/resources', icon: ResourcesIcon },
+      { label: 'Bâtiments', path: '/buildings', icon: BuildingsIcon },
+      { label: 'Recherche', path: '/research', icon: ResearchIcon },
       { label: 'Chantier spatial', path: '/shipyard', icon: ShipyardIcon },
       { label: 'Défense', path: '/defense', icon: DefenseIcon },
-      { label: 'Flotte', path: '/fleet', icon: FleetIcon },
+    ],
+  },
+  {
+    title: 'Galaxie',
+    items: [
       { label: 'Galaxie', path: '/galaxy', icon: GalaxyIcon },
+      { label: 'Flotte', path: '/fleet', icon: FleetIcon },
       { label: 'Mouvements', path: '/movements', icon: MovementsIcon },
     ],
   },
@@ -49,31 +51,16 @@ const sections: { title: string; items: NavItem[] }[] = [
     title: 'Social',
     items: [
       { label: 'Messages', path: '/messages', icon: MessagesIcon },
-      { label: 'Classement', path: '/ranking', icon: RankingIcon },
       { label: 'Alliance', path: '/alliance', icon: AllianceIcon },
+      { label: 'Classement', path: '/ranking', icon: RankingIcon },
       { label: 'Classement Alliances', path: '/alliance-ranking', icon: AllianceRankingIcon },
     ],
   },
 ];
 
 export function Sidebar() {
-  const sidebarOpen = useUIStore((s) => s.sidebarOpen);
-  const closeSidebar = useUIStore((s) => s.closeSidebar);
-  const isMobile = useMediaQuery('(max-width: 767px)');
-  const location = useLocation();
-
-  // Auto-close on mobile navigation
-  useEffect(() => {
-    if (isMobile) closeSidebar();
-  }, [location.pathname, isMobile, closeSidebar]);
-
-  const sidebarContent = (
-    <aside
-      className={cn(
-        'flex h-full w-56 flex-col border-r border-border/50 bg-card/80 backdrop-blur-sm',
-        isMobile && 'fixed inset-y-0 left-0 z-50 animate-slide-in-left shadow-2xl',
-      )}
-    >
+  return (
+    <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-56 lg:flex-col bg-card/80 backdrop-blur-md border-r border-white/10">
       <div className="flex h-14 items-center border-b border-border/50 px-4">
         <span className="text-lg font-bold text-primary glow-silicium">Exilium</span>
       </div>
@@ -109,21 +96,5 @@ export function Sidebar() {
         ))}
       </nav>
     </aside>
-  );
-
-  // Desktop: always visible
-  if (!isMobile) return sidebarContent;
-
-  // Mobile: overlay
-  if (!sidebarOpen) return null;
-
-  return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm animate-fade-in"
-        onClick={closeSidebar}
-      />
-      {sidebarContent}
-    </>
   );
 }
