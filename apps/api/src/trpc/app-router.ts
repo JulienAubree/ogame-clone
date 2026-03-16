@@ -26,6 +26,8 @@ import { createGameConfigService } from '../modules/admin/game-config.service.js
 import { createGameConfigRouter } from '../modules/admin/game-config.router.js';
 import { createPlayerAdminService } from '../modules/admin/player-admin.service.js';
 import { createPlayerAdminRouter } from '../modules/admin/player-admin.router.js';
+import { createGameEventService } from '../modules/game-event/game-event.service.js';
+import { createGameEventRouter } from '../modules/game-event/game-event.router.js';
 import { UNIVERSE_CONFIG } from '../modules/universe/universe.config.js';
 import type { Database } from '@ogame-clone/db';
 import type Redis from 'ioredis';
@@ -46,6 +48,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const fleetService = createFleetService(db, resourceService, fleetArrivalQueue, fleetReturnQueue, UNIVERSE_CONFIG.speed, messageService, gameConfigService);
   const allianceService = createAllianceService(db, messageService);
   const playerAdminService = createPlayerAdminService(db);
+  const gameEventService = createGameEventService(db);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -60,6 +63,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const allianceRouter = createAllianceRouter(allianceService);
   const gameConfigRouter = createGameConfigRouter(gameConfigService, adminProcedure);
   const playerAdminRouter = createPlayerAdminRouter(playerAdminService, adminProcedure);
+  const gameEventRouter = createGameEventRouter(gameEventService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -79,6 +83,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     alliance: allianceRouter,
     gameConfig: gameConfigRouter,
     playerAdmin: playerAdminRouter,
+    gameEvent: gameEventRouter,
   });
 }
 
