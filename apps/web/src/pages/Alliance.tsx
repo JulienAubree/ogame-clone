@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { trpc } from '@/trpc';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -12,7 +11,7 @@ export default function Alliance() {
   const { data: invitations } = trpc.alliance.myInvitations.useQuery();
 
   if (isLoading) return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Alliance" />
       <CardGridSkeleton count={2} />
     </div>
@@ -50,18 +49,32 @@ function NoAllianceView({ invitations }: { invitations: { id: string; allianceNa
   });
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Alliance" />
 
       <div className="flex gap-2">
-        <Button variant={tab === 'create' ? 'default' : 'outline'} size="sm" onClick={() => setTab('create')}>Créer</Button>
-        <Button variant={tab === 'join' ? 'default' : 'outline'} size="sm" onClick={() => setTab('join')}>Rejoindre</Button>
+        <Button
+          variant={tab === 'create' ? 'default' : 'outline'}
+          size="sm"
+          className="rounded-full"
+          onClick={() => setTab('create')}
+        >
+          Créer
+        </Button>
+        <Button
+          variant={tab === 'join' ? 'default' : 'outline'}
+          size="sm"
+          className="rounded-full"
+          onClick={() => setTab('join')}
+        >
+          Rejoindre
+        </Button>
       </div>
 
       {tab === 'create' && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Créer une alliance</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
+        <section className="glass-card p-4">
+          <h3 className="text-base font-semibold mb-3">Créer une alliance</h3>
+          <div className="space-y-3">
             <div>
               <label className="text-xs text-muted-foreground">Nom (3-30 caractères)</label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom de l'alliance" />
@@ -74,14 +87,14 @@ function NoAllianceView({ invitations }: { invitations: { id: string; allianceNa
             <Button onClick={() => createMutation.mutate({ name, tag })} disabled={createMutation.isPending || name.length < 3 || tag.length < 2}>
               Créer
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {tab === 'join' && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Rechercher une alliance</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
+        <section className="glass-card p-4">
+          <h3 className="text-base font-semibold mb-3">Rechercher une alliance</h3>
+          <div className="space-y-3">
             <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Nom ou tag..." />
             {searchResults?.map((a) => (
               <div key={a.id} className="flex items-center justify-between border-b border-border/50 py-2">
@@ -92,14 +105,14 @@ function NoAllianceView({ invitations }: { invitations: { id: string; allianceNa
               </div>
             ))}
             {applyMutation.error && <p className="text-sm text-destructive">{applyMutation.error.message}</p>}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {invitations.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Invitations reçues</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
+        <section className="glass-card p-4">
+          <h3 className="text-base font-semibold mb-3">Invitations reçues</h3>
+          <div className="space-y-2">
             {invitations.map((inv) => (
               <div key={inv.id} className="flex flex-wrap items-center justify-between border-b border-border/50 py-2 gap-2">
                 <span className="text-sm">[{inv.allianceTag}] {inv.allianceName} — invité par {inv.invitedByUsername}</span>
@@ -109,8 +122,8 @@ function NoAllianceView({ invitations }: { invitations: { id: string; allianceNa
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
     </div>
   );
@@ -118,6 +131,7 @@ function NoAllianceView({ invitations }: { invitations: { id: string; allianceNa
 
 function AllianceView({ alliance }: { alliance: { id: string; name: string; tag: string; description: string | null; myRole: string; members: { userId: string; username: string; role: string; joinedAt: string }[] } }) {
   const utils = trpc.useUtils();
+  const [activeTab, setActiveTab] = useState<'info' | 'members' | 'manage'>('info');
   const [inviteUsername, setInviteUsername] = useState('');
   const [circularSubject, setCircularSubject] = useState('');
   const [circularBody, setCircularBody] = useState('');
@@ -150,149 +164,186 @@ function AllianceView({ alliance }: { alliance: { id: string; name: string; tag:
   const isLeader = alliance.myRole === 'founder' || alliance.myRole === 'officer';
   const isFounder = alliance.myRole === 'founder';
 
-  return (
-    <div className="space-y-6 p-6">
-      <PageHeader
-        title={`[${alliance.tag}] ${alliance.name}`}
-        actions={
-          <Button variant="destructive" size="sm" onClick={() => setLeaveConfirm(true)} disabled={leaveMutation.isPending}>
-            Quitter
-          </Button>
-        }
-      />
+  const tabs: { id: 'info' | 'members' | 'manage'; label: string; show: boolean }[] = [
+    { id: 'info', label: 'Infos', show: true },
+    { id: 'members', label: 'Membres', show: true },
+    { id: 'manage', label: 'Gestion', show: isLeader },
+  ];
 
+  /* --- Section renderers --- */
+
+  const renderInfoSection = () => (
+    <section className="glass-card p-4 space-y-3">
+      <h3 className="text-base font-semibold">Informations</h3>
       {alliance.description && <p className="text-sm text-muted-foreground">{alliance.description}</p>}
+      <Button variant="destructive" size="sm" onClick={() => setLeaveConfirm(true)} disabled={leaveMutation.isPending}>
+        Quitter l&apos;alliance
+      </Button>
+    </section>
+  );
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Membres ({alliance.members.length})</CardTitle></CardHeader>
-        <CardContent>
-          {/* Desktop table */}
-          <table className="hidden sm:table w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="px-2 py-1">Joueur</th>
-                <th className="px-2 py-1">Rôle</th>
-                <th className="px-2 py-1">Depuis</th>
-                {isLeader && <th className="px-2 py-1">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {alliance.members.map((m) => (
-                <tr key={m.userId} className="border-b border-border/50">
-                  <td className="px-2 py-1">{m.username}</td>
-                  <td className="px-2 py-1 capitalize">{m.role}</td>
-                  <td className="px-2 py-1 text-xs text-muted-foreground">{new Date(m.joinedAt).toLocaleDateString('fr-FR')}</td>
-                  {isLeader && (
-                    <td className="px-2 py-1 flex gap-1">
-                      {m.role !== 'founder' && isFounder && (
-                        <Button size="sm" variant="outline" onClick={() => setRoleMutation.mutate({ userId: m.userId, role: m.role === 'officer' ? 'member' : 'officer' })}>
-                          {m.role === 'officer' ? 'Rétrograder' : 'Promouvoir'}
-                        </Button>
-                      )}
-                      {m.role !== 'founder' && !(m.role === 'officer' && !isFounder) && (
-                        <Button size="sm" variant="destructive" onClick={() => setKickConfirm(m.userId)}>
-                          Expulser
-                        </Button>
-                      )}
-                    </td>
+  const renderMembersSection = () => (
+    <section className="glass-card p-4 space-y-3">
+      <h3 className="text-base font-semibold">Membres ({alliance.members.length})</h3>
+
+      {/* Desktop table */}
+      <table className="hidden lg:table w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-muted-foreground">
+            <th className="px-2 py-1">Joueur</th>
+            <th className="px-2 py-1">Rôle</th>
+            <th className="px-2 py-1">Depuis</th>
+            {isLeader && <th className="px-2 py-1">Actions</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {alliance.members.map((m) => (
+            <tr key={m.userId} className="border-b border-border/50">
+              <td className="px-2 py-1">{m.username}</td>
+              <td className="px-2 py-1 capitalize">{m.role}</td>
+              <td className="px-2 py-1 text-xs text-muted-foreground">{new Date(m.joinedAt).toLocaleDateString('fr-FR')}</td>
+              {isLeader && (
+                <td className="px-2 py-1 flex gap-1">
+                  {m.role !== 'founder' && isFounder && (
+                    <Button size="sm" variant="outline" onClick={() => setRoleMutation.mutate({ userId: m.userId, role: m.role === 'officer' ? 'member' : 'officer' })}>
+                      {m.role === 'officer' ? 'Rétrograder' : 'Promouvoir'}
+                    </Button>
                   )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  {m.role !== 'founder' && !(m.role === 'officer' && !isFounder) && (
+                    <Button size="sm" variant="destructive" onClick={() => setKickConfirm(m.userId)}>
+                      Expulser
+                    </Button>
+                  )}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-          {/* Mobile cards */}
-          <div className="sm:hidden space-y-2">
-            {alliance.members.map((m) => (
-              <div key={m.userId} className="rounded-md border border-border/50 p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{m.username}</span>
-                  <span className="text-xs capitalize text-muted-foreground">{m.role}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">Depuis {new Date(m.joinedAt).toLocaleDateString('fr-FR')}</div>
-                {isLeader && m.role !== 'founder' && (
-                  <div className="flex gap-1">
-                    {isFounder && (
-                      <Button size="sm" variant="outline" onClick={() => setRoleMutation.mutate({ userId: m.userId, role: m.role === 'officer' ? 'member' : 'officer' })}>
-                        {m.role === 'officer' ? 'Rétrograder' : 'Promouvoir'}
-                      </Button>
-                    )}
-                    {!(m.role === 'officer' && !isFounder) && (
-                      <Button size="sm" variant="destructive" onClick={() => setKickConfirm(m.userId)}>
-                        Expulser
-                      </Button>
-                    )}
-                  </div>
+      {/* Mobile/tablet cards */}
+      <div className="lg:hidden space-y-2">
+        {alliance.members.map((m) => (
+          <div key={m.userId} className="rounded-lg p-3 space-y-2 hover:bg-accent/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-sm">{m.username}</span>
+              <span className="text-xs capitalize text-muted-foreground">{m.role}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">Depuis {new Date(m.joinedAt).toLocaleDateString('fr-FR')}</div>
+            {isLeader && m.role !== 'founder' && (
+              <div className="flex gap-1 flex-wrap">
+                {isFounder && (
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => setRoleMutation.mutate({ userId: m.userId, role: m.role === 'officer' ? 'member' : 'officer' })}>
+                    {m.role === 'officer' ? 'Rétrograder' : 'Promouvoir'}
+                  </Button>
+                )}
+                {!(m.role === 'officer' && !isFounder) && (
+                  <Button size="sm" variant="destructive" className="text-xs h-7 px-2" onClick={() => setKickConfirm(m.userId)}>
+                    Expulser
+                  </Button>
                 )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {isLeader && (
-        <>
-          <Card>
-            <CardHeader><CardTitle className="text-base">Inviter un joueur</CardTitle></CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              <Input value={inviteUsername} onChange={(e) => setInviteUsername(e.target.value)} placeholder="Nom du joueur" className="w-60" />
-              <Button onClick={() => inviteMutation.mutate({ username: inviteUsername })} disabled={inviteMutation.isPending || !inviteUsername}>
-                Inviter
-              </Button>
-              {inviteMutation.error && <span className="text-sm text-destructive self-center">{inviteMutation.error.message}</span>}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Message circulaire</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <Input value={circularSubject} onChange={(e) => setCircularSubject(e.target.value)} placeholder="Sujet" />
-              <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={3} value={circularBody} onChange={(e) => setCircularBody(e.target.value)} placeholder="Message..." />
-              <Button onClick={() => circularMutation.mutate({ subject: circularSubject, body: circularBody })} disabled={circularMutation.isPending || !circularSubject || !circularBody}>
-                Envoyer à tous
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Candidatures</CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setShowApplications(!showApplications)}>
-                  {showApplications ? 'Masquer' : 'Afficher'}
-                </Button>
-              </div>
-            </CardHeader>
-            {showApplications && (
-              <CardContent className="space-y-2">
-                {(!applications || applications.length === 0) ? (
-                  <p className="text-sm text-muted-foreground">Aucune candidature en attente.</p>
-                ) : (
-                  applications.map((app) => (
-                    <div key={app.id} className="flex flex-wrap items-center justify-between border-b border-border/50 py-2 gap-2">
-                      <span className="text-sm">{app.applicantUsername}</span>
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: true })}>Accepter</Button>
-                        <Button size="sm" variant="outline" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: false })}>Décliner</Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
             )}
-          </Card>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 
-          <Card>
-            <CardHeader><CardTitle className="text-base">Description</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-              <Button onClick={() => updateMutation.mutate({ description })} disabled={updateMutation.isPending}>
-                Mettre à jour
-              </Button>
-            </CardContent>
-          </Card>
-        </>
-      )}
+  const renderManageSection = () => (
+    <>
+      <section className="glass-card p-4 space-y-3">
+        <h3 className="text-base font-semibold">Inviter un joueur</h3>
+        <div className="flex flex-wrap gap-2">
+          <Input value={inviteUsername} onChange={(e) => setInviteUsername(e.target.value)} placeholder="Nom du joueur" className="w-60" />
+          <Button onClick={() => inviteMutation.mutate({ username: inviteUsername })} disabled={inviteMutation.isPending || !inviteUsername}>
+            Inviter
+          </Button>
+          {inviteMutation.error && <span className="text-sm text-destructive self-center">{inviteMutation.error.message}</span>}
+        </div>
+      </section>
+
+      <section className="glass-card p-4 space-y-3">
+        <h3 className="text-base font-semibold">Message circulaire</h3>
+        <div className="space-y-2">
+          <Input value={circularSubject} onChange={(e) => setCircularSubject(e.target.value)} placeholder="Sujet" />
+          <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={3} value={circularBody} onChange={(e) => setCircularBody(e.target.value)} placeholder="Message..." />
+          <Button onClick={() => circularMutation.mutate({ subject: circularSubject, body: circularBody })} disabled={circularMutation.isPending || !circularSubject || !circularBody}>
+            Envoyer à tous
+          </Button>
+        </div>
+      </section>
+
+      <section className="glass-card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold">Candidatures</h3>
+          <Button size="sm" variant="outline" onClick={() => setShowApplications(!showApplications)}>
+            {showApplications ? 'Masquer' : 'Afficher'}
+          </Button>
+        </div>
+        {showApplications && (
+          <div className="space-y-2">
+            {(!applications || applications.length === 0) ? (
+              <p className="text-sm text-muted-foreground">Aucune candidature en attente.</p>
+            ) : (
+              applications.map((app) => (
+                <div key={app.id} className="flex flex-wrap items-center justify-between border-b border-border/50 py-2 gap-2">
+                  <span className="text-sm">{app.applicantUsername}</span>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: true })}>Accepter</Button>
+                    <Button size="sm" variant="outline" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: false })}>Décliner</Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="glass-card p-4 space-y-3">
+        <h3 className="text-base font-semibold">Description</h3>
+        <div className="space-y-2">
+          <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Button onClick={() => updateMutation.mutate({ description })} disabled={updateMutation.isPending}>
+            Mettre à jour
+          </Button>
+        </div>
+      </section>
+    </>
+  );
+
+  return (
+    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
+      <PageHeader title={`[${alliance.tag}] ${alliance.name}`} />
+
+      {/* Mobile tab navigation */}
+      <div className="flex gap-2 lg:hidden">
+        {tabs.filter((t) => t.show).map((t) => (
+          <Button
+            key={t.id}
+            variant={activeTab === t.id ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-full"
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Mobile: show only active tab content */}
+      <div className="lg:hidden space-y-4">
+        {activeTab === 'info' && renderInfoSection()}
+        {activeTab === 'members' && renderMembersSection()}
+        {activeTab === 'manage' && isLeader && renderManageSection()}
+      </div>
+
+      {/* Desktop: show all sections stacked */}
+      <div className="hidden lg:block space-y-6">
+        {renderInfoSection()}
+        {renderMembersSection()}
+        {isLeader && renderManageSection()}
+      </div>
 
       <ConfirmDialog
         open={leaveConfirm}
