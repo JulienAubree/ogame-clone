@@ -163,3 +163,16 @@ export function AllianceRankingIcon(props: IconProps) {
     </Icon>
   );
 }
+
+// --- Navigation ---
+
+export function MoreIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="1" fill="none" />
+      <rect x="14" y="3" width="7" height="7" rx="1" fill="none" />
+      <rect x="3" y="14" width="7" height="7" rx="1" fill="none" />
+      <rect x="14" y="14" width="7" height="7" rx="1" fill="none" />
+    </Icon>
+  );
+}
