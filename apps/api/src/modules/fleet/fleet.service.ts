@@ -287,6 +287,21 @@ export function createFleetService(
       const siliciumCargo = Number(event.siliciumCargo);
       const hydrogeneCargo = Number(event.hydrogeneCargo);
 
+      const [originPlanet] = await db
+        .select({ name: planets.name })
+        .from(planets)
+        .where(eq(planets.id, event.originPlanetId))
+        .limit(1);
+
+      const eventMeta = {
+        userId: event.userId,
+        originPlanetId: event.originPlanetId,
+        originName: originPlanet?.name ?? 'Planète',
+        targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
+        ships,
+        cargo: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo },
+      };
+
       if (event.mission === 'transport') {
         if (event.targetPlanetId) {
           const [targetPlanet] = await db
@@ -313,7 +328,7 @@ export function createFleetService(
           position: event.targetPosition,
         }, ships, 0, 0, 0);
 
-        return { mission: 'transport', delivered: true };
+        return { ...eventMeta, mission: 'transport', delivered: true };
       }
 
       if (event.mission === 'station') {
@@ -354,23 +369,23 @@ export function createFleetService(
           .set({ status: 'completed' })
           .where(eq(fleetEvents.id, event.id));
 
-        return { mission: 'station', stationed: true };
+        return { ...eventMeta, mission: 'station', stationed: true };
       }
 
       if (event.mission === 'colonize') {
-        return this.processColonize(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo);
+        return { ...eventMeta, ...(await this.processColonize(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
       }
 
       if (event.mission === 'spy') {
-        return this.processSpy(event, ships);
+        return { ...eventMeta, ...(await this.processSpy(event, ships)) };
       }
 
       if (event.mission === 'attack') {
-        return this.processAttack(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo);
+        return { ...eventMeta, ...(await this.processAttack(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
       }
 
       if (event.mission === 'recycle') {
-        return this.processRecycle(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo);
+        return { ...eventMeta, ...(await this.processRecycle(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
       }
 
       // Unknown mission — return fleet
@@ -380,7 +395,7 @@ export function createFleetService(
         ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
       );
 
-      return { mission: event.mission, placeholder: true };
+      return { ...eventMeta, mission: event.mission, placeholder: true };
     },
 
     async processReturn(fleetEventId: string) {
@@ -400,6 +415,12 @@ export function createFleetService(
 
       const ships = event.ships as Record<string, number>;
 
+      const [originPlanet] = await db
+        .select({ name: planets.name })
+        .from(planets)
+        .where(eq(planets.id, event.originPlanetId))
+        .limit(1);
+
       const originShips = await this.getOrCreateShips(event.originPlanetId);
       const shipUpdates: Record<string, number> = {};
       for (const [shipId, count] of Object.entries(ships)) {
@@ -418,19 +439,19 @@ export function createFleetService(
       const hydrogeneCargo = Number(event.hydrogeneCargo);
 
       if (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0) {
-        const [originPlanet] = await db
+        const [originPlanetData] = await db
           .select()
           .from(planets)
           .where(eq(planets.id, event.originPlanetId))
           .limit(1);
 
-        if (originPlanet) {
+        if (originPlanetData) {
           await db
             .update(planets)
             .set({
-              minerai: String(Number(originPlanet.minerai) + mineraiCargo),
-              silicium: String(Number(originPlanet.silicium) + siliciumCargo),
-              hydrogene: String(Number(originPlanet.hydrogene) + hydrogeneCargo),
+              minerai: String(Number(originPlanetData.minerai) + mineraiCargo),
+              silicium: String(Number(originPlanetData.silicium) + siliciumCargo),
+              hydrogene: String(Number(originPlanetData.hydrogene) + hydrogeneCargo),
             })
             .where(eq(planets.id, event.originPlanetId));
         }
@@ -441,7 +462,20 @@ export function createFleetService(
         .set({ status: 'completed' })
         .where(eq(fleetEvents.id, event.id));
 
-      return { returned: true, ships };
+      return {
+        returned: true,
+        ships,
+        userId: event.userId,
+        originPlanetId: event.originPlanetId,
+        originName: originPlanet?.name ?? 'Planète',
+        targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
+        mission: event.mission,
+        cargo: {
+          minerai: Number(event.mineraiCargo),
+          silicium: Number(event.siliciumCargo),
+          hydrogene: Number(event.hydrogeneCargo),
+        },
+      };
     },
 
     async scheduleReturn(
