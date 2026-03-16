@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/Toaster';
 import { trpc } from '@/trpc';
 import { usePlanetStore } from '@/stores/planet.store';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 export function Layout() {
   const { data: planets } = trpc.planet.list.useQuery();
@@ -25,6 +26,7 @@ export function Layout() {
   }, [resolvedPlanetId, activePlanetId, setActivePlanet]);
 
   useNotifications();
+  useDocumentTitle();
 
   return (
     <div className="flex h-dvh flex-col bg-background bg-stars text-foreground">
