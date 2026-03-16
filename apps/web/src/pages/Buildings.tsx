@@ -189,7 +189,15 @@ export default function Buildings() {
         onClose={() => setDetailId(null)}
         title={detailId ? gameConfig?.buildings[detailId]?.name ?? '' : ''}
       >
-        {detailId && <BuildingDetailContent buildingId={detailId} />}
+        {detailId && (
+          <BuildingDetailContent
+            buildingId={detailId}
+            planetContext={resourceData ? {
+              maxTemp: resourceData.maxTemp,
+              productionFactor: resourceData.rates.productionFactor,
+            } : undefined}
+          />
+        )}
       </EntityDetailOverlay>
 
       <ConfirmDialog

@@ -212,9 +212,16 @@ function getRapidFireFrom(unitId: string, config?: GameConfigData): RapidFireEnt
 // Public API
 // ---------------------------------------------------------------------------
 
-export function getBuildingDetails(id: string, config?: GameConfigData): BuildingDetails {
+export interface PlanetContext {
+  maxTemp: number;
+  productionFactor: number;
+}
+
+export function getBuildingDetails(id: string, config?: GameConfigData, planet?: PlanetContext): BuildingDetails {
   const cfgDef = config?.buildings[id];
   const def = BUILDINGS[id as BuildingId];
+  const pf = planet?.productionFactor ?? 1;
+  const maxTemp = planet?.maxTemp ?? 50;
   const details: BuildingDetails = {
     type: 'building',
     id,
@@ -228,20 +235,20 @@ export function getBuildingDetails(id: string, config?: GameConfigData): Buildin
 
   switch (id) {
     case 'metalMine':
-      details.productionTable = buildTable(metalProduction);
-      details.productionLabel = 'Production metal/h';
+      details.productionTable = buildTable((lvl) => metalProduction(lvl, pf));
+      details.productionLabel = pf < 1 ? `Production metal/h (energie: ${Math.round(pf * 100)}%)` : 'Production metal/h';
       details.energyTable = buildTable(metalMineEnergy);
       details.energyLabel = 'Consommation energie';
       break;
     case 'crystalMine':
-      details.productionTable = buildTable(crystalProduction);
-      details.productionLabel = 'Production cristal/h';
+      details.productionTable = buildTable((lvl) => crystalProduction(lvl, pf));
+      details.productionLabel = pf < 1 ? `Production cristal/h (energie: ${Math.round(pf * 100)}%)` : 'Production cristal/h';
       details.energyTable = buildTable(crystalMineEnergy);
       details.energyLabel = 'Consommation energie';
       break;
     case 'deutSynth':
-      details.productionTable = buildTable((lvl) => deuteriumProduction(lvl, 50));
-      details.productionLabel = 'Production deut/h (temp. 50)';
+      details.productionTable = buildTable((lvl) => deuteriumProduction(lvl, maxTemp, pf));
+      details.productionLabel = `Production deut/h (temp. ${maxTemp}${pf < 1 ? `, energie: ${Math.round(pf * 100)}%` : ''})`;
       details.energyTable = buildTable(deutSynthEnergy);
       details.energyLabel = 'Consommation energie';
       break;

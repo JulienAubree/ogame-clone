@@ -1,9 +1,14 @@
-import { getBuildingDetails, resolveBuildingName, type BuildingDetails } from '@/lib/entity-details';
+import { getBuildingDetails, resolveBuildingName, type BuildingDetails, type PlanetContext } from '@/lib/entity-details';
 import { ResourceCost } from '@/components/common/ResourceCost';
 import { DetailSection, StatRow, DataTable } from '@/components/common/EntityDetailOverlay';
 
-export function BuildingDetailContent({ buildingId }: { buildingId: string }) {
-  const details: BuildingDetails = getBuildingDetails(buildingId);
+interface Props {
+  buildingId: string;
+  planetContext?: PlanetContext;
+}
+
+export function BuildingDetailContent({ buildingId, planetContext }: Props) {
+  const details: BuildingDetails = getBuildingDetails(buildingId, undefined, planetContext);
 
   return (
     <>

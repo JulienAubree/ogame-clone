@@ -23,6 +23,7 @@ export function createResourceRouter(
           metal: Number(planet.metal),
           crystal: Number(planet.crystal),
           deuterium: Number(planet.deuterium),
+          maxTemp: planet.maxTemp,
           levels: {
             metalMineLevel: planet.metalMineLevel,
             crystalMineLevel: planet.crystalMineLevel,
