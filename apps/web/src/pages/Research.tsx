@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ResourceCost } from '@/components/common/ResourceCost';
@@ -68,7 +67,7 @@ export default function Research() {
 
   if (isLoading || !techs) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
         <PageHeader title="Recherche" />
         <CardGridSkeleton count={6} />
       </div>
@@ -78,10 +77,11 @@ export default function Research() {
   const isAnyResearching = techs.some((t) => t.isResearching);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Recherche" />
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+      {/* Mobile: compact list */}
+      <div className="space-y-1 lg:hidden">
         {techs.map((tech) => {
           const canAfford =
             resources.minerai >= tech.nextLevelCost.minerai &&
@@ -89,85 +89,138 @@ export default function Research() {
             resources.hydrogene >= tech.nextLevelCost.hydrogene;
 
           return (
-            <Card key={tech.id} className={`relative ${!tech.prerequisitesMet ? 'opacity-50' : ''}`}>
-              <InfoButton onClick={() => setDetailId(tech.id)} />
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <GameImage
-                    category="research"
-                    id={tech.id}
-                    size="icon"
-                    alt={tech.name}
-                    className="h-10 w-10 rounded"
-                  />
-                  <div className="flex flex-1 items-center justify-between">
-                    <CardTitle className="text-base">{tech.name}</CardTitle>
-                    <Badge variant="secondary">Niv. {tech.currentLevel}</Badge>
-                  </div>
+            <button
+              key={tech.id}
+              onClick={() => setDetailId(tech.id)}
+              className={`flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors ${!tech.prerequisitesMet ? 'opacity-50' : ''}`}
+            >
+              <GameImage category="research" id={tech.id} size="icon" alt={tech.name} className="h-8 w-8 rounded" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium truncate">{tech.name}</span>
+                  <Badge variant="secondary" className="text-xs ml-2">Niv. {tech.currentLevel}</Badge>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-xs text-muted-foreground">{tech.description}</p>
-
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">
-                    Coût niveau {tech.currentLevel + 1} :
-                  </div>
-                  <ResourceCost
-                    minerai={tech.nextLevelCost.minerai}
-                    silicium={tech.nextLevelCost.silicium}
-                    hydrogene={tech.nextLevelCost.hydrogene}
-                    currentMinerai={resources.minerai}
-                    currentSilicium={resources.silicium}
-                    currentHydrogene={resources.hydrogene}
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    Durée : {formatDuration(tech.nextLevelTime)}
-                  </div>
-                </div>
-
-                {!tech.prerequisitesMet && tech.missingPrerequisites.length > 0 && (
-                  <p className="text-xs text-destructive">
-                    Prérequis : {tech.missingPrerequisites.map((p) => formatMissingPrerequisite(p, gameConfig)).join(', ')}
-                  </p>
-                )}
-
                 {tech.isResearching && tech.researchEndTime ? (
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-primary">En recherche...</span>
-                      </div>
-                      <Timer
-                        endTime={new Date(tech.researchEndTime)}
-                        totalDuration={tech.nextLevelTime}
-                        onComplete={() => {
-                          utils.research.list.invalidate({ planetId: planetId! });
-                        }}
-                      />
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setCancelConfirm(true)}
-                      disabled={cancelMutation.isPending}
-                    >
-                      Annuler
-                    </Button>
+                  <div className="mt-1">
+                    <Timer
+                      endTime={new Date(tech.researchEndTime)}
+                      totalDuration={tech.nextLevelTime}
+                      onComplete={() => utils.research.list.invalidate({ planetId: planetId! })}
+                    />
                   </div>
                 ) : (
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      startMutation.mutate({ planetId: planetId!, researchId: tech.id as any })
-                    }
-                    disabled={!canAfford || !tech.prerequisitesMet || isAnyResearching || startMutation.isPending}
-                  >
-                    Rechercher niv. {tech.currentLevel + 1}
-                  </Button>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    <ResourceCost
+                      minerai={tech.nextLevelCost.minerai}
+                      silicium={tech.nextLevelCost.silicium}
+                      hydrogene={tech.nextLevelCost.hydrogene}
+                      currentMinerai={resources.minerai}
+                      currentSilicium={resources.silicium}
+                      currentHydrogene={resources.hydrogene}
+                    />
+                  </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+              {!tech.isResearching && (
+                <Button
+                  size="sm"
+                  className="shrink-0"
+                  onClick={(e) => { e.stopPropagation(); startMutation.mutate({ planetId: planetId!, researchId: tech.id as any }); }}
+                  disabled={!canAfford || !tech.prerequisitesMet || isAnyResearching || startMutation.isPending}
+                >
+                  ↑
+                </Button>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop: card grid */}
+      <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4">
+        {techs.map((tech) => {
+          const canAfford =
+            resources.minerai >= tech.nextLevelCost.minerai &&
+            resources.silicium >= tech.nextLevelCost.silicium &&
+            resources.hydrogene >= tech.nextLevelCost.hydrogene;
+
+          return (
+            <div key={tech.id} className={`glass-card relative p-4 space-y-3 ${!tech.prerequisitesMet ? 'opacity-50' : ''}`}>
+              <InfoButton onClick={() => setDetailId(tech.id)} />
+              <div className="flex items-center gap-3">
+                <GameImage
+                  category="research"
+                  id={tech.id}
+                  size="icon"
+                  alt={tech.name}
+                  className="h-10 w-10 rounded"
+                />
+                <div className="flex flex-1 items-center justify-between">
+                  <span className="text-base font-semibold">{tech.name}</span>
+                  <Badge variant="secondary">Niv. {tech.currentLevel}</Badge>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">{tech.description}</p>
+
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground">
+                  Coût niveau {tech.currentLevel + 1} :
+                </div>
+                <ResourceCost
+                  minerai={tech.nextLevelCost.minerai}
+                  silicium={tech.nextLevelCost.silicium}
+                  hydrogene={tech.nextLevelCost.hydrogene}
+                  currentMinerai={resources.minerai}
+                  currentSilicium={resources.silicium}
+                  currentHydrogene={resources.hydrogene}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Durée : {formatDuration(tech.nextLevelTime)}
+                </div>
+              </div>
+
+              {!tech.prerequisitesMet && tech.missingPrerequisites.length > 0 && (
+                <p className="text-xs text-destructive">
+                  Prérequis : {tech.missingPrerequisites.map((p) => formatMissingPrerequisite(p, gameConfig)).join(', ')}
+                </p>
+              )}
+
+              {tech.isResearching && tech.researchEndTime ? (
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-primary">En recherche...</span>
+                    </div>
+                    <Timer
+                      endTime={new Date(tech.researchEndTime)}
+                      totalDuration={tech.nextLevelTime}
+                      onComplete={() => {
+                        utils.research.list.invalidate({ planetId: planetId! });
+                      }}
+                    />
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setCancelConfirm(true)}
+                    disabled={cancelMutation.isPending}
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    startMutation.mutate({ planetId: planetId!, researchId: tech.id as any })
+                  }
+                  disabled={!canAfford || !tech.prerequisitesMet || isAnyResearching || startMutation.isPending}
+                >
+                  Rechercher niv. {tech.currentLevel + 1}
+                </Button>
+              )}
+            </div>
           );
         })}
       </div>
