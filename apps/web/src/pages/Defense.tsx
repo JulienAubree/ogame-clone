@@ -14,10 +14,6 @@ import { DefenseDetailContent } from '@/components/entity-details/DefenseDetailC
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { formatMissingPrerequisite } from '@/lib/prerequisites';
 
-const DEFENSE_CATEGORIES = [
-  { id: 'tourelles', label: 'Tourelles', defenseIds: ['rocketLauncher', 'lightLaser', 'heavyLaser', 'gaussCannon', 'plasmaTurret'] },
-  { id: 'boucliers', label: 'Boucliers', defenseIds: ['smallShield', 'largeShield'] },
-] as const;
 
 export default function Defense() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
@@ -26,6 +22,10 @@ export default function Defense() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: gameConfig } = useGameConfig();
+
+  const defenseCategories = (gameConfig?.categories ?? [])
+    .filter((c) => c.entityType === 'defense')
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const { data: defenses, isLoading } = trpc.shipyard.defenses.useQuery(
     { planetId: planetId! },
@@ -75,9 +75,9 @@ export default function Defense() {
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Défense" />
 
-      {DEFENSE_CATEGORIES.map((category) => {
+      {defenseCategories.map((category) => {
         const categoryDefenses = defenses.filter((d) =>
-          (category.defenseIds as readonly string[]).includes(d.id),
+          gameConfig?.defenses[d.id]?.categoryId === category.id,
         );
         if (categoryDefenses.length === 0) return null;
         const isCollapsed = collapsed[category.id] ?? false;
@@ -90,7 +90,7 @@ export default function Defense() {
               }
               className="flex w-full items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
             >
-              <span>{category.label}</span>
+              <span>{category.name}</span>
               <svg
                 className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
                 viewBox="0 0 24 24"

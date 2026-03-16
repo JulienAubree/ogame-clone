@@ -16,11 +16,6 @@ import { ResearchDetailContent } from '@/components/entity-details/ResearchDetai
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { formatMissingPrerequisite } from '@/lib/prerequisites';
 
-const RESEARCH_CATEGORIES = [
-  { id: 'propulsion', label: 'Propulsion', researchIds: ['combustion', 'impulse', 'hyperspaceDrive'] },
-  { id: 'combat', label: 'Combat', researchIds: ['weapons', 'shielding', 'armor'] },
-  { id: 'sciences', label: 'Sciences', researchIds: ['espionageTech', 'computerTech', 'energyTech'] },
-] as const;
 
 export default function Research() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
@@ -29,6 +24,10 @@ export default function Research() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: gameConfig } = useGameConfig();
+
+  const researchCategories = (gameConfig?.categories ?? [])
+    .filter((c) => c.entityType === 'research')
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const { data: techs, isLoading } = trpc.research.list.useQuery(
     { planetId: planetId! },
@@ -87,9 +86,9 @@ export default function Research() {
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Recherche" />
 
-      {RESEARCH_CATEGORIES.map((category) => {
+      {researchCategories.map((category) => {
         const categoryTechs = techs.filter((t) =>
-          (category.researchIds as readonly string[]).includes(t.id),
+          gameConfig?.research[t.id]?.categoryId === category.id,
         );
         if (categoryTechs.length === 0) return null;
         const isCollapsed = collapsed[category.id] ?? false;
@@ -102,7 +101,7 @@ export default function Research() {
               }
               className="flex w-full items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
             >
-              <span>{category.label}</span>
+              <span>{category.name}</span>
               <svg
                 className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
                 viewBox="0 0 24 24"

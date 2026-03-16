@@ -7,6 +7,38 @@ export function createGameConfigRouter(
   adminProcedure: ReturnType<typeof import('../../trpc/router.js').createAdminProcedure>,
 ) {
   const adminRouter = router({
+    createCategory: adminProcedure
+      .input(z.object({
+        id: z.string().min(1),
+        entityType: z.enum(['building', 'research', 'ship', 'defense']),
+        name: z.string().min(1),
+        sortOrder: z.number().int().default(0),
+      }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.createCategory(input);
+        return { success: true };
+      }),
+
+    updateCategory: adminProcedure
+      .input(z.object({
+        id: z.string(),
+        data: z.object({
+          name: z.string().optional(),
+          sortOrder: z.number().int().optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.updateCategory(input.id, input.data);
+        return { success: true };
+      }),
+
+    deleteCategory: adminProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.deleteCategory(input.id);
+        return { success: true };
+      }),
+
     updateBuilding: adminProcedure
       .input(z.object({
         id: z.string(),
@@ -18,6 +50,7 @@ export function createGameConfigRouter(
           baseCostHydrogene: z.number().int().optional(),
           costFactor: z.number().optional(),
           baseTime: z.number().int().optional(),
+          categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
         }),
       }))
@@ -49,6 +82,7 @@ export function createGameConfigRouter(
           baseCostSilicium: z.number().int().optional(),
           baseCostHydrogene: z.number().int().optional(),
           costFactor: z.number().optional(),
+          categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
         }),
       }))
@@ -87,6 +121,7 @@ export function createGameConfigRouter(
           weapons: z.number().int().optional(),
           shield: z.number().int().optional(),
           armor: z.number().int().optional(),
+          categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
         }),
       }))
@@ -122,6 +157,7 @@ export function createGameConfigRouter(
           shield: z.number().int().optional(),
           armor: z.number().int().optional(),
           maxPerPlanet: z.number().int().nullable().optional(),
+          categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
         }),
       }))

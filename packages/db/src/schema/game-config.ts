@@ -1,5 +1,14 @@
 import { pgTable, varchar, text, integer, real, jsonb, primaryKey } from 'drizzle-orm/pg-core';
 
+// ── Entity Categories ──
+
+export const entityCategories = pgTable('entity_categories', {
+  id: varchar('id', { length: 64 }).primaryKey(),
+  entityType: varchar('entity_type', { length: 32 }).notNull(), // 'building' | 'research' | 'ship' | 'defense'
+  name: varchar('name', { length: 128 }).notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+});
+
 // ── Building Definitions ──
 
 export const buildingDefinitions = pgTable('building_definitions', {
@@ -12,6 +21,7 @@ export const buildingDefinitions = pgTable('building_definitions', {
   costFactor: real('cost_factor').notNull().default(1.5),
   baseTime: integer('base_time').notNull().default(60),
   levelColumn: varchar('level_column', { length: 64 }).notNull(),
+  categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
 });
 
@@ -34,6 +44,7 @@ export const researchDefinitions = pgTable('research_definitions', {
   baseCostHydrogene: integer('base_cost_hydrogene').notNull().default(0),
   costFactor: real('cost_factor').notNull().default(2),
   levelColumn: varchar('level_column', { length: 64 }).notNull(),
+  categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
 });
 
@@ -62,6 +73,7 @@ export const shipDefinitions = pgTable('ship_definitions', {
   weapons: integer('weapons').notNull().default(0),
   shield: integer('shield').notNull().default(0),
   armor: integer('armor').notNull().default(0),
+  categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
 });
 
@@ -87,6 +99,7 @@ export const defenseDefinitions = pgTable('defense_definitions', {
   shield: integer('shield').notNull().default(0),
   armor: integer('armor').notNull().default(0),
   maxPerPlanet: integer('max_per_planet'),
+  categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
 });
 

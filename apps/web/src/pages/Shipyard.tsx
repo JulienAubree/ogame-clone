@@ -15,11 +15,6 @@ import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { formatMissingPrerequisite } from '@/lib/prerequisites';
 
-const SHIP_CATEGORIES = [
-  { id: 'combat', label: 'Combat', shipIds: ['lightFighter', 'heavyFighter', 'cruiser', 'battleship'] },
-  { id: 'transport', label: 'Transport', shipIds: ['smallCargo', 'largeCargo'] },
-  { id: 'utilitaire', label: 'Utilitaire', shipIds: ['espionageProbe', 'colonyShip', 'recycler'] },
-] as const;
 
 export default function Shipyard() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
@@ -28,6 +23,10 @@ export default function Shipyard() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: gameConfig } = useGameConfig();
+
+  const shipCategories = (gameConfig?.categories ?? [])
+    .filter((c) => c.entityType === 'ship')
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const { data: ships, isLoading } = trpc.shipyard.ships.useQuery(
     { planetId: planetId! },
@@ -107,9 +106,9 @@ export default function Shipyard() {
         </section>
       )}
 
-      {SHIP_CATEGORIES.map((category) => {
+      {shipCategories.map((category) => {
         const categoryShips = ships.filter((s) =>
-          (category.shipIds as readonly string[]).includes(s.id),
+          gameConfig?.ships[s.id]?.categoryId === category.id,
         );
         if (categoryShips.length === 0) return null;
         const isCollapsed = collapsed[category.id] ?? false;
@@ -122,7 +121,7 @@ export default function Shipyard() {
               }
               className="flex w-full items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
             >
-              <span>{category.label}</span>
+              <span>{category.name}</span>
               <svg
                 className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
                 viewBox="0 0 24 24"

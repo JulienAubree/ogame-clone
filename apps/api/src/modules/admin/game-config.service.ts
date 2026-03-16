@@ -1,5 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import {
+  entityCategories,
   buildingDefinitions,
   buildingPrerequisites,
   researchDefinitions,
@@ -14,7 +15,15 @@ import {
 } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 
+export interface CategoryConfig {
+  id: string;
+  entityType: string;
+  name: string;
+  sortOrder: number;
+}
+
 export interface GameConfig {
+  categories: CategoryConfig[];
   buildings: Record<string, BuildingConfig>;
   research: Record<string, ResearchConfig>;
   ships: Record<string, ShipConfig>;
@@ -32,6 +41,7 @@ export interface BuildingConfig {
   costFactor: number;
   baseTime: number;
   levelColumn: string;
+  categoryId: string | null;
   sortOrder: number;
   prerequisites: { buildingId: string; level: number }[];
 }
@@ -43,6 +53,7 @@ export interface ResearchConfig {
   baseCost: { minerai: number; silicium: number; hydrogene: number };
   costFactor: number;
   levelColumn: string;
+  categoryId: string | null;
   sortOrder: number;
   prerequisites: {
     buildings: { buildingId: string; level: number }[];
@@ -63,6 +74,7 @@ export interface ShipConfig {
   weapons: number;
   shield: number;
   armor: number;
+  categoryId: string | null;
   sortOrder: number;
   prerequisites: {
     buildings: { buildingId: string; level: number }[];
@@ -80,6 +92,7 @@ export interface DefenseConfig {
   shield: number;
   armor: number;
   maxPerPlanet: number | null;
+  categoryId: string | null;
   sortOrder: number;
   prerequisites: {
     buildings: { buildingId: string; level: number }[];
@@ -107,6 +120,7 @@ export function createGameConfigService(db: Database) {
 
     // Load all data in parallel
     const [
+      categoryRows,
       buildingRows,
       buildingPrereqRows,
       researchRows,
@@ -119,6 +133,7 @@ export function createGameConfigService(db: Database) {
       productionRows,
       universeRows,
     ] = await Promise.all([
+      db.select().from(entityCategories),
       db.select().from(buildingDefinitions),
       db.select().from(buildingPrerequisites),
       db.select().from(researchDefinitions),
@@ -132,6 +147,14 @@ export function createGameConfigService(db: Database) {
       db.select().from(universeConfig),
     ]);
 
+    // Categories
+    const categories: CategoryConfig[] = categoryRows.map(c => ({
+      id: c.id,
+      entityType: c.entityType,
+      name: c.name,
+      sortOrder: c.sortOrder,
+    }));
+
     // Buildings
     const buildings: Record<string, BuildingConfig> = {};
     for (const b of buildingRows) {
@@ -143,6 +166,7 @@ export function createGameConfigService(db: Database) {
         costFactor: b.costFactor,
         baseTime: b.baseTime,
         levelColumn: b.levelColumn,
+        categoryId: b.categoryId,
         sortOrder: b.sortOrder,
         prerequisites: buildingPrereqRows
           .filter(p => p.buildingId === b.id)
@@ -161,6 +185,7 @@ export function createGameConfigService(db: Database) {
         baseCost: { minerai: r.baseCostMinerai, silicium: r.baseCostSilicium, hydrogene: r.baseCostHydrogene },
         costFactor: r.costFactor,
         levelColumn: r.levelColumn,
+        categoryId: r.categoryId,
         sortOrder: r.sortOrder,
         prerequisites: {
           buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
@@ -186,6 +211,7 @@ export function createGameConfigService(db: Database) {
         weapons: s.weapons,
         shield: s.shield,
         armor: s.armor,
+        categoryId: s.categoryId,
         sortOrder: s.sortOrder,
         prerequisites: {
           buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
@@ -208,6 +234,7 @@ export function createGameConfigService(db: Database) {
         shield: d.shield,
         armor: d.armor,
         maxPerPlanet: d.maxPerPlanet,
+        categoryId: d.categoryId,
         sortOrder: d.sortOrder,
         prerequisites: {
           buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
@@ -241,13 +268,28 @@ export function createGameConfigService(db: Database) {
       universe[u.key] = u.value;
     }
 
-    cache = { buildings, research, ships, defenses, rapidFire: rf, production, universe };
+    cache = { categories, buildings, research, ships, defenses, rapidFire: rf, production, universe };
     return cache;
   }
 
   return {
     getFullConfig,
     invalidateCache,
+
+    async createCategory(data: { id: string; entityType: string; name: string; sortOrder: number }) {
+      await db.insert(entityCategories).values(data);
+      invalidateCache();
+    },
+
+    async updateCategory(id: string, data: Partial<{ name: string; sortOrder: number }>) {
+      await db.update(entityCategories).set(data).where(eq(entityCategories.id, id));
+      invalidateCache();
+    },
+
+    async deleteCategory(id: string) {
+      await db.delete(entityCategories).where(eq(entityCategories.id, id));
+      invalidateCache();
+    },
 
     async updateBuilding(id: string, data: Partial<{
       name: string;
@@ -257,6 +299,7 @@ export function createGameConfigService(db: Database) {
       baseCostHydrogene: number;
       costFactor: number;
       baseTime: number;
+      categoryId: string | null;
       sortOrder: number;
     }>) {
       await db.update(buildingDefinitions).set(data).where(eq(buildingDefinitions.id, id));
@@ -278,6 +321,7 @@ export function createGameConfigService(db: Database) {
       baseCostSilicium: number;
       baseCostHydrogene: number;
       costFactor: number;
+      categoryId: string | null;
       sortOrder: number;
     }>) {
       await db.update(researchDefinitions).set(data).where(eq(researchDefinitions.id, id));
@@ -310,6 +354,7 @@ export function createGameConfigService(db: Database) {
       weapons: number;
       shield: number;
       armor: number;
+      categoryId: string | null;
       sortOrder: number;
     }>) {
       await db.update(shipDefinitions).set(data).where(eq(shipDefinitions.id, id));
@@ -339,6 +384,7 @@ export function createGameConfigService(db: Database) {
       shield: number;
       armor: number;
       maxPerPlanet: number | null;
+      categoryId: string | null;
       sortOrder: number;
     }>) {
       await db.update(defenseDefinitions).set(data).where(eq(defenseDefinitions.id, id));

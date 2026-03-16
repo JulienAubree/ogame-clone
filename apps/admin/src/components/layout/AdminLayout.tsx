@@ -2,13 +2,14 @@ import { NavLink, Outlet } from 'react-router';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   Building2, FlaskConical, Rocket, Shield, Zap,
-  Factory, Globe, Users, LogOut, Crosshair,
+  Factory, Globe, Users, LogOut, Crosshair, LayoutGrid,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
   {
     title: 'Config Jeu',
     items: [
+      { to: '/categories', label: 'Catégories', icon: LayoutGrid },
       { to: '/buildings', label: 'Batiments', icon: Building2 },
       { to: '/research', label: 'Recherches', icon: FlaskConical },
       { to: '/ships', label: 'Vaisseaux', icon: Rocket },

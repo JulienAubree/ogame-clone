@@ -23,6 +23,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, lazy: () => import('./pages/Buildings').then((m) => ({ Component: m.default })) },
+      { path: 'categories', lazy: () => import('./pages/Categories').then((m) => ({ Component: m.default })) },
       { path: 'buildings', lazy: () => import('./pages/Buildings').then((m) => ({ Component: m.default })) },
       { path: 'research', lazy: () => import('./pages/Research').then((m) => ({ Component: m.default })) },
       { path: 'ships', lazy: () => import('./pages/Ships').then((m) => ({ Component: m.default })) },

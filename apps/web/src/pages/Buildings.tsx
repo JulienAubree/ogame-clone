@@ -20,12 +20,6 @@ import {
   storageCapacity,
 } from '@ogame-clone/game-engine';
 
-const BUILDING_CATEGORIES = [
-  { id: 'industrie', label: 'Industrie', buildingIds: ['mineraiMine', 'siliciumMine', 'hydrogeneSynth', 'solarPlant'] },
-  { id: 'stockage', label: 'Stockage', buildingIds: ['storageMinerai', 'storageSilicium', 'storageHydrogene'] },
-  { id: 'defense', label: 'Défense et armement', buildingIds: ['roboticsFactory', 'shipyard'] },
-  { id: 'recherche', label: 'Recherche', buildingIds: ['researchLab'] },
-] as const;
 
 interface ProductionStats {
   current: number;
@@ -161,13 +155,17 @@ export default function Buildings() {
   const maxTemp = resourceData?.maxTemp ?? 50;
   const productionFactor = resourceData?.rates.productionFactor ?? 1;
 
+  const buildingCategories = (gameConfig?.categories ?? [])
+    .filter((c) => c.entityType === 'building')
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Bâtiments" />
 
-      {BUILDING_CATEGORIES.map((category) => {
+      {buildingCategories.map((category) => {
         const categoryBuildings = buildings.filter((b) =>
-          (category.buildingIds as readonly string[]).includes(b.id),
+          gameConfig?.buildings[b.id]?.categoryId === category.id,
         );
         if (categoryBuildings.length === 0) return null;
         const isCollapsed = collapsed[category.id] ?? false;
@@ -181,7 +179,7 @@ export default function Buildings() {
               }
               className="flex w-full items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
             >
-              <span>{category.label}</span>
+              <span>{category.name}</span>
               <svg
                 className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
                 viewBox="0 0 24 24"
