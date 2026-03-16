@@ -15,11 +15,18 @@ import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { formatMissingPrerequisite } from '@/lib/prerequisites';
 
+const SHIP_CATEGORIES = [
+  { id: 'combat', label: 'Combat', shipIds: ['lightFighter', 'heavyFighter', 'cruiser', 'battleship'] },
+  { id: 'transport', label: 'Transport', shipIds: ['smallCargo', 'largeCargo'] },
+  { id: 'utilitaire', label: 'Utilitaire', shipIds: ['espionageProbe', 'colonyShip', 'recycler'] },
+] as const;
+
 export default function Shipyard() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: gameConfig } = useGameConfig();
 
   const { data: ships, isLoading } = trpc.shipyard.ships.useQuery(
@@ -100,147 +107,181 @@ export default function Shipyard() {
         </section>
       )}
 
-      {/* Mobile compact list */}
-      <div className="space-y-1 lg:hidden">
-        {ships.map((ship) => {
-          const qty = quantities[ship.id] || 1;
-          const totalCost = {
-            minerai: ship.cost.minerai * qty,
-            silicium: ship.cost.silicium * qty,
-            hydrogene: ship.cost.hydrogene * qty,
-          };
-          const canAfford =
-            resources.minerai >= totalCost.minerai &&
-            resources.silicium >= totalCost.silicium &&
-            resources.hydrogene >= totalCost.hydrogene;
+      {SHIP_CATEGORIES.map((category) => {
+        const categoryShips = ships.filter((s) =>
+          (category.shipIds as readonly string[]).includes(s.id),
+        );
+        if (categoryShips.length === 0) return null;
+        const isCollapsed = collapsed[category.id] ?? false;
 
-          return (
+        return (
+          <div key={category.id}>
             <button
-              key={ship.id}
-              onClick={() => setDetailId(ship.id)}
-              className={`flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors ${!ship.prerequisitesMet ? 'opacity-50' : ''}`}
+              onClick={() =>
+                setCollapsed((prev) => ({ ...prev, [category.id]: !prev[category.id] }))
+              }
+              className="flex w-full items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
             >
-              <GameImage category="ships" id={ship.id} size="icon" alt={ship.name} className="h-8 w-8 rounded" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium truncate">{ship.name}</span>
-                  <span className="text-xs text-muted-foreground">x{ship.count}</span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  <ResourceCost minerai={ship.cost.minerai} silicium={ship.cost.silicium} hydrogene={ship.cost.hydrogene} />
-                </div>
-              </div>
-              {ship.prerequisitesMet && (
-                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={9999}
-                    value={qty}
-                    onChange={(e) =>
-                      setQuantities({ ...quantities, [ship.id]: Math.max(1, Number(e.target.value) || 1) })
-                    }
-                    className="w-14 h-8 text-xs"
-                  />
-                  <Button
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      buildMutation.mutate({ planetId: planetId!, shipId: ship.id as any, quantity: qty });
-                    }}
-                    disabled={!canAfford || buildMutation.isPending}
-                  >
-                    +
-                  </Button>
-                </div>
-              )}
+              <span>{category.label}</span>
+              <svg
+                className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </button>
-          );
-        })}
-      </div>
 
-      {/* Desktop card grid */}
-      <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4">
-        {ships.map((ship) => {
-          const qty = quantities[ship.id] || 1;
-          const totalCost = {
-            minerai: ship.cost.minerai * qty,
-            silicium: ship.cost.silicium * qty,
-            hydrogene: ship.cost.hydrogene * qty,
-          };
-          const canAfford =
-            resources.minerai >= totalCost.minerai &&
-            resources.silicium >= totalCost.silicium &&
-            resources.hydrogene >= totalCost.hydrogene;
+            {!isCollapsed && (
+              <>
+                {/* Mobile compact list */}
+                <div className="space-y-1 lg:hidden">
+                  {categoryShips.map((ship) => {
+                    const qty = quantities[ship.id] || 1;
+                    const totalCost = {
+                      minerai: ship.cost.minerai * qty,
+                      silicium: ship.cost.silicium * qty,
+                      hydrogene: ship.cost.hydrogene * qty,
+                    };
+                    const canAfford =
+                      resources.minerai >= totalCost.minerai &&
+                      resources.silicium >= totalCost.silicium &&
+                      resources.hydrogene >= totalCost.hydrogene;
 
-          return (
-            <div key={ship.id} className={`glass-card p-4 relative ${!ship.prerequisitesMet ? 'opacity-50' : ''}`}>
-              <InfoButton onClick={() => setDetailId(ship.id)} />
-              <div className="pb-2">
-                <div className="flex items-center gap-3">
-                  <GameImage
-                    category="ships"
-                    id={ship.id}
-                    size="icon"
-                    alt={ship.name}
-                    className="h-10 w-10 rounded"
-                  />
-                  <div className="flex flex-1 items-center justify-between">
-                    <h3 className="text-base font-semibold">{ship.name}</h3>
-                    <span className="text-sm text-muted-foreground">x{ship.count}</span>
-                  </div>
+                    return (
+                      <button
+                        key={ship.id}
+                        onClick={() => setDetailId(ship.id)}
+                        className={`flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors ${!ship.prerequisitesMet ? 'opacity-50' : ''}`}
+                      >
+                        <GameImage category="ships" id={ship.id} size="icon" alt={ship.name} className="h-8 w-8 rounded" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium truncate">{ship.name}</span>
+                            <span className="text-xs text-muted-foreground">x{ship.count}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            <ResourceCost minerai={ship.cost.minerai} silicium={ship.cost.silicium} hydrogene={ship.cost.hydrogene} />
+                          </div>
+                        </div>
+                        {ship.prerequisitesMet && (
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={9999}
+                              value={qty}
+                              onChange={(e) =>
+                                setQuantities({ ...quantities, [ship.id]: Math.max(1, Number(e.target.value) || 1) })
+                              }
+                              className="w-14 h-8 text-xs"
+                            />
+                            <Button
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                buildMutation.mutate({ planetId: planetId!, shipId: ship.id as any, quantity: qty });
+                              }}
+                              disabled={!canAfford || buildMutation.isPending}
+                            >
+                              +
+                            </Button>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground">{ship.description}</p>
 
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">Coût par unité :</div>
-                  <ResourceCost
-                    minerai={ship.cost.minerai}
-                    silicium={ship.cost.silicium}
-                    hydrogene={ship.cost.hydrogene}
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    Durée par unité : {formatDuration(ship.timePerUnit)}
-                  </div>
+                {/* Desktop card grid */}
+                <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4">
+                  {categoryShips.map((ship) => {
+                    const qty = quantities[ship.id] || 1;
+                    const totalCost = {
+                      minerai: ship.cost.minerai * qty,
+                      silicium: ship.cost.silicium * qty,
+                      hydrogene: ship.cost.hydrogene * qty,
+                    };
+                    const canAfford =
+                      resources.minerai >= totalCost.minerai &&
+                      resources.silicium >= totalCost.silicium &&
+                      resources.hydrogene >= totalCost.hydrogene;
+
+                    return (
+                      <div key={ship.id} className={`glass-card p-4 relative ${!ship.prerequisitesMet ? 'opacity-50' : ''}`}>
+                        <InfoButton onClick={() => setDetailId(ship.id)} />
+                        <div className="pb-2">
+                          <div className="flex items-center gap-3">
+                            <GameImage
+                              category="ships"
+                              id={ship.id}
+                              size="icon"
+                              alt={ship.name}
+                              className="h-10 w-10 rounded"
+                            />
+                            <div className="flex flex-1 items-center justify-between">
+                              <h3 className="text-base font-semibold">{ship.name}</h3>
+                              <span className="text-sm text-muted-foreground">x{ship.count}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground">{ship.description}</p>
+
+                          <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">Coût par unité :</div>
+                            <ResourceCost
+                              minerai={ship.cost.minerai}
+                              silicium={ship.cost.silicium}
+                              hydrogene={ship.cost.hydrogene}
+                            />
+                            <div className="text-xs text-muted-foreground">
+                              Durée par unité : {formatDuration(ship.timePerUnit)}
+                            </div>
+                          </div>
+
+                          {!ship.prerequisitesMet && ship.missingPrerequisites.length > 0 && (
+                            <p className="text-xs text-destructive">
+                              Prérequis : {ship.missingPrerequisites.map((p) => formatMissingPrerequisite(p, gameConfig)).join(', ')}
+                            </p>
+                          )}
+
+                          {ship.prerequisitesMet && (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min={1}
+                                max={9999}
+                                value={qty}
+                                onChange={(e) =>
+                                  setQuantities({ ...quantities, [ship.id]: Math.max(1, Number(e.target.value) || 1) })
+                                }
+                                className="w-20"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  buildMutation.mutate({ planetId: planetId!, shipId: ship.id as any, quantity: qty })
+                                }
+                                disabled={!canAfford || buildMutation.isPending}
+                              >
+                                Construire
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {!ship.prerequisitesMet && ship.missingPrerequisites.length > 0 && (
-                  <p className="text-xs text-destructive">
-                    Prérequis : {ship.missingPrerequisites.map((p) => formatMissingPrerequisite(p, gameConfig)).join(', ')}
-                  </p>
-                )}
-
-                {ship.prerequisitesMet && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={9999}
-                      value={qty}
-                      onChange={(e) =>
-                        setQuantities({ ...quantities, [ship.id]: Math.max(1, Number(e.target.value) || 1) })
-                      }
-                      className="w-20"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        buildMutation.mutate({ planetId: planetId!, shipId: ship.id as any, quantity: qty })
-                      }
-                      disabled={!canAfford || buildMutation.isPending}
-                    >
-                      Construire
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              </>
+            )}
+          </div>
+        );
+      })}
 
       <EntityDetailOverlay
         open={!!detailId}
