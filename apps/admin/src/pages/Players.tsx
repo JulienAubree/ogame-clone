@@ -68,8 +68,8 @@ export default function Players() {
               <tr key={p.id}>
                 <td className="font-medium">{p.username}</td>
                 <td className="text-sm text-gray-400">{p.email}</td>
-                <td className="font-mono text-sm">{p.planetCount ?? '-'}</td>
-                <td className="font-mono text-sm">{p.points ?? 0}</td>
+                <td className="font-mono text-sm">{p.planetsCount ?? '-'}</td>
+                <td className="font-mono text-sm">{p.totalPoints ?? 0}</td>
                 <td>
                   {p.bannedAt ? (
                     <span className="admin-badge-danger">Banni</span>
