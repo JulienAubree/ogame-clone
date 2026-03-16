@@ -51,9 +51,10 @@ export function createAuthService(db: Database) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Account banned' });
       }
 
+      const jwtExpiry = rememberMe ? '14d' : env.JWT_EXPIRES_IN;
       const accessToken = await new SignJWT({ userId: user.id, isAdmin: user.isAdmin })
         .setProtectedHeader({ alg: 'HS256' })
-        .setExpirationTime(env.JWT_EXPIRES_IN)
+        .setExpirationTime(jwtExpiry)
         .sign(JWT_SECRET);
 
       const rawRefresh = randomBytes(32).toString('hex');
