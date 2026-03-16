@@ -19,9 +19,7 @@ echo "==> Building all packages..."
 pnpm exec turbo build
 
 echo "==> Loading environment variables..."
-set -a
-source .env
-set +a
+export $(grep -v '^#' .env | grep -v '^\s*$' | xargs -d '\n')
 
 echo "==> Pushing database schema..."
 pnpm --filter @ogame-clone/db db:push
