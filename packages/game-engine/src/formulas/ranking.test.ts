@@ -9,79 +9,79 @@ import {
 import type { BuildingDef, ResearchDef, UnitDef } from './ranking.js';
 
 const BUILDING_DEFS: Record<string, BuildingDef> = {
-  metalMine:      { levelColumn: 'metalMineLevel',      baseCost: { metal: 60,   crystal: 15,   deuterium: 0 },   costFactor: 1.5 },
-  crystalMine:    { levelColumn: 'crystalMineLevel',    baseCost: { metal: 48,   crystal: 24,   deuterium: 0 },   costFactor: 1.6 },
-  deutSynth:      { levelColumn: 'deutSynthLevel',      baseCost: { metal: 225,  crystal: 75,   deuterium: 0 },   costFactor: 1.5 },
-  solarPlant:     { levelColumn: 'solarPlantLevel',     baseCost: { metal: 75,   crystal: 30,   deuterium: 0 },   costFactor: 1.5 },
-  robotics:       { levelColumn: 'roboticsLevel',       baseCost: { metal: 400,  crystal: 120,  deuterium: 200 }, costFactor: 2 },
-  shipyard:       { levelColumn: 'shipyardLevel',       baseCost: { metal: 400,  crystal: 200,  deuterium: 100 }, costFactor: 2 },
-  researchLab:    { levelColumn: 'researchLabLevel',    baseCost: { metal: 200,  crystal: 400,  deuterium: 200 }, costFactor: 2 },
-  storageMetal:   { levelColumn: 'storageMetalLevel',   baseCost: { metal: 1000, crystal: 0,    deuterium: 0 },   costFactor: 2 },
-  storageCrystal: { levelColumn: 'storageCrystalLevel', baseCost: { metal: 1000, crystal: 500,  deuterium: 0 },   costFactor: 2 },
-  storageDeut:    { levelColumn: 'storageDeutLevel',    baseCost: { metal: 1000, crystal: 1000, deuterium: 0 },   costFactor: 2 },
+  mineraiMine:      { levelColumn: 'mineraiMineLevel',      baseCost: { minerai: 60,   silicium: 15,   hydrogene: 0 },   costFactor: 1.5 },
+  siliciumMine:     { levelColumn: 'siliciumMineLevel',     baseCost: { minerai: 48,   silicium: 24,   hydrogene: 0 },   costFactor: 1.6 },
+  hydrogeneSynth:   { levelColumn: 'hydrogeneSynthLevel',   baseCost: { minerai: 225,  silicium: 75,   hydrogene: 0 },   costFactor: 1.5 },
+  solarPlant:       { levelColumn: 'solarPlantLevel',       baseCost: { minerai: 75,   silicium: 30,   hydrogene: 0 },   costFactor: 1.5 },
+  robotics:         { levelColumn: 'roboticsLevel',         baseCost: { minerai: 400,  silicium: 120,  hydrogene: 200 }, costFactor: 2 },
+  shipyard:         { levelColumn: 'shipyardLevel',         baseCost: { minerai: 400,  silicium: 200,  hydrogene: 100 }, costFactor: 2 },
+  researchLab:      { levelColumn: 'researchLabLevel',      baseCost: { minerai: 200,  silicium: 400,  hydrogene: 200 }, costFactor: 2 },
+  storageMinerai:   { levelColumn: 'storageMineraiLevel',   baseCost: { minerai: 1000, silicium: 0,    hydrogene: 0 },   costFactor: 2 },
+  storageSilicium:  { levelColumn: 'storageSiliciumLevel',  baseCost: { minerai: 1000, silicium: 500,  hydrogene: 0 },   costFactor: 2 },
+  storageHydrogene: { levelColumn: 'storageHydrogeneLevel', baseCost: { minerai: 1000, silicium: 1000, hydrogene: 0 },   costFactor: 2 },
 };
 
 const RESEARCH_DEFS: Record<string, ResearchDef> = {
-  espionageTech:  { levelColumn: 'espionageTech',  baseCost: { metal: 200,   crystal: 1000,  deuterium: 200 },  costFactor: 2 },
-  computerTech:   { levelColumn: 'computerTech',   baseCost: { metal: 0,     crystal: 400,   deuterium: 600 },  costFactor: 2 },
-  energyTech:     { levelColumn: 'energyTech',     baseCost: { metal: 0,     crystal: 800,   deuterium: 400 },  costFactor: 2 },
-  combustion:     { levelColumn: 'combustion',     baseCost: { metal: 400,   crystal: 0,     deuterium: 600 },  costFactor: 2 },
-  impulse:        { levelColumn: 'impulse',        baseCost: { metal: 2000,  crystal: 4000,  deuterium: 600 },  costFactor: 2 },
-  hyperspaceDrive:{ levelColumn: 'hyperspaceDrive', baseCost: { metal: 10000, crystal: 20000, deuterium: 6000 }, costFactor: 2 },
-  weapons:        { levelColumn: 'weapons',        baseCost: { metal: 800,   crystal: 200,   deuterium: 0 },    costFactor: 2 },
-  shielding:      { levelColumn: 'shielding',      baseCost: { metal: 200,   crystal: 600,   deuterium: 0 },    costFactor: 2 },
-  armor:          { levelColumn: 'armor',          baseCost: { metal: 1000,  crystal: 0,     deuterium: 0 },    costFactor: 2 },
+  espionageTech:  { levelColumn: 'espionageTech',  baseCost: { minerai: 200,   silicium: 1000,  hydrogene: 200 },  costFactor: 2 },
+  computerTech:   { levelColumn: 'computerTech',   baseCost: { minerai: 0,     silicium: 400,   hydrogene: 600 },  costFactor: 2 },
+  energyTech:     { levelColumn: 'energyTech',     baseCost: { minerai: 0,     silicium: 800,   hydrogene: 400 },  costFactor: 2 },
+  combustion:     { levelColumn: 'combustion',     baseCost: { minerai: 400,   silicium: 0,     hydrogene: 600 },  costFactor: 2 },
+  impulse:        { levelColumn: 'impulse',        baseCost: { minerai: 2000,  silicium: 4000,  hydrogene: 600 },  costFactor: 2 },
+  hyperspaceDrive:{ levelColumn: 'hyperspaceDrive', baseCost: { minerai: 10000, silicium: 20000, hydrogene: 6000 }, costFactor: 2 },
+  weapons:        { levelColumn: 'weapons',        baseCost: { minerai: 800,   silicium: 200,   hydrogene: 0 },    costFactor: 2 },
+  shielding:      { levelColumn: 'shielding',      baseCost: { minerai: 200,   silicium: 600,   hydrogene: 0 },    costFactor: 2 },
+  armor:          { levelColumn: 'armor',          baseCost: { minerai: 1000,  silicium: 0,     hydrogene: 0 },    costFactor: 2 },
 };
 
 const SHIP_DEFS: Record<string, UnitDef> = {
-  smallCargo:     { countColumn: 'smallCargo',     cost: { metal: 2000,  crystal: 2000,  deuterium: 0 } },
-  largeCargo:     { countColumn: 'largeCargo',     cost: { metal: 6000,  crystal: 6000,  deuterium: 0 } },
-  lightFighter:   { countColumn: 'lightFighter',   cost: { metal: 3000,  crystal: 1000,  deuterium: 0 } },
-  heavyFighter:   { countColumn: 'heavyFighter',   cost: { metal: 6000,  crystal: 4000,  deuterium: 0 } },
-  cruiser:        { countColumn: 'cruiser',        cost: { metal: 20000, crystal: 7000,  deuterium: 2000 } },
-  battleship:     { countColumn: 'battleship',     cost: { metal: 45000, crystal: 15000, deuterium: 0 } },
-  espionageProbe: { countColumn: 'espionageProbe', cost: { metal: 0,     crystal: 1000,  deuterium: 0 } },
-  colonyShip:     { countColumn: 'colonyShip',     cost: { metal: 10000, crystal: 20000, deuterium: 10000 } },
-  recycler:       { countColumn: 'recycler',       cost: { metal: 10000, crystal: 6000,  deuterium: 2000 } },
+  smallCargo:     { countColumn: 'smallCargo',     cost: { minerai: 2000,  silicium: 2000,  hydrogene: 0 } },
+  largeCargo:     { countColumn: 'largeCargo',     cost: { minerai: 6000,  silicium: 6000,  hydrogene: 0 } },
+  lightFighter:   { countColumn: 'lightFighter',   cost: { minerai: 3000,  silicium: 1000,  hydrogene: 0 } },
+  heavyFighter:   { countColumn: 'heavyFighter',   cost: { minerai: 6000,  silicium: 4000,  hydrogene: 0 } },
+  cruiser:        { countColumn: 'cruiser',        cost: { minerai: 20000, silicium: 7000,  hydrogene: 2000 } },
+  battleship:     { countColumn: 'battleship',     cost: { minerai: 45000, silicium: 15000, hydrogene: 0 } },
+  espionageProbe: { countColumn: 'espionageProbe', cost: { minerai: 0,     silicium: 1000,  hydrogene: 0 } },
+  colonyShip:     { countColumn: 'colonyShip',     cost: { minerai: 10000, silicium: 20000, hydrogene: 10000 } },
+  recycler:       { countColumn: 'recycler',       cost: { minerai: 10000, silicium: 6000,  hydrogene: 2000 } },
 };
 
 const DEFENSE_DEFS: Record<string, UnitDef> = {
-  rocketLauncher: { countColumn: 'rocketLauncher', cost: { metal: 2000,  crystal: 0,     deuterium: 0 } },
-  lightLaser:     { countColumn: 'lightLaser',     cost: { metal: 1500,  crystal: 500,   deuterium: 0 } },
-  heavyLaser:     { countColumn: 'heavyLaser',     cost: { metal: 6000,  crystal: 2000,  deuterium: 0 } },
-  gaussCannon:    { countColumn: 'gaussCannon',    cost: { metal: 20000, crystal: 15000, deuterium: 2000 } },
-  plasmaTurret:   { countColumn: 'plasmaTurret',   cost: { metal: 50000, crystal: 50000, deuterium: 30000 } },
-  smallShield:    { countColumn: 'smallShield',    cost: { metal: 10000, crystal: 10000, deuterium: 0 } },
-  largeShield:    { countColumn: 'largeShield',    cost: { metal: 50000, crystal: 50000, deuterium: 0 } },
+  rocketLauncher: { countColumn: 'rocketLauncher', cost: { minerai: 2000,  silicium: 0,     hydrogene: 0 } },
+  lightLaser:     { countColumn: 'lightLaser',     cost: { minerai: 1500,  silicium: 500,   hydrogene: 0 } },
+  heavyLaser:     { countColumn: 'heavyLaser',     cost: { minerai: 6000,  silicium: 2000,  hydrogene: 0 } },
+  gaussCannon:    { countColumn: 'gaussCannon',    cost: { minerai: 20000, silicium: 15000, hydrogene: 2000 } },
+  plasmaTurret:   { countColumn: 'plasmaTurret',   cost: { minerai: 50000, silicium: 50000, hydrogene: 30000 } },
+  smallShield:    { countColumn: 'smallShield',    cost: { minerai: 10000, silicium: 10000, hydrogene: 0 } },
+  largeShield:    { countColumn: 'largeShield',    cost: { minerai: 50000, silicium: 50000, hydrogene: 0 } },
 };
 
 describe('calculateBuildingPoints', () => {
   it('all level 0 = 0 points', () => {
     const levels = {
-      metalMineLevel: 0, crystalMineLevel: 0, deutSynthLevel: 0,
+      mineraiMineLevel: 0, siliciumMineLevel: 0, hydrogeneSynthLevel: 0,
       solarPlantLevel: 0, roboticsLevel: 0, shipyardLevel: 0,
-      researchLabLevel: 0, storageMetalLevel: 0, storageCrystalLevel: 0,
-      storageDeutLevel: 0,
+      researchLabLevel: 0, storageMineraiLevel: 0, storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0,
     };
     expect(calculateBuildingPoints(levels, BUILDING_DEFS)).toBe(0);
   });
 
-  it('metal mine level 1 = floor((60+15) / 1000) = 0', () => {
+  it('minerai mine level 1 = floor((60+15) / 1000) = 0', () => {
     const levels = {
-      metalMineLevel: 1, crystalMineLevel: 0, deutSynthLevel: 0,
+      mineraiMineLevel: 1, siliciumMineLevel: 0, hydrogeneSynthLevel: 0,
       solarPlantLevel: 0, roboticsLevel: 0, shipyardLevel: 0,
-      researchLabLevel: 0, storageMetalLevel: 0, storageCrystalLevel: 0,
-      storageDeutLevel: 0,
+      researchLabLevel: 0, storageMineraiLevel: 0, storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0,
     };
     expect(calculateBuildingPoints(levels, BUILDING_DEFS)).toBe(0);
   });
 
   it('multiple buildings have cumulative points', () => {
     const levels = {
-      metalMineLevel: 10, crystalMineLevel: 10, deutSynthLevel: 10,
+      mineraiMineLevel: 10, siliciumMineLevel: 10, hydrogeneSynthLevel: 10,
       solarPlantLevel: 10, roboticsLevel: 5, shipyardLevel: 5,
-      researchLabLevel: 5, storageMetalLevel: 3, storageCrystalLevel: 3,
-      storageDeutLevel: 3,
+      researchLabLevel: 5, storageMineraiLevel: 3, storageSiliciumLevel: 3,
+      storageHydrogeneLevel: 3,
     };
     expect(calculateBuildingPoints(levels, BUILDING_DEFS)).toBeGreaterThan(0);
   });

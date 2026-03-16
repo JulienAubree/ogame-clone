@@ -4,30 +4,30 @@ import { calculateResources, calculateProductionRates } from './resources.js';
 describe('calculateProductionRates', () => {
   it('returns hourly rates for level 1 mines, solar 1, no energy deficit', () => {
     const rates = calculateProductionRates({
-      metalMineLevel: 1,
-      crystalMineLevel: 1,
-      deutSynthLevel: 0,
+      mineraiMineLevel: 1,
+      siliciumMineLevel: 1,
+      hydrogeneSynthLevel: 0,
       solarPlantLevel: 1,
-      storageMetalLevel: 0,
-      storageCrystalLevel: 0,
-      storageDeutLevel: 0,
+      storageMineraiLevel: 0,
+      storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0,
       maxTemp: 80,
     });
-    expect(rates.metalPerHour).toBe(33);
-    expect(rates.crystalPerHour).toBe(22);
-    expect(rates.deutPerHour).toBe(0);
+    expect(rates.mineraiPerHour).toBe(33);
+    expect(rates.siliciumPerHour).toBe(22);
+    expect(rates.hydrogenePerHour).toBe(0);
     expect(rates.productionFactor).toBe(1);
   });
 
   it('returns reduced production when energy deficit', () => {
     const rates = calculateProductionRates({
-      metalMineLevel: 5,
-      crystalMineLevel: 5,
-      deutSynthLevel: 0,
+      mineraiMineLevel: 5,
+      siliciumMineLevel: 5,
+      hydrogeneSynthLevel: 0,
       solarPlantLevel: 1,
-      storageMetalLevel: 0,
-      storageCrystalLevel: 0,
-      storageDeutLevel: 0,
+      storageMineraiLevel: 0,
+      storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0,
       maxTemp: 80,
     });
     expect(rates.productionFactor).toBeCloseTo(0.1375, 4);
@@ -38,38 +38,38 @@ describe('calculateProductionRates', () => {
 
 describe('calculateResources', () => {
   const basePlanet = {
-    metal: 500,
-    crystal: 500,
-    deuterium: 0,
-    metalMineLevel: 1,
-    crystalMineLevel: 1,
-    deutSynthLevel: 0,
+    minerai: 500,
+    silicium: 500,
+    hydrogene: 0,
+    mineraiMineLevel: 1,
+    siliciumMineLevel: 1,
+    hydrogeneSynthLevel: 0,
     solarPlantLevel: 1,
-    storageMetalLevel: 0,
-    storageCrystalLevel: 0,
-    storageDeutLevel: 0,
+    storageMineraiLevel: 0,
+    storageSiliciumLevel: 0,
+    storageHydrogeneLevel: 0,
     maxTemp: 80,
   };
 
   it('adds production over 1 hour', () => {
     const oneHourAgo = new Date(Date.now() - 3600 * 1000);
     const result = calculateResources(basePlanet, oneHourAgo, new Date());
-    expect(result.metal).toBe(533);
-    expect(result.crystal).toBe(522);
-    expect(result.deuterium).toBe(0);
+    expect(result.minerai).toBe(533);
+    expect(result.silicium).toBe(522);
+    expect(result.hydrogene).toBe(0);
   });
 
   it('caps at storage capacity', () => {
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 3600 * 1000);
     const result = calculateResources(basePlanet, tenDaysAgo, new Date());
-    expect(result.metal).toBeLessThanOrEqual(10000);
-    expect(result.crystal).toBeLessThanOrEqual(10000);
+    expect(result.minerai).toBeLessThanOrEqual(10000);
+    expect(result.silicium).toBeLessThanOrEqual(10000);
   });
 
   it('does not go below current resources', () => {
     const now = new Date();
     const result = calculateResources(basePlanet, now, now);
-    expect(result.metal).toBe(500);
-    expect(result.crystal).toBe(500);
+    expect(result.minerai).toBe(500);
+    expect(result.silicium).toBe(500);
   });
 });

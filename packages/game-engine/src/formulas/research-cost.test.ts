@@ -1,29 +1,29 @@
 import { describe, it, expect } from 'vitest';
 import { researchCost, researchTime } from './research-cost.js';
 
-const espionageTechDef = { baseCost: { metal: 200, crystal: 1000, deuterium: 200 }, costFactor: 2 };
-const weaponsDef = { baseCost: { metal: 800, crystal: 200, deuterium: 0 }, costFactor: 2 };
-const computerTechDef = { baseCost: { metal: 0, crystal: 400, deuterium: 600 }, costFactor: 2 };
+const espionageTechDef = { baseCost: { minerai: 200, silicium: 1000, hydrogene: 200 }, costFactor: 2 };
+const weaponsDef = { baseCost: { minerai: 800, silicium: 200, hydrogene: 0 }, costFactor: 2 };
+const computerTechDef = { baseCost: { minerai: 0, silicium: 400, hydrogene: 600 }, costFactor: 2 };
 
 describe('researchCost', () => {
   it('espionage tech level 1 costs 200/1000/200', () => {
     const cost = researchCost(espionageTechDef, 1);
-    expect(cost).toEqual({ metal: 200, crystal: 1000, deuterium: 200 });
+    expect(cost).toEqual({ minerai: 200, silicium: 1000, hydrogene: 200 });
   });
 
   it('espionage tech level 4 costs base * 2^3', () => {
     const cost = researchCost(espionageTechDef, 4);
-    expect(cost).toEqual({ metal: 1600, crystal: 8000, deuterium: 1600 });
+    expect(cost).toEqual({ minerai: 1600, silicium: 8000, hydrogene: 1600 });
   });
 
   it('weapons tech level 1', () => {
     const cost = researchCost(weaponsDef, 1);
-    expect(cost).toEqual({ metal: 800, crystal: 200, deuterium: 0 });
+    expect(cost).toEqual({ minerai: 800, silicium: 200, hydrogene: 0 });
   });
 
   it('computer tech level 3', () => {
     const cost = researchCost(computerTechDef, 3);
-    expect(cost).toEqual({ metal: 0, crystal: 1600, deuterium: 2400 });
+    expect(cost).toEqual({ minerai: 0, silicium: 1600, hydrogene: 2400 });
   });
 });
 

@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { shipCost, shipTime, defenseCost, defenseTime } from './shipyard-cost.js';
 
-const lightFighterDef = { cost: { metal: 3000, crystal: 1000, deuterium: 0 } };
-const cruiserDef = { cost: { metal: 20000, crystal: 7000, deuterium: 2000 } };
-const espionageProbeDef = { cost: { metal: 0, crystal: 1000, deuterium: 0 } };
-const rocketLauncherDef = { cost: { metal: 2000, crystal: 0, deuterium: 0 } };
-const gaussCannonDef = { cost: { metal: 20000, crystal: 15000, deuterium: 2000 } };
+const lightFighterDef = { cost: { minerai: 3000, silicium: 1000, hydrogene: 0 } };
+const cruiserDef = { cost: { minerai: 20000, silicium: 7000, hydrogene: 2000 } };
+const espionageProbeDef = { cost: { minerai: 0, silicium: 1000, hydrogene: 0 } };
+const rocketLauncherDef = { cost: { minerai: 2000, silicium: 0, hydrogene: 0 } };
+const gaussCannonDef = { cost: { minerai: 20000, silicium: 15000, hydrogene: 2000 } };
 
 describe('shipCost', () => {
   it('light fighter costs 3000/1000/0', () => {
-    expect(shipCost(lightFighterDef)).toEqual({ metal: 3000, crystal: 1000, deuterium: 0 });
+    expect(shipCost(lightFighterDef)).toEqual({ minerai: 3000, silicium: 1000, hydrogene: 0 });
   });
 
   it('cruiser costs 20000/7000/2000', () => {
-    expect(shipCost(cruiserDef)).toEqual({ metal: 20000, crystal: 7000, deuterium: 2000 });
+    expect(shipCost(cruiserDef)).toEqual({ minerai: 20000, silicium: 7000, hydrogene: 2000 });
   });
 });
 
@@ -37,11 +37,11 @@ describe('shipTime', () => {
 
 describe('defenseCost', () => {
   it('rocket launcher costs 2000/0/0', () => {
-    expect(defenseCost(rocketLauncherDef)).toEqual({ metal: 2000, crystal: 0, deuterium: 0 });
+    expect(defenseCost(rocketLauncherDef)).toEqual({ minerai: 2000, silicium: 0, hydrogene: 0 });
   });
 
   it('gauss cannon costs 20000/15000/2000', () => {
-    expect(defenseCost(gaussCannonDef)).toEqual({ metal: 20000, crystal: 15000, deuterium: 2000 });
+    expect(defenseCost(gaussCannonDef)).toEqual({ minerai: 20000, silicium: 15000, hydrogene: 2000 });
   });
 });
 

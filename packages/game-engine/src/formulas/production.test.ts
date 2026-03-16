@@ -1,61 +1,61 @@
 import { describe, it, expect } from 'vitest';
 import {
-  metalProduction,
-  crystalProduction,
-  deuteriumProduction,
+  mineraiProduction,
+  siliciumProduction,
+  hydrogeneProduction,
   solarPlantEnergy,
-  metalMineEnergy,
-  crystalMineEnergy,
-  deutSynthEnergy,
+  mineraiMineEnergy,
+  siliciumMineEnergy,
+  hydrogeneSynthEnergy,
   storageCapacity,
   calculateProductionFactor,
 } from './production.js';
 
-describe('Metal production', () => {
+describe('Minerai production', () => {
   it('level 0 produces 0', () => {
-    expect(metalProduction(0)).toBe(0);
+    expect(mineraiProduction(0)).toBe(0);
   });
   it('level 1 produces 33', () => {
     // 30 * 1 * 1.1 = 33
-    expect(metalProduction(1)).toBe(33);
+    expect(mineraiProduction(1)).toBe(33);
   });
   it('level 5 produces 241', () => {
     // 30 * 5 * 1.1^5 = 150 * 1.61051 = 241.576 -> 241
-    expect(metalProduction(5)).toBe(241);
+    expect(mineraiProduction(5)).toBe(241);
   });
   it('level 10 produces 778', () => {
     // 30 * 10 * 1.1^10 = 300 * 2.59374 = 778.122 -> 778
-    expect(metalProduction(10)).toBe(778);
+    expect(mineraiProduction(10)).toBe(778);
   });
   it('respects production factor', () => {
     // 30 * 10 * 2.59374 * 0.5 = 389.061 -> 389
-    expect(metalProduction(10, 0.5)).toBe(389);
+    expect(mineraiProduction(10, 0.5)).toBe(389);
   });
 });
 
-describe('Crystal production', () => {
+describe('Silicium production', () => {
   it('level 1 produces 22', () => {
     // 20 * 1 * 1.1 = 22
-    expect(crystalProduction(1)).toBe(22);
+    expect(siliciumProduction(1)).toBe(22);
   });
   it('level 5 produces 161', () => {
     // 20 * 5 * 1.61051 = 161.051 -> 161
-    expect(crystalProduction(5)).toBe(161);
+    expect(siliciumProduction(5)).toBe(161);
   });
   it('level 10 produces 518', () => {
     // 20 * 10 * 2.59374 = 518.748 -> 518
-    expect(crystalProduction(10)).toBe(518);
+    expect(siliciumProduction(10)).toBe(518);
   });
 });
 
-describe('Deuterium production', () => {
+describe('Hydrogene production', () => {
   it('level 5, maxTemp 80 produces 83', () => {
     // 10 * 5 * 1.61051 * (1.36 - 0.32) = 80.5255 * 1.04 = 83.746 -> 83
-    expect(deuteriumProduction(5, 80)).toBe(83);
+    expect(hydrogeneProduction(5, 80)).toBe(83);
   });
   it('level 10, maxTemp -40 produces 394', () => {
     // 10 * 10 * 2.59374 * (1.36 + 0.16) = 259.374 * 1.52 = 394.248 -> 394
-    expect(deuteriumProduction(10, -40)).toBe(394);
+    expect(hydrogeneProduction(10, -40)).toBe(394);
   });
 });
 
@@ -71,17 +71,17 @@ describe('Solar plant energy', () => {
 });
 
 describe('Energy consumption', () => {
-  it('metal mine level 5 consumes 80', () => {
+  it('minerai mine level 5 consumes 80', () => {
     // 10 * 5 * 1.61051 = 80.525 -> 80
-    expect(metalMineEnergy(5)).toBe(80);
+    expect(mineraiMineEnergy(5)).toBe(80);
   });
-  it('crystal mine level 5 consumes 80', () => {
+  it('silicium mine level 5 consumes 80', () => {
     // 10 * 5 * 1.61051 = 80.525 -> 80
-    expect(crystalMineEnergy(5)).toBe(80);
+    expect(siliciumMineEnergy(5)).toBe(80);
   });
-  it('deut synth level 5 consumes 161', () => {
+  it('hydrogene synth level 5 consumes 161', () => {
     // 20 * 5 * 1.61051 = 161.051 -> 161
-    expect(deutSynthEnergy(5)).toBe(161);
+    expect(hydrogeneSynthEnergy(5)).toBe(161);
   });
 });
 

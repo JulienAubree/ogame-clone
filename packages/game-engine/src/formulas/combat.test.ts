@@ -41,37 +41,37 @@ const DEFENSE_IDS = new Set([
   'plasmaTurret', 'smallShield', 'largeShield',
 ]);
 
-const SHIP_COSTS: Record<string, { metal: number; crystal: number }> = {
-  smallCargo:     { metal: 2000,  crystal: 2000 },
-  largeCargo:     { metal: 6000,  crystal: 6000 },
-  lightFighter:   { metal: 3000,  crystal: 1000 },
-  heavyFighter:   { metal: 6000,  crystal: 4000 },
-  cruiser:        { metal: 20000, crystal: 7000 },
-  battleship:     { metal: 45000, crystal: 15000 },
-  espionageProbe: { metal: 0,     crystal: 1000 },
-  colonyShip:     { metal: 10000, crystal: 20000 },
-  recycler:       { metal: 10000, crystal: 6000 },
+const SHIP_COSTS: Record<string, { minerai: number; silicium: number }> = {
+  smallCargo:     { minerai: 2000,  silicium: 2000 },
+  largeCargo:     { minerai: 6000,  silicium: 6000 },
+  lightFighter:   { minerai: 3000,  silicium: 1000 },
+  heavyFighter:   { minerai: 6000,  silicium: 4000 },
+  cruiser:        { minerai: 20000, silicium: 7000 },
+  battleship:     { minerai: 45000, silicium: 15000 },
+  espionageProbe: { minerai: 0,     silicium: 1000 },
+  colonyShip:     { minerai: 10000, silicium: 20000 },
+  recycler:       { minerai: 10000, silicium: 6000 },
 };
 
 const zeroTechs = { weapons: 0, shielding: 0, armor: 0 };
 
 describe('calculateDebris', () => {
-  it('returns 30% metal/crystal from destroyed ships', () => {
+  it('returns 30% minerai/silicium from destroyed ships', () => {
     const debris = calculateDebris({ lightFighter: 10 }, {}, SHIP_IDS, SHIP_COSTS);
-    expect(debris.metal).toBe(Math.floor(3000 * 10 * 0.3));
-    expect(debris.crystal).toBe(Math.floor(1000 * 10 * 0.3));
+    expect(debris.minerai).toBe(Math.floor(3000 * 10 * 0.3));
+    expect(debris.silicium).toBe(Math.floor(1000 * 10 * 0.3));
   });
 
   it('ignores defenses in debris calculation', () => {
     const debris = calculateDebris({}, { rocketLauncher: 100 }, SHIP_IDS, SHIP_COSTS);
-    expect(debris.metal).toBe(0);
-    expect(debris.crystal).toBe(0);
+    expect(debris.minerai).toBe(0);
+    expect(debris.silicium).toBe(0);
   });
 
   it('floors the result', () => {
     const debris = calculateDebris({ espionageProbe: 1 }, {}, SHIP_IDS, SHIP_COSTS);
-    expect(debris.metal).toBe(0);
-    expect(debris.crystal).toBe(Math.floor(1000 * 0.3));
+    expect(debris.minerai).toBe(0);
+    expect(debris.silicium).toBe(Math.floor(1000 * 0.3));
   });
 
   it('combines attacker and defender ship losses', () => {
@@ -81,8 +81,8 @@ describe('calculateDebris', () => {
       SHIP_IDS,
       SHIP_COSTS,
     );
-    expect(debris.metal).toBe(Math.floor(3000 * 8 * 0.3));
-    expect(debris.crystal).toBe(Math.floor(1000 * 8 * 0.3));
+    expect(debris.minerai).toBe(Math.floor(3000 * 8 * 0.3));
+    expect(debris.silicium).toBe(Math.floor(1000 * 8 * 0.3));
   });
 });
 
@@ -180,8 +180,8 @@ describe('simulateCombat', () => {
       SHIP_COSTS,
       DEFENSE_IDS,
     );
-    expect(result.debris.metal).toBeGreaterThan(0);
-    expect(result.debris.crystal).toBeGreaterThan(0);
+    expect(result.debris.minerai).toBeGreaterThan(0);
+    expect(result.debris.silicium).toBeGreaterThan(0);
   });
 
   it('repairs approximately 70% of destroyed defenses', () => {
