@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
+import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { formatNumber } from '@/lib/format';
 import { trpc } from '@/trpc';
@@ -48,7 +48,7 @@ export function ResourceBar({ planetId }: ResourceBarProps) {
         <ResourceCounter icon={<MineraiIcon size={14} className="text-minerai" />} value={resources.minerai} colorClass="text-minerai" />
         <ResourceCounter icon={<SiliciumIcon size={14} className="text-silicium" />} value={resources.silicium} colorClass="text-silicium" />
         <ResourceCounter icon={<HydrogeneIcon size={14} className="text-hydrogene" />} value={resources.hydrogene} colorClass="text-hydrogene" />
-        <ResourceCounter icon={<span className="text-energy text-xs">⚡</span>} value={energyPercent} colorClass="text-energy" suffix="%" />
+        <ResourceCounter icon={<EnergieIcon size={14} className="text-energy" />} value={energyPercent} colorClass="text-energy" suffix="%" />
       </div>
 
       {detailOpen && (

@@ -47,6 +47,14 @@ export function SiliciumIcon({ className = '', size = 16 }: IconProps) {
   );
 }
 
+export function EnergieIcon({ className, size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2" />
+    </svg>
+  );
+}
+
 export function HydrogeneIcon({ className, size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
