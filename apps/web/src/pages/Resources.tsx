@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -48,7 +47,7 @@ export default function Resources() {
 
   if (isLoading || !data) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 p-4 lg:p-6">
         <PageHeader title="Ressources" />
         <CardGridSkeleton count={3} />
       </div>
@@ -116,14 +115,13 @@ export default function Resources() {
   const energySufficient = energyBalance >= 0;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 lg:p-6">
       <PageHeader title="Ressources" />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Production</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
+        {/* Left column: production */}
+        <section className="glass-card p-4">
+          <h2 className="text-sm font-semibold text-foreground mb-3">Production</h2>
           <div className="space-y-4">
             {resourceRows.map((r) => {
               const fillPercent = r.capacity > 0 ? Math.min(100, (r.current / r.capacity) * 100) : 0;
@@ -153,48 +151,52 @@ export default function Resources() {
               );
             })}
           </div>
-        </CardContent>
-      </Card>
+        </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Gestion d'energie</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-5">
-            {energyGenerators.map((gen) => (
-              <div key={gen.field} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${gen.color}`}>{gen.name}</span>
-                    <Badge variant="secondary" className="text-xs">Niv. {gen.level}</Badge>
+        {/* Right column: energy */}
+        <div className="space-y-4">
+          {/* Energy management */}
+          <section className="glass-card p-4">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Gestion d'énergie</h2>
+            <div className="space-y-5">
+              {energyGenerators.map((gen) => (
+                <div key={gen.field} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium ${gen.color}`}>{gen.name}</span>
+                      <Badge variant="secondary" className="text-xs">Niv. {gen.level}</Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-muted-foreground">+{gen.perHour.toLocaleString('fr-FR')}/h</span>
+                      <span className="text-energy">-{gen.energy}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs">
-                    <span className="text-muted-foreground">+{gen.perHour.toLocaleString('fr-FR')}/h</span>
-                    <span className="text-energy">-{gen.energy}</span>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={10}
+                      value={gen.percent}
+                      onChange={(e) => handlePercentChange(gen.field, Number(e.target.value))}
+                      disabled={setPercentMutation.isPending}
+                      className="flex-1 h-1.5 appearance-none bg-muted rounded-full cursor-pointer accent-primary
+                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:rounded-full
+                        [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                    />
+                    <span className="text-sm font-mono w-10 text-right">{gen.percent}%</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={10}
-                    value={gen.percent}
-                    onChange={(e) => handlePercentChange(gen.field, Number(e.target.value))}
-                    disabled={setPercentMutation.isPending}
-                    className="flex-1 h-1.5 appearance-none bg-muted rounded-full cursor-pointer accent-primary
-                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
-                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer
-                      [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:rounded-full
-                      [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
-                  />
-                  <span className="text-sm font-mono w-10 text-right">{gen.percent}%</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </section>
 
-            <div className="border-t border-border pt-3 space-y-2">
+          {/* Energy balance */}
+          <section className="glass-card p-4">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Balance énergétique</h2>
+            <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-energy font-medium glow-energy">Centrale solaire</span>
                 <div className="flex items-center gap-2">
@@ -204,7 +206,7 @@ export default function Resources() {
               </div>
 
               <div className="flex items-center justify-between text-sm font-medium">
-                <span className="text-muted-foreground">Balance energetique</span>
+                <span className="text-muted-foreground">Balance énergétique</span>
                 <span className={energySufficient ? 'text-energy' : 'text-destructive'}>
                   {energyBalance >= 0 ? '+' : ''}{energyBalance}
                 </span>
@@ -226,13 +228,13 @@ export default function Resources() {
               {data.rates.productionFactor < 1 && (
                 <p className="text-xs text-destructive">
                   Facteur de production : {(data.rates.productionFactor * 100).toFixed(1)}% — Construisez
-                  une centrale solaire ou reduisez la puissance de vos mines !
+                  une centrale solaire ou réduisez la puissance de vos mines !
                 </p>
               )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
