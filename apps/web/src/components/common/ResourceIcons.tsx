@@ -3,35 +3,13 @@ interface IconProps {
   size?: number;
 }
 
-export function MineraiIcon({ className = '', size = 16 }: IconProps) {
+export function MineraiIcon({ className, size = 16 }: IconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <path
-        d="M12 2L3 9l3 11h12l3-11L12 2z"
-        fill="currentColor"
-        opacity="0.2"
-      />
-      <path
-        d="M12 2L3 9l3 11h12l3-11L12 2z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 2v7M3 9h18M6 20l6-11 6 11"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.6"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M12 2L4 9l8 13 8-13-8-7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M4 9h16" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8.5 9L12 22l3.5-13" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M12 2L8.5 9M12 2l3.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -69,49 +47,11 @@ export function SiliciumIcon({ className = '', size = 16 }: IconProps) {
   );
 }
 
-export function HydrogeneIcon({ className = '', size = 16 }: IconProps) {
+export function HydrogeneIcon({ className, size = 16 }: IconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <circle
-        cx="8"
-        cy="10"
-        r="4"
-        fill="currentColor"
-        opacity="0.2"
-      />
-      <circle
-        cx="16"
-        cy="10"
-        r="4"
-        fill="currentColor"
-        opacity="0.2"
-      />
-      <circle cx="8" cy="10" r="4" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="16" cy="10" r="4" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M11.5 10h1"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <text
-        x="12"
-        y="21"
-        textAnchor="middle"
-        fill="currentColor"
-        fontSize="6"
-        fontWeight="bold"
-        fontFamily="monospace"
-      >
-        H₂
-      </text>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M12 2C12 2 5 10.5 5 15a7 7 0 0 0 14 0C19 10.5 12 2 12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M9.5 16.5a3.5 3.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
