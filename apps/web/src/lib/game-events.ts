@@ -20,7 +20,7 @@ export function eventTypeLabel(type: string) {
   }
 }
 
-export function formatEventText(event: { type: string; payload: Record<string, unknown> }, options?: { includePlanet?: boolean }) {
+export function formatEventText(event: { type: string; payload?: unknown }, options?: { includePlanet?: boolean }) {
   const p = event.payload as any;
   const planet = options?.includePlanet && p.planetName ? ` sur ${p.planetName}` : '';
   switch (event.type) {
