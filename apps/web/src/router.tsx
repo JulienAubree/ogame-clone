@@ -110,6 +110,11 @@ export const router = createBrowserRouter([
         lazy: () => import('./pages/AllianceRanking').then((m) => ({ Component: m.default })),
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
       },
+      {
+        path: 'history',
+        lazy: () => import('./pages/History').then((m) => ({ Component: m.default })),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
     ],
   },
 ]);
