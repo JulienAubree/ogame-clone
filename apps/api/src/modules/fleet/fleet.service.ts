@@ -1,6 +1,7 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, fleetEvents, userResearch, debrisFields, users, planetBuildings } from '@ogame-clone/db';
+import { BELT_POSITIONS } from '../universe/universe.config.js';
 import type { Database } from '@ogame-clone/db';
 import {
   fleetSpeed,
@@ -193,7 +194,7 @@ export function createFleetService(
           targetGalaxy: input.targetGalaxy,
           targetSystem: input.targetSystem,
           targetPosition: input.targetPosition,
-          mission: input.mission,
+          mission: input.mission as typeof fleetEvents.$inferInsert.mission,  // mine/pirate added to DB enum in Task 4
           phase: 'outbound',
           status: 'active',
           departureTime: now,
@@ -536,8 +537,7 @@ export function createFleetService(
       const coords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
 
       // Check if position is an asteroid belt (cannot be colonized)
-      const BELT_POSITIONS = [8, 16];
-      if (BELT_POSITIONS.includes(event.targetPosition)) {
+      if ((BELT_POSITIONS as readonly number[]).includes(event.targetPosition)) {
         if (messageService) {
           await messageService.createSystemMessage(
             event.userId,

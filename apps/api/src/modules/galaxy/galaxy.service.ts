@@ -1,6 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { planets, users, debrisFields, allianceMembers, alliances } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
+import { BELT_POSITIONS } from '../universe/universe.config.js';
 
 export function createGalaxyService(db: Database) {
   return {
@@ -22,7 +23,6 @@ export function createGalaxyService(db: Database) {
         .leftJoin(alliances, eq(alliances.id, allianceMembers.allianceId))
         .where(and(eq(planets.galaxy, galaxy), eq(planets.system, system)));
 
-      const BELT_POSITIONS = [8, 16];
       const slots: (typeof systemPlanets[number] | { type: 'belt'; position: number } | null)[] = Array(16).fill(null);
 
       // Mark belt positions

@@ -8,3 +8,5 @@ export const UNIVERSE_CONFIG = {
   debrisRatio: 0.3,
   lootRatio: 0.5,
 } as const;
+
+export const BELT_POSITIONS = [8, 16] as const;

@@ -135,7 +135,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
   missionCenter: {
     id: 'missionCenter',
     name: 'Centre de missions',
-    description: 'Permet d\'accéder aux missions PvE et de coordonner les opérations.',
+    description: 'Détecte les opportunités dans le système solaire : gisements miniers et menaces pirates.',
     baseCost: { minerai: 5000, silicium: 3000, hydrogene: 1000 },
     costFactor: 1.8,
     baseTime: 300,
