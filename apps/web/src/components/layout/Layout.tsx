@@ -15,9 +15,11 @@ export function Layout() {
   const activePlanetId = usePlanetStore((s) => s.activePlanetId);
   const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
 
-  const resolvedPlanetId = planets?.find((p) => p.id === activePlanetId)
-    ? activePlanetId
-    : planets?.[0]?.id ?? null;
+  // Trust localStorage activePlanetId while planet.list is loading
+  // This avoids a query waterfall: dependent queries can fire immediately
+  const resolvedPlanetId = planets
+    ? (planets.find((p) => p.id === activePlanetId) ? activePlanetId : planets[0]?.id ?? null)
+    : activePlanetId;
 
   useEffect(() => {
     if (resolvedPlanetId && resolvedPlanetId !== activePlanetId) {

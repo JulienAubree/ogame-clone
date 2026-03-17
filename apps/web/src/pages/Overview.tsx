@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Timer } from '@/components/common/Timer';
 import { OverviewSkeleton } from '@/components/common/PageSkeleton';
 import { EmptyState } from '@/components/common/EmptyState';
+import { QueryError } from '@/components/common/QueryError';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { eventTypeColor, formatEventText, formatRelativeTime } from '@/lib/game-events';
@@ -28,7 +29,7 @@ export default function Overview() {
   const [newName, setNewName] = useState('');
   const utils = trpc.useUtils();
 
-  const { data: planets, isLoading } = trpc.planet.list.useQuery();
+  const { data: planets, isLoading, isError, refetch } = trpc.planet.list.useQuery();
 
   const { data: resourceData } = trpc.resource.production.useQuery(
     { planetId: planetId! },
@@ -83,6 +84,15 @@ export default function Overview() {
 
   if (isLoading) {
     return <OverviewSkeleton />;
+  }
+
+  if (isError && !planets) {
+    return (
+      <div className="p-4 space-y-4">
+        <PageHeader title="Vue d'ensemble" />
+        <QueryError error={{ message: 'Impossible de charger vos planètes.' }} retry={() => refetch()} />
+      </div>
+    );
   }
 
   const planet = planets?.find((p) => p.id === planetId) ?? planets?.[0];

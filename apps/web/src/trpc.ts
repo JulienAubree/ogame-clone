@@ -102,8 +102,25 @@ export function resetRefreshState() {
   scheduleProactiveRefresh();
 }
 
-// Schedule on page load if token exists
-scheduleProactiveRefresh();
+// On page load: if token is already expired, refresh immediately before queries fire
+let startupRefreshPromise: Promise<void> | null = null;
+
+function refreshExpiredTokenOnStartup() {
+  const token = localStorage.getItem('accessToken');
+  if (!token) return;
+  const expiry = getTokenExpiry(token);
+  if (expiry && expiry <= Date.now()) {
+    startupRefreshPromise = tryRefreshToken().then((success) => {
+      startupRefreshPromise = null;
+      if (success) scheduleProactiveRefresh();
+      else forceLogout();
+    });
+  } else {
+    scheduleProactiveRefresh();
+  }
+}
+
+refreshExpiredTokenOnStartup();
 
 export function createTRPCClient() {
   return trpc.createClient({
@@ -115,6 +132,9 @@ export function createTRPCClient() {
           return token ? { authorization: `Bearer ${token}` } : {};
         },
         async fetch(url, options) {
+          // Wait for startup token refresh if in progress (avoids 401 → retry round trip)
+          if (startupRefreshPromise) await startupRefreshPromise;
+
           let res = await fetch(url, options);
 
           if (res.status === 401) {
