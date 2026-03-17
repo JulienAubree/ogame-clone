@@ -53,6 +53,41 @@ export function formatDateTime(date: string) {
   });
 }
 
+/**
+ * Group consecutive shipyard-done events with the same unitId + planetId,
+ * summing their counts. Prevents notification/event flood when building
+ * multiple units of the same type one by one.
+ */
+export function groupEvents<T extends { type: string; payload?: any; planetId?: string | null }>(events: T[]): T[] {
+  const result: T[] = [];
+
+  for (const event of events) {
+    const last = result[result.length - 1];
+
+    if (
+      last &&
+      last.type === 'shipyard-done' &&
+      event.type === 'shipyard-done' &&
+      (last.payload as any)?.unitId === (event.payload as any)?.unitId &&
+      last.planetId === event.planetId
+    ) {
+      const lastPayload = last.payload as any;
+      const eventPayload = event.payload as any;
+      result[result.length - 1] = {
+        ...last,
+        payload: {
+          ...lastPayload,
+          count: (lastPayload.count ?? 1) + (eventPayload.count ?? 1),
+        },
+      };
+    } else {
+      result.push({ ...event });
+    }
+  }
+
+  return result;
+}
+
 export function eventNavigationTarget(type: string): string {
   switch (type) {
     case 'building-done': return '/buildings';

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useSSE } from './useSSE';
 import { trpc } from '@/trpc';
 import { useToastStore } from '@/stores/toast.store';
@@ -16,10 +16,28 @@ function requestNotificationPermission() {
   }
 }
 
+interface ShipyardBufferEntry {
+  name: string;
+  count: number;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+const SHIPYARD_DEBOUNCE_MS = 3_000;
+
 export function useNotifications() {
   const utils = trpc.useUtils();
   const addToast = useToastStore((s) => s.addToast);
   const permissionRequested = useRef(false);
+  const shipyardBuffer = useRef<Map<string, ShipyardBufferEntry>>(new Map());
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      for (const entry of shipyardBuffer.current.values()) {
+        clearTimeout(entry.timer);
+      }
+    };
+  }, []);
 
   useSSE((event) => {
     // Request permission on first event
@@ -53,13 +71,34 @@ export function useNotifications() {
         addToast(`Recherche terminée : ${event.payload.name ?? event.payload.techId} niv. ${event.payload.level}`);
         showBrowserNotification('Recherche terminée', `${event.payload.name ?? event.payload.techId} niveau ${event.payload.level}`);
         break;
-      case 'shipyard-done':
+      case 'shipyard-done': {
         utils.shipyard.queue.invalidate();
         utils.shipyard.ships.invalidate();
         utils.shipyard.defenses.invalidate();
-        addToast(`Chantier terminé : ${event.payload.name ?? event.payload.unitId} (x${event.payload.count})`);
-        showBrowserNotification('Production terminée', `${event.payload.count}x ${event.payload.name ?? event.payload.unitId}`);
+
+        // Debounce: accumulate same-unit notifications over 3s window
+        const unitId = String(event.payload.unitId);
+        const name = String(event.payload.name ?? event.payload.unitId);
+        const count = Number(event.payload.count) || 1;
+
+        const existing = shipyardBuffer.current.get(unitId);
+        if (existing) {
+          clearTimeout(existing.timer);
+          existing.count += count;
+          existing.name = name;
+        }
+
+        const entry = existing ?? { name, count, timer: undefined as any };
+
+        entry.timer = setTimeout(() => {
+          shipyardBuffer.current.delete(unitId);
+          addToast(`Chantier terminé : ${entry.count}x ${entry.name}`);
+          showBrowserNotification('Production terminée', `${entry.count}x ${entry.name}`);
+        }, SHIPYARD_DEBOUNCE_MS);
+
+        shipyardBuffer.current.set(unitId, entry);
         break;
+      }
       case 'fleet-arrived':
         utils.fleet.movements.invalidate();
         utils.resource.production.invalidate();

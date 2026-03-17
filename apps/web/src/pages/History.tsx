@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { trpc } from '@/trpc';
 import { PageHeader } from '@/components/common/PageHeader';
-import { eventTypeColor, eventTypeLabel, formatEventText, formatDateTime } from '@/lib/game-events';
+import { eventTypeColor, eventTypeLabel, formatEventText, formatDateTime, groupEvents } from '@/lib/game-events';
 
 const EVENT_TYPE_OPTIONS = [
   { value: 'building-done', label: 'Constructions' },
@@ -66,7 +66,7 @@ export default function History() {
   }, [handleLoadMore]);
 
   // Flatten all pages into a single list
-  const allEvents = Array.from(pages.current.values()).flat();
+  const allEvents = groupEvents(Array.from(pages.current.values()).flat());
   const hasMore = !!data?.nextCursor;
 
   return (

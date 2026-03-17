@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
-import { eventTypeColor, formatEventText, formatRelativeTime, eventNavigationTarget } from '@/lib/game-events';
+import { eventTypeColor, formatEventText, formatRelativeTime, eventNavigationTarget, groupEvents } from '@/lib/game-events';
 
 interface Planet {
   id: string;
@@ -217,7 +217,7 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {recentEvents && recentEvents.length > 0 ? (
-                  recentEvents.map((event) => (
+                  groupEvents(recentEvents).map((event) => (
                     <button
                       key={event.id}
                       onClick={() => { navigate(eventNavigationTarget(event.type)); setBellOpen(false); }}

@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { QueryError } from '@/components/common/QueryError';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { eventTypeColor, formatEventText, formatRelativeTime } from '@/lib/game-events';
+import { eventTypeColor, formatEventText, formatRelativeTime, groupEvents } from '@/lib/game-events';
 
 const MISSION_LABELS: Record<string, string> = {
   transport: 'Transport',
@@ -271,7 +271,7 @@ export default function Overview() {
         <h2 className="text-sm font-semibold text-foreground mb-3">Événements récents</h2>
         {recentEvents && recentEvents.length > 0 ? (
           <div className="space-y-2">
-            {recentEvents.map((event) => (
+            {groupEvents(recentEvents).map((event) => (
               <div key={event.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/30 last:border-0">
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${eventTypeColor(event.type)}`} />
