@@ -12,19 +12,27 @@ async function migrate() {
   await db.execute(sql`BEGIN`);
 
   try {
-    // Step 1: Rename old shipyard → commandCenter in buildingDefinitions & all FK references
-    console.log('  Step 1: Renaming shipyard → commandCenter...');
-    // Temporarily disable FK checks for the rename
-    await db.execute(sql`SET session_replication_role = 'replica'`);
-    await db.execute(sql`UPDATE building_definitions SET id = 'commandCenter', name = 'Centre de commandement', description = 'Débloque et construit les vaisseaux militaires.' WHERE id = 'shipyard'`);
+    // Step 1: Replace shipyard with commandCenter (insert new, migrate refs, delete old)
+    console.log('  Step 1: Replacing shipyard → commandCenter...');
+
+    // Insert commandCenter as a copy of shipyard
+    await db.execute(sql`
+      INSERT INTO building_definitions (id, name, description, base_cost_minerai, base_cost_silicium, base_cost_hydrogene, cost_factor, base_time, category_id, sort_order)
+      SELECT 'commandCenter', 'Centre de commandement', 'Débloque et construit les vaisseaux militaires.', base_cost_minerai, base_cost_silicium, base_cost_hydrogene, cost_factor, base_time, category_id, sort_order
+      FROM building_definitions WHERE id = 'shipyard'
+    `);
+
+    // Migrate all FK references from shipyard → commandCenter
     await db.execute(sql`UPDATE building_prerequisites SET building_id = 'commandCenter' WHERE building_id = 'shipyard'`);
     await db.execute(sql`UPDATE building_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE ship_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE defense_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE research_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE build_queue SET item_id = 'commandCenter' WHERE item_id = 'shipyard' AND type = 'building'`);
-    // Re-enable FK checks
-    await db.execute(sql`SET session_replication_role = 'origin'`);
+
+    // Delete old shipyard (no more references to it)
+    await db.execute(sql`DELETE FROM building_definitions WHERE id = 'shipyard'`);
+
 
     // Step 2: Create planetBuildings table
     console.log('  Step 2: Creating planet_buildings table...');
