@@ -8,7 +8,7 @@ import { createContext } from './trpc/context.js';
 import { env } from './config/env.js';
 import { registerSSE } from './modules/notification/notification.sse.js';
 
-const server = Fastify({ logger: true });
+const server = Fastify({ logger: true, maxParamLength: 500 });
 
 await server.register(cors, { origin: true });
 
