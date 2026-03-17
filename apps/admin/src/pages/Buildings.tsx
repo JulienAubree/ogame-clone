@@ -7,21 +7,27 @@ import { PageSkeleton } from '@/components/ui/LoadingSpinner';
 import { PrerequisitesEditor, type BuildingPrereq } from '@/components/ui/PrerequisitesEditor';
 import { Pencil, ChevronDown, ChevronRight, Plus, Trash2, Link } from 'lucide-react';
 
-const FIELDS = [
-  { key: 'name', label: 'Nom', type: 'text' as const },
-  { key: 'description', label: 'Description', type: 'textarea' as const },
-  { key: 'baseCostMinerai', label: 'Coût Minerai (base)', type: 'number' as const },
-  { key: 'baseCostSilicium', label: 'Coût Silicium (base)', type: 'number' as const },
-  { key: 'baseCostHydrogene', label: 'Coût Hydrogène (base)', type: 'number' as const },
-  { key: 'costFactor', label: 'Facteur de cout', type: 'number' as const, step: '0.1' },
-  { key: 'baseTime', label: 'Temps de base (s)', type: 'number' as const },
-  { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
-];
+function getFields(categoryOptions: { value: string; label: string }[]) {
+  return [
+    { key: 'name', label: 'Nom', type: 'text' as const },
+    { key: 'description', label: 'Description', type: 'textarea' as const },
+    { key: 'baseCostMinerai', label: 'Coût Minerai (base)', type: 'number' as const },
+    { key: 'baseCostSilicium', label: 'Coût Silicium (base)', type: 'number' as const },
+    { key: 'baseCostHydrogene', label: 'Coût Hydrogène (base)', type: 'number' as const },
+    { key: 'costFactor', label: 'Facteur de cout', type: 'number' as const, step: '0.1' },
+    { key: 'baseTime', label: 'Temps de base (s)', type: 'number' as const },
+    { key: 'buildTimeReductionFactor', label: 'Facteur réduction temps', type: 'number' as const, step: '0.1' },
+    { key: 'reducesTimeForCategory', label: 'Réduit le temps pour', type: 'select' as const, options: categoryOptions, allowEmpty: true },
+    { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
+  ];
+}
 
-const CREATE_FIELDS = [
-  { key: 'id', label: 'ID (identifiant unique)', type: 'text' as const },
-  ...FIELDS,
-];
+function getCreateFields(categoryOptions: { value: string; label: string }[]) {
+  return [
+    { key: 'id', label: 'ID (identifiant unique)', type: 'text' as const },
+    ...getFields(categoryOptions),
+  ];
+}
 
 const MAX_LEVEL = 25;
 
@@ -134,6 +140,11 @@ export default function Buildings() {
 
   const buildings = Object.values(data.buildings).sort((a, b) => a.sortOrder - b.sortOrder);
   const editingBuilding = editing ? data.buildings[editing] : null;
+  const categoryOptions = data.categories
+    .filter((c) => c.entityType === 'build')
+    .map((c) => ({ value: c.id, label: c.name }));
+  const FIELDS = getFields(categoryOptions);
+  const CREATE_FIELDS = getCreateFields(categoryOptions);
 
   return (
     <div className="animate-fade-in">
@@ -163,6 +174,7 @@ export default function Buildings() {
               <th>H₂</th>
               <th>Facteur</th>
               <th>Temps</th>
+              <th>Réduction temps</th>
               <th>Prerequis</th>
               <th></th>
             </tr>
@@ -206,6 +218,13 @@ export default function Buildings() {
                     <td className="font-mono text-sm">{b.baseCost.hydrogene}</td>
                     <td className="font-mono text-sm">{b.costFactor}</td>
                     <td className="font-mono text-sm">{b.baseTime}s</td>
+                    <td className="text-xs text-gray-400">
+                      {b.buildTimeReductionFactor != null && b.reducesTimeForCategory ? (
+                        <span>×{b.buildTimeReductionFactor} → {data.categories.find((c) => c.id === b.reducesTimeForCategory)?.name ?? b.reducesTimeForCategory}</span>
+                      ) : (
+                        <span className="text-gray-600">-</span>
+                      )}
+                    </td>
                     <td className="text-xs text-gray-500">
                       <button
                         onClick={() => setEditingPrereqs(b.id)}
@@ -239,7 +258,7 @@ export default function Buildings() {
                   </tr>
                   {isExpanded && (
                     <tr key={`${b.id}-levels`}>
-                      <td colSpan={10} className="!p-0 !bg-panel/60">
+                      <td colSpan={11} className="!p-0 !bg-panel/60">
                         <div className="px-6 py-3">
                           <div className="text-xs font-medium text-hull-400 mb-2 uppercase tracking-wider">
                             Progression niveaux 1–{MAX_LEVEL}
@@ -319,6 +338,8 @@ export default function Buildings() {
             baseCostHydrogene: editingBuilding.baseCost.hydrogene,
             costFactor: editingBuilding.costFactor,
             baseTime: editingBuilding.baseTime,
+            buildTimeReductionFactor: editingBuilding.buildTimeReductionFactor ?? 0,
+            reducesTimeForCategory: editingBuilding.reducesTimeForCategory ?? '',
             sortOrder: editingBuilding.sortOrder,
           }}
           onSave={(values) => {
@@ -332,6 +353,8 @@ export default function Buildings() {
                 baseCostHydrogene: values.baseCostHydrogene as number,
                 costFactor: values.costFactor as number,
                 baseTime: values.baseTime as number,
+                buildTimeReductionFactor: (values.buildTimeReductionFactor as number) || null,
+                reducesTimeForCategory: (values.reducesTimeForCategory as string) || null,
                 sortOrder: values.sortOrder as number,
               },
             });
@@ -355,6 +378,8 @@ export default function Buildings() {
             baseCostHydrogene: 0,
             costFactor: 1.5,
             baseTime: 60,
+            buildTimeReductionFactor: 0,
+            reducesTimeForCategory: '',
             sortOrder: 0,
           }}
           onSave={(values) => {
@@ -367,6 +392,8 @@ export default function Buildings() {
               baseCostHydrogene: values.baseCostHydrogene as number,
               costFactor: values.costFactor as number,
               baseTime: values.baseTime as number,
+              buildTimeReductionFactor: (values.buildTimeReductionFactor as number) || null,
+              reducesTimeForCategory: (values.reducesTimeForCategory as string) || null,
               sortOrder: values.sortOrder as number,
             });
           }}
