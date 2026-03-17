@@ -17,6 +17,7 @@ import {
   planetTypes,
 } from './schema/game-config.js';
 import { planets } from './schema/planets.js';
+import { pirateTemplates } from './schema/pve-missions.js';
 
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://ogame:ogame@localhost:5432/ogame';
 const client = postgres(DATABASE_URL);
@@ -161,6 +162,113 @@ const PLANET_TYPES = [
   { id: 'glacial', name: 'Glaciale', description: "Planète glaciale propice à la synthèse d'hydrogène.", positions: [10, 11, 12], mineraiBonus: 0.8, siliciumBonus: 1.0, hydrogeneBonus: 1.3, diameterMin: 7500, diameterMax: 12200, fieldsBonus: 0.9, sortOrder: 3 },
   { id: 'gaseous', name: 'Gazeuse', description: "Géante gazeuse avec d'abondantes ressources en hydrogène.", positions: [13, 14, 15], mineraiBonus: 0.9, siliciumBonus: 0.9, hydrogeneBonus: 1.1, diameterMin: 8000, diameterMax: 14000, fieldsBonus: 1.1, sortOrder: 4 },
   { id: 'homeworld', name: 'Planète mère', description: 'Planète de départ neutre.', positions: [], mineraiBonus: 1.0, siliciumBonus: 1.0, hydrogeneBonus: 1.0, diameterMin: 12000, diameterMax: 12000, fieldsBonus: 1.0, sortOrder: 5 },
+];
+
+// ── Pirate templates data ──
+
+const PIRATE_TEMPLATES = [
+  // ── Easy tier (center level 3-10) ──
+  {
+    id: 'scout_patrol_easy',
+    name: 'Patrouille pirate',
+    tier: 'easy',
+    ships: { lightFighter: 5 },
+    techs: { weapons: 0, shielding: 0, armor: 0 },
+    rewards: { minerai: 3000, silicium: 1500, hydrogene: 500, bonusShips: [] },
+    centerLevelMin: 3, centerLevelMax: 4,
+  },
+  {
+    id: 'raider_squad_easy',
+    name: 'Escouade de pillards',
+    tier: 'easy',
+    ships: { lightFighter: 8, heavyFighter: 2 },
+    techs: { weapons: 1, shielding: 0, armor: 1 },
+    rewards: { minerai: 5000, silicium: 2500, hydrogene: 1000, bonusShips: [] },
+    centerLevelMin: 4, centerLevelMax: 6,
+  },
+  {
+    id: 'smuggler_convoy_easy',
+    name: 'Convoi de contrebandiers',
+    tier: 'easy',
+    ships: { lightFighter: 3, smallCargo: 5 },
+    techs: { weapons: 1, shielding: 1, armor: 0 },
+    rewards: { minerai: 6000, silicium: 4000, hydrogene: 1500, bonusShips: [] },
+    centerLevelMin: 5, centerLevelMax: 10,
+  },
+  // ── Medium tier (center level 4-10) ──
+  {
+    id: 'war_party_medium',
+    name: 'Bande de guerre pirate',
+    tier: 'medium',
+    ships: { lightFighter: 15, heavyFighter: 5, cruiser: 2 },
+    techs: { weapons: 2, shielding: 1, armor: 2 },
+    rewards: {
+      minerai: 15000, silicium: 8000, hydrogene: 3000,
+      bonusShips: [{ shipId: 'lightFighter', count: 2, chance: 0.3 }],
+    },
+    centerLevelMin: 4, centerLevelMax: 6,
+  },
+  {
+    id: 'shield_wall_medium',
+    name: 'Mur de boucliers pirate',
+    tier: 'medium',
+    ships: { heavyFighter: 12, cruiser: 3 },
+    techs: { weapons: 1, shielding: 3, armor: 2 },
+    rewards: {
+      minerai: 18000, silicium: 10000, hydrogene: 4000,
+      bonusShips: [{ shipId: 'lightFighter', count: 3, chance: 0.3 }],
+    },
+    centerLevelMin: 5, centerLevelMax: 8,
+  },
+  {
+    id: 'swarm_medium',
+    name: 'Essaim pirate',
+    tier: 'medium',
+    ships: { lightFighter: 30, heavyFighter: 8 },
+    techs: { weapons: 2, shielding: 1, armor: 1 },
+    rewards: {
+      minerai: 20000, silicium: 12000, hydrogene: 5000,
+      bonusShips: [{ shipId: 'lightFighter', count: 3, chance: 0.3 }],
+    },
+    centerLevelMin: 6, centerLevelMax: 10,
+  },
+  // ── Hard tier (center level 6-10) ──
+  {
+    id: 'battlegroup_hard',
+    name: 'Groupe de combat pirate',
+    tier: 'hard',
+    ships: { heavyFighter: 15, cruiser: 8, battleship: 3 },
+    techs: { weapons: 3, shielding: 2, armor: 3 },
+    rewards: {
+      minerai: 50000, silicium: 30000, hydrogene: 15000,
+      bonusShips: [{ shipId: 'cruiser', count: 1, chance: 0.2 }],
+    },
+    centerLevelMin: 6, centerLevelMax: 8,
+  },
+  {
+    id: 'heavy_assault_hard',
+    name: 'Assaut lourd pirate',
+    tier: 'hard',
+    ships: { cruiser: 12, battleship: 5 },
+    techs: { weapons: 4, shielding: 3, armor: 4 },
+    rewards: {
+      minerai: 70000, silicium: 40000, hydrogene: 20000,
+      bonusShips: [{ shipId: 'cruiser', count: 2, chance: 0.2 }],
+    },
+    centerLevelMin: 7, centerLevelMax: 10,
+  },
+  {
+    id: 'pirate_armada_hard',
+    name: 'Armada pirate',
+    tier: 'hard',
+    ships: { heavyFighter: 20, cruiser: 15, battleship: 8 },
+    techs: { weapons: 5, shielding: 4, armor: 5 },
+    rewards: {
+      minerai: 100000, silicium: 60000, hydrogene: 30000,
+      bonusShips: [{ shipId: 'battleship', count: 1, chance: 0.2 }],
+    },
+    centerLevelMin: 8, centerLevelMax: 10,
+  },
 ];
 
 // ── Universe config data ──
@@ -311,7 +419,14 @@ async function seed() {
   }
   console.log(`  ✓ ${UNIVERSE_CONFIG.length} universe config entries`);
 
-  // 13. Migrate existing planets: set homeworld type on first planet of each user
+  // 13. Pirate templates
+  for (const pt of PIRATE_TEMPLATES) {
+    await db.insert(pirateTemplates).values(pt)
+      .onConflictDoUpdate({ target: pirateTemplates.id, set: { ...pt } });
+  }
+  console.log(`  ✓ ${PIRATE_TEMPLATES.length} pirate templates`);
+
+  // 14. Migrate existing planets: set homeworld type on first planet of each user
   const homePlanets = await db.execute(sql`
     UPDATE planets SET planet_class_id = 'homeworld'
     WHERE planet_class_id IS NULL
