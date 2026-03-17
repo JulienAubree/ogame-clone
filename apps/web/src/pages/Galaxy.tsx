@@ -117,7 +117,7 @@ export default function Galaxy() {
 
         {isLoading ? (
           <div className="space-y-2">
-            {Array.from({ length: 15 }).map((_, i) => (
+            {Array.from({ length: 16 }).map((_, i) => (
               <Skeleton key={i} className="h-8 w-full" />
             ))}
           </div>
@@ -129,45 +129,58 @@ export default function Galaxy() {
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              {data?.slots.map((slot, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3 rounded-lg p-2 ${!slot ? 'opacity-40' : 'hover:bg-accent/50'}`}
-                >
-                  <span className="w-6 text-center text-xs font-mono text-muted-foreground">{i + 1}</span>
-                  {slot ? (
-                    <>
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium">{slot.planetName}</span>
-                        <div className="text-xs text-muted-foreground">
-                          {(slot as any).planetClassId && (
-                            <span className="text-primary/70 mr-1">
-                              {gameConfig?.planetTypes?.find((t) => t.id === (slot as any).planetClassId)?.name ?? ''}
-                            </span>
-                          )}
-                          {(slot as any).allianceTag && <span className="text-primary mr-1">[{(slot as any).allianceTag}]</span>}
-                          {slot.username}
+              {data?.slots.map((slot, i) => {
+                const isBelt = slot && 'type' in slot && (slot as any).type === 'belt';
+
+                if (isBelt) {
+                  return (
+                    <div key={i} className="flex items-center gap-3 rounded-lg p-2 bg-orange-500/5 border border-orange-500/20">
+                      <span className="w-6 text-center text-xs font-mono text-muted-foreground">{i + 1}</span>
+                      <span className="text-sm text-orange-400">Ceinture d&apos;astéroïdes</span>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-3 rounded-lg p-2 ${!slot ? 'opacity-40' : 'hover:bg-accent/50'}`}
+                  >
+                    <span className="w-6 text-center text-xs font-mono text-muted-foreground">{i + 1}</span>
+                    {slot ? (
+                      <>
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium">{(slot as any).planetName}</span>
+                          <div className="text-xs text-muted-foreground">
+                            {(slot as any).planetClassId && (
+                              <span className="text-primary/70 mr-1">
+                                {gameConfig?.planetTypes?.find((t) => t.id === (slot as any).planetClassId)?.name ?? ''}
+                              </span>
+                            )}
+                            {(slot as any).allianceTag && <span className="text-primary mr-1">[{(slot as any).allianceTag}]</span>}
+                            {(slot as any).username}
+                          </div>
                         </div>
-                      </div>
-                      {(slot as any).debris && ((slot as any).debris.minerai > 0 || (slot as any).debris.silicium > 0) && (
-                        <Link
-                          to={`/fleet?mission=recycle&galaxy=${galaxy}&system=${system}&position=${i + 1}`}
-                          className="text-xs text-orange-400 hover:underline cursor-pointer"
-                          title={`Débris: ${(slot as any).debris.minerai.toLocaleString('fr-FR')} minerai, ${(slot as any).debris.silicium.toLocaleString('fr-FR')} silicium`}
-                        >
-                          DF
-                        </Link>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="h-2 w-2 rounded-full bg-muted" />
-                      <span className="text-sm text-muted-foreground">Vide</span>
-                    </>
-                  )}
-                </div>
-              ))}
+                        {(slot as any).debris && ((slot as any).debris.minerai > 0 || (slot as any).debris.silicium > 0) && (
+                          <Link
+                            to={`/fleet?mission=recycle&galaxy=${galaxy}&system=${system}&position=${i + 1}`}
+                            className="text-xs text-orange-400 hover:underline cursor-pointer"
+                            title={`Débris: ${(slot as any).debris.minerai.toLocaleString('fr-FR')} minerai, ${(slot as any).debris.silicium.toLocaleString('fr-FR')} silicium`}
+                          >
+                            DF
+                          </Link>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="h-2 w-2 rounded-full bg-muted" />
+                        <span className="text-sm text-muted-foreground">Vide</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Desktop table */}
@@ -183,44 +196,59 @@ export default function Galaxy() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.slots.map((slot, i) => (
-                    <tr key={i} className={`border-b border-border/50 ${!slot ? 'opacity-40' : ''}`}>
-                      <td className="px-2 py-1 text-muted-foreground">{i + 1}</td>
-                      {slot ? (
-                        <>
-                          <td className="px-2 py-1">{slot.planetName}</td>
-                          <td className="px-2 py-1 text-xs text-muted-foreground">
-                            {(slot as any).planetClassId
-                              ? gameConfig?.planetTypes?.find((t) => t.id === (slot as any).planetClassId)?.name ?? ''
-                              : ''}
+                  {data?.slots.map((slot, i) => {
+                    const isBelt = slot && 'type' in slot && (slot as any).type === 'belt';
+
+                    if (isBelt) {
+                      return (
+                        <tr key={i} className="border-b border-orange-500/20 bg-orange-500/5">
+                          <td className="px-2 py-1 text-muted-foreground">{i + 1}</td>
+                          <td colSpan={4} className="px-2 py-1 text-sm text-orange-400">
+                            Ceinture d&apos;astéroïdes
                           </td>
-                          <td className="px-2 py-1">
-                            {(slot as any).allianceTag && <span className="text-xs text-primary mr-1">[{(slot as any).allianceTag}]</span>}
-                            {slot.username}
-                            {(slot as any).debris && ((slot as any).debris.minerai > 0 || (slot as any).debris.silicium > 0) && (
-                              <Link
-                                to={`/fleet?mission=recycle&galaxy=${galaxy}&system=${system}&position=${i + 1}`}
-                                className="text-xs text-orange-400 ml-2 hover:underline cursor-pointer"
-                                title={`Débris: ${(slot as any).debris.minerai.toLocaleString('fr-FR')} minerai, ${(slot as any).debris.silicium.toLocaleString('fr-FR')} silicium`}
-                              >
-                                DF
-                              </Link>
-                            )}
-                          </td>
-                          <td className="px-2 py-1">
-                            <span className="text-xs text-muted-foreground">-</span>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-2 py-1 text-muted-foreground">-</td>
-                          <td className="px-2 py-1 text-muted-foreground">-</td>
-                          <td className="px-2 py-1 text-muted-foreground">-</td>
-                          <td className="px-2 py-1">-</td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
+                        </tr>
+                      );
+                    }
+
+                    return (
+                      <tr key={i} className={`border-b border-border/50 ${!slot ? 'opacity-40' : ''}`}>
+                        <td className="px-2 py-1 text-muted-foreground">{i + 1}</td>
+                        {slot ? (
+                          <>
+                            <td className="px-2 py-1">{(slot as any).planetName}</td>
+                            <td className="px-2 py-1 text-xs text-muted-foreground">
+                              {(slot as any).planetClassId
+                                ? gameConfig?.planetTypes?.find((t) => t.id === (slot as any).planetClassId)?.name ?? ''
+                                : ''}
+                            </td>
+                            <td className="px-2 py-1">
+                              {(slot as any).allianceTag && <span className="text-xs text-primary mr-1">[{(slot as any).allianceTag}]</span>}
+                              {(slot as any).username}
+                              {(slot as any).debris && ((slot as any).debris.minerai > 0 || (slot as any).debris.silicium > 0) && (
+                                <Link
+                                  to={`/fleet?mission=recycle&galaxy=${galaxy}&system=${system}&position=${i + 1}`}
+                                  className="text-xs text-orange-400 ml-2 hover:underline cursor-pointer"
+                                  title={`Débris: ${(slot as any).debris.minerai.toLocaleString('fr-FR')} minerai, ${(slot as any).debris.silicium.toLocaleString('fr-FR')} silicium`}
+                                >
+                                  DF
+                                </Link>
+                              )}
+                            </td>
+                            <td className="px-2 py-1">
+                              <span className="text-xs text-muted-foreground">-</span>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-2 py-1 text-muted-foreground">-</td>
+                            <td className="px-2 py-1 text-muted-foreground">-</td>
+                            <td className="px-2 py-1 text-muted-foreground">-</td>
+                            <td className="px-2 py-1">-</td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
