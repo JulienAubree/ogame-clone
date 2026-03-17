@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ResourceCost } from '@/components/common/ResourceCost';
 import { Timer } from '@/components/common/Timer';
 import { GameImage } from '@/components/common/GameImage';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatDuration } from '@/lib/format';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -22,6 +23,7 @@ export default function Shipyard() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [detailId, setDetailId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
   const { data: gameConfig } = useGameConfig();
 
   const shipCategories = (gameConfig?.categories ?? [])
@@ -68,6 +70,17 @@ export default function Shipyard() {
     },
   });
 
+  const cancelMutation = trpc.shipyard.cancelBatch.useMutation({
+    onSuccess: () => {
+      utils.shipyard.queue.invalidate({ planetId: planetId! });
+      utils.shipyard.ships.invalidate({ planetId: planetId! });
+      utils.resource.production.invalidate({ planetId: planetId! });
+      setCancelConfirm(null);
+    },
+  });
+
+  const shipQueue = (queue ?? []).filter((q) => q.type === 'ship');
+
   if (isLoading || !ships) {
     return (
       <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
@@ -81,27 +94,43 @@ export default function Shipyard() {
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Chantier spatial" />
 
-      {queue && queue.length > 0 && (
+      {shipQueue.length > 0 && (
         <section className="glass-card p-4">
           <h2 className="text-base font-semibold mb-3">File de construction</h2>
           <div className="space-y-3">
-            {queue.map((item) => (
-              <div key={item.id} className="space-y-1 border-l-4 border-l-orange-500 pl-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span>{item.itemId} x{item.quantity - (item.completedCount ?? 0)}</span>
+            {shipQueue.map((item) => {
+              const name = gameConfig?.ships[item.itemId]?.name ?? item.itemId;
+              const remaining = item.quantity - (item.completedCount ?? 0);
+              return (
+                <div key={item.id} className="space-y-1 border-l-4 border-l-orange-500 pl-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{remaining}x {name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                      onClick={() => setCancelConfirm(item.id)}
+                      disabled={cancelMutation.isPending}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                  {item.status === 'active' && item.endTime && (
+                    <Timer
+                      endTime={new Date(item.endTime)}
+                      totalDuration={Math.floor((new Date(item.endTime).getTime() - new Date(item.startTime).getTime()) / 1000)}
+                      onComplete={() => {
+                        utils.shipyard.queue.invalidate({ planetId: planetId! });
+                        utils.shipyard.ships.invalidate({ planetId: planetId! });
+                      }}
+                    />
+                  )}
+                  {item.status === 'queued' && (
+                    <span className="text-xs text-muted-foreground">En attente</span>
+                  )}
                 </div>
-                {item.endTime && (
-                  <Timer
-                    endTime={new Date(item.endTime)}
-                    totalDuration={Math.floor((new Date(item.endTime).getTime() - new Date(item.startTime).getTime()) / 1000)}
-                    onComplete={() => {
-                      utils.shipyard.queue.invalidate({ planetId: planetId! });
-                      utils.shipyard.ships.invalidate({ planetId: planetId! });
-                    }}
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -289,6 +318,16 @@ export default function Shipyard() {
       >
         {detailId && <ShipDetailContent shipId={detailId} />}
       </EntityDetailOverlay>
+
+      <ConfirmDialog
+        open={!!cancelConfirm}
+        onConfirm={() => cancelConfirm && cancelMutation.mutate({ planetId: planetId!, batchId: cancelConfirm })}
+        onCancel={() => setCancelConfirm(null)}
+        title="Annuler la production ?"
+        description="Les unités restantes seront annulées et les ressources correspondantes remboursées. Les unités déjà produites sont conservées."
+        confirmLabel="Annuler la production"
+        variant="destructive"
+      />
     </div>
   );
 }

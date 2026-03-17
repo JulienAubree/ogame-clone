@@ -58,7 +58,7 @@ export function createShipyardRouter(shipyardService: ReturnType<typeof createSh
         batchId: z.string().uuid(),
       }))
       .mutation(async ({ ctx, input }) => {
-        return shipyardService.cancelQueuedBatch(ctx.userId!, input.planetId, input.batchId);
+        return shipyardService.cancelBatch(ctx.userId!, input.planetId, input.batchId);
       }),
   });
 }

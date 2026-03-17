@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, buildQueue, userResearch } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
@@ -86,7 +86,7 @@ export function createShipyardService(
         .where(
           and(
             eq(buildQueue.planetId, planetId),
-            eq(buildQueue.status, 'active'),
+            inArray(buildQueue.status, ['active', 'queued']),
           ),
         )
         .then((rows) => rows.filter((r) => r.type === 'ship' || r.type === 'defense'));
@@ -276,7 +276,7 @@ export function createShipyardService(
       );
     },
 
-    async cancelQueuedBatch(userId: string, planetId: string, batchId: string) {
+    async cancelBatch(userId: string, planetId: string, batchId: string) {
       const [entry] = await db
         .select()
         .from(buildQueue)
@@ -285,15 +285,19 @@ export function createShipyardService(
             eq(buildQueue.id, batchId),
             eq(buildQueue.userId, userId),
             eq(buildQueue.planetId, planetId),
-            eq(buildQueue.status, 'queued'),
           ),
         )
         .limit(1);
 
-      if (!entry) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch non trouvé ou non annulable (en cours)' });
+      if (!entry || entry.status === 'completed') {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch non trouvé ou déjà terminé' });
       }
 
+      if (entry.type !== 'ship' && entry.type !== 'defense') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Type non annulable' });
+      }
+
+      // Refund remaining (uncompleted) units
       const config = await gameConfigService.getFullConfig();
       const def = entry.type === 'ship' ? config.ships[entry.itemId] : config.defenses[entry.itemId];
       const unitCost = def ? (entry.type === 'ship' ? shipCost(def) : defenseCost(def)) : { minerai: 0, silicium: 0, hydrogene: 0 };
@@ -316,9 +320,21 @@ export function createShipyardService(
           .where(eq(planets.id, planetId));
       }
 
+      // Remove pending BullMQ job if this was the active batch
+      if (entry.status === 'active') {
+        const jobId = `shipyard-${entry.id}-${entry.completedCount + 1}`;
+        const job = await shipyardQueue.getJob(jobId);
+        if (job) await job.remove();
+      }
+
       await db.delete(buildQueue).where(eq(buildQueue.id, batchId));
 
-      return { cancelled: true };
+      // Activate next queued batch if we cancelled the active one
+      if (entry.status === 'active') {
+        await this.activateNextBatch(planetId);
+      }
+
+      return { cancelled: true, refund };
     },
 
     async getOrCreateShips(planetId: string) {
