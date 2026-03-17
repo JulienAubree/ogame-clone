@@ -14,6 +14,7 @@ const buildingIds = [
   'storageMinerai',
   'storageSilicium',
   'storageHydrogene',
+  'missionCenter',
 ] as const;
 
 export function createBuildingRouter(buildingService: ReturnType<typeof createBuildingService>) {

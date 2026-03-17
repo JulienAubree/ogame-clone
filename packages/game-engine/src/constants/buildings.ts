@@ -10,7 +10,8 @@ export type BuildingId =
   | 'researchLab'
   | 'storageMinerai'
   | 'storageSilicium'
-  | 'storageHydrogene';
+  | 'storageHydrogene'
+  | 'missionCenter';
 
 export interface BuildingDefinition {
   id: BuildingId;
@@ -130,5 +131,14 @@ export const BUILDINGS: Record<BuildingId, BuildingDefinition> = {
     costFactor: 2,
     baseTime: 60,
     prerequisites: [],
+  },
+  missionCenter: {
+    id: 'missionCenter',
+    name: 'Centre de missions',
+    description: 'Permet d\'accéder aux missions PvE et de coordonner les opérations.',
+    baseCost: { minerai: 5000, silicium: 3000, hydrogene: 1000 },
+    costFactor: 1.8,
+    baseTime: 300,
+    prerequisites: [{ buildingId: 'shipyard', level: 3 }, { buildingId: 'researchLab', level: 1 }],
   },
 };
