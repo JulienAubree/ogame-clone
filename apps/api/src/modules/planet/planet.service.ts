@@ -8,17 +8,23 @@ import {
   calculateDiameter,
   calculateMaxFields,
 } from '@ogame-clone/game-engine';
-import { UNIVERSE_CONFIG } from '../universe/universe.config.js';
+import type { GameConfigService } from '../admin/game-config.service.js';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function createPlanetService(db: Database) {
+export function createPlanetService(db: Database, gameConfigService: GameConfigService) {
   return {
     async createHomePlanet(userId: string) {
-      const galaxy = randomInt(1, UNIVERSE_CONFIG.galaxies);
-      const system = randomInt(1, UNIVERSE_CONFIG.systems);
+      const config = await gameConfigService.getFullConfig();
+      const universe = config.universe;
+
+      const galaxies = Number(universe.galaxies) || 9;
+      const systems = Number(universe.systems) || 499;
+
+      const galaxy = randomInt(1, galaxies);
+      const system = randomInt(1, systems);
       const position = randomInt(4, 12);
 
       const randomOffset = randomInt(-20, 20);
@@ -26,6 +32,10 @@ export function createPlanetService(db: Database) {
       const minTemp = calculateMinTemp(maxTemp);
       const diameter = 12000;
       const maxFields = calculateMaxFields(diameter);
+
+      const startingMinerai = Number(universe.startingMinerai) ?? 500;
+      const startingSilicium = Number(universe.startingSilicium) ?? 500;
+      const startingHydrogene = Number(universe.startingHydrogene) ?? 0;
 
       const [planet] = await db
         .insert(planets)
@@ -41,6 +51,9 @@ export function createPlanetService(db: Database) {
           maxFields,
           minTemp,
           maxTemp,
+          minerai: String(startingMinerai),
+          silicium: String(startingSilicium),
+          hydrogene: String(startingHydrogene),
         })
         .returning();
 
