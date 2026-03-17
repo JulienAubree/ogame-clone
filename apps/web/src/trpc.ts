@@ -127,6 +127,7 @@ export function createTRPCClient() {
     links: [
       httpBatchLink({
         url: '/trpc',
+        maxURLLength: 2000,
         headers: () => {
           const token = localStorage.getItem('accessToken');
           return token ? { authorization: `Bearer ${token}` } : {};
