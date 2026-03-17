@@ -14,12 +14,15 @@ async function migrate() {
   try {
     // Step 1: Rename old shipyard → commandCenter in buildingDefinitions & all FK references
     console.log('  Step 1: Renaming shipyard → commandCenter...');
-    await db.execute(sql`UPDATE building_definitions SET id = 'commandCenter', name = 'Centre de commandement', description = 'Débloque et construit les vaisseaux militaires.' WHERE id = 'shipyard'`);
+    // Update ALL FK references BEFORE renaming the PK in building_definitions
+    await db.execute(sql`UPDATE building_prerequisites SET building_id = 'commandCenter' WHERE building_id = 'shipyard'`);
     await db.execute(sql`UPDATE building_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE ship_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE defense_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE research_prerequisites SET required_building_id = 'commandCenter' WHERE required_building_id = 'shipyard'`);
     await db.execute(sql`UPDATE build_queue SET item_id = 'commandCenter' WHERE item_id = 'shipyard' AND type = 'building'`);
+    // Now safe to rename the PK
+    await db.execute(sql`UPDATE building_definitions SET id = 'commandCenter', name = 'Centre de commandement', description = 'Débloque et construit les vaisseaux militaires.' WHERE id = 'shipyard'`);
 
     // Step 2: Create planetBuildings table
     console.log('  Step 2: Creating planet_buildings table...');
