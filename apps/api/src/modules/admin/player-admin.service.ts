@@ -1,5 +1,5 @@
 import { eq, like, or, sql, count, isNull } from 'drizzle-orm';
-import { users, planets, userResearch, planetShips, planetDefenses, rankings } from '@ogame-clone/db';
+import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 
 export function createPlayerAdminService(db: Database) {
@@ -52,14 +52,19 @@ export function createPlayerAdminService(db: Database) {
         db.select().from(rankings).where(eq(rankings.userId, userId)),
       ]);
 
-      // Load ships and defenses for each planet
+      // Load ships, defenses, and building levels for each planet
       const planetsWithUnits = await Promise.all(
         playerPlanets.map(async (planet) => {
-          const [ships, defenses] = await Promise.all([
+          const [ships, defenses, buildingRows] = await Promise.all([
             db.select().from(planetShips).where(eq(planetShips.planetId, planet.id)),
             db.select().from(planetDefenses).where(eq(planetDefenses.planetId, planet.id)),
+            db.select().from(planetBuildings).where(eq(planetBuildings.planetId, planet.id)),
           ]);
-          return { ...planet, ships: ships[0] ?? null, defenses: defenses[0] ?? null };
+          const buildingLevels: Record<string, number> = {};
+          for (const row of buildingRows) {
+            buildingLevels[row.buildingId] = row.level;
+          }
+          return { ...planet, ships: ships[0] ?? null, defenses: defenses[0] ?? null, buildingLevels };
         })
       );
 
@@ -75,8 +80,14 @@ export function createPlayerAdminService(db: Database) {
       await db.update(planets).set(resources).where(eq(planets.id, planetId));
     },
 
-    async updatePlayerBuildingLevel(planetId: string, levelColumn: string, level: number) {
-      await db.update(planets).set({ [levelColumn]: level }).where(eq(planets.id, planetId));
+    async updatePlayerBuildingLevel(planetId: string, buildingId: string, level: number) {
+      await db
+        .insert(planetBuildings)
+        .values({ planetId, buildingId, level })
+        .onConflictDoUpdate({
+          target: [planetBuildings.planetId, planetBuildings.buildingId],
+          set: { level },
+        });
     },
 
     async updatePlayerResearchLevel(userId: string, levelColumn: string, level: number) {

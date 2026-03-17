@@ -25,18 +25,6 @@ export const planets = pgTable('planets', {
   hydrogene: numeric('hydrogene', { precision: 20, scale: 2 }).notNull().default('0'),
   resourcesUpdatedAt: timestamp('resources_updated_at', { withTimezone: true }).notNull().defaultNow(),
 
-  // Building levels (inline)
-  mineraiMineLevel: smallint('minerai_mine_level').notNull().default(0),
-  siliciumMineLevel: smallint('silicium_mine_level').notNull().default(0),
-  hydrogeneSynthLevel: smallint('hydrogene_synth_level').notNull().default(0),
-  solarPlantLevel: smallint('solar_plant_level').notNull().default(0),
-  roboticsLevel: smallint('robotics_level').notNull().default(0),
-  shipyardLevel: smallint('shipyard_level').notNull().default(0),
-  researchLabLevel: smallint('research_lab_level').notNull().default(0),
-  storageMineraiLevel: smallint('storage_minerai_level').notNull().default(0),
-  storageSiliciumLevel: smallint('storage_silicium_level').notNull().default(0),
-  storageHydrogeneLevel: smallint('storage_hydrogene_level').notNull().default(0),
-
   // Production percentages (0-100, step 10)
   mineraiMinePercent: smallint('minerai_mine_percent').notNull().default(100),
   siliciumMinePercent: smallint('silicium_mine_percent').notNull().default(100),

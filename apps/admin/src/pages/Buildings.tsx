@@ -20,7 +20,6 @@ const FIELDS = [
 
 const CREATE_FIELDS = [
   { key: 'id', label: 'ID (identifiant unique)', type: 'text' as const },
-  { key: 'levelColumn', label: 'Colonne niveau (DB)', type: 'text' as const },
   ...FIELDS,
 ];
 
@@ -349,7 +348,6 @@ export default function Buildings() {
           fields={CREATE_FIELDS}
           values={{
             id: '',
-            levelColumn: '',
             name: '',
             description: '',
             baseCostMinerai: 0,
@@ -369,7 +367,6 @@ export default function Buildings() {
               baseCostHydrogene: values.baseCostHydrogene as number,
               costFactor: values.costFactor as number,
               baseTime: values.baseTime as number,
-              levelColumn: values.levelColumn as string,
               sortOrder: values.sortOrder as number,
             });
           }}

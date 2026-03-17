@@ -1,6 +1,6 @@
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetTypes } from '@ogame-clone/db';
+import { planets, planetTypes, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import {
   calculateResources,
@@ -19,8 +19,24 @@ async function loadPlanetTypeBonus(db: Database, planetClassId: string | null): 
   return pt ?? undefined;
 }
 
+async function getBuildingLevels(db: Database, planetId: string): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
+    .from(planetBuildings)
+    .where(eq(planetBuildings.planetId, planetId));
+  const levels: Record<string, number> = {};
+  for (const row of rows) {
+    levels[row.buildingId] = row.level;
+  }
+  return levels;
+}
+
 export function createResourceService(db: Database) {
   return {
+    async getBuildingLevels(planetId: string): Promise<Record<string, number>> {
+      return getBuildingLevels(db, planetId);
+    },
+
     async materializeResources(planetId: string, userId: string) {
       const [planet] = await db
         .select()
@@ -33,6 +49,7 @@ export function createResourceService(db: Database) {
       }
 
       const bonus = await loadPlanetTypeBonus(db, planet.planetClassId);
+      const buildingLevels = await getBuildingLevels(db, planetId);
 
       const now = new Date();
       const resources = calculateResources(
@@ -40,13 +57,13 @@ export function createResourceService(db: Database) {
           minerai: Number(planet.minerai),
           silicium: Number(planet.silicium),
           hydrogene: Number(planet.hydrogene),
-          mineraiMineLevel: planet.mineraiMineLevel,
-          siliciumMineLevel: planet.siliciumMineLevel,
-          hydrogeneSynthLevel: planet.hydrogeneSynthLevel,
-          solarPlantLevel: planet.solarPlantLevel,
-          storageMineraiLevel: planet.storageMineraiLevel,
-          storageSiliciumLevel: planet.storageSiliciumLevel,
-          storageHydrogeneLevel: planet.storageHydrogeneLevel,
+          mineraiMineLevel: buildingLevels['mineraiMine'] ?? 0,
+          siliciumMineLevel: buildingLevels['siliciumMine'] ?? 0,
+          hydrogeneSynthLevel: buildingLevels['hydrogeneSynth'] ?? 0,
+          solarPlantLevel: buildingLevels['solarPlant'] ?? 0,
+          storageMineraiLevel: buildingLevels['storageMinerai'] ?? 0,
+          storageSiliciumLevel: buildingLevels['storageSilicium'] ?? 0,
+          storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
           maxTemp: planet.maxTemp,
           mineraiMinePercent: planet.mineraiMinePercent,
           siliciumMinePercent: planet.siliciumMinePercent,
@@ -83,6 +100,7 @@ export function createResourceService(db: Database) {
       }
 
       const bonus = await loadPlanetTypeBonus(db, planet.planetClassId);
+      const buildingLevels = await getBuildingLevels(db, planetId);
 
       const now = new Date();
       const produced = calculateResources(
@@ -90,13 +108,13 @@ export function createResourceService(db: Database) {
           minerai: Number(planet.minerai),
           silicium: Number(planet.silicium),
           hydrogene: Number(planet.hydrogene),
-          mineraiMineLevel: planet.mineraiMineLevel,
-          siliciumMineLevel: planet.siliciumMineLevel,
-          hydrogeneSynthLevel: planet.hydrogeneSynthLevel,
-          solarPlantLevel: planet.solarPlantLevel,
-          storageMineraiLevel: planet.storageMineraiLevel,
-          storageSiliciumLevel: planet.storageSiliciumLevel,
-          storageHydrogeneLevel: planet.storageHydrogeneLevel,
+          mineraiMineLevel: buildingLevels['mineraiMine'] ?? 0,
+          siliciumMineLevel: buildingLevels['siliciumMine'] ?? 0,
+          hydrogeneSynthLevel: buildingLevels['hydrogeneSynth'] ?? 0,
+          solarPlantLevel: buildingLevels['solarPlant'] ?? 0,
+          storageMineraiLevel: buildingLevels['storageMinerai'] ?? 0,
+          storageSiliciumLevel: buildingLevels['storageSilicium'] ?? 0,
+          storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
           maxTemp: planet.maxTemp,
           mineraiMinePercent: planet.mineraiMinePercent,
           siliciumMinePercent: planet.siliciumMinePercent,
@@ -150,20 +168,26 @@ export function createResourceService(db: Database) {
         .where(and(eq(planets.id, planetId), eq(planets.userId, userId)));
     },
 
-    getProductionRates(planet: {
-      mineraiMineLevel: number;
-      siliciumMineLevel: number;
-      hydrogeneSynthLevel: number;
-      solarPlantLevel: number;
-      storageMineraiLevel: number;
-      storageSiliciumLevel: number;
-      storageHydrogeneLevel: number;
+    async getProductionRates(planetId: string, planet: {
       maxTemp: number;
       mineraiMinePercent: number;
       siliciumMinePercent: number;
       hydrogeneSynthPercent: number;
     }, bonus?: PlanetTypeBonus) {
-      return calculateProductionRates(planet, bonus);
+      const buildingLevels = await getBuildingLevels(db, planetId);
+      return calculateProductionRates({
+        mineraiMineLevel: buildingLevels['mineraiMine'] ?? 0,
+        siliciumMineLevel: buildingLevels['siliciumMine'] ?? 0,
+        hydrogeneSynthLevel: buildingLevels['hydrogeneSynth'] ?? 0,
+        solarPlantLevel: buildingLevels['solarPlant'] ?? 0,
+        storageMineraiLevel: buildingLevels['storageMinerai'] ?? 0,
+        storageSiliciumLevel: buildingLevels['storageSilicium'] ?? 0,
+        storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
+        maxTemp: planet.maxTemp,
+        mineraiMinePercent: planet.mineraiMinePercent,
+        siliciumMinePercent: planet.siliciumMinePercent,
+        hydrogeneSynthPercent: planet.hydrogeneSynthPercent,
+      }, bonus);
     },
   };
 }

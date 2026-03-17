@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { users, planets, userResearch, planetShips, planetDefenses, rankings } from '@ogame-clone/db';
+import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import {
   calculateBuildingPoints,
@@ -9,6 +9,18 @@ import {
   calculateTotalPoints,
 } from '@ogame-clone/game-engine';
 import type { GameConfigService } from '../admin/game-config.service.js';
+
+async function getBuildingLevels(db: Database, planetId: string): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
+    .from(planetBuildings)
+    .where(eq(planetBuildings.planetId, planetId));
+  const levels: Record<string, number> = {};
+  for (const row of rows) {
+    levels[row.buildingId] = row.level;
+  }
+  return levels;
+}
 
 export function createRankingService(db: Database, gameConfigService: GameConfigService) {
   return {
@@ -22,18 +34,8 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
         const userPlanets = await db.select().from(planets).where(eq(planets.userId, user.id));
         let buildingPoints = 0;
         for (const planet of userPlanets) {
-          buildingPoints += calculateBuildingPoints({
-            mineraiMineLevel: planet.mineraiMineLevel,
-            siliciumMineLevel: planet.siliciumMineLevel,
-            hydrogeneSynthLevel: planet.hydrogeneSynthLevel,
-            solarPlantLevel: planet.solarPlantLevel,
-            roboticsLevel: planet.roboticsLevel,
-            shipyardLevel: planet.shipyardLevel,
-            researchLabLevel: planet.researchLabLevel,
-            storageMineraiLevel: planet.storageMineraiLevel,
-            storageSiliciumLevel: planet.storageSiliciumLevel,
-            storageHydrogeneLevel: planet.storageHydrogeneLevel,
-          }, config.buildings);
+          const buildingLevels = await getBuildingLevels(db, planet.id);
+          buildingPoints += calculateBuildingPoints(buildingLevels, config.buildings);
         }
 
         const [research] = await db.select().from(userResearch).where(eq(userResearch.userId, user.id)).limit(1);
@@ -65,6 +67,8 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
               espionageProbe: ships.espionageProbe,
               colonyShip: ships.colonyShip,
               recycler: ships.recycler,
+              prospector: ships.prospector,
+              explorer: ships.explorer,
             }, config.ships);
           }
         }

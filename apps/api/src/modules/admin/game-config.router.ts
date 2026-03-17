@@ -49,7 +49,8 @@ export function createGameConfigRouter(
         baseCostHydrogene: z.number().int().optional(),
         costFactor: z.number().optional(),
         baseTime: z.number().int().optional(),
-        levelColumn: z.string().min(1),
+        buildTimeReductionFactor: z.number().nullable().optional(),
+        reducesTimeForCategory: z.string().nullable().optional(),
         categoryId: z.string().nullable().optional(),
         sortOrder: z.number().int().optional(),
       }))
@@ -76,6 +77,8 @@ export function createGameConfigRouter(
           baseCostHydrogene: z.number().int().optional(),
           costFactor: z.number().optional(),
           baseTime: z.number().int().optional(),
+          buildTimeReductionFactor: z.number().nullable().optional(),
+          reducesTimeForCategory: z.string().nullable().optional(),
           categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
         }),

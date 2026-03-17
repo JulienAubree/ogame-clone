@@ -28,7 +28,9 @@ const BUILDING_FLAVOR: Record<BuildingId, string> = {
   hydrogeneSynth: "L'hydrogene, element fondamental de l'univers, est extrait des oceans planetaires par un processus de filtration moleculaire.",
   solarPlant: "D'immenses panneaux photovoltaiques captent l'energie de l'etoile la plus proche pour alimenter l'ensemble des infrastructures planetaires.",
   robotics: "Les chaines de montage automatisees accelerent la construction de tous les batiments et infrastructures.",
-  shipyard: "Cet immense complexe orbital permet l'assemblage de vaisseaux spatiaux et de systemes de defense planetaire.",
+  shipyard: "Le chantier spatial assemble les vaisseaux industriels necessaires a l'expansion de votre empire.",
+  arsenal: "L'arsenal planetaire fabrique les systemes de defense qui protegent vos installations contre les attaques ennemies.",
+  commandCenter: "Le centre de commandement coordonne la construction des vaisseaux militaires les plus puissants de votre flotte.",
   researchLab: "Au coeur de ce laboratoire, les meilleurs scientifiques de l'empire repoussent les frontieres de la connaissance.",
   storageMinerai: "De vastes entrepots blindes permettent de stocker des quantites croissantes de minerai en toute securite.",
   storageSilicium: "Ces chambres a environnement controle preservent le silicium dans des conditions optimales.",
@@ -57,6 +59,8 @@ const SHIP_FLAVOR: Record<ShipId, string> = {
   espionageProbe: "Quasiment indetectable, la sonde d'espionnage collecte des renseignements precieux sur les planetes adverses.",
   colonyShip: "Ce vaisseau transporte tout le necessaire pour etablir une nouvelle colonie sur une planete inhabite.",
   recycler: "Equipe de puissants aimants et de bras mecaniques, le recycleur collecte les debris des batailles spatiales.",
+  prospector: "Le prospecteur est un vaisseau minier leger concu pour l'extraction de ressources sur les asteroides et planetes voisines.",
+  explorer: "L'explorateur est un vaisseau rapide equipe de scanners avances pour cartographier les systemes stellaires inconnus.",
 };
 
 const DEFENSE_FLAVOR: Record<DefenseId, string> = {

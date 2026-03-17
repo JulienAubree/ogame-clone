@@ -9,28 +9,30 @@ import {
 import type { BuildingDef, ResearchDef, UnitDef } from './ranking.js';
 
 const BUILDING_DEFS: Record<string, BuildingDef> = {
-  mineraiMine:      { levelColumn: 'mineraiMineLevel',      baseCost: { minerai: 60,   silicium: 15,   hydrogene: 0 },   costFactor: 1.5 },
-  siliciumMine:     { levelColumn: 'siliciumMineLevel',     baseCost: { minerai: 48,   silicium: 24,   hydrogene: 0 },   costFactor: 1.6 },
-  hydrogeneSynth:   { levelColumn: 'hydrogeneSynthLevel',   baseCost: { minerai: 225,  silicium: 75,   hydrogene: 0 },   costFactor: 1.5 },
-  solarPlant:       { levelColumn: 'solarPlantLevel',       baseCost: { minerai: 75,   silicium: 30,   hydrogene: 0 },   costFactor: 1.5 },
-  robotics:         { levelColumn: 'roboticsLevel',         baseCost: { minerai: 400,  silicium: 120,  hydrogene: 200 }, costFactor: 2 },
-  shipyard:         { levelColumn: 'shipyardLevel',         baseCost: { minerai: 400,  silicium: 200,  hydrogene: 100 }, costFactor: 2 },
-  researchLab:      { levelColumn: 'researchLabLevel',      baseCost: { minerai: 200,  silicium: 400,  hydrogene: 200 }, costFactor: 2 },
-  storageMinerai:   { levelColumn: 'storageMineraiLevel',   baseCost: { minerai: 1000, silicium: 0,    hydrogene: 0 },   costFactor: 2 },
-  storageSilicium:  { levelColumn: 'storageSiliciumLevel',  baseCost: { minerai: 1000, silicium: 500,  hydrogene: 0 },   costFactor: 2 },
-  storageHydrogene: { levelColumn: 'storageHydrogeneLevel', baseCost: { minerai: 1000, silicium: 1000, hydrogene: 0 },   costFactor: 2 },
+  mineraiMine:      { id: 'mineraiMine',      baseCost: { minerai: 60,   silicium: 15,   hydrogene: 0 },   costFactor: 1.5 },
+  siliciumMine:     { id: 'siliciumMine',      baseCost: { minerai: 48,   silicium: 24,   hydrogene: 0 },   costFactor: 1.6 },
+  hydrogeneSynth:   { id: 'hydrogeneSynth',    baseCost: { minerai: 225,  silicium: 75,   hydrogene: 0 },   costFactor: 1.5 },
+  solarPlant:       { id: 'solarPlant',        baseCost: { minerai: 75,   silicium: 30,   hydrogene: 0 },   costFactor: 1.5 },
+  robotics:         { id: 'robotics',          baseCost: { minerai: 400,  silicium: 120,  hydrogene: 200 }, costFactor: 2 },
+  shipyard:         { id: 'shipyard',          baseCost: { minerai: 400,  silicium: 200,  hydrogene: 100 }, costFactor: 2 },
+  arsenal:          { id: 'arsenal',           baseCost: { minerai: 400,  silicium: 200,  hydrogene: 100 }, costFactor: 2 },
+  commandCenter:    { id: 'commandCenter',     baseCost: { minerai: 400,  silicium: 200,  hydrogene: 100 }, costFactor: 2 },
+  researchLab:      { id: 'researchLab',       baseCost: { minerai: 200,  silicium: 400,  hydrogene: 200 }, costFactor: 2 },
+  storageMinerai:   { id: 'storageMinerai',    baseCost: { minerai: 1000, silicium: 0,    hydrogene: 0 },   costFactor: 2 },
+  storageSilicium:  { id: 'storageSilicium',   baseCost: { minerai: 1000, silicium: 500,  hydrogene: 0 },   costFactor: 2 },
+  storageHydrogene: { id: 'storageHydrogene',  baseCost: { minerai: 1000, silicium: 1000, hydrogene: 0 },   costFactor: 2 },
 };
 
 const RESEARCH_DEFS: Record<string, ResearchDef> = {
-  espionageTech:  { levelColumn: 'espionageTech',  baseCost: { minerai: 200,   silicium: 1000,  hydrogene: 200 },  costFactor: 2 },
-  computerTech:   { levelColumn: 'computerTech',   baseCost: { minerai: 0,     silicium: 400,   hydrogene: 600 },  costFactor: 2 },
-  energyTech:     { levelColumn: 'energyTech',     baseCost: { minerai: 0,     silicium: 800,   hydrogene: 400 },  costFactor: 2 },
-  combustion:     { levelColumn: 'combustion',     baseCost: { minerai: 400,   silicium: 0,     hydrogene: 600 },  costFactor: 2 },
-  impulse:        { levelColumn: 'impulse',        baseCost: { minerai: 2000,  silicium: 4000,  hydrogene: 600 },  costFactor: 2 },
-  hyperspaceDrive:{ levelColumn: 'hyperspaceDrive', baseCost: { minerai: 10000, silicium: 20000, hydrogene: 6000 }, costFactor: 2 },
-  weapons:        { levelColumn: 'weapons',        baseCost: { minerai: 800,   silicium: 200,   hydrogene: 0 },    costFactor: 2 },
-  shielding:      { levelColumn: 'shielding',      baseCost: { minerai: 200,   silicium: 600,   hydrogene: 0 },    costFactor: 2 },
-  armor:          { levelColumn: 'armor',          baseCost: { minerai: 1000,  silicium: 0,     hydrogene: 0 },    costFactor: 2 },
+  espionageTech:  { id: 'espionageTech',   baseCost: { minerai: 200,   silicium: 1000,  hydrogene: 200 },  costFactor: 2 },
+  computerTech:   { id: 'computerTech',    baseCost: { minerai: 0,     silicium: 400,   hydrogene: 600 },  costFactor: 2 },
+  energyTech:     { id: 'energyTech',      baseCost: { minerai: 0,     silicium: 800,   hydrogene: 400 },  costFactor: 2 },
+  combustion:     { id: 'combustion',      baseCost: { minerai: 400,   silicium: 0,     hydrogene: 600 },  costFactor: 2 },
+  impulse:        { id: 'impulse',         baseCost: { minerai: 2000,  silicium: 4000,  hydrogene: 600 },  costFactor: 2 },
+  hyperspaceDrive:{ id: 'hyperspaceDrive', baseCost: { minerai: 10000, silicium: 20000, hydrogene: 6000 }, costFactor: 2 },
+  weapons:        { id: 'weapons',         baseCost: { minerai: 800,   silicium: 200,   hydrogene: 0 },    costFactor: 2 },
+  shielding:      { id: 'shielding',       baseCost: { minerai: 200,   silicium: 600,   hydrogene: 0 },    costFactor: 2 },
+  armor:          { id: 'armor',           baseCost: { minerai: 1000,  silicium: 0,     hydrogene: 0 },    costFactor: 2 },
 };
 
 const SHIP_DEFS: Record<string, UnitDef> = {
@@ -43,6 +45,8 @@ const SHIP_DEFS: Record<string, UnitDef> = {
   espionageProbe: { countColumn: 'espionageProbe', cost: { minerai: 0,     silicium: 1000,  hydrogene: 0 } },
   colonyShip:     { countColumn: 'colonyShip',     cost: { minerai: 10000, silicium: 20000, hydrogene: 10000 } },
   recycler:       { countColumn: 'recycler',       cost: { minerai: 10000, silicium: 6000,  hydrogene: 2000 } },
+  prospector:     { countColumn: 'prospector',     cost: { minerai: 3000,  silicium: 1000,  hydrogene: 500 } },
+  explorer:       { countColumn: 'explorer',       cost: { minerai: 5000,  silicium: 2500,  hydrogene: 500 } },
 };
 
 const DEFENSE_DEFS: Record<string, UnitDef> = {
@@ -57,31 +61,31 @@ const DEFENSE_DEFS: Record<string, UnitDef> = {
 
 describe('calculateBuildingPoints', () => {
   it('all level 0 = 0 points', () => {
-    const levels = {
-      mineraiMineLevel: 0, siliciumMineLevel: 0, hydrogeneSynthLevel: 0,
-      solarPlantLevel: 0, roboticsLevel: 0, shipyardLevel: 0,
-      researchLabLevel: 0, storageMineraiLevel: 0, storageSiliciumLevel: 0,
-      storageHydrogeneLevel: 0,
+    const levels: Record<string, number> = {
+      mineraiMine: 0, siliciumMine: 0, hydrogeneSynth: 0,
+      solarPlant: 0, robotics: 0, shipyard: 0, arsenal: 0, commandCenter: 0,
+      researchLab: 0, storageMinerai: 0, storageSilicium: 0,
+      storageHydrogene: 0,
     };
     expect(calculateBuildingPoints(levels, BUILDING_DEFS)).toBe(0);
   });
 
   it('minerai mine level 1 = floor((60+15) / 1000) = 0', () => {
-    const levels = {
-      mineraiMineLevel: 1, siliciumMineLevel: 0, hydrogeneSynthLevel: 0,
-      solarPlantLevel: 0, roboticsLevel: 0, shipyardLevel: 0,
-      researchLabLevel: 0, storageMineraiLevel: 0, storageSiliciumLevel: 0,
-      storageHydrogeneLevel: 0,
+    const levels: Record<string, number> = {
+      mineraiMine: 1, siliciumMine: 0, hydrogeneSynth: 0,
+      solarPlant: 0, robotics: 0, shipyard: 0, arsenal: 0, commandCenter: 0,
+      researchLab: 0, storageMinerai: 0, storageSilicium: 0,
+      storageHydrogene: 0,
     };
     expect(calculateBuildingPoints(levels, BUILDING_DEFS)).toBe(0);
   });
 
   it('multiple buildings have cumulative points', () => {
-    const levels = {
-      mineraiMineLevel: 10, siliciumMineLevel: 10, hydrogeneSynthLevel: 10,
-      solarPlantLevel: 10, roboticsLevel: 5, shipyardLevel: 5,
-      researchLabLevel: 5, storageMineraiLevel: 3, storageSiliciumLevel: 3,
-      storageHydrogeneLevel: 3,
+    const levels: Record<string, number> = {
+      mineraiMine: 10, siliciumMine: 10, hydrogeneSynth: 10,
+      solarPlant: 10, robotics: 5, shipyard: 5, arsenal: 3, commandCenter: 2,
+      researchLab: 5, storageMinerai: 3, storageSilicium: 3,
+      storageHydrogene: 3,
     };
     expect(calculateBuildingPoints(levels, BUILDING_DEFS)).toBeGreaterThan(0);
   });
@@ -89,7 +93,7 @@ describe('calculateBuildingPoints', () => {
 
 describe('calculateResearchPoints', () => {
   it('all level 0 = 0 points', () => {
-    const levels = {
+    const levels: Record<string, number> = {
       espionageTech: 0, computerTech: 0, energyTech: 0,
       combustion: 0, impulse: 0, hyperspaceDrive: 0,
       weapons: 0, shielding: 0, armor: 0,
@@ -98,7 +102,7 @@ describe('calculateResearchPoints', () => {
   });
 
   it('weapons level 3 = 7 points', () => {
-    const levels = {
+    const levels: Record<string, number> = {
       espionageTech: 0, computerTech: 0, energyTech: 0,
       combustion: 0, impulse: 0, hyperspaceDrive: 0,
       weapons: 3, shielding: 0, armor: 0,
@@ -112,6 +116,7 @@ describe('calculateFleetPoints', () => {
     expect(calculateFleetPoints({
       smallCargo: 0, largeCargo: 0, lightFighter: 0, heavyFighter: 0,
       cruiser: 0, battleship: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
+      prospector: 0, explorer: 0,
     }, SHIP_DEFS)).toBe(0);
   });
 
@@ -119,6 +124,7 @@ describe('calculateFleetPoints', () => {
     expect(calculateFleetPoints({
       smallCargo: 10, largeCargo: 0, lightFighter: 0, heavyFighter: 0,
       cruiser: 0, battleship: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
+      prospector: 0, explorer: 0,
     }, SHIP_DEFS)).toBe(40);
   });
 });

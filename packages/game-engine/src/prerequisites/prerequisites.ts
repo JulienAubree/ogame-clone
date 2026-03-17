@@ -25,8 +25,7 @@ function checkPrereqs(
 
   if (prereqs.buildings) {
     for (const req of prereqs.buildings) {
-      const columnKey = req.buildingId + 'Level';
-      const current = buildingLevels[columnKey] ?? 0;
+      const current = buildingLevels[req.buildingId] ?? 0;
       if (current < req.level) {
         missing.push(`${req.buildingId} level ${req.level} (current: ${current})`);
       }

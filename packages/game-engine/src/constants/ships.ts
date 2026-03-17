@@ -7,7 +7,9 @@ export type ShipId =
   | 'battleship'
   | 'espionageProbe'
   | 'colonyShip'
-  | 'recycler';
+  | 'recycler'
+  | 'prospector'
+  | 'explorer';
 
 export interface ShipDefinition {
   id: ShipId;
@@ -131,6 +133,26 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
         { researchId: 'combustion', level: 6 },
         { researchId: 'shielding', level: 2 },
       ],
+    },
+  },
+  prospector: {
+    id: 'prospector',
+    name: 'Prospecteur',
+    description: 'Vaisseau minier pour l\'extraction de ressources.',
+    cost: { minerai: 3000, silicium: 1000, hydrogene: 500 },
+    countColumn: 'prospector',
+    prerequisites: {
+      buildings: [{ buildingId: 'shipyard', level: 1 }],
+    },
+  },
+  explorer: {
+    id: 'explorer',
+    name: 'Explorateur',
+    description: 'Vaisseau d\'exploration pour découvrir de nouveaux systèmes.',
+    cost: { minerai: 5000, silicium: 2500, hydrogene: 500 },
+    countColumn: 'explorer',
+    prerequisites: {
+      buildings: [{ buildingId: 'shipyard', level: 1 }],
     },
   },
 };

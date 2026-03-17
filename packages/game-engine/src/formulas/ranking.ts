@@ -1,11 +1,11 @@
 export interface BuildingDef {
-  levelColumn: string;
+  id: string;
   baseCost: { minerai: number; silicium: number; hydrogene: number };
   costFactor: number;
 }
 
 export interface ResearchDef {
-  levelColumn: string;
+  id: string;
   baseCost: { minerai: number; silicium: number; hydrogene: number };
   costFactor: number;
 }
@@ -22,7 +22,7 @@ export function calculateBuildingPoints(
   let totalResources = 0;
 
   for (const [, def] of Object.entries(buildingDefs)) {
-    const level = levels[def.levelColumn] ?? 0;
+    const level = levels[def.id] ?? 0;
     for (let l = 1; l <= level; l++) {
       const factor = Math.pow(def.costFactor, l - 1);
       totalResources += Math.floor(def.baseCost.minerai * factor)
@@ -41,7 +41,7 @@ export function calculateResearchPoints(
   let totalResources = 0;
 
   for (const [, def] of Object.entries(researchDefs)) {
-    const level = levels[def.levelColumn] ?? 0;
+    const level = levels[def.id] ?? 0;
     for (let l = 1; l <= level; l++) {
       const factor = Math.pow(def.costFactor, l - 1);
       totalResources += Math.floor(def.baseCost.minerai * factor)

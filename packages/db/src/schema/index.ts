@@ -11,3 +11,4 @@ export * from './debris-fields.js';
 export * from './alliances.js';
 export * from './game-config.js';
 export * from './game-events.js';
+export * from './planet-buildings.js';

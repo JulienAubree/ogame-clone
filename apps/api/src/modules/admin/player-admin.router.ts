@@ -39,11 +39,11 @@ export function createPlayerAdminRouter(
     updateBuildingLevel: adminProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        levelColumn: z.string(),
+        buildingId: z.string(),
         level: z.number().int().min(0),
       }))
       .mutation(async ({ input }) => {
-        await playerAdminService.updatePlayerBuildingLevel(input.planetId, input.levelColumn, input.level);
+        await playerAdminService.updatePlayerBuildingLevel(input.planetId, input.buildingId, input.level);
         return { success: true };
       }),
 

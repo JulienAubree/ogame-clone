@@ -1,6 +1,6 @@
 import { eq, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets } from '@ogame-clone/db';
+import { planets, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import {
   calculateMaxTemp,
@@ -56,6 +56,18 @@ export function createPlanetService(db: Database, gameConfigService: GameConfigS
           hydrogene: String(startingHydrogene),
         })
         .returning();
+
+      // Initialize building levels at 0 for all buildings
+      const buildingIds = Object.keys(config.buildings);
+      if (buildingIds.length > 0) {
+        await db.insert(planetBuildings).values(
+          buildingIds.map((buildingId) => ({
+            planetId: planet.id,
+            buildingId,
+            level: 0,
+          })),
+        );
+      }
 
       return planet;
     },

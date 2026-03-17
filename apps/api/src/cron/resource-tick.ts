@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { planets, planetTypes } from '@ogame-clone/db';
+import { planets, planetTypes, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { calculateResources } from '@ogame-clone/game-engine';
 
@@ -11,21 +11,32 @@ export async function resourceTick(db: Database) {
   const ptRows = await db.select().from(planetTypes);
   const ptMap = new Map(ptRows.map(pt => [pt.id, { mineraiBonus: pt.mineraiBonus, siliciumBonus: pt.siliciumBonus, hydrogeneBonus: pt.hydrogeneBonus }]));
 
+  // Pre-load all building levels
+  const allBuildingRows = await db.select().from(planetBuildings);
+  const buildingLevelsMap = new Map<string, Record<string, number>>();
+  for (const row of allBuildingRows) {
+    if (!buildingLevelsMap.has(row.planetId)) {
+      buildingLevelsMap.set(row.planetId, {});
+    }
+    buildingLevelsMap.get(row.planetId)![row.buildingId] = row.level;
+  }
+
   let updated = 0;
   for (const planet of allPlanets) {
     const bonus = planet.planetClassId ? ptMap.get(planet.planetClassId) : undefined;
+    const buildingLevels = buildingLevelsMap.get(planet.id) ?? {};
     const resources = calculateResources(
       {
         minerai: Number(planet.minerai),
         silicium: Number(planet.silicium),
         hydrogene: Number(planet.hydrogene),
-        mineraiMineLevel: planet.mineraiMineLevel,
-        siliciumMineLevel: planet.siliciumMineLevel,
-        hydrogeneSynthLevel: planet.hydrogeneSynthLevel,
-        solarPlantLevel: planet.solarPlantLevel,
-        storageMineraiLevel: planet.storageMineraiLevel,
-        storageSiliciumLevel: planet.storageSiliciumLevel,
-        storageHydrogeneLevel: planet.storageHydrogeneLevel,
+        mineraiMineLevel: buildingLevels['mineraiMine'] ?? 0,
+        siliciumMineLevel: buildingLevels['siliciumMine'] ?? 0,
+        hydrogeneSynthLevel: buildingLevels['hydrogeneSynth'] ?? 0,
+        solarPlantLevel: buildingLevels['solarPlant'] ?? 0,
+        storageMineraiLevel: buildingLevels['storageMinerai'] ?? 0,
+        storageSiliciumLevel: buildingLevels['storageSilicium'] ?? 0,
+        storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
         maxTemp: planet.maxTemp,
         mineraiMinePercent: planet.mineraiMinePercent,
         siliciumMinePercent: planet.siliciumMinePercent,

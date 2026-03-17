@@ -1,6 +1,6 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, buildQueue } from '@ogame-clone/db';
+import { planets, buildQueue, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { buildingCost, buildingTime } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
@@ -14,9 +14,22 @@ export function createBuildingService(
   gameConfigService: GameConfigService,
 ) {
   return {
+    async getBuildingLevels(planetId: string): Promise<Record<string, number>> {
+      const rows = await db
+        .select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
+        .from(planetBuildings)
+        .where(eq(planetBuildings.planetId, planetId));
+      const levels: Record<string, number> = {};
+      for (const row of rows) {
+        levels[row.buildingId] = row.level;
+      }
+      return levels;
+    },
+
     async listBuildings(userId: string, planetId: string) {
       const planet = await this.getOwnedPlanet(userId, planetId);
       const config = await gameConfigService.getFullConfig();
+      const buildingLevels = await this.getBuildingLevels(planetId);
 
       const [activeBuild] = await db
         .select()
@@ -33,10 +46,10 @@ export function createBuildingService(
       return Object.values(config.buildings)
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((def) => {
-          const currentLevel = (planet[def.levelColumn as keyof typeof planet] ?? 0) as number;
+          const currentLevel = buildingLevels[def.id] ?? 0;
           const nextLevel = currentLevel + 1;
           const cost = buildingCost(def, nextLevel);
-          const time = buildingTime(def, nextLevel, planet.roboticsLevel);
+          const time = buildingTime(def, nextLevel, buildingLevels['robotics'] ?? 0);
 
           return {
             id: def.id,
@@ -75,13 +88,13 @@ export function createBuildingService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Construction déjà en cours' });
       }
 
+      const buildingLevels = await this.getBuildingLevels(planetId);
+
       // Check prerequisites
       for (const prereq of def.prerequisites) {
-        const prereqDef = config.buildings[prereq.buildingId];
-        const prereqLevel = prereqDef
-          ? (planet[prereqDef.levelColumn as keyof typeof planet] ?? 0) as number
-          : 0;
+        const prereqLevel = buildingLevels[prereq.buildingId] ?? 0;
         if (prereqLevel < prereq.level) {
+          const prereqDef = config.buildings[prereq.buildingId];
           const prereqName = prereqDef?.name ?? prereq.buildingId;
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -91,26 +104,16 @@ export function createBuildingService(
       }
 
       // Check building slots
-      const totalLevels =
-        planet.mineraiMineLevel +
-        planet.siliciumMineLevel +
-        planet.hydrogeneSynthLevel +
-        planet.solarPlantLevel +
-        planet.roboticsLevel +
-        planet.shipyardLevel +
-        planet.researchLabLevel +
-        planet.storageMineraiLevel +
-        planet.storageSiliciumLevel +
-        planet.storageHydrogeneLevel;
+      const totalLevels = Object.values(buildingLevels).reduce((sum, lvl) => sum + lvl, 0);
 
       if (totalLevels >= planet.maxFields) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Plus de champs disponibles' });
       }
 
-      const currentLevel = (planet[def.levelColumn as keyof typeof planet] ?? 0) as number;
+      const currentLevel = buildingLevels[buildingId] ?? 0;
       const nextLevel = currentLevel + 1;
       const cost = buildingCost(def, nextLevel);
-      const time = buildingTime(def, nextLevel, planet.roboticsLevel);
+      const time = buildingTime(def, nextLevel, buildingLevels['robotics'] ?? 0);
 
       // Spend resources (atomic)
       await resourceService.spendResources(planetId, userId, cost);
@@ -163,9 +166,8 @@ export function createBuildingService(
       const config = await gameConfigService.getFullConfig();
       const def = config.buildings[activeBuild.itemId];
       const planet = await this.getOwnedPlanet(userId, planetId);
-      const currentLevel = def
-        ? (planet[def.levelColumn as keyof typeof planet] ?? 0) as number
-        : 0;
+      const buildingLevels = await this.getBuildingLevels(planetId);
+      const currentLevel = buildingLevels[activeBuild.itemId] ?? 0;
       const cost = def ? buildingCost(def, currentLevel + 1) : { minerai: 0, silicium: 0, hydrogene: 0 };
 
       // Refund resources
@@ -200,25 +202,18 @@ export function createBuildingService(
       const def = config.buildings[entry.itemId];
       if (!def) return null;
 
-      const [planet] = await db
-        .select()
-        .from(planets)
-        .where(eq(planets.id, entry.planetId))
-        .limit(1);
-
-      if (!planet) return null;
-
-      const columnKey = def.levelColumn;
-      const currentLevel = (planet[columnKey as keyof typeof planet] ?? 0) as number;
+      const buildingLevels = await this.getBuildingLevels(entry.planetId);
+      const currentLevel = buildingLevels[entry.itemId] ?? 0;
       const newLevel = currentLevel + 1;
 
-      // Update planet level
+      // Upsert planet building level
       await db
-        .update(planets)
-        .set({
-          [columnKey]: newLevel,
-        })
-        .where(eq(planets.id, entry.planetId));
+        .insert(planetBuildings)
+        .values({ planetId: entry.planetId, buildingId: entry.itemId, level: newLevel })
+        .onConflictDoUpdate({
+          target: [planetBuildings.planetId, planetBuildings.buildingId],
+          set: { level: newLevel },
+        });
 
       // Mark queue entry as completed
       await db

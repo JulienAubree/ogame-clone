@@ -20,7 +20,8 @@ export const buildingDefinitions = pgTable('building_definitions', {
   baseCostHydrogene: integer('base_cost_hydrogene').notNull().default(0),
   costFactor: real('cost_factor').notNull().default(1.5),
   baseTime: integer('base_time').notNull().default(60),
-  levelColumn: varchar('level_column', { length: 64 }).notNull(),
+  buildTimeReductionFactor: real('build_time_reduction_factor'),
+  reducesTimeForCategory: varchar('reduces_time_for_category', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
 });

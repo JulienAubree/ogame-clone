@@ -1,6 +1,6 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, fleetEvents, userResearch, debrisFields, users } from '@ogame-clone/db';
+import { planets, planetShips, planetDefenses, fleetEvents, userResearch, debrisFields, users, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import {
   fleetSpeed,
@@ -804,11 +804,11 @@ export function createFleetService(
       }
 
       if (visibility.buildings) {
-        const [planet] = await db.select().from(planets).where(eq(planets.id, targetPlanet.id)).limit(1);
+        const bRows = await db.select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
+          .from(planetBuildings).where(eq(planetBuildings.planetId, targetPlanet.id));
         body += `Bâtiments :\n`;
-        const buildingCols = ['mineraiMineLevel', 'siliciumMineLevel', 'hydrogeneSynthLevel', 'solarPlantLevel', 'roboticsLevel', 'shipyardLevel', 'researchLabLevel'] as const;
-        for (const col of buildingCols) {
-          if (planet[col] > 0) body += `${col}: ${planet[col]}\n`;
+        for (const row of bRows) {
+          if (row.level > 0) body += `${row.buildingId}: ${row.level}\n`;
         }
         body += '\n';
       }

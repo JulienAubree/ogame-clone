@@ -15,6 +15,8 @@ export const COMBAT_STATS: Record<string, UnitCombatStats> = {
   espionageProbe: { weapons: 0,    shield: 0,     armor: 1000 },
   colonyShip:     { weapons: 50,   shield: 100,   armor: 30000 },
   recycler:       { weapons: 1,    shield: 10,    armor: 16000 },
+  prospector:     { weapons: 5,    shield: 10,    armor: 5000 },
+  explorer:       { weapons: 20,   shield: 20,    armor: 8000 },
   // Defenses
   rocketLauncher: { weapons: 80,   shield: 20,    armor: 2000 },
   lightLaser:     { weapons: 100,  shield: 25,    armor: 2000 },

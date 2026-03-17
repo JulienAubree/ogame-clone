@@ -44,7 +44,8 @@ export interface BuildingConfig {
   baseCost: { minerai: number; silicium: number; hydrogene: number };
   costFactor: number;
   baseTime: number;
-  levelColumn: string;
+  buildTimeReductionFactor: number | null;
+  reducesTimeForCategory: string | null;
   categoryId: string | null;
   sortOrder: number;
   prerequisites: { buildingId: string; level: number }[];
@@ -185,7 +186,8 @@ export function createGameConfigService(db: Database) {
         baseCost: { minerai: b.baseCostMinerai, silicium: b.baseCostSilicium, hydrogene: b.baseCostHydrogene },
         costFactor: b.costFactor,
         baseTime: b.baseTime,
-        levelColumn: b.levelColumn,
+        buildTimeReductionFactor: b.buildTimeReductionFactor,
+        reducesTimeForCategory: b.reducesTimeForCategory,
         categoryId: b.categoryId,
         sortOrder: b.sortOrder,
         prerequisites: buildingPrereqRows
@@ -335,7 +337,8 @@ export function createGameConfigService(db: Database) {
       baseCostHydrogene?: number;
       costFactor?: number;
       baseTime?: number;
-      levelColumn: string;
+      buildTimeReductionFactor?: number | null;
+      reducesTimeForCategory?: string | null;
       categoryId?: string | null;
       sortOrder?: number;
     }) {
@@ -348,7 +351,8 @@ export function createGameConfigService(db: Database) {
         baseCostHydrogene: data.baseCostHydrogene ?? 0,
         costFactor: data.costFactor ?? 1.5,
         baseTime: data.baseTime ?? 60,
-        levelColumn: data.levelColumn,
+        buildTimeReductionFactor: data.buildTimeReductionFactor ?? null,
+        reducesTimeForCategory: data.reducesTimeForCategory ?? null,
         categoryId: data.categoryId ?? null,
         sortOrder: data.sortOrder ?? 0,
       });
@@ -408,6 +412,8 @@ export function createGameConfigService(db: Database) {
       baseCostHydrogene: number;
       costFactor: number;
       baseTime: number;
+      buildTimeReductionFactor: number | null;
+      reducesTimeForCategory: string | null;
       categoryId: string | null;
       sortOrder: number;
     }>) {

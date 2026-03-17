@@ -1,11 +1,23 @@
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, userResearch, buildQueue } from '@ogame-clone/db';
+import { planets, userResearch, buildQueue, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { researchCost, researchTime, checkResearchPrerequisites } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
+
+async function getBuildingLevels(db: Database, planetId: string): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
+    .from(planetBuildings)
+    .where(eq(planetBuildings.planetId, planetId));
+  const levels: Record<string, number> = {};
+  for (const row of rows) {
+    levels[row.buildingId] = row.level;
+  }
+  return levels;
+}
 
 export function createResearchService(
   db: Database,
@@ -18,6 +30,7 @@ export function createResearchService(
       const planet = await this.getOwnedPlanet(userId, planetId);
       const research = await this.getOrCreateResearch(userId);
       const config = await gameConfigService.getFullConfig();
+      const buildingLevels = await getBuildingLevels(db, planetId);
 
       const [activeResearch] = await db
         .select()
@@ -37,12 +50,9 @@ export function createResearchService(
           const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
           const nextLevel = currentLevel + 1;
           const cost = researchCost(def, nextLevel);
-          const time = researchTime(def, nextLevel, planet.researchLabLevel);
+          const researchLabLevel = buildingLevels['researchLab'] ?? 0;
+          const time = researchTime(def, nextLevel, researchLabLevel);
 
-          const buildingLevels: Record<string, number> = {
-            researchLabLevel: planet.researchLabLevel,
-            shipyardLevel: planet.shipyardLevel,
-          };
           const researchLevels: Record<string, number> = {};
           for (const [key, rDef] of Object.entries(config.research)) {
             researchLevels[key] = (research[rDef.levelColumn as keyof typeof research] ?? 0) as number;
@@ -87,10 +97,7 @@ export function createResearchService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Recherche déjà en cours' });
       }
 
-      const buildingLevels: Record<string, number> = {
-        researchLabLevel: planet.researchLabLevel,
-        shipyardLevel: planet.shipyardLevel,
-      };
+      const buildingLevels = await getBuildingLevels(db, planetId);
       const researchLevels: Record<string, number> = {};
       for (const [key, rDef] of Object.entries(config.research)) {
         researchLevels[key] = (research[rDef.levelColumn as keyof typeof research] ?? 0) as number;
@@ -103,7 +110,8 @@ export function createResearchService(
       const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
       const nextLevel = currentLevel + 1;
       const cost = researchCost(def, nextLevel);
-      const time = researchTime(def, nextLevel, planet.researchLabLevel);
+      const researchLabLevel = buildingLevels['researchLab'] ?? 0;
+      const time = researchTime(def, nextLevel, researchLabLevel);
 
       await resourceService.spendResources(planetId, userId, cost);
 

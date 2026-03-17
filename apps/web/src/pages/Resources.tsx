@@ -84,7 +84,7 @@ export default function Resources() {
   const energyGenerators = [
     {
       name: 'Mine de minerai',
-      level: data.levels.mineraiMineLevel,
+      level: data.levels.mineraiMine,
       perHour: data.rates.mineraiPerHour,
       energy: data.rates.mineraiMineEnergyConsumption,
       percent: data.rates.mineraiMinePercent,
@@ -93,7 +93,7 @@ export default function Resources() {
     },
     {
       name: 'Mine de silicium',
-      level: data.levels.siliciumMineLevel,
+      level: data.levels.siliciumMine,
       perHour: data.rates.siliciumPerHour,
       energy: data.rates.siliciumMineEnergyConsumption,
       percent: data.rates.siliciumMinePercent,
@@ -102,7 +102,7 @@ export default function Resources() {
     },
     {
       name: 'Synth. H\u2082',
-      level: data.levels.hydrogeneSynthLevel,
+      level: data.levels.hydrogeneSynth,
       perHour: data.rates.hydrogenePerHour,
       energy: data.rates.hydrogeneSynthEnergyConsumption,
       percent: data.rates.hydrogeneSynthPercent,
@@ -200,7 +200,7 @@ export default function Resources() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-energy font-medium glow-energy">Centrale solaire</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">Niv. {data.levels.solarPlantLevel}</Badge>
+                  <Badge variant="secondary" className="text-xs">Niv. {data.levels.solarPlant}</Badge>
                   <span className="text-energy font-mono">+{data.rates.energyProduced}</span>
                 </div>
               </div>

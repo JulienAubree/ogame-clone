@@ -31,7 +31,8 @@ export function createResourceRouter(
           bonus = pt ?? undefined;
         }
 
-        const rates = resourceService.getProductionRates(planet, bonus);
+        const buildingLevels = await resourceService.getBuildingLevels(input.planetId);
+        const rates = await resourceService.getProductionRates(input.planetId, planet, bonus);
         return {
           rates,
           resourcesUpdatedAt: planet.resourcesUpdatedAt.toISOString(),
@@ -41,10 +42,10 @@ export function createResourceRouter(
           maxTemp: planet.maxTemp,
           planetClassId: planet.planetClassId,
           levels: {
-            mineraiMineLevel: planet.mineraiMineLevel,
-            siliciumMineLevel: planet.siliciumMineLevel,
-            hydrogeneSynthLevel: planet.hydrogeneSynthLevel,
-            solarPlantLevel: planet.solarPlantLevel,
+            mineraiMine: buildingLevels['mineraiMine'] ?? 0,
+            siliciumMine: buildingLevels['siliciumMine'] ?? 0,
+            hydrogeneSynth: buildingLevels['hydrogeneSynth'] ?? 0,
+            solarPlant: buildingLevels['solarPlant'] ?? 0,
           },
         };
       }),

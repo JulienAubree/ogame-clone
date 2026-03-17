@@ -18,6 +18,7 @@
     "db:push": "tsx node_modules/drizzle-kit/bin.cjs push",
     "db:studio": "tsx node_modules/drizzle-kit/bin.cjs studio",
     "db:seed": "tsx src/seed-game-config.ts",
+    "db:migrate-buildings": "tsx src/migrate-buildings.ts",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
