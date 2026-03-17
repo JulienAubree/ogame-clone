@@ -3,7 +3,7 @@ import postgres from 'postgres';
 import { sql } from 'drizzle-orm';
 
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://ogame:ogame@localhost:5432/ogame';
-const client = postgres(DATABASE_URL);
+const client = postgres(DATABASE_URL, { max: 1 });
 const db = drizzle(client);
 
 async function migrate() {
