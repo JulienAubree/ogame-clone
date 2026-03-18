@@ -3,7 +3,6 @@ import { useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ResourceCost } from '@/components/common/ResourceCost';
 import { Timer } from '@/components/common/Timer';
 import { GameImage } from '@/components/common/GameImage';
@@ -11,9 +10,10 @@ import { formatDuration } from '@/lib/format';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PageHeader } from '@/components/common/PageHeader';
-import { EntityDetailOverlay, InfoButton } from '@/components/common/EntityDetailOverlay';
+import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { BuildingDetailContent } from '@/components/entity-details/BuildingDetailContent';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { cn } from '@/lib/utils';
 import {
   mineraiProduction, siliciumProduction, hydrogeneProduction,
   solarPlantEnergy, mineraiMineEnergy, siliciumMineEnergy, hydrogeneSynthEnergy,
@@ -92,6 +92,24 @@ function getProductionStats(
   }
 }
 
+function getResourceGlowClass(buildingId: string): string {
+  switch (buildingId) {
+    case 'mineraiMine':
+    case 'storageMinerai':
+      return 'retro-card-minerai';
+    case 'siliciumMine':
+    case 'storageSilicium':
+      return 'retro-card-silicium';
+    case 'hydrogeneSynth':
+    case 'storageHydrogene':
+      return 'retro-card-hydrogene';
+    case 'solarPlant':
+      return 'retro-card-energy';
+    default:
+      return '';
+  }
+}
+
 export default function Buildings() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
@@ -159,6 +177,8 @@ export default function Buildings() {
     .filter((c) => c.entityType === 'building')
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
+  const detailBuilding = detailId ? buildings.find((b) => b.id === detailId) : undefined;
+
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Bâtiments" />
@@ -177,7 +197,7 @@ export default function Buildings() {
               onClick={() =>
                 setCollapsed((prev) => ({ ...prev, [category.id]: !prev[category.id] }))
               }
-              className="flex w-full items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
+              className="flex w-full items-center justify-between py-2 border-b border-border mb-4 font-mono text-sm font-semibold text-muted-foreground uppercase tracking-widest"
             >
               <span>{category.name}</span>
               <svg
@@ -193,7 +213,7 @@ export default function Buildings() {
 
             {!isCollapsed && (
               <>
-                {/* Mobile: compact list */}
+                {/* Mobile: compact list with thumbnails */}
                 <div className="space-y-1 lg:hidden">
                   {categoryBuildings.map((building) => {
                     const canAfford =
@@ -217,14 +237,14 @@ export default function Buildings() {
                           id={building.id}
                           size="icon"
                           alt={building.name}
-                          className="h-8 w-8 rounded"
+                          className="h-11 w-11 rounded"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium truncate">{building.name}</span>
-                            <Badge variant="secondary" className="text-xs ml-2">
-                              Niv. {building.currentLevel}
-                            </Badge>
+                            <span className="text-sm font-bold truncate">{building.name}</span>
+                            <span className="ml-2 shrink-0 bg-primary/12 text-primary border border-primary/20 font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded">
+                              {building.currentLevel}
+                            </span>
                           </div>
                           {building.isUpgrading && building.upgradeEndTime ? (
                             <div className="mt-1">
@@ -252,6 +272,7 @@ export default function Buildings() {
                         </div>
                         {!building.isUpgrading && (
                           <Button
+                            variant="retro"
                             size="sm"
                             className="shrink-0"
                             onClick={(e) => {
@@ -276,7 +297,7 @@ export default function Buildings() {
                   })}
                 </div>
 
-                {/* Desktop: card grid */}
+                {/* Desktop: retro card grid */}
                 <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4">
                   {categoryBuildings.map((building) => {
                     const canAfford =
@@ -284,11 +305,10 @@ export default function Buildings() {
                       resources.silicium >= building.nextLevelCost.silicium &&
                       resources.hydrogene >= building.nextLevelCost.hydrogene;
 
-                    const unmetPrereqs = building.prerequisites.filter((prereq) => {
-                      const prereqBuilding = buildings.find((b) => b.id === prereq.buildingId);
-                      return !prereqBuilding || prereqBuilding.currentLevel < prereq.level;
+                    const prereqsMet = building.prerequisites.every((p) => {
+                      const pb = buildings.find((b) => b.id === p.buildingId);
+                      return pb && pb.currentLevel >= p.level;
                     });
-                    const prereqsMet = unmetPrereqs.length === 0;
 
                     const stats = getProductionStats(
                       building.id,
@@ -298,148 +318,93 @@ export default function Buildings() {
                     );
 
                     return (
-                      <div key={building.id} className="glass-card relative p-4 space-y-3">
-                        <InfoButton onClick={() => setDetailId(building.id)} />
-                        <div className="flex items-center gap-3">
+                      <button
+                        key={building.id}
+                        onClick={() => setDetailId(building.id)}
+                        className={cn(
+                          'retro-card relative p-4 text-left cursor-pointer',
+                          getResourceGlowClass(building.id),
+                        )}
+                      >
+                        <div className="flex gap-3">
                           <GameImage
                             category="buildings"
                             id={building.id}
-                            size="icon"
+                            size="thumb"
                             alt={building.name}
-                            className="h-10 w-10 rounded"
+                            className="h-[72px] w-[72px] rounded object-cover shrink-0"
                           />
-                          <div className="flex flex-1 items-center justify-between">
-                            <h3 className="text-base font-semibold">{building.name}</h3>
-                            <Badge variant="secondary">Niv. {building.currentLevel}</Badge>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-muted-foreground">{building.description}</p>
-
-                        {stats && building.currentLevel > 0 && (
-                          <div className="rounded-md bg-muted/30 px-3 py-2 space-y-1">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">{stats.label} actuelle :</span>
-                              <span className={`font-mono font-medium ${stats.color}`}>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-bold text-foreground text-sm truncate">
+                                {building.name}
+                              </h3>
+                              <span className="ml-2 shrink-0 bg-primary/12 text-primary border border-primary/20 font-mono text-xs font-semibold px-2 py-0.5 rounded">
+                                {building.currentLevel}
+                              </span>
+                            </div>
+                            {stats && building.currentLevel > 0 && (
+                              <div className={`text-sm font-mono font-bold ${stats.color}`}>
                                 {stats.current.toLocaleString('fr-FR')}
                                 {stats.unit}
-                              </span>
-                            </div>
-                            {stats.energyCurrent != null && (
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">Énergie consommée :</span>
-                                <span className="font-mono font-medium text-amber-400">
-                                  -{stats.energyCurrent.toLocaleString('fr-FR')}
+                              </div>
+                            )}
+                            {stats && (
+                              <div className="text-xs text-muted-foreground font-mono">
+                                → Niv.{building.currentLevel + 1} :{' '}
+                                <span className="text-emerald-400">
+                                  +{stats.delta.toLocaleString('fr-FR')}
+                                  {stats.unit}
                                 </span>
                               </div>
                             )}
-                          </div>
-                        )}
-
-                        {stats && (
-                          <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 space-y-1">
-                            <div className="text-xs text-muted-foreground mb-1">
-                              Niveau {building.currentLevel + 1} :
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">{stats.label} :</span>
-                              <span className={`font-mono font-medium ${stats.color}`}>
-                                {stats.next.toLocaleString('fr-FR')}
-                                {stats.unit}
-                                <span className="text-xs ml-1 opacity-75">
-                                  (+{stats.delta.toLocaleString('fr-FR')})
-                                </span>
-                              </span>
-                            </div>
-                            {stats.energyDelta != null && (
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">Énergie :</span>
-                                <span className="font-mono font-medium text-amber-400">
-                                  -{stats.energyNext!.toLocaleString('fr-FR')}
-                                  <span className="text-xs ml-1 opacity-75">
-                                    (-{stats.energyDelta.toLocaleString('fr-FR')})
-                                  </span>
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="space-y-1">
-                          <div className="text-xs text-muted-foreground">
-                            Coût niveau {building.currentLevel + 1} :
-                          </div>
-                          <ResourceCost
-                            minerai={building.nextLevelCost.minerai}
-                            silicium={building.nextLevelCost.silicium}
-                            hydrogene={building.nextLevelCost.hydrogene}
-                            currentMinerai={resources.minerai}
-                            currentSilicium={resources.silicium}
-                            currentHydrogene={resources.hydrogene}
-                          />
-                          <div className="text-xs text-muted-foreground">
-                            Durée : {formatDuration(building.nextLevelTime)}
                           </div>
                         </div>
 
-                        {!prereqsMet && (
-                          <p className="text-xs text-destructive">
-                            Prérequis :{' '}
-                            {unmetPrereqs
-                              .map((p) => {
-                                const b = buildings.find((b) => b.id === p.buildingId);
-                                return b
-                                  ? `${b.name} niv. ${p.level}`
-                                  : `${p.buildingId} niv. ${p.level}`;
-                              })
-                              .join(', ')}
-                          </p>
-                        )}
-
-                        {building.isUpgrading && building.upgradeEndTime ? (
-                          <div className="space-y-2">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-primary">En construction...</span>
-                              </div>
-                              <Timer
-                                endTime={new Date(building.upgradeEndTime)}
-                                totalDuration={building.nextLevelTime}
-                                onComplete={() => {
-                                  utils.building.list.invalidate({ planetId: planetId! });
-                                  utils.resource.production.invalidate({ planetId: planetId! });
-                                }}
+                        <div className="flex items-center justify-between mt-3">
+                          {building.isUpgrading && building.upgradeEndTime ? (
+                            <Timer
+                              endTime={new Date(building.upgradeEndTime)}
+                              totalDuration={building.nextLevelTime}
+                              onComplete={() => {
+                                utils.building.list.invalidate({ planetId: planetId! });
+                                utils.resource.production.invalidate({ planetId: planetId! });
+                              }}
+                            />
+                          ) : (
+                            <>
+                              <ResourceCost
+                                minerai={building.nextLevelCost.minerai}
+                                silicium={building.nextLevelCost.silicium}
+                                hydrogene={building.nextLevelCost.hydrogene}
+                                currentMinerai={resources.minerai}
+                                currentSilicium={resources.silicium}
+                                currentHydrogene={resources.hydrogene}
                               />
-                            </div>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => setCancelConfirm(true)}
-                              disabled={cancelMutation.isPending}
-                            >
-                              Annuler
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              upgradeMutation.mutate({
-                                planetId: planetId!,
-                                buildingId: building.id as any,
-                              })
-                            }
-                            disabled={
-                              !canAfford ||
-                              !prereqsMet ||
-                              isAnyUpgrading ||
-                              upgradeMutation.isPending
-                            }
-                          >
-                            Améliorer au niv. {building.currentLevel + 1}
-                          </Button>
-                        )}
-                      </div>
+                              <Button
+                                variant="retro"
+                                size="sm"
+                                className="shrink-0 ml-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  upgradeMutation.mutate({
+                                    planetId: planetId!,
+                                    buildingId: building.id as any,
+                                  });
+                                }}
+                                disabled={
+                                  !canAfford ||
+                                  !prereqsMet ||
+                                  isAnyUpgrading ||
+                                  upgradeMutation.isPending
+                                }
+                              >
+                                Niv.{building.currentLevel + 1} ↑
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -462,6 +427,17 @@ export default function Buildings() {
                 ? {
                     maxTemp: resourceData.maxTemp,
                     productionFactor: resourceData.rates.productionFactor,
+                  }
+                : undefined
+            }
+            runtimeData={
+              detailBuilding
+                ? {
+                    currentLevel: detailBuilding.currentLevel,
+                    nextLevelCost: detailBuilding.nextLevelCost,
+                    nextLevelTime: detailBuilding.nextLevelTime,
+                    isUpgrading: detailBuilding.isUpgrading,
+                    upgradeEndTime: detailBuilding.upgradeEndTime,
                   }
                 : undefined
             }

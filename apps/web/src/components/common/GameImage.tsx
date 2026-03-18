@@ -36,7 +36,7 @@ export function GameImage({ category, id, size = 'full', alt, className }: GameI
     return (
       <div
         className={cn(
-          'flex items-center justify-center rounded font-semibold',
+          'flex items-center justify-center rounded font-semibold font-mono border border-dashed border-border',
           getFallbackColor(id),
           className,
         )}

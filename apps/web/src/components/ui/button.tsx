@@ -13,6 +13,8 @@ const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
+        retro:
+          'bg-gradient-to-b from-muted to-card border border-primary/40 text-primary font-mono uppercase tracking-wider shadow-sm hover:from-muted/80 hover:to-card/80 hover:shadow-[0_0_8px_rgba(103,212,232,0.15)]',
       },
       size: {
         default: 'h-9 px-4 py-2',

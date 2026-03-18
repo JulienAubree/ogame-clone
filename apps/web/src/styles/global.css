@@ -80,4 +80,29 @@
   .glow-energy {
     text-shadow: var(--glow-energy);
   }
+
+  .retro-card {
+    @apply bg-card border border-border rounded-md transition-colors;
+  }
+  .retro-card:hover {
+    border-color: rgba(103, 212, 232, 0.3);
+    box-shadow: 0 0 10px rgba(103, 212, 232, 0.08);
+  }
+
+  .retro-card-minerai:hover {
+    border-color: rgba(251, 146, 60, 0.35);
+    box-shadow: 0 0 10px rgba(251, 146, 60, 0.1);
+  }
+  .retro-card-silicium:hover {
+    border-color: rgba(52, 211, 153, 0.35);
+    box-shadow: 0 0 10px rgba(52, 211, 153, 0.1);
+  }
+  .retro-card-hydrogene:hover {
+    border-color: rgba(96, 165, 250, 0.35);
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.1);
+  }
+  .retro-card-energy:hover {
+    border-color: rgba(240, 192, 64, 0.35);
+    box-shadow: 0 0 10px rgba(240, 192, 64, 0.1);
+  }
 }
