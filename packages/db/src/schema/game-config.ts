@@ -24,6 +24,7 @@ export const buildingDefinitions = pgTable('building_definitions', {
   reducesTimeForCategory: varchar('reduces_time_for_category', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
+  flavorText: text('flavor_text'),
 });
 
 export const buildingPrerequisites = pgTable('building_prerequisites', {
@@ -47,6 +48,8 @@ export const researchDefinitions = pgTable('research_definitions', {
   levelColumn: varchar('level_column', { length: 64 }).notNull(),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
+  flavorText: text('flavor_text'),
+  effectDescription: text('effect_description'),
 });
 
 export const researchPrerequisites = pgTable('research_prerequisites', {
@@ -76,6 +79,7 @@ export const shipDefinitions = pgTable('ship_definitions', {
   armor: integer('armor').notNull().default(0),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
+  flavorText: text('flavor_text'),
 });
 
 export const shipPrerequisites = pgTable('ship_prerequisites', {
@@ -102,6 +106,7 @@ export const defenseDefinitions = pgTable('defense_definitions', {
   maxPerPlanet: integer('max_per_planet'),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
+  flavorText: text('flavor_text'),
 });
 
 export const defensePrerequisites = pgTable('defense_prerequisites', {

@@ -29,6 +29,13 @@
       "when": 1774147200000,
       "tag": "0003_tutorial_quest_definitions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774147200001,
+      "tag": "0004_detail_card_texts",
+      "breakpoints": true
     }
   ]
 }
