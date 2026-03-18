@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, fleetEvents, userResearch, debrisFields, users, planetBuildings, pveMissions, asteroidDeposits } from '@ogame-clone/db';
 import { BELT_POSITIONS } from '../universe/universe.config.js';
@@ -18,6 +18,8 @@ import {
   simulateCombat,
   totalExtracted,
   extractionDuration,
+  miningDuration,
+  prospectionDuration,
   type CombatTechs,
   type ShipStats,
 } from '@ogame-clone/game-engine';
@@ -286,7 +288,7 @@ export function createFleetService(
             eq(fleetEvents.id, fleetEventId),
             eq(fleetEvents.userId, userId),
             eq(fleetEvents.status, 'active'),
-            eq(fleetEvents.phase, 'outbound'),
+            inArray(fleetEvents.phase, ['outbound', 'prospecting', 'mining']),
           ),
         )
         .limit(1);
@@ -299,7 +301,14 @@ export function createFleetService(
       const elapsed = now.getTime() - event.departureTime.getTime();
       const returnTime = new Date(now.getTime() + elapsed);
 
-      await fleetArrivalQueue.remove(`fleet-arrive-${event.id}`);
+      // Cancel the pending job for the current phase
+      const jobIdMap: Record<string, string> = {
+        outbound: `fleet-arrive-${event.id}`,
+        prospecting: `fleet-prospect-${event.id}`,
+        mining: `fleet-mine-${event.id}`,
+      };
+      const jobId = jobIdMap[event.phase];
+      if (jobId) await fleetArrivalQueue.remove(jobId);
 
       // Release PvE mission back to available if recalling
       if (event.pveMissionId && pveService) {
@@ -464,41 +473,30 @@ export function createFleetService(
           return { ...eventMeta, mission: 'mine', extracted: 0 };
         }
 
+        // Transition to prospecting phase
         const params = mission.parameters as { depositId: string; resourceType: string };
-        const centerLevel = await pveService.getMissionCenterLevel(event.userId);
-        const prospectorCount = ships['prospector'] ?? 0;
-        const config = await gameConfigService.getFullConfig();
-        const shipStatsMap = buildShipStatsMap(config);
-        const cargoCapacity = totalCargoCapacity(ships, shipStatsMap);
-
         const [deposit] = await db.select().from(asteroidDeposits)
           .where(eq(asteroidDeposits.id, params.depositId)).limit(1);
-        const depositRemaining = deposit ? Number(deposit.remainingQuantity) : 0;
-        const extractAmount = totalExtracted(centerLevel, prospectorCount, cargoCapacity, depositRemaining);
+        const depositTotal = deposit ? Number(deposit.totalQuantity) : 0;
+        const prospectMins = prospectionDuration(depositTotal);
+        const prospectMs = prospectMins * 60 * 1000;
 
-        const extracted = await asteroidBeltService.extractFromDeposit(params.depositId, extractAmount);
-
-        const cargo = { minerai: 0, silicium: 0, hydrogene: 0 };
-        if (extracted > 0) {
-          cargo[params.resourceType as keyof typeof cargo] = extracted;
-        }
+        const now = new Date();
+        const prospectArrival = new Date(now.getTime() + prospectMs);
 
         await db.update(fleetEvents).set({
-          mineraiCargo: String(cargo.minerai),
-          siliciumCargo: String(cargo.silicium),
-          hydrogeneCargo: String(cargo.hydrogene),
+          phase: 'prospecting',
+          departureTime: now,
+          arrivalTime: prospectArrival,
         }).where(eq(fleetEvents.id, event.id));
 
-        const extractionMins = extractionDuration(centerLevel);
-        const extractionMs = extractionMins * 60 * 1000;
-        await this.scheduleReturnWithDelay(
-          event.id, event.originPlanetId, targetCoords, ships,
-          cargo.minerai, cargo.silicium, cargo.hydrogene,
-          extractionMs,
+        await fleetArrivalQueue.add(
+          'prospect-done',
+          { fleetEventId: event.id },
+          { delay: prospectMs, jobId: `fleet-prospect-${event.id}` },
         );
 
-        await pveService.completeMission(mission.id);
-        return { ...eventMeta, mission: 'mine', extracted };
+        return { ...eventMeta, mission: 'mine', phase: 'prospecting', prospectionDuration: prospectMins };
       }
 
       if (event.mission === 'pirate') {
@@ -565,6 +563,108 @@ export function createFleetService(
       );
 
       return { ...eventMeta, mission: event.mission, placeholder: true };
+    },
+
+    async processProspectDone(fleetEventId: string) {
+      const [event] = await db
+        .select()
+        .from(fleetEvents)
+        .where(and(eq(fleetEvents.id, fleetEventId), eq(fleetEvents.status, 'active'), eq(fleetEvents.phase, 'prospecting')))
+        .limit(1);
+
+      if (!event) return { skipped: true };
+
+      const pveMissionId = event.pveMissionId;
+      const mission = pveMissionId
+        ? await db.select().from(pveMissions).where(eq(pveMissions.id, pveMissionId)).limit(1).then(r => r[0])
+        : null;
+      const ships = event.ships as Record<string, number>;
+
+      if (!mission || !pveService) {
+        const targetCoords = { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition };
+        await this.scheduleReturn(event.id, event.originPlanetId, targetCoords, ships, 0, 0, 0);
+        return { fleetEventId, phase: 'error' };
+      }
+
+      // Transition to mining phase
+      const centerLevel = await pveService.getMissionCenterLevel(event.userId);
+      const [research] = await db.select().from(userResearch).where(eq(userResearch.userId, event.userId)).limit(1);
+      const fracturingLevel = research?.rockFracturing ?? 0;
+      const mineMins = miningDuration(centerLevel, fracturingLevel);
+      const mineMs = mineMins * 60 * 1000;
+
+      const now = new Date();
+      const mineArrival = new Date(now.getTime() + mineMs);
+
+      await db.update(fleetEvents).set({
+        phase: 'mining',
+        departureTime: now,
+        arrivalTime: mineArrival,
+      }).where(eq(fleetEvents.id, event.id));
+
+      await fleetArrivalQueue.add(
+        'mine-done',
+        { fleetEventId: event.id },
+        { delay: mineMs, jobId: `fleet-mine-${event.id}` },
+      );
+
+      return { fleetEventId, phase: 'mining', miningDuration: mineMins };
+    },
+
+    async processMineDone(fleetEventId: string) {
+      const [event] = await db
+        .select()
+        .from(fleetEvents)
+        .where(and(eq(fleetEvents.id, fleetEventId), eq(fleetEvents.status, 'active'), eq(fleetEvents.phase, 'mining')))
+        .limit(1);
+
+      if (!event) return { skipped: true };
+
+      const pveMissionId = event.pveMissionId;
+      const mission = pveMissionId
+        ? await db.select().from(pveMissions).where(eq(pveMissions.id, pveMissionId)).limit(1).then(r => r[0])
+        : null;
+      const ships = event.ships as Record<string, number>;
+      const targetCoords = { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition };
+
+      if (!mission || !pveService || !asteroidBeltService) {
+        await this.scheduleReturn(event.id, event.originPlanetId, targetCoords, ships, 0, 0, 0);
+        return { fleetEventId, extracted: 0 };
+      }
+
+      // Extract resources
+      const params = mission.parameters as { depositId: string; resourceType: string };
+      const centerLevel = await pveService.getMissionCenterLevel(event.userId);
+      const prospectorCount = ships['prospector'] ?? 0;
+      const config = await gameConfigService.getFullConfig();
+      const shipStatsMap = buildShipStatsMap(config);
+      const cargoCapacity = totalCargoCapacity(ships, shipStatsMap);
+
+      const [deposit] = await db.select().from(asteroidDeposits)
+        .where(eq(asteroidDeposits.id, params.depositId)).limit(1);
+      const depositRemaining = deposit ? Number(deposit.remainingQuantity) : 0;
+      const extractAmount = totalExtracted(centerLevel, prospectorCount, cargoCapacity, depositRemaining);
+
+      const extracted = await asteroidBeltService.extractFromDeposit(params.depositId, extractAmount);
+
+      const cargo = { minerai: 0, silicium: 0, hydrogene: 0 };
+      if (extracted > 0) {
+        cargo[params.resourceType as keyof typeof cargo] = extracted;
+      }
+
+      await db.update(fleetEvents).set({
+        mineraiCargo: String(cargo.minerai),
+        siliciumCargo: String(cargo.silicium),
+        hydrogeneCargo: String(cargo.hydrogene),
+      }).where(eq(fleetEvents.id, event.id));
+
+      await this.scheduleReturn(
+        event.id, event.originPlanetId, targetCoords, ships,
+        cargo.minerai, cargo.silicium, cargo.hydrogene,
+      );
+
+      await pveService.completeMission(mission.id);
+      return { fleetEventId, extracted };
     },
 
     async processReturn(fleetEventId: string) {
