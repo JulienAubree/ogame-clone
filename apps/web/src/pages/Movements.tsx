@@ -63,9 +63,17 @@ export default function Movements() {
         <div className="space-y-4 lg:max-w-4xl lg:mx-auto">
           {movements.map((event) => {
             const ships = event.ships as Record<string, number>;
-            const isOutbound = event.phase === 'outbound';
             const borderColor = MISSION_BORDER_COLORS[event.mission] || 'border-l-muted';
-            const isExtracting = event.mission === 'mine' && event.phase === 'return' && new Date(event.departureTime) > new Date();
+            const coords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
+            const canRecall = ['outbound', 'prospecting', 'mining'].includes(event.phase);
+
+            const phaseLabels: Record<string, string> = {
+              outbound: `En route vers ${coords}`,
+              prospecting: `Prospection en cours sur ${coords}`,
+              mining: `Extraction en cours sur ${coords}`,
+              return: 'Retour',
+            };
+            const phaseLabel = phaseLabels[event.phase] ?? event.phase;
 
             return (
               <div key={event.id} className={cn('glass-card border-l-4 p-4 space-y-2', borderColor)}>
@@ -73,7 +81,7 @@ export default function Movements() {
                   <div>
                     <span className="text-sm font-medium">{MISSION_LABELS[event.mission] ?? event.mission}</span>
                     <span className="text-xs text-muted-foreground ml-2">
-                      {isExtracting ? 'Extraction en cours...' : isOutbound ? 'Aller' : 'Retour'}
+                      {phaseLabel}
                     </span>
                   </div>
                   <Timer
@@ -82,7 +90,7 @@ export default function Movements() {
                   />
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Destination : [{event.targetGalaxy}:{event.targetSystem}:{event.targetPosition}]
+                  Destination : {coords}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Vaisseaux :{' '}
@@ -98,7 +106,7 @@ export default function Movements() {
                     <span className="text-hydrogene">H:{Number(event.hydrogeneCargo).toLocaleString('fr-FR')}</span>
                   </div>
                 )}
-                {isOutbound && (
+                {canRecall && (
                   <Button
                     variant="destructive"
                     size="sm"
