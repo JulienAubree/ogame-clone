@@ -6,7 +6,7 @@ import type { ResearchId } from '@ogame-clone/game-engine';
 const researchIds = [
   'espionageTech', 'computerTech', 'energyTech',
   'combustion', 'impulse', 'hyperspaceDrive',
-  'weapons', 'shielding', 'armor',
+  'weapons', 'shielding', 'armor', 'rockFracturing',
 ] as const;
 
 export function createResearchRouter(researchService: ReturnType<typeof createResearchService>) {
