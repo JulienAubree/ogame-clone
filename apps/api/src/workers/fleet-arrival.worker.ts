@@ -25,7 +25,20 @@ export function startFleetArrivalWorker(db: ReturnType<typeof createDb>) {
     'fleet-arrival',
     async (job) => {
       const { fleetEventId } = job.data as { fleetEventId: string };
-      console.log(`[fleet-arrival] Processing job ${job.id}`);
+      console.log(`[fleet-arrival] Processing job ${job.id} (name: ${job.name})`);
+
+      if (job.name === 'prospect-done') {
+        const result = await fleetService.processProspectDone(fleetEventId);
+        console.log(`[fleet-arrival] Prospect done for ${fleetEventId}`, result);
+        return;
+      }
+
+      if (job.name === 'mine-done') {
+        const result = await fleetService.processMineDone(fleetEventId);
+        console.log(`[fleet-arrival] Mine done for ${fleetEventId}, extracted: ${result.extracted}`);
+        return;
+      }
+
       const result = await fleetService.processArrival(fleetEventId);
       if (result) {
         console.log(`[fleet-arrival] Mission ${result.mission} processed`);
