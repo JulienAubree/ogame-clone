@@ -1,4 +1,16 @@
 exilium-game.com, www.exilium-game.com {
+	route /assets/* {
+		@uploads file /opt/ogame-clone/uploads{path}
+		handle @uploads {
+			root * /opt/ogame-clone/uploads
+			file_server
+		}
+		handle {
+			root * /opt/ogame-clone/apps/web/dist
+			file_server
+		}
+	}
+
 	handle /trpc/* {
 		reverse_proxy localhost:3000
 	}
@@ -23,6 +35,22 @@ exilium-game.com, www.exilium-game.com {
 admin.exilium-game.com {
 	handle /trpc/* {
 		reverse_proxy localhost:3000
+	}
+
+	handle /admin/* {
+		reverse_proxy localhost:3000
+	}
+
+	route /assets/* {
+		@uploads file /opt/ogame-clone/uploads{path}
+		handle @uploads {
+			root * /opt/ogame-clone/uploads
+			file_server
+		}
+		handle {
+			root * /opt/ogame-clone/apps/web/dist
+			file_server
+		}
 	}
 
 	handle {
