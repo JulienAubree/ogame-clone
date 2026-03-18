@@ -20,7 +20,7 @@ export function startFleetReturnWorker(db: ReturnType<typeof createDb>) {
   const pirateService = createPirateService(db, gameConfigService);
   const pveService = createPveService(db, asteroidBeltService, pirateService);
   const fleetService = createFleetService(db, resourceService, fleetArrivalQueue, fleetReturnQueue, UNIVERSE_CONFIG.speed, undefined, gameConfigService, pveService, asteroidBeltService, pirateService);
-  const tutorialService = createTutorialService(db);
+  const tutorialService = createTutorialService(db, pveService);
   const redis = new Redis(env.REDIS_URL);
 
   const worker = new Worker(
@@ -70,7 +70,38 @@ export function startFleetReturnWorker(db: ReturnType<typeof createDb>) {
             });
           }
 
-          // Tutorial quest check (mission_complete for mine missions)
+          // Tutorial quest check (fleet_return for any fleet return — quest 12)
+          const fleetReturnResult = await tutorialService.checkAndComplete(result.userId, {
+            type: 'fleet_return',
+            targetId: result.mission,
+            targetValue: 1,
+          });
+          if (fleetReturnResult) {
+            publishNotification(redis, result.userId, {
+              type: 'tutorial-quest-complete',
+              payload: {
+                questId: fleetReturnResult.completedQuest.id,
+                questTitle: fleetReturnResult.completedQuest.title,
+                reward: fleetReturnResult.reward,
+                nextQuest: fleetReturnResult.nextQuest ? { id: fleetReturnResult.nextQuest.id, title: fleetReturnResult.nextQuest.title } : null,
+                tutorialComplete: fleetReturnResult.tutorialComplete,
+              },
+            });
+
+            await db.insert(gameEvents).values({
+              userId: result.userId,
+              planetId: result.originPlanetId,
+              type: 'tutorial-quest-done',
+              payload: {
+                questId: fleetReturnResult.completedQuest.id,
+                questTitle: fleetReturnResult.completedQuest.title,
+                reward: fleetReturnResult.reward,
+                tutorialComplete: fleetReturnResult.tutorialComplete,
+              },
+            });
+          }
+
+          // Tutorial quest check (mission_complete for mine missions — quest 15)
           if (result.mission === 'mine') {
             const tutorialResult = await tutorialService.checkAndComplete(result.userId, {
               type: 'mission_complete',
