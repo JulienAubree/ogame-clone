@@ -1,4 +1,5 @@
 import { getBuildingDetails, resolveBuildingName, type BuildingDetails, type PlanetContext } from '@/lib/entity-details';
+import { useGameConfig } from '@/hooks/useGameConfig';
 import { ResourceCost } from '@/components/common/ResourceCost';
 import { DetailSection, StatRow, DataTable } from '@/components/common/EntityDetailOverlay';
 
@@ -8,7 +9,8 @@ interface Props {
 }
 
 export function BuildingDetailContent({ buildingId, planetContext }: Props) {
-  const details: BuildingDetails = getBuildingDetails(buildingId, undefined, planetContext);
+  const { data: gameConfig } = useGameConfig();
+  const details: BuildingDetails = getBuildingDetails(buildingId, gameConfig ?? undefined, planetContext);
 
   return (
     <>
@@ -62,7 +64,7 @@ export function BuildingDetailContent({ buildingId, planetContext }: Props) {
             {details.prerequisites.map((p) => (
               <li key={p.buildingId} className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                {resolveBuildingName(p.buildingId)} niveau {p.level}
+                {resolveBuildingName(p.buildingId, gameConfig ?? undefined)} niveau {p.level}
               </li>
             ))}
           </ul>

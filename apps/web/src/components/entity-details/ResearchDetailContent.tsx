@@ -1,9 +1,11 @@
 import { getResearchDetails, resolveBuildingName, resolveResearchName, type ResearchDetails } from '@/lib/entity-details';
+import { useGameConfig } from '@/hooks/useGameConfig';
 import { ResourceCost } from '@/components/common/ResourceCost';
 import { DetailSection } from '@/components/common/EntityDetailOverlay';
 
 export function ResearchDetailContent({ researchId }: { researchId: string }) {
-  const details: ResearchDetails = getResearchDetails(researchId);
+  const { data: gameConfig } = useGameConfig();
+  const details: ResearchDetails = getResearchDetails(researchId, gameConfig ?? undefined);
 
   const hasBuildingPrereqs = details.prerequisites.buildings && details.prerequisites.buildings.length > 0;
   const hasResearchPrereqs = details.prerequisites.research && details.prerequisites.research.length > 0;
@@ -33,13 +35,13 @@ export function ResearchDetailContent({ researchId }: { researchId: string }) {
             {details.prerequisites.buildings?.map((p) => (
               <li key={p.buildingId} className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                {resolveBuildingName(p.buildingId)} niveau {p.level}
+                {resolveBuildingName(p.buildingId, gameConfig ?? undefined)} niveau {p.level}
               </li>
             ))}
             {details.prerequisites.research?.map((p) => (
               <li key={p.researchId} className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" />
-                {resolveResearchName(p.researchId)} niveau {p.level}
+                {resolveResearchName(p.researchId, gameConfig ?? undefined)} niveau {p.level}
               </li>
             ))}
           </ul>
