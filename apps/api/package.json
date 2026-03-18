@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
+    "@fastify/multipart": "^9.4.0",
     "@ogame-clone/db": "workspace:*",
     "@ogame-clone/game-engine": "workspace:*",
     "@ogame-clone/shared": "workspace:*",
@@ -31,9 +32,11 @@
     "ioredis": "^5.4.2",
     "jose": "^6.0.8",
     "postgres": "^3.4.5",
+    "sharp": "^0.34.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/busboy": "^1.5.4",
     "@types/node": "^22.10.7",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
