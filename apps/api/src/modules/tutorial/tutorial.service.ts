@@ -1,6 +1,7 @@
 import { eq, and, asc } from 'drizzle-orm';
 import { tutorialProgress, planets, planetBuildings, planetShips, tutorialQuestDefinitions } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
+import type { createPveService } from '../pve/pve.service.js';
 
 export interface TutorialQuest {
   id: string;
@@ -8,7 +9,7 @@ export interface TutorialQuest {
   title: string;
   narrativeText: string;
   condition: {
-    type: 'building_level' | 'ship_count' | 'mission_complete';
+    type: 'building_level' | 'ship_count' | 'mission_complete' | 'research_level' | 'fleet_return';
     targetId: string;
     targetValue: number;
   };
@@ -20,7 +21,7 @@ export interface CompletedQuestEntry {
   completedAt: string;
 }
 
-export function createTutorialService(db: Database) {
+export function createTutorialService(db: Database, pveService?: ReturnType<typeof createPveService>) {
   async function loadQuests(): Promise<TutorialQuest[]> {
     const rows = await db
       .select()
@@ -32,7 +33,7 @@ export function createTutorialService(db: Database) {
       title: r.title,
       narrativeText: r.narrativeText,
       condition: {
-        type: r.conditionType as 'building_level' | 'ship_count' | 'mission_complete',
+        type: r.conditionType as TutorialQuest['condition']['type'],
         targetId: r.conditionTargetId,
         targetValue: r.conditionTargetValue,
       },
@@ -64,8 +65,20 @@ export function createTutorialService(db: Database) {
     async getCurrent(userId: string) {
       const progress = await this.getOrCreateProgress(userId);
 
+      // Get player's first planet coords
+      const [planet] = await db
+        .select({ galaxy: planets.galaxy, system: planets.system })
+        .from(planets)
+        .where(eq(planets.userId, userId))
+        .limit(1);
+      const playerCoords = planet ? { galaxy: planet.galaxy, system: planet.system } : null;
+
+      // Extract tutorialMiningMissionId from metadata
+      const metadata = progress.metadata as { tutorialMiningMissionId?: string } | null;
+      const tutorialMiningMissionId = metadata?.tutorialMiningMissionId ?? null;
+
       if (progress.isComplete) {
-        return { isComplete: true, quest: null, completedQuests: progress.completedQuests as CompletedQuestEntry[] };
+        return { isComplete: true, quest: null, completedQuests: progress.completedQuests as CompletedQuestEntry[], playerCoords, tutorialMiningMissionId: null };
       }
 
       const quests = await loadQuests();
@@ -74,11 +87,13 @@ export function createTutorialService(db: Database) {
         isComplete: false,
         quest: quest ?? null,
         completedQuests: progress.completedQuests as CompletedQuestEntry[],
+        playerCoords,
+        tutorialMiningMissionId,
       };
     },
 
     async checkAndComplete(userId: string, event: {
-      type: 'building_level' | 'ship_count' | 'mission_complete';
+      type: TutorialQuest['condition']['type'];
       targetId: string;
       targetValue: number;
     }) {
@@ -91,7 +106,7 @@ export function createTutorialService(db: Database) {
 
       // Check if the event matches the quest condition
       if (quest.condition.type !== event.type) return null;
-      if (quest.condition.targetId !== event.targetId) return null;
+      if (quest.condition.targetId !== 'any' && quest.condition.targetId !== event.targetId) return null;
       if (event.targetValue < quest.condition.targetValue) return null;
 
       // Quest is complete — award resources and advance
@@ -128,6 +143,34 @@ export function createTutorialService(db: Database) {
           updatedAt: new Date(),
         })
         .where(eq(tutorialProgress.id, progress.id));
+
+      // Generate tutorial PvE mining mission when quest_14 (prospector built) is completed
+      if (quest.id === 'quest_14' && pveService && planet) {
+        try {
+          await pveService.generateMiningMission(userId, planet.galaxy, planet.system, 1);
+          // Query the PvE mission that was just created to store its ID
+          const missions = await pveService.getMissions(userId);
+          const tutorialMission = missions.find(m =>
+            (m.parameters as { position?: number })?.position === 8
+          );
+          if (tutorialMission) {
+            await db
+              .update(tutorialProgress)
+              .set({ metadata: { tutorialMiningMissionId: tutorialMission.id } })
+              .where(eq(tutorialProgress.id, progress.id));
+          }
+        } catch {
+          // Fallback: mission generation failed, quest 15 still works via normal PvE flow
+        }
+      }
+
+      // Clean metadata when quest_15 is completed
+      if (quest.id === 'quest_15') {
+        await db
+          .update(tutorialProgress)
+          .set({ metadata: null })
+          .where(eq(tutorialProgress.id, progress.id));
+      }
 
       return {
         completedQuest: quest,
