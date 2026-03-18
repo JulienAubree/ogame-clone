@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import {
   Building2, FlaskConical, Rocket, Shield, Zap,
   Factory, Globe, Users, LogOut, Crosshair, LayoutGrid, Orbit,
+  Skull, GraduationCap,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -18,6 +19,13 @@ const NAV_SECTIONS = [
       { to: '/production', label: 'Production', icon: Factory },
       { to: '/universe', label: 'Univers', icon: Globe },
       { to: '/planet-types', label: 'Types de planetes', icon: Orbit },
+    ],
+  },
+  {
+    title: 'Gameplay',
+    items: [
+      { to: '/pve-missions', label: 'Missions PvE', icon: Skull },
+      { to: '/tutorial-quests', label: 'Onboarding', icon: GraduationCap },
     ],
   },
   {
