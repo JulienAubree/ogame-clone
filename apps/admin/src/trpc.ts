@@ -62,6 +62,29 @@ export function resetRefreshState() {
   refreshFailed = false;
 }
 
+/**
+ * Fetch with automatic token refresh on 401.
+ * Use this for REST calls outside tRPC (e.g., file uploads).
+ */
+export async function fetchWithAuth(url: string, options?: RequestInit): Promise<Response> {
+  const token = localStorage.getItem('admin_accessToken');
+  const headers = new Headers(options?.headers);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  let res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401) {
+    const refreshed = await refreshOnUnauthorized();
+    if (refreshed) {
+      const newToken = localStorage.getItem('admin_accessToken');
+      headers.set('Authorization', `Bearer ${newToken}`);
+      res = await fetch(url, { ...options, headers });
+    }
+  }
+
+  return res;
+}
+
 export function createTRPCClient() {
   return trpc.createClient({
     links: [

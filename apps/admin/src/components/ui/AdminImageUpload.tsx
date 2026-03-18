@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useAuthStore } from '@/stores/auth.store';
+import { fetchWithAuth } from '@/trpc';
 import { Loader2 } from 'lucide-react';
 
 type AssetCategory = 'buildings' | 'research' | 'ships' | 'defenses';
@@ -20,7 +20,6 @@ export function AdminImageUpload({ category, entityId, entityName }: AdminImageU
   const [uploading, setUploading] = useState(false);
   const [cacheBust, setCacheBust] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const token = useAuthStore((s) => s.accessToken);
 
   const iconUrl = `/assets/${category}/${toKebab(entityId)}-icon.webp${cacheBust ? `?t=${cacheBust}` : ''}`;
 
@@ -41,9 +40,8 @@ export function AdminImageUpload({ category, entityId, entityName }: AdminImageU
     formData.append('entityId', entityId);
 
     try {
-      const res = await fetch('/admin/upload-asset', {
+      const res = await fetchWithAuth('/admin/upload-asset', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
