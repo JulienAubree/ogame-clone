@@ -330,7 +330,7 @@ export default function Buildings() {
                           <GameImage
                             category="buildings"
                             id={building.id}
-                            size="thumb"
+                            size="full"
                             alt={building.name}
                             className="h-20 w-20 rounded-xl object-cover"
                           />
