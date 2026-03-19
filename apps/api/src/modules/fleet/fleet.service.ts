@@ -1,28 +1,8 @@
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, fleetEvents, userResearch, debrisFields, users, planetBuildings, pveMissions, asteroidDeposits } from '@ogame-clone/db';
-import { BELT_POSITIONS } from '../universe/universe.config.js';
+import { planets, planetShips, fleetEvents, userResearch, pveMissions } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
-import {
-  fleetSpeed,
-  travelTime,
-  distance,
-  fuelConsumption,
-  totalCargoCapacity,
-  calculateMaxTemp,
-  calculateMinTemp,
-  calculateDiameter,
-  calculateMaxFields,
-  calculateSpyReport,
-  calculateDetectionChance,
-  simulateCombat,
-  totalExtracted,
-  extractionDuration,
-  miningDuration,
-  prospectionDuration,
-  type CombatTechs,
-  type ShipStats,
-} from '@ogame-clone/game-engine';
+import { fleetSpeed, travelTime, distance, fuelConsumption, totalCargoCapacity } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { createMessageService } from '../message/message.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -38,53 +18,8 @@ import { ColonizeHandler } from './handlers/colonize.handler.js';
 import { AttackHandler } from './handlers/attack.handler.js';
 import { PirateHandler } from './handlers/pirate.handler.js';
 import { MineHandler } from './handlers/mine.handler.js';
-import type { PhasedMissionHandler } from './fleet.types.js';
-import type { MissionHandler, MissionHandlerContext, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
-
-interface SendFleetInput {
-  originPlanetId: string;
-  targetGalaxy: number;
-  targetSystem: number;
-  targetPosition: number;
-  mission: 'transport' | 'station' | 'spy' | 'attack' | 'colonize' | 'recycle' | 'mine' | 'pirate';
-  ships: Record<string, number>;
-  mineraiCargo?: number;
-  siliciumCargo?: number;
-  hydrogeneCargo?: number;
-  pveMissionId?: string;
-}
-
-function buildShipStatsMap(config: Awaited<ReturnType<GameConfigService['getFullConfig']>>): Record<string, ShipStats> {
-  const map: Record<string, ShipStats> = {};
-  for (const [id, ship] of Object.entries(config.ships)) {
-    map[id] = {
-      baseSpeed: ship.baseSpeed,
-      fuelConsumption: ship.fuelConsumption,
-      cargoCapacity: ship.cargoCapacity,
-      driveType: ship.driveType as ShipStats['driveType'],
-    };
-  }
-  return map;
-}
-
-function buildCombatStats(config: Awaited<ReturnType<GameConfigService['getFullConfig']>>) {
-  const stats: Record<string, { weapons: number; shield: number; armor: number }> = {};
-  for (const [id, ship] of Object.entries(config.ships)) {
-    stats[id] = { weapons: ship.weapons, shield: ship.shield, armor: ship.armor };
-  }
-  for (const [id, def] of Object.entries(config.defenses)) {
-    stats[id] = { weapons: def.weapons, shield: def.shield, armor: def.armor };
-  }
-  return stats;
-}
-
-function buildShipCosts(config: Awaited<ReturnType<GameConfigService['getFullConfig']>>) {
-  const costs: Record<string, { minerai: number; silicium: number }> = {};
-  for (const [id, ship] of Object.entries(config.ships)) {
-    costs[id] = { minerai: ship.cost.minerai, silicium: ship.cost.silicium };
-  }
-  return costs;
-}
+import { buildShipStatsMap } from './fleet.types.js';
+import type { PhasedMissionHandler, MissionHandler, MissionHandlerContext, SendFleetInput, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 export function createFleetService(
   db: Database,
@@ -169,17 +104,6 @@ export function createFleetService(
       if (sendHandler) {
         await sendHandler.validateFleet(input, config, handlerCtx);
       }
-
-      // Attack validation moved to AttackHandler
-
-      // Recycle validation moved to RecycleHandler
-
-      // Spy validation moved to SpyHandler
-
-      // Colonize validation moved to ColonizeHandler
-
-      // Validate: mine requires at least 1 prospector and must target belt position
-      // Mine validation moved to MineHandler
 
       // Find target planet (may not exist for colonization or PvE missions)
       let targetPlanet: typeof planets.$inferSelect | undefined;
@@ -438,10 +362,6 @@ export function createFleetService(
         return { ...eventMeta, mission: event.mission };
       }
 
-      // Station handled by handler dispatch above
-
-      // All missions handled by handler dispatch above
-
       // Unknown mission — return fleet
       await this.scheduleReturn(
         event.id, event.originPlanetId,
@@ -651,73 +571,6 @@ export function createFleetService(
         { fleetEventId },
         { delay: duration * 1000, jobId: `fleet-return-${fleetEventId}` },
       );
-    },
-
-    async scheduleReturnWithDelay(
-      fleetEventId: string,
-      originPlanetId: string,
-      targetCoords: { galaxy: number; system: number; position: number },
-      ships: Record<string, number>,
-      mineraiCargo: number,
-      siliciumCargo: number,
-      hydrogeneCargo: number,
-      delayMs: number,
-    ) {
-      const [originPlanet] = await db
-        .select()
-        .from(planets)
-        .where(eq(planets.id, originPlanetId))
-        .limit(1);
-
-      if (!originPlanet) return;
-
-      const config = await gameConfigService.getFullConfig();
-      const shipStatsMap = buildShipStatsMap(config);
-      const driveTechs = await this.getDriveTechsByEvent(fleetEventId);
-      const speed = fleetSpeed(ships, driveTechs, shipStatsMap);
-      const origin = { galaxy: originPlanet.galaxy, system: originPlanet.system, position: originPlanet.position };
-      const duration = travelTime(targetCoords, origin, speed, universeSpeed);
-
-      const now = new Date();
-      const departureTime = new Date(now.getTime() + delayMs);
-      const returnTime = new Date(departureTime.getTime() + duration * 1000);
-
-      await db
-        .update(fleetEvents)
-        .set({
-          phase: 'return',
-          departureTime,
-          arrivalTime: returnTime,
-          mineraiCargo: String(mineraiCargo),
-          siliciumCargo: String(siliciumCargo),
-          hydrogeneCargo: String(hydrogeneCargo),
-          ships,
-        })
-        .where(eq(fleetEvents.id, fleetEventId));
-
-      await fleetReturnQueue.add(
-        'return',
-        { fleetEventId },
-        { delay: delayMs + duration * 1000, jobId: `fleet-return-${fleetEventId}` },
-      );
-    },
-
-    async getCombatTechs(userId: string): Promise<CombatTechs> {
-      const [research] = await db
-        .select({
-          weapons: userResearch.weapons,
-          shielding: userResearch.shielding,
-          armor: userResearch.armor,
-        })
-        .from(userResearch)
-        .where(eq(userResearch.userId, userId))
-        .limit(1);
-
-      return {
-        weapons: research?.weapons ?? 0,
-        shielding: research?.shielding ?? 0,
-        armor: research?.armor ?? 0,
-      };
     },
 
     async getDriveTechs(userId: string) {
