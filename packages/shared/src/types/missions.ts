@@ -1,11 +1,12 @@
 export enum MissionType {
-  Attack = 'attack',
   Transport = 'transport',
   Station = 'station',
-  Espionage = 'espionage',
+  Spy = 'spy',
+  Attack = 'attack',
   Colonize = 'colonize',
   Recycle = 'recycle',
-  Expedition = 'expedition',
+  Mine = 'mine',
+  Pirate = 'pirate',
 }
 
 export enum FleetPhase {
