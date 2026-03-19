@@ -1,154 +1,333 @@
-import { getBuildingDetails, resolveBuildingName, type BuildingDetails, type PlanetContext } from '@/lib/entity-details';
+import { useMemo } from 'react';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { ResourceCost } from '@/components/common/ResourceCost';
 import { GameImage } from '@/components/common/GameImage';
-import { formatDuration } from '@/lib/format';
-import { DetailSection, DataTable } from '@/components/common/EntityDetailOverlay';
+import {
+  mineraiProduction, siliciumProduction, hydrogeneProduction,
+  solarPlantEnergy, mineraiMineEnergy, siliciumMineEnergy, hydrogeneSynthEnergy,
+  storageCapacity,
+} from '@ogame-clone/game-engine';
 
-interface RuntimeData {
+interface BuildingListItem {
+  id: string;
+  name: string;
   currentLevel: number;
-  nextLevelCost: { minerai: number; silicium: number; hydrogene: number };
-  nextLevelTime: number;
-  isUpgrading: boolean;
-  upgradeEndTime?: string | null;
+}
+
+interface PlanetContext {
+  maxTemp: number;
+  productionFactor: number;
 }
 
 interface Props {
   buildingId: string;
+  buildings: BuildingListItem[];
   planetContext?: PlanetContext;
-  runtimeData?: RuntimeData;
 }
 
-export function BuildingDetailContent({ buildingId, planetContext, runtimeData }: Props) {
-  const { data: gameConfig } = useGameConfig();
-  const details: BuildingDetails = getBuildingDetails(buildingId, gameConfig ?? undefined, planetContext);
+// ---------------------------------------------------------------------------
+// Contextual table computation
+// ---------------------------------------------------------------------------
 
-  const currentProd = runtimeData && details.productionTable
-    ? details.productionTable.find((r) => r.level === runtimeData.currentLevel)?.value
-    : undefined;
-  const nextProd = runtimeData && details.productionTable
-    ? details.productionTable.find((r) => r.level === runtimeData.currentLevel + 1)?.value
-    : undefined;
+interface MineRow { level: number; production: number; gain: number | null; energy: number }
+interface SolarRow { level: number; production: number; gain: number | null }
+interface StorageRow { level: number; capacity: number; gain: number | null }
+
+type TableData =
+  | { type: 'mine'; title: string; rows: MineRow[] }
+  | { type: 'solar'; title: string; rows: SolarRow[] }
+  | { type: 'storage'; title: string; rows: StorageRow[] };
+
+function getContextualTable(
+  buildingId: string,
+  currentLevel: number,
+  maxTemp: number,
+  productionFactor: number,
+): TableData | null {
+  const pf = productionFactor;
+  const levels = Array.from({ length: 6 }, (_, i) => currentLevel + i);
+
+  const makeMineRows = (
+    prodFn: (level: number) => number,
+    energyFn: (level: number) => number,
+  ): MineRow[] =>
+    levels.map((level, i) => ({
+      level,
+      production: prodFn(level),
+      gain: i === 0 ? null : prodFn(level) - prodFn(level - 1),
+      energy: -energyFn(level),
+    }));
+
+  switch (buildingId) {
+    case 'mineraiMine':
+      return {
+        type: 'mine',
+        title: 'Production & Énergie',
+        rows: makeMineRows((l) => mineraiProduction(l, pf), mineraiMineEnergy),
+      };
+    case 'siliciumMine':
+      return {
+        type: 'mine',
+        title: 'Production & Énergie',
+        rows: makeMineRows((l) => siliciumProduction(l, pf), siliciumMineEnergy),
+      };
+    case 'hydrogeneSynth':
+      return {
+        type: 'mine',
+        title: 'Production & Énergie',
+        rows: makeMineRows((l) => hydrogeneProduction(l, maxTemp, pf), hydrogeneSynthEnergy),
+      };
+    case 'solarPlant':
+      return {
+        type: 'solar',
+        title: "Production d'énergie",
+        rows: levels.map((level, i) => ({
+          level,
+          production: solarPlantEnergy(level),
+          gain: i === 0 ? null : solarPlantEnergy(level) - solarPlantEnergy(level - 1),
+        })),
+      };
+    case 'storageMinerai':
+    case 'storageSilicium':
+    case 'storageHydrogene':
+      return {
+        type: 'storage',
+        title: 'Capacité de stockage',
+        rows: levels.map((level, i) => ({
+          level,
+          capacity: storageCapacity(level),
+          gain: i === 0 ? null : storageCapacity(level) - storageCapacity(level - 1),
+        })),
+      };
+    default:
+      return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Format helper
+// ---------------------------------------------------------------------------
+
+const fmt = (n: number) => n.toLocaleString('fr-FR');
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function BuildingDetailContent({ buildingId, buildings, planetContext }: Props) {
+  const { data: gameConfig } = useGameConfig();
+
+  const building = buildings.find((b) => b.id === buildingId);
+  const currentLevel = building?.currentLevel ?? 0;
+  const configDef = gameConfig?.buildings[buildingId];
+  const name = configDef?.name ?? buildingId;
+  const flavorText = configDef?.flavorText ?? '';
+  const prerequisites = configDef?.prerequisites ?? [];
+
+  // Active effects: bonuses with stat === 'building_time'
+  const activeEffects = useMemo(() => {
+    if (!gameConfig) return [];
+    return gameConfig.bonuses
+      .filter((b) => b.stat === 'building_time')
+      .map((b) => {
+        const sourceName =
+          b.sourceType === 'building'
+            ? gameConfig.buildings[b.sourceId]?.name ?? b.sourceId
+            : gameConfig.research?.[b.sourceId]?.name ?? b.sourceId;
+        const playerLevel =
+          buildings.find((bld) => bld.id === b.sourceId)?.currentLevel ?? 0;
+        return {
+          sourceId: b.sourceId,
+          sourceType: b.sourceType,
+          sourceName,
+          playerLevel,
+          percentPerLevel: b.percentPerLevel,
+        };
+      });
+  }, [gameConfig, buildings]);
+
+  // Contextual table
+  const tableData = useMemo(
+    () =>
+      getContextualTable(
+        buildingId,
+        currentLevel,
+        planetContext?.maxTemp ?? 50,
+        planetContext?.productionFactor ?? 1,
+      ),
+    [buildingId, currentLevel, planetContext],
+  );
 
   return (
     <>
-      {/* Hero image + stats area */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4">
-        {/* Hero image */}
-        <div className="relative w-full overflow-hidden rounded-lg">
-          <GameImage
-            category="buildings"
-            id={buildingId}
-            size="full"
-            alt={details.name}
-            className="w-full h-36 lg:h-52 object-cover rounded-lg"
-          />
-        </div>
-
-        {/* Stats panel */}
-        <div className="space-y-3">
-          <p className="text-sm italic text-muted-foreground">{details.flavorText}</p>
-
-          {/* Current + Next level stat blocks */}
-          {runtimeData && currentProd != null && (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-md bg-muted/30 border border-border p-3 space-y-1">
-                <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                  Actuel
-                </div>
-                <div className="text-lg font-mono font-bold text-emerald-400">
-                  {currentProd.toLocaleString('fr-FR')}/h
-                </div>
-              </div>
-              <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-1">
-                <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                  Niv.{runtimeData.currentLevel + 1}
-                </div>
-                <div className="text-lg font-mono font-bold text-emerald-400">
-                  {nextProd != null ? `${nextProd.toLocaleString('fr-FR')}/h` : '—'}
-                </div>
-                {nextProd != null && currentProd != null && (
-                  <div className="text-xs font-mono text-emerald-400/70">
-                    +{(nextProd - currentProd).toLocaleString('fr-FR')}/h
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Costs + duration */}
-          {runtimeData && (
-            <div className="space-y-2">
-              <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                Coût amélioration
-              </div>
-              <ResourceCost
-                minerai={runtimeData.nextLevelCost.minerai}
-                silicium={runtimeData.nextLevelCost.silicium}
-                hydrogene={runtimeData.nextLevelCost.hydrogene}
-              />
-              <div className="text-xs text-muted-foreground font-mono">
-                ⏱ {formatDuration(runtimeData.nextLevelTime)}
-              </div>
-            </div>
-          )}
-        </div>
+      {/* 1. Hero image */}
+      <div className="relative -mx-5 -mt-5 h-[200px] bg-gradient-to-br from-[#0f3460] via-[#16213e] to-[#1a1a2e] flex items-center justify-center">
+        <GameImage
+          category="buildings"
+          id={buildingId}
+          size="full"
+          alt={name}
+          className="h-[120px] w-[120px] rounded-2xl object-cover"
+        />
+        <span className="absolute bottom-3 right-3 bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-full">
+          Niveau {currentLevel}
+        </span>
       </div>
 
-      {/* Description */}
-      <DetailSection title="Description">
-        <p className="text-sm text-muted-foreground">{details.description}</p>
-      </DetailSection>
+      {/* 2. Name */}
+      <h3 className="text-lg font-semibold text-white">{name}</h3>
 
-      <DetailSection title="Coût de base">
-        <ResourceCost
-          minerai={details.baseCost.minerai}
-          silicium={details.baseCost.silicium}
-          hydrogene={details.baseCost.hydrogene}
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Facteur de coût : x{details.costFactor} par niveau
-        </p>
-      </DetailSection>
-
-      {details.productionTable && details.productionLabel && (
-        <DetailSection title={details.productionLabel}>
-          <DataTable
-            headers={['Niveau', 'Valeur/h']}
-            rows={details.productionTable.map((r) => [r.level, r.value])}
-          />
-        </DetailSection>
+      {/* 3. Flavor text */}
+      {flavorText && (
+        <p className="text-xs italic text-[#888] leading-relaxed">{flavorText}</p>
       )}
 
-      {details.energyTable && details.energyLabel && (
-        <DetailSection title={details.energyLabel}>
-          <DataTable
-            headers={['Niveau', 'Énergie']}
-            rows={details.energyTable.map((r) => [r.level, r.value])}
-          />
-        </DetailSection>
+      {/* 4. Effets actifs */}
+      {activeEffects.length > 0 && (
+        <div className="bg-[#1e293b] rounded-lg p-3 space-y-2">
+          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider">
+            Effets actifs
+          </div>
+          {activeEffects.map((effect) => (
+            <div key={effect.sourceId} className="flex items-center gap-2.5">
+              <GameImage
+                category={effect.sourceType === 'building' ? 'buildings' : 'research'}
+                id={effect.sourceId}
+                size="icon"
+                alt={effect.sourceName}
+                className="h-7 w-7 rounded-md"
+              />
+              <div>
+                <div className="text-[11px] text-slate-200">
+                  {effect.sourceName}{' '}
+                  <span className="text-slate-500">niv. {effect.playerLevel}</span>
+                </div>
+                <div className="text-[10px] text-emerald-500">
+                  {effect.percentPerLevel}% par niveau
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
-      {details.storageTable && (
-        <DetailSection title="Capacité de stockage">
-          <DataTable
-            headers={['Niveau', 'Capacité']}
-            rows={details.storageTable.map((r) => [r.level, r.value])}
-          />
-        </DetailSection>
+      {/* 5. Contextual table */}
+      {tableData && (
+        <div>
+          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2">
+            {tableData.title}
+          </div>
+          <table className="w-full text-[11px] border-collapse">
+            <thead>
+              <tr className="text-slate-500 text-left">
+                <th className="px-2 py-1.5 border-b border-[#1e293b]">Niveau</th>
+                {tableData.type === 'mine' && (
+                  <>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-amber-500">
+                      Production/h
+                    </th>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-emerald-500">
+                      Gain
+                    </th>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-yellow-400">
+                      Énergie
+                    </th>
+                  </>
+                )}
+                {tableData.type === 'solar' && (
+                  <>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-yellow-400">
+                      Production
+                    </th>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-emerald-500">
+                      Gain
+                    </th>
+                  </>
+                )}
+                {tableData.type === 'storage' && (
+                  <>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right">
+                      Capacité
+                    </th>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-emerald-500">
+                      Gain
+                    </th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="text-slate-300">
+              {tableData.type === 'mine' &&
+                (tableData as { type: 'mine'; title: string; rows: MineRow[] }).rows.map((row, i) => (
+                  <tr
+                    key={row.level}
+                    className={i === 0 ? 'bg-[#1e293b]' : i % 2 === 0 ? 'bg-[#1e293b]' : ''}
+                  >
+                    <td className={`px-2 py-1.5 ${i === 0 ? 'font-semibold text-emerald-400' : ''}`}>
+                      {row.level}{i === 0 ? ' \u25C4' : ''}
+                    </td>
+                    <td className="px-2 py-1.5 text-right">{fmt(row.production)}</td>
+                    <td className="px-2 py-1.5 text-right text-emerald-500">
+                      {row.gain != null ? `+${fmt(row.gain)}` : '\u2014'}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-red-500">{fmt(row.energy)}</td>
+                  </tr>
+                ))}
+              {tableData.type === 'solar' &&
+                (tableData as { type: 'solar'; title: string; rows: SolarRow[] }).rows.map((row, i) => (
+                  <tr
+                    key={row.level}
+                    className={i === 0 ? 'bg-[#1e293b]' : i % 2 === 0 ? 'bg-[#1e293b]' : ''}
+                  >
+                    <td className={`px-2 py-1.5 ${i === 0 ? 'font-semibold text-emerald-400' : ''}`}>
+                      {row.level}{i === 0 ? ' \u25C4' : ''}
+                    </td>
+                    <td className="px-2 py-1.5 text-right">{fmt(row.production)}</td>
+                    <td className="px-2 py-1.5 text-right text-emerald-500">
+                      {row.gain != null ? `+${fmt(row.gain)}` : '\u2014'}
+                    </td>
+                  </tr>
+                ))}
+              {tableData.type === 'storage' &&
+                (tableData as { type: 'storage'; title: string; rows: StorageRow[] }).rows.map((row, i) => (
+                  <tr
+                    key={row.level}
+                    className={i === 0 ? 'bg-[#1e293b]' : i % 2 === 0 ? 'bg-[#1e293b]' : ''}
+                  >
+                    <td className={`px-2 py-1.5 ${i === 0 ? 'font-semibold text-emerald-400' : ''}`}>
+                      {row.level}{i === 0 ? ' \u25C4' : ''}
+                    </td>
+                    <td className="px-2 py-1.5 text-right">{fmt(row.capacity)}</td>
+                    <td className="px-2 py-1.5 text-right text-emerald-500">
+                      {row.gain != null ? `+${fmt(row.gain)}` : '\u2014'}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {details.prerequisites.length > 0 && (
-        <DetailSection title="Prérequis">
-          <ul className="space-y-1">
-            {details.prerequisites.map((p) => (
-              <li key={p.buildingId} className="text-sm text-muted-foreground flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                {resolveBuildingName(p.buildingId, gameConfig ?? undefined)} niveau {p.level}
-              </li>
-            ))}
-          </ul>
-        </DetailSection>
+      {/* 6. Prerequisites */}
+      {prerequisites.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2">
+            Prérequis
+          </div>
+          <div className="space-y-1">
+            {prerequisites.map((p) => {
+              const met = (buildings.find((b) => b.id === p.buildingId)?.currentLevel ?? 0) >= p.level;
+              const prereqName = gameConfig?.buildings[p.buildingId]?.name ?? p.buildingId;
+              return (
+                <div
+                  key={p.buildingId}
+                  className={`text-[11px] flex items-center gap-1.5 ${met ? 'text-emerald-500' : 'text-red-500'}`}
+                >
+                  {met ? '\u2713' : '\u2717'} {prereqName} niveau {p.level}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </>
   );

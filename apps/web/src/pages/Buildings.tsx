@@ -177,8 +177,6 @@ export default function Buildings() {
     .filter((c) => c.entityType === 'building')
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const detailBuilding = detailId ? buildings.find((b) => b.id === detailId) : undefined;
-
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Bâtiments" />
@@ -430,25 +428,15 @@ export default function Buildings() {
         onClose={() => setDetailId(null)}
         title={detailId ? gameConfig?.buildings[detailId]?.name ?? '' : ''}
       >
-        {detailId && (
+        {detailId && buildings && (
           <BuildingDetailContent
             buildingId={detailId}
+            buildings={buildings}
             planetContext={
               resourceData
                 ? {
                     maxTemp: resourceData.maxTemp,
                     productionFactor: resourceData.rates.productionFactor,
-                  }
-                : undefined
-            }
-            runtimeData={
-              detailBuilding
-                ? {
-                    currentLevel: detailBuilding.currentLevel,
-                    nextLevelCost: detailBuilding.nextLevelCost,
-                    nextLevelTime: detailBuilding.nextLevelTime,
-                    isUpgrading: detailBuilding.isUpgrading,
-                    upgradeEndTime: detailBuilding.upgradeEndTime,
                   }
                 : undefined
             }
