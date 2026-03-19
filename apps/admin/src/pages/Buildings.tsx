@@ -8,7 +8,24 @@ import { PrerequisitesEditor, type BuildingPrereq } from '@/components/ui/Prereq
 import { Pencil, ChevronDown, ChevronRight, Plus, Trash2, Link } from 'lucide-react';
 import { AdminImageUpload } from '@/components/ui/AdminImageUpload';
 
-function getFields(categoryOptions: { value: string; label: string }[]) {
+const STAT_OPTIONS = [
+  { value: 'building_time', label: 'Temps construction' },
+  { value: 'research_time', label: 'Temps recherche' },
+  { value: 'ship_build_time', label: 'Temps vaisseau' },
+  { value: 'defense_build_time', label: 'Temps défense' },
+  { value: 'ship_speed', label: 'Vitesse vaisseau' },
+  { value: 'weapons', label: 'Armes' },
+  { value: 'shielding', label: 'Boucliers' },
+  { value: 'armor', label: 'Blindage' },
+  { value: 'mining_duration', label: 'Durée minage' },
+  { value: 'cargo_capacity', label: 'Capacité cargo' },
+  { value: 'fuel_consumption', label: 'Conso carburant' },
+  { value: 'resource_production', label: 'Production' },
+  { value: 'fleet_count', label: 'Nb flottes' },
+  { value: 'spy_range', label: 'Portée espionnage' },
+];
+
+function getFields() {
   return [
     { key: 'name', label: 'Nom', type: 'text' as const },
     { key: 'description', label: 'Description', type: 'textarea' as const },
@@ -17,17 +34,15 @@ function getFields(categoryOptions: { value: string; label: string }[]) {
     { key: 'baseCostHydrogene', label: 'Coût Hydrogène (base)', type: 'number' as const },
     { key: 'costFactor', label: 'Facteur de cout', type: 'number' as const, step: '0.1' },
     { key: 'baseTime', label: 'Temps de base (s)', type: 'number' as const },
-    { key: 'buildTimeReductionFactor', label: 'Facteur réduction temps', type: 'number' as const, step: '0.1' },
-    { key: 'reducesTimeForCategory', label: 'Réduit le temps pour', type: 'select' as const, options: categoryOptions, allowEmpty: true },
     { key: 'flavorText', label: "Texte d'ambiance", type: 'textarea' as const },
     { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
   ];
 }
 
-function getCreateFields(categoryOptions: { value: string; label: string }[]) {
+function getCreateFields() {
   return [
     { key: 'id', label: 'ID (identifiant unique)', type: 'text' as const },
-    ...getFields(categoryOptions),
+    ...getFields(),
   ];
 }
 
@@ -137,16 +152,28 @@ export default function Buildings() {
     },
   });
 
+  const createBonusMutation = trpc.gameConfig.admin.createBonus.useMutation({
+    onSuccess: () => refetch(),
+  });
+  const deleteBonusMutation = trpc.gameConfig.admin.deleteBonus.useMutation({
+    onSuccess: () => refetch(),
+  });
+  const updateBonusMutation = trpc.gameConfig.admin.updateBonus.useMutation({
+    onSuccess: () => refetch(),
+  });
+
+  const [addingBonusFor, setAddingBonusFor] = useState<string | null>(null);
+  const [newBonusStat, setNewBonusStat] = useState('building_time');
+  const [newBonusPct, setNewBonusPct] = useState(-15);
+  const [newBonusCategory, setNewBonusCategory] = useState('');
+
   if (isLoading) return <PageSkeleton />;
   if (!data) return null;
 
   const buildings = Object.values(data.buildings).sort((a, b) => a.sortOrder - b.sortOrder);
   const editingBuilding = editing ? data.buildings[editing] : null;
-  const categoryOptions = data.categories
-    .filter((c) => c.entityType === 'build')
-    .map((c) => ({ value: c.id, label: c.name }));
-  const FIELDS = getFields(categoryOptions);
-  const CREATE_FIELDS = getCreateFields(categoryOptions);
+  const FIELDS = getFields();
+  const CREATE_FIELDS = getCreateFields();
 
   return (
     <div className="animate-fade-in">
@@ -177,7 +204,7 @@ export default function Buildings() {
               <th>H₂</th>
               <th>Facteur</th>
               <th>Temps</th>
-              <th>Réduction temps</th>
+              <th>Bonus</th>
               <th>Prerequis</th>
               <th></th>
             </tr>
@@ -224,12 +251,97 @@ export default function Buildings() {
                     <td className="font-mono text-sm">{b.baseCost.hydrogene}</td>
                     <td className="font-mono text-sm">{b.costFactor}</td>
                     <td className="font-mono text-sm">{b.baseTime}s</td>
-                    <td className="text-xs text-gray-400">
-                      {b.buildTimeReductionFactor != null && b.reducesTimeForCategory ? (
-                        <span>×{b.buildTimeReductionFactor} → {data.categories.find((c) => c.id === b.reducesTimeForCategory)?.name ?? b.reducesTimeForCategory}</span>
-                      ) : (
-                        <span className="text-gray-600">-</span>
-                      )}
+                    <td className="text-xs">
+                      {(() => {
+                        const buildingBonuses = data.bonuses?.filter(
+                          (bn) => bn.sourceType === 'building' && bn.sourceId === b.id
+                        ) ?? [];
+                        return (
+                          <div className="space-y-1">
+                            {buildingBonuses.map((bn) => (
+                              <div key={bn.id} className="flex items-center gap-1 text-gray-300">
+                                <span>{STAT_OPTIONS.find(s => s.value === bn.stat)?.label ?? bn.stat}</span>
+                                <span className={bn.percentPerLevel < 0 ? 'text-emerald-400' : 'text-sky-400'}>
+                                  {bn.percentPerLevel > 0 ? '+' : ''}{bn.percentPerLevel}%/niv
+                                </span>
+                                {bn.category && <span className="text-gray-500">({bn.category})</span>}
+                                <button
+                                  onClick={() => deleteBonusMutation.mutate({ id: bn.id })}
+                                  className="admin-btn-ghost p-0.5 text-red-400 hover:text-red-300 ml-1"
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                            {addingBonusFor === b.id ? (
+                              <div className="flex items-center gap-1 mt-1">
+                                <select
+                                  value={newBonusStat}
+                                  onChange={(e) => setNewBonusStat(e.target.value)}
+                                  className="bg-panel border border-panel-border rounded px-1 py-0.5 text-xs"
+                                >
+                                  {STAT_OPTIONS.map((s) => (
+                                    <option key={s.value} value={s.value}>{s.label}</option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="number"
+                                  value={newBonusPct}
+                                  onChange={(e) => setNewBonusPct(Number(e.target.value))}
+                                  className="bg-panel border border-panel-border rounded px-1 py-0.5 text-xs w-16"
+                                  placeholder="%/niv"
+                                />
+                                <input
+                                  type="text"
+                                  value={newBonusCategory}
+                                  onChange={(e) => setNewBonusCategory(e.target.value)}
+                                  className="bg-panel border border-panel-border rounded px-1 py-0.5 text-xs w-20"
+                                  placeholder="catégorie"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const cat = newBonusCategory || null;
+                                    const id = cat
+                                      ? `${b.id}__${newBonusStat}__${cat}`
+                                      : `${b.id}__${newBonusStat}`;
+                                    createBonusMutation.mutate({
+                                      id,
+                                      sourceType: 'building',
+                                      sourceId: b.id,
+                                      stat: newBonusStat,
+                                      percentPerLevel: newBonusPct,
+                                      category: cat,
+                                    });
+                                    setAddingBonusFor(null);
+                                  }}
+                                  className="admin-btn-primary text-xs px-1.5 py-0.5"
+                                >
+                                  OK
+                                </button>
+                                <button
+                                  onClick={() => setAddingBonusFor(null)}
+                                  className="admin-btn-ghost text-xs px-1 py-0.5"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setAddingBonusFor(b.id);
+                                  setNewBonusStat('building_time');
+                                  setNewBonusPct(-15);
+                                  setNewBonusCategory('');
+                                }}
+                                className="admin-btn-ghost text-xs text-hull-400 hover:text-hull-300 flex items-center gap-0.5"
+                              >
+                                <Plus className="w-3 h-3" /> bonus
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="text-xs text-gray-500">
                       <button
@@ -344,8 +456,6 @@ export default function Buildings() {
             baseCostHydrogene: editingBuilding.baseCost.hydrogene,
             costFactor: editingBuilding.costFactor,
             baseTime: editingBuilding.baseTime,
-            buildTimeReductionFactor: editingBuilding.buildTimeReductionFactor ?? 0,
-            reducesTimeForCategory: editingBuilding.reducesTimeForCategory ?? '',
             sortOrder: editingBuilding.sortOrder,
           }}
           onSave={(values) => {
@@ -359,8 +469,6 @@ export default function Buildings() {
                 baseCostHydrogene: values.baseCostHydrogene as number,
                 costFactor: values.costFactor as number,
                 baseTime: values.baseTime as number,
-                buildTimeReductionFactor: (values.buildTimeReductionFactor as number) || null,
-                reducesTimeForCategory: (values.reducesTimeForCategory as string) || null,
                 sortOrder: values.sortOrder as number,
               },
             });
@@ -384,8 +492,6 @@ export default function Buildings() {
             baseCostHydrogene: 0,
             costFactor: 1.5,
             baseTime: 60,
-            buildTimeReductionFactor: 0,
-            reducesTimeForCategory: '',
             sortOrder: 0,
           }}
           onSave={(values) => {
@@ -398,8 +504,6 @@ export default function Buildings() {
               baseCostHydrogene: values.baseCostHydrogene as number,
               costFactor: values.costFactor as number,
               baseTime: values.baseTime as number,
-              buildTimeReductionFactor: (values.buildTimeReductionFactor as number) || null,
-              reducesTimeForCategory: (values.reducesTimeForCategory as string) || null,
               sortOrder: values.sortOrder as number,
             });
           }}
