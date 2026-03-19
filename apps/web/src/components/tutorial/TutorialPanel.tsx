@@ -102,19 +102,19 @@ export function TutorialPanel() {
           <span className="text-[10px] text-muted-foreground">Récompense :</span>
           <div className="flex items-center gap-2 text-[10px]">
             {quest.reward.minerai > 0 && (
-              <span className="flex items-center gap-0.5 text-orange-400">
+              <span className="flex items-center gap-0.5 text-minerai">
                 <MineraiIcon size={10} />
                 {quest.reward.minerai.toLocaleString()}
               </span>
             )}
             {quest.reward.silicium > 0 && (
-              <span className="flex items-center gap-0.5 text-blue-400">
+              <span className="flex items-center gap-0.5 text-silicium">
                 <SiliciumIcon size={10} />
                 {quest.reward.silicium.toLocaleString()}
               </span>
             )}
             {quest.reward.hydrogene > 0 && (
-              <span className="flex items-center gap-0.5 text-emerald-400">
+              <span className="flex items-center gap-0.5 text-hydrogene">
                 <HydrogeneIcon size={10} />
                 {quest.reward.hydrogene.toLocaleString()}
               </span>
