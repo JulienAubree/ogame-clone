@@ -31,15 +31,10 @@ export function prospectionDuration(depositTotalQuantity: number): number {
 
 /**
  * Mining duration in minutes at the belt.
- * Formula: max(5, 16 - centerLevel) * max(0.2, 1 - 0.1 * fracturingLevel)
+ * @param bonusMultiplier - result of resolveBonus('mining_duration', null, ...)
  */
-export function miningDuration(centerLevel: number, fracturingLevel: number): number {
-  return Math.max(5, 16 - centerLevel) * Math.max(0.2, 1 - 0.1 * fracturingLevel);
-}
-
-/** @deprecated Use miningDuration instead */
-export function extractionDuration(centerLevel: number): number {
-  return miningDuration(centerLevel, 0);
+export function miningDuration(centerLevel: number, bonusMultiplier: number): number {
+  return Math.max(5, 16 - centerLevel) * Math.max(0.01, bonusMultiplier);
 }
 
 /**

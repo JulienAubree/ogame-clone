@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { fleetEvents, pveMissions, asteroidDeposits, userResearch } from '@ogame-clone/db';
-import { prospectionDuration, miningDuration, totalExtracted, totalCargoCapacity } from '@ogame-clone/game-engine';
+import { prospectionDuration, miningDuration, totalExtracted, totalCargoCapacity, resolveBonus } from '@ogame-clone/game-engine';
 import { BELT_POSITIONS } from '../../universe/universe.config.js';
 import type { PhasedMissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult, PhaseResult } from '../fleet.types.js';
 import { buildShipStatsMap, formatDuration } from '../fleet.types.js';
@@ -80,8 +80,15 @@ export class MineHandler implements PhasedMissionHandler {
     // Transition to mining phase
     const centerLevel = await ctx.pveService.getMissionCenterLevel(fleetEvent.userId);
     const [research] = await ctx.db.select().from(userResearch).where(eq(userResearch.userId, fleetEvent.userId)).limit(1);
-    const fracturingLevel = research?.rockFracturing ?? 0;
-    const mineMins = miningDuration(centerLevel, fracturingLevel);
+    const researchLevels: Record<string, number> = {};
+    if (research) {
+      for (const [key, value] of Object.entries(research)) {
+        if (key !== 'userId' && typeof value === 'number') researchLevels[key] = value;
+      }
+    }
+    const config = await ctx.gameConfigService.getFullConfig();
+    const bonusMultiplier = resolveBonus('mining_duration', null, researchLevels, config.bonuses);
+    const mineMins = miningDuration(centerLevel, bonusMultiplier);
     const mineMs = mineMins * 60 * 1000;
 
     const now = new Date();
