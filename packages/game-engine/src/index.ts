@@ -18,3 +18,4 @@ export { COMBAT_STATS, RAPID_FIRE } from './constants/combat-stats.js';
 export * from './formulas/combat.js';
 export * from './formulas/espionage.js';
 export * from './formulas/pve.js';
+export * from './formulas/bonus.js';
