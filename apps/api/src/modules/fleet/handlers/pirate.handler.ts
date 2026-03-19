@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { fleetEvents, pveMissions } from '@ogame-clone/db';
 import { totalCargoCapacity } from '@ogame-clone/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
-import { buildShipStatsMap, getCombatTechs, formatDuration } from '../fleet.types.js';
+import { buildShipStatsMap, getCombatMultipliers, formatDuration } from '../fleet.types.js';
 
 export class PirateHandler implements MissionHandler {
   async validateFleet(_input: SendFleetInput, _config: GameConfig, _ctx: MissionHandlerContext): Promise<void> {
@@ -24,13 +24,12 @@ export class PirateHandler implements MissionHandler {
     }
 
     const params = mission.parameters as { templateId: string };
-    const playerTechs = await getCombatTechs(ctx.db, fleetEvent.userId);
-
     const config = await ctx.gameConfigService.getFullConfig();
+    const playerMultipliers = await getCombatMultipliers(ctx.db, fleetEvent.userId, config.bonuses);
     const shipStatsMap = buildShipStatsMap(config);
     const preCargoCapacity = totalCargoCapacity(ships, shipStatsMap);
     const result = await ctx.pirateService.processPirateArrival(
-      ships, playerTechs, params.templateId, preCargoCapacity,
+      ships, playerMultipliers, params.templateId, preCargoCapacity,
     );
 
     // Re-cap loot to surviving fleet's actual cargo capacity

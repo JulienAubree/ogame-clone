@@ -53,7 +53,7 @@ const SHIP_COSTS: Record<string, { minerai: number; silicium: number }> = {
   recycler:       { minerai: 10000, silicium: 6000 },
 };
 
-const zeroTechs = { weapons: 0, shielding: 0, armor: 0 };
+const unitMultipliers = { weapons: 1, shielding: 1, armor: 1 };
 
 describe('calculateDebris', () => {
   it('returns 30% minerai/silicium from destroyed ships', () => {
@@ -91,8 +91,8 @@ describe('simulateCombat', () => {
     const result = simulateCombat(
       { battleship: 50 },
       { lightFighter: 10 },
-      zeroTechs,
-      zeroTechs,
+      unitMultipliers,
+      unitMultipliers,
       COMBAT_STATS,
       RAPID_FIRE,
       SHIP_IDS,
@@ -108,8 +108,8 @@ describe('simulateCombat', () => {
     const result = simulateCombat(
       { lightFighter: 5 },
       {},
-      zeroTechs,
-      zeroTechs,
+      unitMultipliers,
+      unitMultipliers,
       COMBAT_STATS,
       RAPID_FIRE,
       SHIP_IDS,
@@ -125,8 +125,8 @@ describe('simulateCombat', () => {
     const result = simulateCombat(
       { lightFighter: 1 },
       { lightFighter: 1 },
-      zeroTechs,
-      zeroTechs,
+      unitMultipliers,
+      unitMultipliers,
       COMBAT_STATS,
       RAPID_FIRE,
       SHIP_IDS,
@@ -140,8 +140,8 @@ describe('simulateCombat', () => {
     const result = simulateCombat(
       { espionageProbe: 5 },
       { battleship: 1 },
-      zeroTechs,
-      zeroTechs,
+      unitMultipliers,
+      unitMultipliers,
       COMBAT_STATS,
       RAPID_FIRE,
       SHIP_IDS,
@@ -153,12 +153,13 @@ describe('simulateCombat', () => {
   });
 
   it('techs increase effective stats by 10% per level', () => {
-    const highWeaponsTech = { weapons: 20, shielding: 0, armor: 0 };
+    // weapons tech 20 with +10%/level: 1 + 0.1*20 = 3.0
+    const highWeaponsMultiplier = { weapons: 3, shielding: 1, armor: 1 };
     const result = simulateCombat(
       { lightFighter: 100 },
       { battleship: 1 },
-      highWeaponsTech,
-      zeroTechs,
+      highWeaponsMultiplier,
+      unitMultipliers,
       COMBAT_STATS,
       RAPID_FIRE,
       SHIP_IDS,
@@ -172,8 +173,8 @@ describe('simulateCombat', () => {
     const result = simulateCombat(
       { battleship: 50 },
       { lightFighter: 100 },
-      zeroTechs,
-      zeroTechs,
+      unitMultipliers,
+      unitMultipliers,
       COMBAT_STATS,
       RAPID_FIRE,
       SHIP_IDS,
@@ -193,8 +194,8 @@ describe('simulateCombat', () => {
       const result = simulateCombat(
         { battleship: 50 },
         { rocketLauncher: 50 },
-        zeroTechs,
-        zeroTechs,
+        unitMultipliers,
+        unitMultipliers,
         COMBAT_STATS,
         RAPID_FIRE,
         SHIP_IDS,
@@ -218,8 +219,8 @@ describe('simulateCombat', () => {
     const result = simulateCombat(
       { cruiser: 10 },
       { rocketLauncher: 50 },
-      zeroTechs,
-      zeroTechs,
+      unitMultipliers,
+      unitMultipliers,
       COMBAT_STATS,
       RAPID_FIRE,
       SHIP_IDS,

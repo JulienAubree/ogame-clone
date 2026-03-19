@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { userResearch } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
-import type { CombatTechs, ShipStats } from '@ogame-clone/game-engine';
+import { resolveBonus } from '@ogame-clone/game-engine';
+import type { CombatMultipliers, ShipStats } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { createMessageService } from '../message/message.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -155,7 +156,11 @@ export function buildShipCosts(config: GameConfig) {
   return costs;
 }
 
-export async function getCombatTechs(db: Database, userId: string): Promise<CombatTechs> {
+export async function getCombatMultipliers(
+  db: Database,
+  userId: string,
+  bonusDefs: { sourceType: string; sourceId: string; stat: string; percentPerLevel: number; category: string | null }[],
+): Promise<CombatMultipliers> {
   const [research] = await db
     .select({
       weapons: userResearch.weapons,
@@ -166,9 +171,15 @@ export async function getCombatTechs(db: Database, userId: string): Promise<Comb
     .where(eq(userResearch.userId, userId))
     .limit(1);
 
-  return {
+  const levels: Record<string, number> = {
     weapons: research?.weapons ?? 0,
     shielding: research?.shielding ?? 0,
     armor: research?.armor ?? 0,
+  };
+
+  return {
+    weapons: resolveBonus('weapons', null, levels, bonusDefs),
+    shielding: resolveBonus('shielding', null, levels, bonusDefs),
+    armor: resolveBonus('armor', null, levels, bonusDefs),
   };
 }

@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, debrisFields } from '@ogame-clone/db';
 import { simulateCombat, totalCargoCapacity } from '@ogame-clone/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
-import { buildShipStatsMap, buildCombatStats, buildShipCosts, getCombatTechs, formatDuration } from '../fleet.types.js';
+import { buildShipStatsMap, buildCombatStats, buildShipCosts, getCombatMultipliers, formatDuration } from '../fleet.types.js';
 
 export class AttackHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
@@ -91,8 +91,8 @@ export class AttackHandler implements MissionHandler {
       }
     }
 
-    const attackerTechs = await getCombatTechs(ctx.db, fleetEvent.userId);
-    const defenderTechs = await getCombatTechs(ctx.db, targetPlanet.userId);
+    const attackerMultipliers = await getCombatMultipliers(ctx.db, fleetEvent.userId, config.bonuses);
+    const defenderMultipliers = await getCombatMultipliers(ctx.db, targetPlanet.userId, config.bonuses);
 
     const hasDefenders = Object.values(defenderFleet).some(v => v > 0) ||
                          Object.values(defenderDefenses).some(v => v > 0);
@@ -110,7 +110,7 @@ export class AttackHandler implements MissionHandler {
       outcome = 'attacker';
     } else {
       const result = simulateCombat(
-        ships, defenderCombined, attackerTechs, defenderTechs,
+        ships, defenderCombined, attackerMultipliers, defenderMultipliers,
         combatStatsMap, config.rapidFire,
         shipIdSet, shipCostsMap, defenseIdSet, debrisRatio,
       );

@@ -4,7 +4,7 @@ export interface UnitCombatStats {
   armor: number;
 }
 
-export interface CombatTechs {
+export interface CombatMultipliers {
   weapons: number;
   shielding: number;
   armor: number;
@@ -37,7 +37,7 @@ export interface CombatResult {
 
 function createUnits(
   fleet: Record<string, number>,
-  techs: CombatTechs,
+  multipliers: CombatMultipliers,
   combatStats: Record<string, UnitCombatStats>,
 ): CombatUnit[] {
   const units: CombatUnit[] = [];
@@ -45,9 +45,9 @@ function createUnits(
     const base = combatStats[type];
     if (!base) continue;
     for (let i = 0; i < count; i++) {
-      const weapons = base.weapons * (1 + 0.1 * techs.weapons);
-      const shield = base.shield * (1 + 0.1 * techs.shielding);
-      const armor = base.armor * (1 + 0.1 * techs.armor);
+      const weapons = base.weapons * multipliers.weapons;
+      const shield = base.shield * multipliers.shielding;
+      const armor = base.armor * multipliers.armor;
       units.push({
         type,
         weapons,
@@ -216,8 +216,8 @@ export function repairDefenses(
 export function simulateCombat(
   attackerFleet: Record<string, number>,
   defenderFleet: Record<string, number>,
-  attackerTechs: CombatTechs,
-  defenderTechs: CombatTechs,
+  attackerMultipliers: CombatMultipliers,
+  defenderMultipliers: CombatMultipliers,
   combatStats: Record<string, UnitCombatStats>,
   rapidFireMap: Record<string, Record<string, number>>,
   shipIds: Set<string>,
@@ -225,8 +225,8 @@ export function simulateCombat(
   defenseIds: Set<string>,
   debrisRatio = 0.3,
 ): CombatResult {
-  const attackers = createUnits(attackerFleet, attackerTechs, combatStats);
-  const defenders = createUnits(defenderFleet, defenderTechs, combatStats);
+  const attackers = createUnits(attackerFleet, attackerMultipliers, combatStats);
+  const defenders = createUnits(defenderFleet, defenderMultipliers, combatStats);
 
   const rounds: RoundResult[] = [];
   const maxRounds = 6;

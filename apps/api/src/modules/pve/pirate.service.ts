@@ -3,7 +3,8 @@ import { pirateTemplates } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import {
   simulateCombat,
-  type CombatTechs,
+  resolveBonus,
+  type CombatMultipliers,
   type UnitCombatStats,
 } from '@ogame-clone/game-engine';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -32,7 +33,7 @@ export function createPirateService(db: Database, gameConfigService: GameConfigS
 
     async processPirateArrival(
       playerShips: Record<string, number>,
-      playerTechs: CombatTechs,
+      playerMultipliers: CombatMultipliers,
       templateId: string,
       fleetCargoCapacity: number,
     ): Promise<PirateArrivalResult> {
@@ -44,7 +45,13 @@ export function createPirateService(db: Database, gameConfigService: GameConfigS
       }
 
       const pirateShips = template.ships as Record<string, number>;
-      const pirateTechs = template.techs as CombatTechs;
+      const pirateTechLevels = template.techs as { weapons: number; shielding: number; armor: number };
+      const config = await gameConfigService.getFullConfig();
+      const pirateMultipliers: CombatMultipliers = {
+        weapons: resolveBonus('weapons', null, { weapons: pirateTechLevels.weapons }, config.bonuses),
+        shielding: resolveBonus('shielding', null, { shielding: pirateTechLevels.shielding }, config.bonuses),
+        armor: resolveBonus('armor', null, { armor: pirateTechLevels.armor }, config.bonuses),
+      };
       const rewards = template.rewards as {
         minerai: number;
         silicium: number;
@@ -53,7 +60,6 @@ export function createPirateService(db: Database, gameConfigService: GameConfigS
       };
 
       // Load combat stats from game config
-      const config = await gameConfigService.getFullConfig();
       const combatStats: Record<string, UnitCombatStats> = {};
       for (const [id, ship] of Object.entries(config.ships)) {
         combatStats[id] = { weapons: ship.weapons, shield: ship.shield, armor: ship.armor };
@@ -74,8 +80,8 @@ export function createPirateService(db: Database, gameConfigService: GameConfigS
       const result = simulateCombat(
         playerShips,
         pirateShips,
-        playerTechs,
-        pirateTechs,
+        playerMultipliers,
+        pirateMultipliers,
         combatStats,
         rapidFireMap,
         shipIds,
