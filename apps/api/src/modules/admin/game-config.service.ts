@@ -3,6 +3,7 @@ import {
   entityCategories,
   buildingDefinitions,
   buildingPrerequisites,
+  bonusDefinitions,
   researchDefinitions,
   researchPrerequisites,
   shipDefinitions,
@@ -27,6 +28,15 @@ export interface CategoryConfig {
   sortOrder: number;
 }
 
+export interface BonusConfig {
+  id: string;
+  sourceType: string;
+  sourceId: string;
+  stat: string;
+  percentPerLevel: number;
+  category: string | null;
+}
+
 export interface GameConfig {
   categories: CategoryConfig[];
   buildings: Record<string, BuildingConfig>;
@@ -39,6 +49,7 @@ export interface GameConfig {
   planetTypes: PlanetTypeConfig[];
   pirateTemplates: PirateTemplateConfig[];
   tutorialQuests: TutorialQuestConfig[];
+  bonuses: BonusConfig[];
 }
 
 export interface BuildingConfig {
@@ -187,6 +198,7 @@ export function createGameConfigService(db: Database) {
       planetTypeRows,
       pirateTemplateRows,
       tutorialQuestRows,
+      bonusRows,
     ] = await Promise.all([
       db.select().from(entityCategories),
       db.select().from(buildingDefinitions),
@@ -203,6 +215,7 @@ export function createGameConfigService(db: Database) {
       db.select().from(planetTypes),
       db.select().from(pirateTemplates),
       db.select().from(tutorialQuestDefinitions),
+      db.select().from(bonusDefinitions),
     ]);
 
     // Categories
@@ -373,7 +386,17 @@ export function createGameConfigService(db: Database) {
       rewardHydrogene: tq.rewardHydrogene,
     }));
 
-    cache = { categories, buildings, research, ships, defenses, rapidFire: rf, production, universe, planetTypes: ptConfigs, pirateTemplates: ptTemplates, tutorialQuests: tqConfigs };
+    // Bonuses
+    const bonuses: BonusConfig[] = bonusRows.map(b => ({
+      id: b.id,
+      sourceType: b.sourceType,
+      sourceId: b.sourceId,
+      stat: b.stat,
+      percentPerLevel: b.percentPerLevel,
+      category: b.category,
+    }));
+
+    cache = { categories, buildings, research, ships, defenses, rapidFire: rf, production, universe, planetTypes: ptConfigs, pirateTemplates: ptTemplates, tutorialQuests: tqConfigs, bonuses };
     return cache;
   }
 
@@ -934,6 +957,41 @@ export function createGameConfigService(db: Database) {
 
     async deleteTutorialQuest(id: string) {
       await db.delete(tutorialQuestDefinitions).where(eq(tutorialQuestDefinitions.id, id));
+      invalidateCache();
+    },
+
+    // ── Bonus definitions ──
+
+    async createBonus(data: {
+      id: string;
+      sourceType: string;
+      sourceId: string;
+      stat: string;
+      percentPerLevel: number;
+      category?: string | null;
+    }) {
+      await db.insert(bonusDefinitions).values({
+        id: data.id,
+        sourceType: data.sourceType,
+        sourceId: data.sourceId,
+        stat: data.stat,
+        percentPerLevel: data.percentPerLevel,
+        category: data.category ?? null,
+      });
+      invalidateCache();
+    },
+
+    async updateBonus(id: string, data: Partial<{
+      stat: string;
+      percentPerLevel: number;
+      category: string | null;
+    }>) {
+      await db.update(bonusDefinitions).set(data).where(eq(bonusDefinitions.id, id));
+      invalidateCache();
+    },
+
+    async deleteBonus(id: string) {
+      await db.delete(bonusDefinitions).where(eq(bonusDefinitions.id, id));
       invalidateCache();
     },
   };
