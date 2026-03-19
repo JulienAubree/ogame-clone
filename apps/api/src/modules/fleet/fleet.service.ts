@@ -35,6 +35,7 @@ import { StationHandler } from './handlers/station.handler.js';
 import { SpyHandler } from './handlers/spy.handler.js';
 import { RecycleHandler } from './handlers/recycle.handler.js';
 import { ColonizeHandler } from './handlers/colonize.handler.js';
+import { AttackHandler } from './handlers/attack.handler.js';
 import type { MissionHandler, MissionHandlerContext, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 interface SendFleetInput {
@@ -100,6 +101,7 @@ export function createFleetService(
     spy: new SpyHandler(),
     recycle: new RecycleHandler(),
     colonize: new ColonizeHandler(),
+    attack: new AttackHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
@@ -163,23 +165,7 @@ export function createFleetService(
         await sendHandler.validateFleet(input, config, handlerCtx);
       }
 
-      // Validate: cannot attack own planet
-      if (input.mission === 'attack') {
-        const [targetCheck] = await db
-          .select({ userId: planets.userId })
-          .from(planets)
-          .where(
-            and(
-              eq(planets.galaxy, input.targetGalaxy),
-              eq(planets.system, input.targetSystem),
-              eq(planets.position, input.targetPosition),
-            ),
-          )
-          .limit(1);
-        if (targetCheck && targetCheck.userId === userId) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vous ne pouvez pas attaquer votre propre planète' });
-        }
-      }
+      // Attack validation moved to AttackHandler
 
       // Recycle validation moved to RecycleHandler
 
@@ -457,13 +443,7 @@ export function createFleetService(
 
       // Station handled by handler dispatch above
 
-      // Colonize + Spy handled by handler dispatch above
-
-      if (event.mission === 'attack') {
-        return { ...eventMeta, ...(await this.processAttack(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
-      }
-
-      // Recycle handled by handler dispatch above
+      // Transport, Station, Spy, Recycle, Colonize, Attack handled by handler dispatch above
 
       if (event.mission === 'mine') {
         const pveMissionId = event.pveMissionId;
@@ -871,269 +851,6 @@ export function createFleetService(
         shielding: research?.shielding ?? 0,
         armor: research?.armor ?? 0,
       };
-    },
-
-    async processAttack(
-      event: typeof fleetEvents.$inferSelect,
-      ships: Record<string, number>,
-      mineraiCargo: number,
-      siliciumCargo: number,
-      hydrogeneCargo: number,
-    ) {
-      const coords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
-      const config = await gameConfigService.getFullConfig();
-      const shipStatsMap = buildShipStatsMap(config);
-      const combatStatsMap = buildCombatStats(config);
-      const shipCostsMap = buildShipCosts(config);
-      const shipIdSet = new Set(Object.keys(config.ships));
-      const defenseIdSet = new Set(Object.keys(config.defenses));
-      const debrisRatio = (config.universe['debrisRatio'] as number) ?? 0.3;
-
-      const [targetPlanet] = await db
-        .select()
-        .from(planets)
-        .where(
-          and(
-            eq(planets.galaxy, event.targetGalaxy),
-            eq(planets.system, event.targetSystem),
-            eq(planets.position, event.targetPosition),
-          ),
-        )
-        .limit(1);
-
-      if (!targetPlanet) {
-        if (messageService) {
-          await messageService.createSystemMessage(
-            event.userId,
-            'combat',
-            `Attaque ${coords}`,
-            `Aucune planète trouvée à la position ${coords}. Votre flotte fait demi-tour.`,
-          );
-        }
-        await this.scheduleReturn(
-          event.id, event.originPlanetId,
-          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-          ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
-        );
-        return { mission: 'attack', success: false, reason: 'no_planet' };
-      }
-
-      const [defShips] = await db.select().from(planetShips).where(eq(planetShips.planetId, targetPlanet.id)).limit(1);
-      const [defDefs] = await db.select().from(planetDefenses).where(eq(planetDefenses.planetId, targetPlanet.id)).limit(1);
-
-      const defenderFleet: Record<string, number> = {};
-      const defenderDefenses: Record<string, number> = {};
-      const shipTypes = ['smallCargo', 'largeCargo', 'lightFighter', 'heavyFighter', 'cruiser', 'battleship', 'espionageProbe', 'colonyShip', 'recycler'] as const;
-      const defenseTypes = ['rocketLauncher', 'lightLaser', 'heavyLaser', 'gaussCannon', 'plasmaTurret', 'smallShield', 'largeShield'] as const;
-
-      if (defShips) {
-        for (const t of shipTypes) {
-          if (defShips[t] > 0) defenderFleet[t] = defShips[t];
-        }
-      }
-      if (defDefs) {
-        for (const t of defenseTypes) {
-          if (defDefs[t] > 0) defenderDefenses[t] = defDefs[t];
-        }
-      }
-
-      const attackerTechs = await this.getCombatTechs(event.userId);
-      const defenderTechs = await this.getCombatTechs(targetPlanet.userId);
-
-      const hasDefenders = Object.values(defenderFleet).some(v => v > 0) ||
-                           Object.values(defenderDefenses).some(v => v > 0);
-
-      // Merge defender fleet + defenses into one pool for simulateCombat
-      const defenderCombined: Record<string, number> = { ...defenderFleet, ...defenderDefenses };
-
-      let outcome: 'attacker' | 'defender' | 'draw';
-      let attackerLosses: Record<string, number> = {};
-      let defenderLosses: Record<string, number> = {};
-      let debris = { minerai: 0, silicium: 0 };
-      let repairedDefenses: Record<string, number> = {};
-      let roundCount = 0;
-
-      if (!hasDefenders) {
-        outcome = 'attacker';
-      } else {
-        const result = simulateCombat(
-          ships, defenderCombined, attackerTechs, defenderTechs,
-          combatStatsMap, config.rapidFire,
-          shipIdSet, shipCostsMap, defenseIdSet, debrisRatio,
-        );
-        outcome = result.outcome;
-        attackerLosses = result.attackerLosses;
-        defenderLosses = result.defenderLosses;
-        debris = result.debris;
-        repairedDefenses = result.repairedDefenses;
-        roundCount = result.rounds.length;
-      }
-
-      // Apply attacker losses
-      const survivingShips: Record<string, number> = { ...ships };
-      for (const [type, lost] of Object.entries(attackerLosses)) {
-        survivingShips[type] = (survivingShips[type] ?? 0) - (lost as number);
-        if (survivingShips[type] <= 0) delete survivingShips[type];
-      }
-
-      // Apply defender ship losses
-      if (defShips) {
-        const shipUpdates: Record<string, number> = {};
-        for (const t of shipTypes) {
-          const lost = defenderLosses[t] ?? 0;
-          if (lost > 0) shipUpdates[t] = defShips[t] - lost;
-        }
-        if (Object.keys(shipUpdates).length > 0) {
-          await db.update(planetShips).set(shipUpdates).where(eq(planetShips.planetId, targetPlanet.id));
-        }
-      }
-
-      // Apply defender defense losses (minus repairs)
-      if (defDefs) {
-        const defUpdates: Record<string, number> = {};
-        for (const t of defenseTypes) {
-          const lost = defenderLosses[t] ?? 0;
-          const repaired = repairedDefenses[t] ?? 0;
-          const netLoss = lost - repaired;
-          if (netLoss > 0) defUpdates[t] = defDefs[t] - netLoss;
-        }
-        if (Object.keys(defUpdates).length > 0) {
-          await db.update(planetDefenses).set(defUpdates).where(eq(planetDefenses.planetId, targetPlanet.id));
-        }
-      }
-
-      // Create/accumulate debris field
-      if (debris.minerai > 0 || debris.silicium > 0) {
-        const [existingDebris] = await db
-          .select()
-          .from(debrisFields)
-          .where(
-            and(
-              eq(debrisFields.galaxy, event.targetGalaxy),
-              eq(debrisFields.system, event.targetSystem),
-              eq(debrisFields.position, event.targetPosition),
-            ),
-          )
-          .limit(1);
-
-        if (existingDebris) {
-          await db
-            .update(debrisFields)
-            .set({
-              minerai: String(Number(existingDebris.minerai) + debris.minerai),
-              silicium: String(Number(existingDebris.silicium) + debris.silicium),
-              updatedAt: new Date(),
-            })
-            .where(eq(debrisFields.id, existingDebris.id));
-        } else {
-          await db.insert(debrisFields).values({
-            galaxy: event.targetGalaxy,
-            system: event.targetSystem,
-            position: event.targetPosition,
-            minerai: String(debris.minerai),
-            silicium: String(debris.silicium),
-          });
-        }
-      }
-
-      // Pillage resources if attacker wins
-      let pillagedMinerai = 0;
-      let pillagedSilicium = 0;
-      let pillagedHydrogene = 0;
-
-      if (outcome === 'attacker') {
-        const remainingCargoCapacity = totalCargoCapacity(survivingShips, shipStatsMap);
-        const availableCargo = remainingCargoCapacity - mineraiCargo - siliciumCargo - hydrogeneCargo;
-
-        if (availableCargo > 0) {
-          await resourceService.materializeResources(targetPlanet.id, targetPlanet.userId);
-          const [updatedPlanet] = await db.select().from(planets).where(eq(planets.id, targetPlanet.id)).limit(1);
-
-          const availMinerai = Math.floor(Number(updatedPlanet.minerai));
-          const availSilicium = Math.floor(Number(updatedPlanet.silicium));
-          const availHydrogene = Math.floor(Number(updatedPlanet.hydrogene));
-
-          const thirdCargo = Math.floor(availableCargo / 3);
-
-          pillagedMinerai = Math.min(availMinerai, thirdCargo);
-          pillagedSilicium = Math.min(availSilicium, thirdCargo);
-          pillagedHydrogene = Math.min(availHydrogene, thirdCargo);
-
-          let remaining = availableCargo - pillagedMinerai - pillagedSilicium - pillagedHydrogene;
-
-          if (remaining > 0) {
-            const extraMinerai = Math.min(availMinerai - pillagedMinerai, remaining);
-            pillagedMinerai += extraMinerai;
-            remaining -= extraMinerai;
-          }
-          if (remaining > 0) {
-            const extraSilicium = Math.min(availSilicium - pillagedSilicium, remaining);
-            pillagedSilicium += extraSilicium;
-            remaining -= extraSilicium;
-          }
-          if (remaining > 0) {
-            const extraHydrogene = Math.min(availHydrogene - pillagedHydrogene, remaining);
-            pillagedHydrogene += extraHydrogene;
-          }
-
-          await db
-            .update(planets)
-            .set({
-              minerai: sql`${planets.minerai} - ${pillagedMinerai}`,
-              silicium: sql`${planets.silicium} - ${pillagedSilicium}`,
-              hydrogene: sql`${planets.hydrogene} - ${pillagedHydrogene}`,
-            })
-            .where(eq(planets.id, targetPlanet.id));
-        }
-      }
-
-      // Send combat reports
-      const outcomeText = outcome === 'attacker' ? 'Victoire' :
-                          outcome === 'defender' ? 'Défaite' : 'Match nul';
-
-      const reportBody = `Combat ${coords} — ${outcomeText}\n\n` +
-        `Rounds : ${roundCount}\n` +
-        `Pertes attaquant : ${JSON.stringify(attackerLosses)}\n` +
-        `Pertes défenseur : ${JSON.stringify(defenderLosses)}\n` +
-        `Défenses réparées : ${JSON.stringify(repairedDefenses)}\n` +
-        `Débris : ${debris.minerai} minerai, ${debris.silicium} silicium\n` +
-        (outcome === 'attacker' ?
-          `Pillage : ${pillagedMinerai} minerai, ${pillagedSilicium} silicium, ${pillagedHydrogene} hydrogène\n` : '');
-
-      if (messageService) {
-        await messageService.createSystemMessage(
-          event.userId,
-          'combat',
-          `Rapport de combat ${coords} — ${outcomeText}`,
-          reportBody,
-        );
-        await messageService.createSystemMessage(
-          targetPlanet.userId,
-          'combat',
-          `Rapport de combat ${coords} — ${outcome === 'attacker' ? 'Défaite' : outcome === 'defender' ? 'Victoire' : 'Match nul'}`,
-          reportBody,
-        );
-      }
-
-      // Return surviving fleet with cargo + pillage
-      const hasShips = Object.values(survivingShips).some(v => v > 0);
-      if (hasShips) {
-        await this.scheduleReturn(
-          event.id, event.originPlanetId,
-          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-          survivingShips,
-          mineraiCargo + pillagedMinerai,
-          siliciumCargo + pillagedSilicium,
-          hydrogeneCargo + pillagedHydrogene,
-        );
-      } else {
-        await db
-          .update(fleetEvents)
-          .set({ status: 'completed' })
-          .where(eq(fleetEvents.id, event.id));
-      }
-
-      return { mission: 'attack', outcome };
     },
 
     async getDriveTechs(userId: string) {
