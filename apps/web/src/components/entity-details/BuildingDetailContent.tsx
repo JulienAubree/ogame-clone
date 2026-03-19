@@ -188,9 +188,9 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
               <GameImage
                 category={effect.sourceType === 'building' ? 'buildings' : 'research'}
                 id={effect.sourceId}
-                size="icon"
+                size="thumb"
                 alt={effect.sourceName}
-                className="h-7 w-7 rounded-md"
+                className="h-7 w-7 rounded-md object-cover"
               />
               <div>
                 <div className="text-[11px] text-slate-200">
