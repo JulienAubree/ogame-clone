@@ -298,7 +298,7 @@ export default function Buildings() {
                 </div>
 
                 {/* Desktop: retro card grid */}
-                <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4">
+                <div className="hidden lg:grid lg:gap-4 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                   {categoryBuildings.map((building) => {
                     const canAfford =
                       resources.minerai >= building.nextLevelCost.minerai &&
@@ -322,46 +322,43 @@ export default function Buildings() {
                         key={building.id}
                         onClick={() => setDetailId(building.id)}
                         className={cn(
-                          'retro-card relative p-4 text-left cursor-pointer',
+                          'retro-card text-left cursor-pointer overflow-hidden flex flex-col',
                           getResourceGlowClass(building.id),
+                          !prereqsMet && 'opacity-50',
                         )}
                       >
-                        <div className="flex gap-3">
+                        {/* Image area with gradient background */}
+                        <div className="relative h-[130px] bg-gradient-to-br from-[#0f3460] via-[#16213e] to-[#1a1a2e] flex items-center justify-center">
                           <GameImage
                             category="buildings"
                             id={building.id}
                             size="thumb"
                             alt={building.name}
-                            className="h-[72px] w-[72px] rounded object-cover shrink-0"
+                            className="h-20 w-20 rounded-xl object-cover"
                           />
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <h3 className="font-bold text-foreground text-sm truncate">
-                                {building.name}
-                              </h3>
-                              <span className="ml-2 shrink-0 bg-primary/12 text-primary border border-primary/20 font-mono text-xs font-semibold px-2 py-0.5 rounded">
-                                {building.currentLevel}
-                              </span>
-                            </div>
-                            {stats && building.currentLevel > 0 && (
-                              <div className={`text-sm font-mono font-bold ${stats.color}`}>
-                                {stats.current.toLocaleString('fr-FR')}
-                                {stats.unit}
-                              </div>
-                            )}
-                            {stats && (
-                              <div className="text-xs text-muted-foreground font-mono">
-                                → Niv.{building.currentLevel + 1} :{' '}
-                                <span className="text-emerald-400">
-                                  +{stats.delta.toLocaleString('fr-FR')}
-                                  {stats.unit}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <span className="absolute top-2 right-2 bg-emerald-700 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            Niv. {building.currentLevel}
+                          </span>
                         </div>
 
-                        <div className="flex items-center justify-between mt-3">
+                        {/* Info area */}
+                        <div className="p-3 flex flex-col flex-1 gap-1.5">
+                          <div className="text-[13px] font-semibold text-foreground truncate">
+                            {building.name}
+                          </div>
+
+                          {/* Contextual stat line */}
+                          {stats && building.currentLevel > 0 && (
+                            <div className="text-xs text-muted-foreground font-mono">
+                              {stats.label === 'Capacité'
+                                ? `capacité ${stats.current.toLocaleString('fr-FR')}`
+                                : `+${stats.current.toLocaleString('fr-FR')}${stats.unit}`}
+                            </div>
+                          )}
+
+                          {/* Spacer to push cost/button to bottom */}
+                          <div className="flex-1" />
+
                           {building.isUpgrading && building.upgradeEndTime ? (
                             <Timer
                               endTime={new Date(building.upgradeEndTime)}
@@ -381,26 +378,38 @@ export default function Buildings() {
                                 currentSilicium={resources.silicium}
                                 currentHydrogene={resources.hydrogene}
                               />
-                              <Button
-                                variant="retro"
-                                size="sm"
-                                className="shrink-0 ml-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  upgradeMutation.mutate({
-                                    planetId: planetId!,
-                                    buildingId: building.id as any,
-                                  });
-                                }}
-                                disabled={
-                                  !canAfford ||
-                                  !prereqsMet ||
-                                  isAnyUpgrading ||
-                                  upgradeMutation.isPending
-                                }
-                              >
-                                Niv.{building.currentLevel + 1} ↑
-                              </Button>
+                              <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+                                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path d="M12 6v6l4 2" />
+                                </svg>
+                                {formatDuration(building.nextLevelTime)}
+                              </div>
+                              {!prereqsMet ? (
+                                <div className="text-[10px] text-destructive">
+                                  Prérequis manquants
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="retro"
+                                  size="sm"
+                                  className="w-full"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    upgradeMutation.mutate({
+                                      planetId: planetId!,
+                                      buildingId: building.id as any,
+                                    });
+                                  }}
+                                  disabled={
+                                    !canAfford ||
+                                    isAnyUpgrading ||
+                                    upgradeMutation.isPending
+                                  }
+                                >
+                                  Améliorer
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>
