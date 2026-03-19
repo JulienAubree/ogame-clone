@@ -1,5 +1,5 @@
 import { eq, and, asc } from 'drizzle-orm';
-import { tutorialProgress, planets, planetBuildings, planetShips, tutorialQuestDefinitions } from '@ogame-clone/db';
+import { tutorialProgress, planets, planetBuildings, planetShips, tutorialQuestDefinitions, userResearch, fleetEvents, pveMissions } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import type { createPveService } from '../pve/pve.service.js';
 
@@ -63,6 +63,12 @@ export function createTutorialService(db: Database, pveService?: ReturnType<type
     },
 
     async getCurrent(userId: string) {
+      // Catch-up loop: auto-complete quests that are already satisfied
+      let catchUpResult = await this.checkCompletion(userId);
+      while (catchUpResult) {
+        catchUpResult = await this.checkCompletion(userId);
+      }
+
       const progress = await this.getOrCreateProgress(userId);
 
       // Get player's first planet coords
@@ -218,8 +224,45 @@ export function createTutorialService(db: Database, pveService?: ReturnType<type
         }, 0);
 
         conditionMet = totalCount >= quest.condition.targetValue;
+      } else if (quest.condition.type === 'research_level') {
+        const [research] = await db
+          .select()
+          .from(userResearch)
+          .where(eq(userResearch.userId, userId))
+          .limit(1);
+
+        if (research) {
+          const level = (research[quest.condition.targetId as keyof typeof research] ?? 0) as number;
+          conditionMet = level >= quest.condition.targetValue;
+        }
+      } else if (quest.condition.type === 'fleet_return') {
+        const [completedFleet] = await db
+          .select({ id: fleetEvents.id })
+          .from(fleetEvents)
+          .where(
+            and(
+              eq(fleetEvents.userId, userId),
+              eq(fleetEvents.status, 'completed'),
+            ),
+          )
+          .limit(1);
+
+        conditionMet = !!completedFleet;
+      } else if (quest.condition.type === 'mission_complete') {
+        const [completedMission] = await db
+          .select({ id: pveMissions.id })
+          .from(pveMissions)
+          .where(
+            and(
+              eq(pveMissions.userId, userId),
+              eq(pveMissions.missionType, quest.condition.targetId),
+              eq(pveMissions.status, 'completed'),
+            ),
+          )
+          .limit(1);
+
+        conditionMet = !!completedMission;
       }
-      // mission_complete is checked via direct event from fleet return
 
       if (!conditionMet) return null;
 
