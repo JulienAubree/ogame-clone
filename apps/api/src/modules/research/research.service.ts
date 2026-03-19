@@ -2,7 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, userResearch, buildQueue, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
-import { researchCost, researchTime, checkResearchPrerequisites } from '@ogame-clone/game-engine';
+import { researchCost, researchTime, checkResearchPrerequisites, resolveBonus } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
@@ -50,8 +50,8 @@ export function createResearchService(
           const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
           const nextLevel = currentLevel + 1;
           const cost = researchCost(def, nextLevel);
-          const researchLabLevel = buildingLevels['researchLab'] ?? 0;
-          const time = researchTime(def, nextLevel, researchLabLevel);
+          const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
+          const time = researchTime(def, nextLevel, bonusMultiplier);
 
           const researchLevels: Record<string, number> = {};
           for (const [key, rDef] of Object.entries(config.research)) {
@@ -110,8 +110,8 @@ export function createResearchService(
       const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
       const nextLevel = currentLevel + 1;
       const cost = researchCost(def, nextLevel);
-      const researchLabLevel = buildingLevels['researchLab'] ?? 0;
-      const time = researchTime(def, nextLevel, researchLabLevel);
+      const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
+      const time = researchTime(def, nextLevel, bonusMultiplier);
 
       await resourceService.spendResources(planetId, userId, cost);
 
