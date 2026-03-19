@@ -42,13 +42,7 @@ export default function Fleet() {
   // URL param handling — runs once on mount
   useEffect(() => {
     const paramMission = searchParams.get('mission') as Mission | null;
-    if (!paramMission) {
-      // Default target to current planet coordinates
-      if (planet) {
-        setTarget({ galaxy: planet.galaxy, system: planet.system, position: planet.position });
-      }
-      return;
-    }
+    if (!paramMission) return;
 
     const data = {
       mission: paramMission,
@@ -68,6 +62,14 @@ export default function Fleet() {
     setMission(data.mission);
     setSearchParams({}, { replace: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Default target to current planet coordinates (when no PvE params)
+  useEffect(() => {
+    if (pveMode || prefillRef.current) return;
+    if (planet) {
+      setTarget({ galaxy: planet.galaxy, system: planet.system, position: planet.position });
+    }
+  }, [planet, pveMode]);
 
   // Auto-select ships when data loads (PvE prefill)
   useEffect(() => {
@@ -138,6 +140,11 @@ export default function Fleet() {
     if (!target.galaxy || !target.system || !target.position) return 'Destination incomplète';
 
     const config = MISSION_CONFIG[mission];
+
+    if (config.requiresPveMission && !pveMissionId) {
+      return 'Cette mission doit être lancée depuis la page Missions';
+    }
+
     const selected = Object.entries(selectedShips).filter(([, c]) => c > 0);
     if (selected.length === 0) return 'Sélectionnez au moins un vaisseau';
 
@@ -147,6 +154,11 @@ export default function Fleet() {
         const names = config.requiredShips.join(', ');
         return `Cette mission nécessite : ${names}`;
       }
+    }
+
+    if (config.exclusive && config.requiredShips) {
+      const hasDisallowed = selected.some(([id]) => !config.requiredShips!.includes(id));
+      if (hasDisallowed) return `Cette mission n'autorise que : ${config.requiredShips.join(', ')}`;
     }
 
     // Check total cargo does not exceed capacity
