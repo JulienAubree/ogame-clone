@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { categorizeShip, type Mission, type ShipCategory, MISSION_CONFIG } from '@/config/mission-config';
+
+const COLLAPSED_COUNT = 3;
 
 interface Ship {
   id: string;
@@ -54,6 +57,42 @@ function ShipRow({ ship, value, onChange, disabled }: {
   );
 }
 
+function CollapsibleShipList({ ships, selectedShips, onChange, disabled }: {
+  ships: Ship[];
+  selectedShips: Record<string, number>;
+  onChange: (shipId: string, count: number) => void;
+  disabled: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? ships : ships.slice(0, COLLAPSED_COUNT);
+  const hiddenCount = ships.length - COLLAPSED_COUNT;
+
+  return (
+    <>
+      <div className="space-y-1">
+        {visible.map((ship) => (
+          <ShipRow
+            key={ship.id}
+            ship={ship}
+            value={disabled ? 0 : (selectedShips[ship.id] ?? 0)}
+            onChange={disabled ? () => {} : (count) => onChange(ship.id, count)}
+            disabled={disabled}
+          />
+        ))}
+      </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="mt-1 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {expanded ? '▲ Réduire' : `▼ Voir ${hiddenCount} de plus`}
+        </button>
+      )}
+    </>
+  );
+}
+
 export function FleetComposition({ ships, mission, selectedShips, onChange }: FleetCompositionProps) {
   if (!mission) {
     return (
@@ -98,17 +137,12 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
       {categorized.optional.length > 0 && (
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Optionnels</div>
-          <div className="space-y-1">
-            {categorized.optional.map((ship) => (
-              <ShipRow
-                key={ship.id}
-                ship={ship}
-                value={selectedShips[ship.id] ?? 0}
-                onChange={(count) => onChange(ship.id, count)}
-                disabled={false}
-              />
-            ))}
-          </div>
+          <CollapsibleShipList
+            ships={categorized.optional}
+            selectedShips={selectedShips}
+            onChange={onChange}
+            disabled={false}
+          />
         </div>
       )}
 
@@ -116,17 +150,12 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
       {categorized.disabled.length > 0 && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-3 opacity-50">
           <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Non disponibles</div>
-          <div className="space-y-1">
-            {categorized.disabled.map((ship) => (
-              <ShipRow
-                key={ship.id}
-                ship={ship}
-                value={0}
-                onChange={() => {}}
-                disabled
-              />
-            ))}
-          </div>
+          <CollapsibleShipList
+            ships={categorized.disabled}
+            selectedShips={selectedShips}
+            onChange={onChange}
+            disabled
+          />
         </div>
       )}
     </div>
