@@ -31,6 +31,7 @@ import type { createPveService } from '../pve/pve.service.js';
 import type { createAsteroidBeltService } from '../pve/asteroid-belt.service.js';
 import type { createPirateService } from '../pve/pirate.service.js';
 import { TransportHandler } from './handlers/transport.handler.js';
+import { StationHandler } from './handlers/station.handler.js';
 import type { MissionHandler, MissionHandlerContext, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 interface SendFleetInput {
@@ -92,6 +93,7 @@ export function createFleetService(
 ) {
   const handlers: Record<string, MissionHandler> = {
     transport: new TransportHandler(),
+    station: new StationHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
@@ -457,46 +459,7 @@ export function createFleetService(
         return { ...eventMeta, mission: event.mission };
       }
 
-      if (event.mission === 'station') {
-        if (event.targetPlanetId) {
-          const [targetPlanet] = await db
-            .select()
-            .from(planets)
-            .where(eq(planets.id, event.targetPlanetId))
-            .limit(1);
-
-          if (targetPlanet) {
-            await db
-              .update(planets)
-              .set({
-                minerai: String(Number(targetPlanet.minerai) + mineraiCargo),
-                silicium: String(Number(targetPlanet.silicium) + siliciumCargo),
-                hydrogene: String(Number(targetPlanet.hydrogene) + hydrogeneCargo),
-              })
-              .where(eq(planets.id, event.targetPlanetId));
-
-            const targetShips = await this.getOrCreateShips(event.targetPlanetId);
-            const shipUpdates: Record<string, number> = {};
-            for (const [shipId, count] of Object.entries(ships)) {
-              if (count > 0) {
-                const current = (targetShips[shipId as keyof typeof targetShips] ?? 0) as number;
-                shipUpdates[shipId] = current + count;
-              }
-            }
-            await db
-              .update(planetShips)
-              .set(shipUpdates)
-              .where(eq(planetShips.planetId, event.targetPlanetId));
-          }
-        }
-
-        await db
-          .update(fleetEvents)
-          .set({ status: 'completed' })
-          .where(eq(fleetEvents.id, event.id));
-
-        return { ...eventMeta, mission: 'station', stationed: true };
-      }
+      // Station handled by handler dispatch above
 
       if (event.mission === 'colonize') {
         return { ...eventMeta, ...(await this.processColonize(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
