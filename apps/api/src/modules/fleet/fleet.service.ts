@@ -34,6 +34,7 @@ import { TransportHandler } from './handlers/transport.handler.js';
 import { StationHandler } from './handlers/station.handler.js';
 import { SpyHandler } from './handlers/spy.handler.js';
 import { RecycleHandler } from './handlers/recycle.handler.js';
+import { ColonizeHandler } from './handlers/colonize.handler.js';
 import type { MissionHandler, MissionHandlerContext, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 interface SendFleetInput {
@@ -98,6 +99,7 @@ export function createFleetService(
     station: new StationHandler(),
     spy: new SpyHandler(),
     recycle: new RecycleHandler(),
+    colonize: new ColonizeHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
@@ -183,14 +185,7 @@ export function createFleetService(
 
       // Spy validation moved to SpyHandler
 
-      // Validate: colonize mission requires only colony ships
-      if (input.mission === 'colonize') {
-        for (const [shipType, count] of Object.entries(input.ships)) {
-          if (count > 0 && shipType !== 'colonyShip') {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seuls les vaisseaux de colonisation peuvent être envoyés en mission colonisation' });
-          }
-        }
-      }
+      // Colonize validation moved to ColonizeHandler
 
       // Validate: mine requires at least 1 prospector and must target belt position
       if (input.mission === 'mine') {
@@ -439,15 +434,20 @@ export function createFleetService(
         }
 
         if (result.createReturnEvent) {
-          // Handle special return events (e.g. colonize success)
+          // Handle special return events (e.g. colonize success — remaining ships return in a new fleet event)
           const returnData = result.createReturnEvent;
-          await db.insert(fleetEvents).values(returnData as typeof fleetEvents.$inferInsert);
-          if (returnData.id) {
+          const [insertedEvent] = await db
+            .insert(fleetEvents)
+            .values(returnData as typeof fleetEvents.$inferInsert)
+            .returning();
+
+          if (insertedEvent) {
             const returnShips = (returnData.ships ?? ships) as Record<string, number>;
+            const returnCargo = result.cargo ?? { minerai: 0, silicium: 0, hydrogene: 0 };
             await this.scheduleReturn(
-              returnData.id as string, event.originPlanetId,
+              insertedEvent.id, event.originPlanetId,
               { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-              returnShips, 0, 0, 0,
+              returnShips, returnCargo.minerai, returnCargo.silicium, returnCargo.hydrogene,
             );
           }
         }
@@ -457,11 +457,7 @@ export function createFleetService(
 
       // Station handled by handler dispatch above
 
-      if (event.mission === 'colonize') {
-        return { ...eventMeta, ...(await this.processColonize(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
-      }
-
-      // Spy handled by handler dispatch above
+      // Colonize + Spy handled by handler dispatch above
 
       if (event.mission === 'attack') {
         return { ...eventMeta, ...(await this.processAttack(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
@@ -857,201 +853,6 @@ export function createFleetService(
         { fleetEventId },
         { delay: delayMs + duration * 1000, jobId: `fleet-return-${fleetEventId}` },
       );
-    },
-
-    async processColonize(
-      event: typeof fleetEvents.$inferSelect,
-      ships: Record<string, number>,
-      mineraiCargo: number,
-      siliciumCargo: number,
-      hydrogeneCargo: number,
-    ) {
-      const coords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
-
-      // Check if position is an asteroid belt (cannot be colonized)
-      if ((BELT_POSITIONS as readonly number[]).includes(event.targetPosition)) {
-        if (messageService) {
-          await messageService.createSystemMessage(
-            event.userId,
-            'colonization',
-            `Colonisation échouée ${coords}`,
-            `La position ${coords} est une ceinture d'astéroïdes et ne peut pas être colonisée. Votre flotte fait demi-tour.`,
-          );
-        }
-        await this.scheduleReturn(
-          event.id, event.originPlanetId,
-          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-          ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
-        );
-        return { mission: 'colonize', success: false, reason: 'belt_position' };
-      }
-
-      // Check if position is free
-      const [existing] = await db
-        .select()
-        .from(planets)
-        .where(
-          and(
-            eq(planets.galaxy, event.targetGalaxy),
-            eq(planets.system, event.targetSystem),
-            eq(planets.position, event.targetPosition),
-          ),
-        )
-        .limit(1);
-
-      if (existing) {
-        if (messageService) {
-          await messageService.createSystemMessage(
-            event.userId,
-            'colonization',
-            `Colonisation échouée ${coords}`,
-            `La position ${coords} est déjà occupée. Votre flotte fait demi-tour.`,
-          );
-        }
-        await this.scheduleReturn(
-          event.id, event.originPlanetId,
-          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-          ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
-        );
-        return { mission: 'colonize', success: false, reason: 'occupied' };
-      }
-
-      // Check max planets
-      const userPlanets = await db
-        .select()
-        .from(planets)
-        .where(eq(planets.userId, event.userId));
-
-      if (userPlanets.length >= 9) {
-        if (messageService) {
-          await messageService.createSystemMessage(
-            event.userId,
-            'colonization',
-            `Colonisation échouée ${coords}`,
-            `Nombre maximum de planètes atteint (9). Votre flotte fait demi-tour.`,
-          );
-        }
-        await this.scheduleReturn(
-          event.id, event.originPlanetId,
-          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-          ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
-        );
-        return { mission: 'colonize', success: false, reason: 'max_planets' };
-      }
-
-      // Success: create new planet — determine type from position
-      const config = await gameConfigService.getFullConfig();
-      const planetTypeForPos = config.planetTypes.find(
-        (pt) => pt.id !== 'homeworld' && (pt.positions as number[]).includes(event.targetPosition),
-      );
-
-      const randomOffset = Math.floor(Math.random() * 41) - 20;
-      const maxTemp = calculateMaxTemp(event.targetPosition, randomOffset);
-      const minTemp = calculateMinTemp(maxTemp);
-
-      let diameter: number;
-      let fieldsBonus = 1;
-      if (planetTypeForPos) {
-        const { diameterMin, diameterMax } = planetTypeForPos;
-        diameter = Math.floor(diameterMin + (diameterMax - diameterMin) * Math.random());
-        fieldsBonus = planetTypeForPos.fieldsBonus;
-      } else {
-        diameter = calculateDiameter(event.targetPosition, Math.random());
-      }
-      const maxFields = calculateMaxFields(diameter, fieldsBonus);
-
-      const [newPlanet] = await db
-        .insert(planets)
-        .values({
-          userId: event.userId,
-          name: 'Colonie',
-          galaxy: event.targetGalaxy,
-          system: event.targetSystem,
-          position: event.targetPosition,
-          planetType: 'planet',
-          planetClassId: planetTypeForPos?.id ?? null,
-          diameter,
-          maxFields,
-          minTemp,
-          maxTemp,
-        })
-        .returning();
-
-      // Create associated rows
-      await db.insert(planetShips).values({ planetId: newPlanet.id });
-      await db.insert(planetDefenses).values({ planetId: newPlanet.id });
-
-      // Colony ship is consumed — remove from fleet
-      const remainingShips = { ...ships };
-      if (remainingShips.colonyShip) {
-        remainingShips.colonyShip = Math.max(0, remainingShips.colonyShip - 1);
-      }
-
-      // Mark event completed
-      await db
-        .update(fleetEvents)
-        .set({ status: 'completed' })
-        .where(eq(fleetEvents.id, event.id));
-
-      // Return remaining ships (if any) with cargo
-      const hasRemainingShips = Object.values(remainingShips).some(v => v > 0);
-      if (hasRemainingShips) {
-        const config = await gameConfigService.getFullConfig();
-        const shipStatsMap = buildShipStatsMap(config);
-        const driveTechs = await this.getDriveTechs(event.userId);
-        const speed = fleetSpeed(remainingShips, driveTechs, shipStatsMap);
-        const [originPlanet] = await db
-          .select()
-          .from(planets)
-          .where(eq(planets.id, event.originPlanetId))
-          .limit(1);
-
-        if (originPlanet && speed > 0) {
-          const origin = { galaxy: originPlanet.galaxy, system: originPlanet.system, position: originPlanet.position };
-          const target = { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition };
-          const duration = travelTime(target, origin, speed, universeSpeed);
-          const now = new Date();
-          const returnTime = new Date(now.getTime() + duration * 1000);
-
-          const [returnEvent] = await db
-            .insert(fleetEvents)
-            .values({
-              userId: event.userId,
-              originPlanetId: event.originPlanetId,
-              targetPlanetId: newPlanet.id,
-              targetGalaxy: event.targetGalaxy,
-              targetSystem: event.targetSystem,
-              targetPosition: event.targetPosition,
-              mission: 'transport',
-              phase: 'return',
-              status: 'active',
-              departureTime: now,
-              arrivalTime: returnTime,
-              mineraiCargo: String(mineraiCargo),
-              siliciumCargo: String(siliciumCargo),
-              hydrogeneCargo: String(hydrogeneCargo),
-              ships: remainingShips,
-            })
-            .returning();
-
-          await fleetReturnQueue.add(
-            'return',
-            { fleetEventId: returnEvent.id },
-            { delay: duration * 1000, jobId: `fleet-return-${returnEvent.id}` },
-          );
-        }
-      }
-
-      if (messageService) {
-        await messageService.createSystemMessage(
-          event.userId,
-          'colonization',
-          `Colonisation réussie ${coords}`,
-          `Une nouvelle colonie a été fondée sur ${coords}. Diamètre : ${diameter}km, ${maxFields} cases disponibles.`,
-        );
-      }
-
-      return { mission: 'colonize', success: true, planetId: newPlanet.id };
     },
 
     async getCombatTechs(userId: string): Promise<CombatTechs> {
