@@ -33,6 +33,7 @@ import type { createPirateService } from '../pve/pirate.service.js';
 import { TransportHandler } from './handlers/transport.handler.js';
 import { StationHandler } from './handlers/station.handler.js';
 import { SpyHandler } from './handlers/spy.handler.js';
+import { RecycleHandler } from './handlers/recycle.handler.js';
 import type { MissionHandler, MissionHandlerContext, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 interface SendFleetInput {
@@ -96,6 +97,7 @@ export function createFleetService(
     transport: new TransportHandler(),
     station: new StationHandler(),
     spy: new SpyHandler(),
+    recycle: new RecycleHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
@@ -177,14 +179,7 @@ export function createFleetService(
         }
       }
 
-      // Validate: recycle mission requires only recyclers
-      if (input.mission === 'recycle') {
-        for (const [shipType, count] of Object.entries(input.ships)) {
-          if (count > 0 && shipType !== 'recycler') {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seuls les recycleurs peuvent être envoyés en mission recyclage' });
-          }
-        }
-      }
+      // Recycle validation moved to RecycleHandler
 
       // Spy validation moved to SpyHandler
 
@@ -472,9 +467,7 @@ export function createFleetService(
         return { ...eventMeta, ...(await this.processAttack(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
       }
 
-      if (event.mission === 'recycle') {
-        return { ...eventMeta, ...(await this.processRecycle(event, ships, mineraiCargo, siliciumCargo, hydrogeneCargo)) };
-      }
+      // Recycle handled by handler dispatch above
 
       if (event.mission === 'mine') {
         const pveMissionId = event.pveMissionId;
@@ -1077,76 +1070,6 @@ export function createFleetService(
         shielding: research?.shielding ?? 0,
         armor: research?.armor ?? 0,
       };
-    },
-
-    async processRecycle(
-      event: typeof fleetEvents.$inferSelect,
-      ships: Record<string, number>,
-      mineraiCargo: number,
-      siliciumCargo: number,
-      hydrogeneCargo: number,
-    ) {
-      const [debris] = await db
-        .select()
-        .from(debrisFields)
-        .where(
-          and(
-            eq(debrisFields.galaxy, event.targetGalaxy),
-            eq(debrisFields.system, event.targetSystem),
-            eq(debrisFields.position, event.targetPosition),
-          ),
-        )
-        .limit(1);
-
-      if (!debris || (Number(debris.minerai) <= 0 && Number(debris.silicium) <= 0)) {
-        await this.scheduleReturn(
-          event.id, event.originPlanetId,
-          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-          ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
-        );
-        return { mission: 'recycle', collected: { minerai: 0, silicium: 0 } };
-      }
-
-      const config = await gameConfigService.getFullConfig();
-      const recyclerDef = config.ships['recycler'];
-      const recyclerCount = ships.recycler ?? 0;
-      const cargoPerRecycler = recyclerDef?.cargoCapacity ?? 20000;
-      const totalCargoCapacityValue = recyclerCount * cargoPerRecycler;
-
-      let remainingCargo = totalCargoCapacityValue;
-      const availableMinerai = Number(debris.minerai);
-      const availableSilicium = Number(debris.silicium);
-
-      const collectedMinerai = Math.min(availableMinerai, remainingCargo);
-      remainingCargo -= collectedMinerai;
-      const collectedSilicium = Math.min(availableSilicium, remainingCargo);
-
-      const newMinerai = availableMinerai - collectedMinerai;
-      const newSilicium = availableSilicium - collectedSilicium;
-
-      if (newMinerai <= 0 && newSilicium <= 0) {
-        await db.delete(debrisFields).where(eq(debrisFields.id, debris.id));
-      } else {
-        await db
-          .update(debrisFields)
-          .set({
-            minerai: String(newMinerai),
-            silicium: String(newSilicium),
-            updatedAt: new Date(),
-          })
-          .where(eq(debrisFields.id, debris.id));
-      }
-
-      await this.scheduleReturn(
-        event.id, event.originPlanetId,
-        { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-        ships,
-        mineraiCargo + collectedMinerai,
-        siliciumCargo + collectedSilicium,
-        hydrogeneCargo,
-      );
-
-      return { mission: 'recycle', collected: { minerai: collectedMinerai, silicium: collectedSilicium } };
     },
 
     async processAttack(
