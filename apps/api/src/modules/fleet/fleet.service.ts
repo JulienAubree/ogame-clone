@@ -36,6 +36,7 @@ import { SpyHandler } from './handlers/spy.handler.js';
 import { RecycleHandler } from './handlers/recycle.handler.js';
 import { ColonizeHandler } from './handlers/colonize.handler.js';
 import { AttackHandler } from './handlers/attack.handler.js';
+import { PirateHandler } from './handlers/pirate.handler.js';
 import type { MissionHandler, MissionHandlerContext, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 interface SendFleetInput {
@@ -102,6 +103,7 @@ export function createFleetService(
     recycle: new RecycleHandler(),
     colonize: new ColonizeHandler(),
     attack: new AttackHandler(),
+    pirate: new PirateHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
@@ -484,61 +486,7 @@ export function createFleetService(
         return { ...eventMeta, mission: 'mine', phase: 'prospecting', prospectionDuration: prospectMins };
       }
 
-      if (event.mission === 'pirate') {
-        const pveMissionId = event.pveMissionId;
-        const mission = pveMissionId
-          ? await db.select().from(pveMissions).where(eq(pveMissions.id, pveMissionId)).limit(1).then(r => r[0])
-          : null;
-
-        const targetCoords = { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition };
-
-        if (!mission || !pveService || !pirateService) {
-          await this.scheduleReturn(event.id, event.originPlanetId, targetCoords, ships, 0, 0, 0);
-          return { ...eventMeta, mission: 'pirate', outcome: 'error' };
-        }
-
-        const params = mission.parameters as { templateId: string };
-
-        const playerTechs = await this.getCombatTechs(event.userId);
-
-        const config = await gameConfigService.getFullConfig();
-        const shipStatsMap = buildShipStatsMap(config);
-        // Pass pre-combat cargo, then re-cap loot based on surviving fleet
-        const preCargoCapacity = totalCargoCapacity(ships, shipStatsMap);
-        const result = await pirateService.processPirateArrival(
-          ships, playerTechs, params.templateId, preCargoCapacity,
-        );
-        // Re-cap loot to surviving fleet's actual cargo capacity
-        if (result.outcome === 'attacker') {
-          const survivingCargo = totalCargoCapacity(result.survivingShips, shipStatsMap);
-          const totalLoot = result.loot.minerai + result.loot.silicium + result.loot.hydrogene;
-          if (totalLoot > survivingCargo) {
-            const ratio = survivingCargo / totalLoot;
-            result.loot.minerai = Math.floor(result.loot.minerai * ratio);
-            result.loot.silicium = Math.floor(result.loot.silicium * ratio);
-            result.loot.hydrogene = Math.floor(result.loot.hydrogene * ratio);
-          }
-        }
-
-        await db.update(fleetEvents).set({
-          ships: result.survivingShips,
-          mineraiCargo: String(result.loot.minerai),
-          siliciumCargo: String(result.loot.silicium),
-          hydrogeneCargo: String(result.loot.hydrogene),
-          metadata: Object.keys(result.bonusShips).length > 0
-            ? { bonusShips: result.bonusShips }
-            : null,
-        }).where(eq(fleetEvents.id, event.id));
-
-        await this.scheduleReturn(
-          event.id, event.originPlanetId, targetCoords,
-          result.survivingShips,
-          result.loot.minerai, result.loot.silicium, result.loot.hydrogene,
-        );
-        await pveService.completeMission(mission.id);
-
-        return { ...eventMeta, mission: 'pirate', outcome: result.outcome, loot: result.loot, bonusShips: result.bonusShips, losses: result.attackerLosses };
-      }
+      // Pirate handled by handler dispatch above
 
       // Unknown mission — return fleet
       await this.scheduleReturn(
