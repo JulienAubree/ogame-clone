@@ -326,13 +326,13 @@ export default function Buildings() {
                         )}
                       >
                         {/* Image area with gradient background */}
-                        <div className="relative h-[130px] bg-gradient-to-br from-[#0f3460] via-[#16213e] to-[#1a1a2e] flex items-center justify-center">
+                        <div className="relative h-[130px] overflow-hidden">
                           <GameImage
                             category="buildings"
                             id={building.id}
                             size="full"
                             alt={building.name}
-                            className="h-20 w-20 rounded-xl object-cover"
+                            className="w-full h-full object-cover"
                           />
                           <span className="absolute top-2 right-2 bg-emerald-700 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
                             Niv. {building.currentLevel}
