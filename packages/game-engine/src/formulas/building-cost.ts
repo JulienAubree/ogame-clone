@@ -27,10 +27,11 @@ export function buildingCost(def: BuildingCostDef, level: number): ResourceCost 
 
 /**
  * Construction time in seconds.
- * Formula: baseTime * costFactor^(level-1) / (1 + roboticsLevel) * phaseMultiplier(level)
+ * Formula: baseTime * costFactor^(level-1) * bonusMultiplier * phaseMultiplier(level)
+ * @param bonusMultiplier - result of resolveBonus('building_time', null, ...)
  * Minimum 1 second.
  */
-export function buildingTime(def: BuildingCostDef, level: number, roboticsLevel: number): number {
-  const seconds = Math.floor(def.baseTime * Math.pow(def.costFactor, level - 1) / (1 + roboticsLevel) * getPhaseMultiplier(level));
+export function buildingTime(def: BuildingCostDef, level: number, bonusMultiplier: number): number {
+  const seconds = Math.floor(def.baseTime * Math.pow(def.costFactor, level - 1) * bonusMultiplier * getPhaseMultiplier(level));
   return Math.max(1, seconds);
 }

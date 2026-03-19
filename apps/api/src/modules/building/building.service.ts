@@ -2,7 +2,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, buildQueue, planetBuildings } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
-import { buildingCost, buildingTime } from '@ogame-clone/game-engine';
+import { buildingCost, buildingTime, resolveBonus } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
@@ -49,7 +49,8 @@ export function createBuildingService(
           const currentLevel = buildingLevels[def.id] ?? 0;
           const nextLevel = currentLevel + 1;
           const cost = buildingCost(def, nextLevel);
-          const time = buildingTime(def, nextLevel, buildingLevels['robotics'] ?? 0);
+          const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
+          const time = buildingTime(def, nextLevel, bonusMultiplier);
 
           return {
             id: def.id,
@@ -113,7 +114,8 @@ export function createBuildingService(
       const currentLevel = buildingLevels[buildingId] ?? 0;
       const nextLevel = currentLevel + 1;
       const cost = buildingCost(def, nextLevel);
-      const time = buildingTime(def, nextLevel, buildingLevels['robotics'] ?? 0);
+      const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
+      const time = buildingTime(def, nextLevel, bonusMultiplier);
 
       // Spend resources (atomic)
       await resourceService.spendResources(planetId, userId, cost);
