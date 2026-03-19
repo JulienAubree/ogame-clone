@@ -8,6 +8,23 @@ import { PrerequisitesEditor, type MixedPrereq } from '@/components/ui/Prerequis
 import { Pencil, Plus, Trash2, Link } from 'lucide-react';
 import { AdminImageUpload } from '@/components/ui/AdminImageUpload';
 
+const STAT_OPTIONS = [
+  { value: 'building_time', label: 'Temps construction' },
+  { value: 'research_time', label: 'Temps recherche' },
+  { value: 'ship_build_time', label: 'Temps vaisseau' },
+  { value: 'defense_build_time', label: 'Temps défense' },
+  { value: 'ship_speed', label: 'Vitesse vaisseau' },
+  { value: 'weapons', label: 'Armes' },
+  { value: 'shielding', label: 'Boucliers' },
+  { value: 'armor', label: 'Blindage' },
+  { value: 'mining_duration', label: 'Durée minage' },
+  { value: 'cargo_capacity', label: 'Capacité cargo' },
+  { value: 'fuel_consumption', label: 'Conso carburant' },
+  { value: 'resource_production', label: 'Production' },
+  { value: 'fleet_count', label: 'Nb flottes' },
+  { value: 'spy_range', label: 'Portée espionnage' },
+];
+
 const FIELDS = [
   { key: 'name', label: 'Nom', type: 'text' as const },
   { key: 'description', label: 'Description', type: 'textarea' as const },
@@ -67,6 +84,18 @@ export default function Research() {
     },
   });
 
+  const createBonusMutation = trpc.gameConfig.admin.createBonus.useMutation({
+    onSuccess: () => refetch(),
+  });
+  const deleteBonusMutation = trpc.gameConfig.admin.deleteBonus.useMutation({
+    onSuccess: () => refetch(),
+  });
+
+  const [addingBonusFor, setAddingBonusFor] = useState<string | null>(null);
+  const [newBonusStat, setNewBonusStat] = useState('weapons');
+  const [newBonusPct, setNewBonusPct] = useState(10);
+  const [newBonusCategory, setNewBonusCategory] = useState('');
+
   if (isLoading) return <PageSkeleton />;
   if (!data) return null;
 
@@ -100,6 +129,7 @@ export default function Research() {
               <th>Silicium</th>
               <th>H₂</th>
               <th>Facteur</th>
+              <th>Bonus</th>
               <th>Prerequis</th>
               <th></th>
             </tr>
@@ -116,6 +146,98 @@ export default function Research() {
                 <td className="font-mono text-sm">{r.baseCost.silicium}</td>
                 <td className="font-mono text-sm">{r.baseCost.hydrogene}</td>
                 <td className="font-mono text-sm">{r.costFactor}</td>
+                <td className="text-xs">
+                  {(() => {
+                    const researchBonuses = data.bonuses?.filter(
+                      (bn) => bn.sourceType === 'research' && bn.sourceId === r.id
+                    ) ?? [];
+                    return (
+                      <div className="space-y-1">
+                        {researchBonuses.map((bn) => (
+                          <div key={bn.id} className="flex items-center gap-1 text-gray-300">
+                            <span>{STAT_OPTIONS.find(s => s.value === bn.stat)?.label ?? bn.stat}</span>
+                            <span className={bn.percentPerLevel < 0 ? 'text-emerald-400' : 'text-sky-400'}>
+                              {bn.percentPerLevel > 0 ? '+' : ''}{bn.percentPerLevel}%/niv
+                            </span>
+                            {bn.category && <span className="text-gray-500">({bn.category})</span>}
+                            <button
+                              onClick={() => deleteBonusMutation.mutate({ id: bn.id })}
+                              className="admin-btn-ghost p-0.5 text-red-400 hover:text-red-300 ml-1"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                        {addingBonusFor === r.id ? (
+                          <div className="flex items-center gap-1 mt-1">
+                            <select
+                              value={newBonusStat}
+                              onChange={(e) => setNewBonusStat(e.target.value)}
+                              className="bg-panel border border-panel-border rounded px-1 py-0.5 text-xs"
+                            >
+                              {STAT_OPTIONS.map((s) => (
+                                <option key={s.value} value={s.value}>{s.label}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              value={newBonusPct}
+                              onChange={(e) => setNewBonusPct(Number(e.target.value))}
+                              className="bg-panel border border-panel-border rounded px-1 py-0.5 text-xs w-16"
+                              placeholder="%/niv"
+                            />
+                            <input
+                              type="text"
+                              value={newBonusCategory}
+                              onChange={(e) => setNewBonusCategory(e.target.value)}
+                              className="bg-panel border border-panel-border rounded px-1 py-0.5 text-xs w-20"
+                              placeholder="catégorie"
+                            />
+                            <button
+                              onClick={() => {
+                                const cat = newBonusCategory || null;
+                                const id = cat
+                                  ? `${r.id}__${newBonusStat}__${cat}`
+                                  : `${r.id}__${newBonusStat}`;
+                                createBonusMutation.mutate({
+                                  id,
+                                  sourceType: 'research',
+                                  sourceId: r.id,
+                                  stat: newBonusStat,
+                                  percentPerLevel: newBonusPct,
+                                  category: cat,
+                                });
+                                setAddingBonusFor(null);
+                              }}
+                              className="admin-btn-primary text-xs px-1.5 py-0.5"
+                            >
+                              OK
+                            </button>
+                            <button
+                              onClick={() => setAddingBonusFor(null)}
+                              className="admin-btn-ghost text-xs px-1 py-0.5"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setAddingBonusFor(r.id);
+                              setNewBonusStat('weapons');
+                              setNewBonusPct(10);
+                              setNewBonusCategory('');
+                            }}
+                            className="admin-btn-ghost text-xs text-hull-400 hover:text-hull-300 flex items-center gap-0.5"
+                          >
+                            <Plus className="w-3 h-3" /> bonus
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </td>
                 <td className="text-xs text-gray-500">
                   <button
                     onClick={() => setEditingPrereqs(r.id)}
