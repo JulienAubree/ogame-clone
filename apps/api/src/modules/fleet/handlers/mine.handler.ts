@@ -31,10 +31,12 @@ export class MineHandler implements PhasedMissionHandler {
     }
 
     // Transition to prospecting phase
-    const params = mission.parameters as { depositId: string; resourceType: string };
+    const params = mission.parameters as { depositId: string };
     const [deposit] = await ctx.db.select().from(asteroidDeposits)
       .where(eq(asteroidDeposits.id, params.depositId)).limit(1);
-    const depositTotal = deposit ? Number(deposit.totalQuantity) : 0;
+    const depositTotal = deposit
+      ? Number(deposit.mineraiTotal) + Number(deposit.siliciumTotal) + Number(deposit.hydrogeneTotal)
+      : 0;
     const prospectMins = prospectionDuration(depositTotal);
     const prospectMs = prospectMins * 60 * 1000;
 
@@ -122,46 +124,48 @@ export class MineHandler implements PhasedMissionHandler {
       };
     }
 
-    // Extract resources with slag
-    const params = mission.parameters as { depositId: string; resourceType: string };
+    const params = mission.parameters as { depositId: string };
     const centerLevel = await ctx.pveService.getMissionCenterLevel(fleetEvent.userId);
     const prospectorCount = ships['prospector'] ?? 0;
     const config = await ctx.gameConfigService.getFullConfig();
     const shipStatsMap = buildShipStatsMap(config);
     const cargoCapacity = totalCargoCapacity(ships, shipStatsMap);
 
-    // Get slag rate from config
+    // Single slag rate per position
     const position = fleetEvent.targetPosition as 8 | 16;
-    const slagKey = `slag_rate.pos${position}.${params.resourceType}`;
+    const slagKey = `slag_rate.pos${position}`;
     const baseSlagRate = Number(config.universe[slagKey] ?? 0);
 
-    // Get refining level
     const [research] = await ctx.db.select().from(userResearch).where(eq(userResearch.userId, fleetEvent.userId)).limit(1);
     const refiningLevel = research?.deepSpaceRefining ?? 0;
     const slagRate = computeSlagRate(baseSlagRate, refiningLevel);
 
-    // Compute extraction with slag
+    // Fetch deposit remaining
     const [deposit] = await ctx.db.select().from(asteroidDeposits)
       .where(eq(asteroidDeposits.id, params.depositId)).limit(1);
-    const depositRemaining = deposit ? Number(deposit.remainingQuantity) : 0;
+    const mineraiRemaining = deposit ? Number(deposit.mineraiRemaining) : 0;
+    const siliciumRemaining = deposit ? Number(deposit.siliciumRemaining) : 0;
+    const hydrogeneRemaining = deposit ? Number(deposit.hydrogeneRemaining) : 0;
+
     const extraction = computeMiningExtraction({
       centerLevel,
       nbProspectors: prospectorCount,
       cargoCapacity,
-      depositRemaining,
+      mineraiRemaining,
+      siliciumRemaining,
+      hydrogeneRemaining,
       slagRate,
     });
 
-    // extractFromDeposit handles atomicity — derive playerReceives from actual extracted
-    const actualDeducted = await ctx.asteroidBeltService.extractFromDeposit(params.depositId, extraction.depositLoss);
-    const playerReceives = slagRate > 0
-      ? Math.floor(actualDeducted * (1 - slagRate))
-      : actualDeducted;
+    // Atomic extraction — returns actual deducted amounts
+    const actualLoss = await ctx.asteroidBeltService.extractFromDeposit(params.depositId, extraction.depositLoss);
 
-    const cargo = { minerai: 0, silicium: 0, hydrogene: 0 };
-    if (playerReceives > 0) {
-      cargo[params.resourceType as keyof typeof cargo] = playerReceives;
-    }
+    // Recompute playerReceives from actual loss (handles concurrent access)
+    const cargo = {
+      minerai: slagRate > 0 ? Math.floor(actualLoss.minerai * (1 - slagRate)) : actualLoss.minerai,
+      silicium: slagRate > 0 ? Math.floor(actualLoss.silicium * (1 - slagRate)) : actualLoss.silicium,
+      hydrogene: slagRate > 0 ? Math.floor(actualLoss.hydrogene * (1 - slagRate)) : actualLoss.hydrogene,
+    };
 
     await ctx.db.update(fleetEvents).set({
       mineraiCargo: String(cargo.minerai),
@@ -171,6 +175,7 @@ export class MineHandler implements PhasedMissionHandler {
 
     await ctx.pveService.completeMission(mission.id);
 
+    // System message
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
     const meta = fleetEvent.metadata as { originalDepartureTime?: string } | null;
     const originalDeparture = meta?.originalDepartureTime ? new Date(meta.originalDepartureTime) : fleetEvent.departureTime;
@@ -179,11 +184,13 @@ export class MineHandler implements PhasedMissionHandler {
     if (ctx.messageService) {
       const parts = [`Extraction terminée en ${coords}\n`];
       parts.push(`Durée totale : ${totalDuration}`);
-      parts.push(`Ressource extraite : ${playerReceives} ${params.resourceType}`);
+      const resLines: string[] = [];
+      if (cargo.minerai > 0) resLines.push(`Minerai: +${cargo.minerai.toLocaleString('fr-FR')}`);
+      if (cargo.silicium > 0) resLines.push(`Silicium: +${cargo.silicium.toLocaleString('fr-FR')}`);
+      if (cargo.hydrogene > 0) resLines.push(`Hydrogène: +${cargo.hydrogene.toLocaleString('fr-FR')}`);
+      parts.push(resLines.join(' | '));
       if (slagRate > 0) {
-        const slagPct = Math.round(slagRate * 100);
-        const slagLost = actualDeducted - playerReceives;
-        parts.push(`Scories : ${slagPct}% — ${slagLost} tonnes perdues`);
+        parts.push(`Pertes (scories) : ${Math.round(slagRate * 100)}%`);
       }
       await ctx.messageService.createSystemMessage(
         fleetEvent.userId,
