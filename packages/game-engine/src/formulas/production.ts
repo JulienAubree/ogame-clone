@@ -73,3 +73,11 @@ export function calculateProductionFactor(energyProduced: number, energyConsumed
   if (energyProduced >= energyConsumed) return 1;
   return energyProduced / energyConsumed;
 }
+
+/**
+ * Solar satellite energy production per unit.
+ * Formula: max(10, floor(maxTemp / 4) + 20)
+ */
+export function solarSatelliteEnergy(maxTemp: number): number {
+  return Math.max(10, Math.floor(maxTemp / 4) + 20);
+}

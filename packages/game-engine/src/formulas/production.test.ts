@@ -9,6 +9,7 @@ import {
   hydrogeneSynthEnergy,
   storageCapacity,
   calculateProductionFactor,
+  solarSatelliteEnergy,
 } from './production.js';
 
 describe('Minerai production', () => {
@@ -109,5 +110,26 @@ describe('Production factor', () => {
   });
   it('returns 1 when no consumption', () => {
     expect(calculateProductionFactor(0, 0)).toBe(1);
+  });
+});
+
+describe('Solar satellite energy', () => {
+  it('returns floor(maxTemp / 4) + 20 for temperate planet', () => {
+    expect(solarSatelliteEnergy(80)).toBe(40);
+  });
+  it('returns 80 for hot planet (240C)', () => {
+    expect(solarSatelliteEnergy(240)).toBe(80);
+  });
+  it('returns 10 for cold planet (-40C)', () => {
+    expect(solarSatelliteEnergy(-40)).toBe(10);
+  });
+  it('floors to minimum 10 for very cold planet (-100C)', () => {
+    expect(solarSatelliteEnergy(-100)).toBe(10);
+  });
+  it('floors to minimum 10 for extreme cold (-200C)', () => {
+    expect(solarSatelliteEnergy(-200)).toBe(10);
+  });
+  it('returns 20 for 0C planet', () => {
+    expect(solarSatelliteEnergy(0)).toBe(20);
   });
 });
