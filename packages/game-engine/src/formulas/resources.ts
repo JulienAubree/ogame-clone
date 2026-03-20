@@ -3,6 +3,7 @@ import {
   siliciumProduction,
   hydrogeneProduction,
   solarPlantEnergy,
+  solarSatelliteEnergy,
   mineraiMineEnergy,
   siliciumMineEnergy,
   hydrogeneSynthEnergy,
@@ -25,6 +26,7 @@ export interface PlanetLevels {
   storageSiliciumLevel: number;
   storageHydrogeneLevel: number;
   maxTemp: number;
+  solarSatelliteCount: number;
   mineraiMinePercent?: number;
   siliciumMinePercent?: number;
   hydrogeneSynthPercent?: number;
@@ -57,7 +59,8 @@ export function calculateProductionRates(planet: PlanetLevels, bonus?: PlanetTyp
   const sBonus = bonus?.siliciumBonus ?? 1;
   const hBonus = bonus?.hydrogeneBonus ?? 1;
 
-  const energyProduced = solarPlantEnergy(planet.solarPlantLevel);
+  const solarSatEnergy = solarSatelliteEnergy(planet.maxTemp) * planet.solarSatelliteCount;
+  const energyProduced = solarPlantEnergy(planet.solarPlantLevel) + solarSatEnergy;
 
   const mineraiEnergy = Math.floor(mineraiMineEnergy(planet.mineraiMineLevel) * mineraiPct);
   const siliciumEnergy = Math.floor(siliciumMineEnergy(planet.siliciumMineLevel) * siliciumPct);

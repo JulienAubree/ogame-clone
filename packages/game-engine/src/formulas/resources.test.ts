@@ -12,6 +12,7 @@ describe('calculateProductionRates', () => {
       storageSiliciumLevel: 0,
       storageHydrogeneLevel: 0,
       maxTemp: 80,
+      solarSatelliteCount: 0,
     });
     expect(rates.mineraiPerHour).toBe(33);
     expect(rates.siliciumPerHour).toBe(22);
@@ -29,10 +30,43 @@ describe('calculateProductionRates', () => {
       storageSiliciumLevel: 0,
       storageHydrogeneLevel: 0,
       maxTemp: 80,
+      solarSatelliteCount: 0,
     });
     expect(rates.productionFactor).toBeCloseTo(0.1375, 4);
     expect(rates.energyProduced).toBe(22);
     expect(rates.energyConsumed).toBe(160);
+  });
+
+  it('includes solar satellite energy in production', () => {
+    const rates = calculateProductionRates({
+      mineraiMineLevel: 5,
+      siliciumMineLevel: 5,
+      hydrogeneSynthLevel: 0,
+      solarPlantLevel: 1,
+      storageMineraiLevel: 0,
+      storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0,
+      maxTemp: 80,
+      solarSatelliteCount: 10,
+    });
+    // Solar plant L1 = 22, 10 satellites * 40 each = 400, total = 422
+    expect(rates.energyProduced).toBe(422);
+    expect(rates.productionFactor).toBe(1);
+  });
+
+  it('works with zero satellites (backward compat)', () => {
+    const rates = calculateProductionRates({
+      mineraiMineLevel: 1,
+      siliciumMineLevel: 1,
+      hydrogeneSynthLevel: 0,
+      solarPlantLevel: 1,
+      storageMineraiLevel: 0,
+      storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0,
+      maxTemp: 80,
+      solarSatelliteCount: 0,
+    });
+    expect(rates.energyProduced).toBe(22);
   });
 });
 
@@ -49,6 +83,7 @@ describe('calculateResources', () => {
     storageSiliciumLevel: 0,
     storageHydrogeneLevel: 0,
     maxTemp: 80,
+    solarSatelliteCount: 0,
   };
 
   it('adds production over 1 hour', () => {
