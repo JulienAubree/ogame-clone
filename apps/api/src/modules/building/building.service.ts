@@ -6,11 +6,12 @@ import { buildingCost, buildingTime, resolveBonus } from '@ogame-clone/game-engi
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
+import type { BuildCompletionResult } from '../../workers/completion.types.js';
 
 export function createBuildingService(
   db: Database,
   resourceService: ReturnType<typeof createResourceService>,
-  buildingQueue: Queue,
+  completionQueue: Queue,
   gameConfigService: GameConfigService,
 ) {
   return {
@@ -138,8 +139,8 @@ export function createBuildingService(
         .returning();
 
       // Schedule BullMQ delayed job
-      await buildingQueue.add(
-        'complete',
+      await completionQueue.add(
+        'building',
         { buildQueueId: entry.id },
         { delay: time * 1000, jobId: `building-${entry.id}` },
       );
@@ -183,7 +184,7 @@ export function createBuildingService(
         .where(eq(planets.id, planetId));
 
       // Remove BullMQ job
-      await buildingQueue.remove(`building-${activeBuild.id}`);
+      await completionQueue.remove(`building-${activeBuild.id}`);
 
       // Delete queue entry
       await db.delete(buildQueue).where(eq(buildQueue.id, activeBuild.id));
@@ -191,7 +192,7 @@ export function createBuildingService(
       return { cancelled: true };
     },
 
-    async completeUpgrade(buildQueueId: string) {
+    async completeUpgrade(buildQueueId: string): Promise<BuildCompletionResult> {
       const [entry] = await db
         .select()
         .from(buildQueue)
@@ -208,7 +209,7 @@ export function createBuildingService(
       const currentLevel = buildingLevels[entry.itemId] ?? 0;
       const newLevel = currentLevel + 1;
 
-      // Upsert planet building level
+      // Upsert planet building level (unchanged)
       await db
         .insert(planetBuildings)
         .values({ planetId: entry.planetId, buildingId: entry.itemId, level: newLevel })
@@ -217,13 +218,44 @@ export function createBuildingService(
           set: { level: newLevel },
         });
 
-      // Mark queue entry as completed
+      // Mark queue entry as completed (unchanged)
       await db
         .update(buildQueue)
         .set({ status: 'completed' })
         .where(eq(buildQueue.id, buildQueueId));
 
-      return { buildingId: entry.itemId, newLevel };
+      // NEW: fetch planet name and build standardized result
+      const [planet] = await db
+        .select({ name: planets.name })
+        .from(planets)
+        .where(eq(planets.id, entry.planetId))
+        .limit(1);
+
+      const buildingName = config.buildings[entry.itemId]?.name ?? entry.itemId;
+      const planetName = planet?.name ?? 'Planète';
+
+      return {
+        userId: entry.userId,
+        planetId: entry.planetId,
+        eventType: 'building-done',
+        notificationPayload: {
+          planetId: entry.planetId,
+          buildingId: entry.itemId,
+          name: buildingName,
+          level: newLevel,
+        },
+        eventPayload: {
+          buildingId: entry.itemId,
+          name: buildingName,
+          level: newLevel,
+          planetName,
+        },
+        tutorialCheck: {
+          type: 'building_level',
+          targetId: entry.itemId,
+          targetValue: newLevel,
+        },
+      };
     },
 
     async getOwnedPlanet(userId: string, planetId: string) {
