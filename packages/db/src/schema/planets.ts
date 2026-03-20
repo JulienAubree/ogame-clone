@@ -14,6 +14,7 @@ export const planets = pgTable('planets', {
   position: smallint('position').notNull(),
   planetType: planetTypeEnum('planet_type').notNull().default('planet'),
   planetClassId: varchar('planet_class_id', { length: 64 }).references(() => planetTypes.id, { onDelete: 'set null' }),
+  planetImageIndex: smallint('planet_image_index'),
   diameter: integer('diameter').notNull(),
   maxFields: integer('max_fields').notNull(),
   minTemp: smallint('min_temp').notNull(),
