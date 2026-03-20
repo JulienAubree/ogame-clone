@@ -6,7 +6,6 @@ export function baseExtraction(centerLevel: number): number {
   return 2000 + 800 * (centerLevel - 1);
 }
 
-
 /**
  * Prospection duration in minutes.
  * Formula: 5 + floor(depositTotalQuantity / 10000) * 2
@@ -49,7 +48,7 @@ export function computeSlagRate(baseSlagRate: number, refiningLevel: number): nu
   return Math.min(0.99, Math.max(0, rate));
 }
 
-interface ResourceAmounts {
+export interface ResourceAmounts {
   minerai: number;
   silicium: number;
   hydrogene: number;
