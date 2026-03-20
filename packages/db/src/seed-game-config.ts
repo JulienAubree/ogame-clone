@@ -81,6 +81,9 @@ const RESEARCH = [
   { id: 'shielding', name: 'Technologie Bouclier', description: 'Augmente les boucliers de 10% par niveau.', baseCostMinerai: 200, baseCostSilicium: 600, baseCostHydrogene: 0, costFactor: 2, levelColumn: 'shielding', categoryId: 'research_combat', sortOrder: 7, flavorText: "Les generateurs de bouclier creent des champs de force protegeant vos unites des impacts ennemis.", effectDescription: "Chaque niveau augmente les boucliers de toutes les unites de 10%.", prerequisites: { buildings: [{ buildingId: 'researchLab', level: 6 }], research: [{ researchId: 'energyTech', level: 3 }] } },
   { id: 'armor', name: 'Technologie Protection', description: 'Augmente la coque de 10% par niveau.', baseCostMinerai: 1000, baseCostSilicium: 0, baseCostHydrogene: 0, costFactor: 2, levelColumn: 'armor', categoryId: 'research_combat', sortOrder: 8, flavorText: "Des alliages toujours plus resistants renforcent la coque de toutes vos unites de 10% par niveau.", effectDescription: "Chaque niveau augmente la coque de toutes les unites de 10%.", prerequisites: { buildings: [{ buildingId: 'researchLab', level: 2 }], research: [] } },
   { id: 'rockFracturing', name: 'Technologie de fracturation des roches', description: "Ameliore les techniques d'extraction miniere, reduisant le temps de minage.", baseCostMinerai: 2000, baseCostSilicium: 4000, baseCostHydrogene: 1000, costFactor: 2, levelColumn: 'rockFracturing', categoryId: 'research_sciences', sortOrder: 9, flavorText: "Des ondes de choc calibrees fracturent la roche asteroidale, accelerant considerablement l'extraction des minerais.", effectDescription: "Chaque niveau reduit la duree de minage de 10% (plancher 20% au niveau 8).", prerequisites: { buildings: [{ buildingId: 'missionCenter', level: 1 }], research: [{ researchId: 'combustion', level: 3 }] } },
+  // NOTE: deepSpaceRefining has no bonus_definitions entry. Its reduction is multiplicative
+  // (0.85^level), incompatible with resolveBonus's linear formula. Computed directly in pve.ts.
+  { id: 'deepSpaceRefining', name: 'Raffinage en espace lointain', description: "Developpe des techniques de raffinage embarquees qui reduisent les scories lors de l'extraction miniere.", baseCostMinerai: 2000, baseCostSilicium: 4000, baseCostHydrogene: 1000, costFactor: 2, levelColumn: 'deepSpaceRefining', categoryId: 'research_sciences', sortOrder: 10, flavorText: "Des nanofiltres embarques separent les scories du minerai pur directement dans la soute du prospecteur, maximisant chaque voyage.", effectDescription: "Chaque niveau reduit les scories de 15% (multiplicatif). Niveau 15 : ~2.5% de scories restantes.", prerequisites: { buildings: [{ buildingId: 'missionCenter', level: 2 }], research: [{ researchId: 'rockFracturing', level: 2 }] } },
 ];
 
 // ── Ship data (merged: ships + combat-stats + ship-stats) ──
@@ -328,6 +331,13 @@ const UNIVERSE_CONFIG = [
   { key: 'startingMinerai', value: 500 },
   { key: 'startingSilicium', value: 300 },
   { key: 'startingHydrogene', value: 100 },
+  // Slag rates (scories) — per position and resource type
+  { key: 'slag_rate.pos8.minerai', value: 0.35 },
+  { key: 'slag_rate.pos8.silicium', value: 0.30 },
+  { key: 'slag_rate.pos8.hydrogene', value: 0.20 },
+  { key: 'slag_rate.pos16.minerai', value: 0.20 },
+  { key: 'slag_rate.pos16.silicium', value: 0.15 },
+  { key: 'slag_rate.pos16.hydrogene', value: 0.10 },
 ];
 
 async function seed() {
