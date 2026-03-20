@@ -68,6 +68,67 @@ function ResourceGauge({ current, capacity, rate, label, color }: {
   );
 }
 
+// ── Production & Storage card (isolated to avoid re-rendering the whole page every second) ──
+
+function ProductionStorageCard({ planetId }: { planetId: string }) {
+  const { data: resourceData } = trpc.resource.production.useQuery(
+    { planetId },
+    { enabled: !!planetId },
+  );
+
+  const resources = useResourceCounter(
+    resourceData
+      ? {
+          minerai: resourceData.minerai,
+          silicium: resourceData.silicium,
+          hydrogene: resourceData.hydrogene,
+          resourcesUpdatedAt: resourceData.resourcesUpdatedAt,
+          mineraiPerHour: resourceData.rates.mineraiPerHour,
+          siliciumPerHour: resourceData.rates.siliciumPerHour,
+          hydrogenePerHour: resourceData.rates.hydrogenePerHour,
+          storageMineraiCapacity: resourceData.rates.storageMineraiCapacity,
+          storageSiliciumCapacity: resourceData.rates.storageSiliciumCapacity,
+          storageHydrogeneCapacity: resourceData.rates.storageHydrogeneCapacity,
+        }
+      : undefined,
+  );
+
+  return (
+    <section className="glass-card p-4">
+      <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+        </svg>
+        Production & Stockage
+      </h2>
+      <div className="flex justify-around py-2">
+        <ResourceGauge
+          current={resources?.minerai ?? 0}
+          capacity={resourceData?.rates.storageMineraiCapacity ?? 1}
+          rate={resourceData?.rates.mineraiPerHour ?? 0}
+          label="Minerai"
+          color="#f59e0b"
+        />
+        <ResourceGauge
+          current={resources?.silicium ?? 0}
+          capacity={resourceData?.rates.storageSiliciumCapacity ?? 1}
+          rate={resourceData?.rates.siliciumPerHour ?? 0}
+          label="Silicium"
+          color="#06b6d4"
+        />
+        <ResourceGauge
+          current={resources?.hydrogene ?? 0}
+          capacity={resourceData?.rates.storageHydrogeneCapacity ?? 1}
+          rate={resourceData?.rates.hydrogenePerHour ?? 0}
+          label="Hydrogene"
+          color="#10b981"
+        />
+      </div>
+    </section>
+  );
+}
+
 // ── Quick action button ──
 
 function QuickAction({ icon: Icon, label, to }: {
@@ -99,23 +160,6 @@ export default function Overview() {
   const { data: resourceData } = trpc.resource.production.useQuery(
     { planetId: planetId! },
     { enabled: !!planetId },
-  );
-
-  const resources = useResourceCounter(
-    resourceData
-      ? {
-          minerai: resourceData.minerai,
-          silicium: resourceData.silicium,
-          hydrogene: resourceData.hydrogene,
-          resourcesUpdatedAt: resourceData.resourcesUpdatedAt,
-          mineraiPerHour: resourceData.rates.mineraiPerHour,
-          siliciumPerHour: resourceData.rates.siliciumPerHour,
-          hydrogenePerHour: resourceData.rates.hydrogenePerHour,
-          storageMineraiCapacity: resourceData.rates.storageMineraiCapacity,
-          storageSiliciumCapacity: resourceData.rates.storageSiliciumCapacity,
-          storageHydrogeneCapacity: resourceData.rates.storageHydrogeneCapacity,
-        }
-      : undefined,
   );
 
   const { data: buildings } = trpc.building.list.useQuery(
@@ -492,39 +536,8 @@ export default function Overview() {
         {/* ── SIDEBAR ── */}
         <div className="flex flex-col gap-4">
 
-          {/* Production & Stockage */}
-          <section className="glass-card p-4">
-            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-              </svg>
-              Production & Stockage
-            </h2>
-            <div className="flex justify-around py-2">
-              <ResourceGauge
-                current={resources?.minerai ?? 0}
-                capacity={resourceData?.rates.storageMineraiCapacity ?? 1}
-                rate={resourceData?.rates.mineraiPerHour ?? 0}
-                label="Minerai"
-                color="#f59e0b"
-              />
-              <ResourceGauge
-                current={resources?.silicium ?? 0}
-                capacity={resourceData?.rates.storageSiliciumCapacity ?? 1}
-                rate={resourceData?.rates.siliciumPerHour ?? 0}
-                label="Silicium"
-                color="#06b6d4"
-              />
-              <ResourceGauge
-                current={resources?.hydrogene ?? 0}
-                capacity={resourceData?.rates.storageHydrogeneCapacity ?? 1}
-                rate={resourceData?.rates.hydrogenePerHour ?? 0}
-                label="Hydrogene"
-                color="#10b981"
-              />
-            </div>
-          </section>
+          {/* Production & Stockage (isolated component — re-renders every 1s without affecting the rest) */}
+          {planetId && <ProductionStorageCard planetId={planetId} />}
 
           {/* Informations planete */}
           <section className="glass-card p-4">
