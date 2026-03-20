@@ -69,8 +69,7 @@ export interface MissionHandlerContext {
   asteroidBeltService?: ReturnType<typeof createAsteroidBeltService>;
   pirateService?: ReturnType<typeof createPirateService>;
   reportService?: ReturnType<typeof createReportService>;
-  fleetArrivalQueue: Queue;
-  fleetReturnQueue: Queue;
+  fleetQueue: Queue;
   universeSpeed: number;
   assetsDir: string;
 }

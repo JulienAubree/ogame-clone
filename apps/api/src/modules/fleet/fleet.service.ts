@@ -21,14 +21,14 @@ import { AttackHandler } from './handlers/attack.handler.js';
 import { PirateHandler } from './handlers/pirate.handler.js';
 import { MineHandler } from './handlers/mine.handler.js';
 import { buildShipStatsMap } from './fleet.types.js';
+import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
 import type { PhasedMissionHandler, MissionHandler, MissionHandlerContext, SendFleetInput, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 export function createFleetService(
   db: Database,
   resourceService: ReturnType<typeof createResourceService>,
-  fleetArrivalQueue: Queue,
-  fleetReturnQueue: Queue,
+  fleetQueue: Queue,
   universeSpeed: number,
   messageService: ReturnType<typeof createMessageService> | undefined,
   gameConfigService: GameConfigService,
@@ -57,8 +57,7 @@ export function createFleetService(
     asteroidBeltService,
     pirateService,
     reportService,
-    fleetArrivalQueue,
-    fleetReturnQueue,
+    fleetQueue,
     universeSpeed,
     assetsDir: env.ASSETS_DIR,
   };
@@ -191,7 +190,7 @@ export function createFleetService(
       }
 
       // Schedule arrival job
-      await fleetArrivalQueue.add(
+      await fleetQueue.add(
         'arrive',
         { fleetEventId: event.id },
         { delay: duration * 1000, jobId: `fleet-arrive-${event.id}` },
@@ -234,7 +233,7 @@ export function createFleetService(
         mining: `fleet-mine-${event.id}`,
       };
       const jobId = jobIdMap[event.phase];
-      if (jobId) await fleetArrivalQueue.remove(jobId);
+      if (jobId) await fleetQueue.remove(jobId);
 
       // Release PvE mission back to available if recalling
       if (event.pveMissionId && pveService) {
@@ -250,7 +249,7 @@ export function createFleetService(
         })
         .where(eq(fleetEvents.id, event.id));
 
-      await fleetReturnQueue.add(
+      await fleetQueue.add(
         'return',
         { fleetEventId: event.id },
         { delay: elapsed, jobId: `fleet-return-${event.id}` },
@@ -271,7 +270,7 @@ export function createFleetService(
         );
     },
 
-    async processArrival(fleetEventId: string) {
+    async processArrival(fleetEventId: string): Promise<FleetCompletionResult> {
       const [event] = await db
         .select()
         .from(fleetEvents)
@@ -336,7 +335,7 @@ export function createFleetService(
         }
 
         if (result.schedulePhase) {
-          await fleetArrivalQueue.add(
+          await fleetQueue.add(
             result.schedulePhase.jobName,
             { fleetEventId: event.id },
             { delay: result.schedulePhase.delayMs, jobId: `fleet-${result.schedulePhase.jobName}-${event.id}` },
@@ -366,7 +365,28 @@ export function createFleetService(
           }
         }
 
-        return { ...eventMeta, mission: event.mission };
+        return {
+          userId: event.userId,
+          planetId: event.originPlanetId,
+          mission: event.mission,
+          eventType: 'fleet-arrived',
+          notificationPayload: {
+            mission: event.mission,
+            originName: eventMeta.originName,
+            targetCoords: eventMeta.targetCoords,
+          },
+          eventPayload: {
+            mission: event.mission,
+            originName: eventMeta.originName,
+            targetCoords: eventMeta.targetCoords,
+            ships,
+            cargo: {
+              minerai: Number(event.mineraiCargo),
+              silicium: Number(event.siliciumCargo),
+              hydrogene: Number(event.hydrogeneCargo),
+            },
+          },
+        };
       }
 
       // Unknown mission — return fleet
@@ -376,16 +396,38 @@ export function createFleetService(
         ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
       );
 
-      return { ...eventMeta, mission: event.mission, placeholder: true };
+      return {
+        userId: event.userId,
+        planetId: event.originPlanetId,
+        mission: event.mission,
+        eventType: 'fleet-arrived',
+        notificationPayload: {
+          mission: event.mission,
+          originName: eventMeta.originName,
+          targetCoords: eventMeta.targetCoords,
+        },
+        eventPayload: {
+          mission: event.mission,
+          originName: eventMeta.originName,
+          targetCoords: eventMeta.targetCoords,
+          ships,
+          cargo: {
+            minerai: mineraiCargo,
+            silicium: siliciumCargo,
+            hydrogene: hydrogeneCargo,
+          },
+        },
+      };
     },
 
-    async processProspectDone(fleetEventId: string) {
-      return this.processPhaseDispatch(fleetEventId, 'prospect-done', 'prospecting');
+    async processProspectDone(fleetEventId: string): Promise<FleetCompletionResult> {
+      await this.processPhaseDispatch(fleetEventId, 'prospect-done', 'prospecting');
+      return null;
     },
 
-    async processMineDone(fleetEventId: string) {
-      const result = await this.processPhaseDispatch(fleetEventId, 'mine-done', 'mining');
-      return { ...result, extracted: 0 };
+    async processMineDone(fleetEventId: string): Promise<FleetCompletionResult> {
+      await this.processPhaseDispatch(fleetEventId, 'mine-done', 'mining');
+      return null;
     },
 
     async processPhaseDispatch(fleetEventId: string, phaseName: string, expectedPhase: 'outbound' | 'prospecting' | 'mining' | 'return') {
@@ -427,7 +469,7 @@ export function createFleetService(
       const result = await (handler as PhasedMissionHandler).processPhase(phaseName, handlerEvent, handlerCtx);
 
       if (result.scheduleNextPhase) {
-        await fleetArrivalQueue.add(
+        await fleetQueue.add(
           result.scheduleNextPhase.jobName,
           { fleetEventId: event.id },
           { delay: result.scheduleNextPhase.delayMs, jobId: `fleet-${result.scheduleNextPhase.jobName}-${event.id}` },
@@ -446,7 +488,7 @@ export function createFleetService(
       return { fleetEventId, phase: phaseName };
     },
 
-    async processReturn(fleetEventId: string) {
+    async processReturn(fleetEventId: string): Promise<FleetCompletionResult> {
       const [event] = await db
         .select()
         .from(fleetEvents)
@@ -518,18 +560,43 @@ export function createFleetService(
         .where(eq(fleetEvents.id, event.id));
 
       return {
-        returned: true,
-        ships,
         userId: event.userId,
-        originPlanetId: event.originPlanetId,
-        originName: originPlanet?.name ?? 'Planète',
-        targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
+        planetId: event.originPlanetId,
         mission: event.mission,
-        cargo: {
-          minerai: Number(event.mineraiCargo),
-          silicium: Number(event.siliciumCargo),
-          hydrogene: Number(event.hydrogeneCargo),
+        eventType: 'fleet-returned',
+        notificationPayload: {
+          mission: event.mission,
+          originName: originPlanet?.name ?? 'Planète',
+          targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
         },
+        eventPayload: {
+          mission: event.mission,
+          originName: originPlanet?.name ?? 'Planète',
+          targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
+          ships,
+          cargo: {
+            minerai: Number(event.mineraiCargo),
+            silicium: Number(event.siliciumCargo),
+            hydrogene: Number(event.hydrogeneCargo),
+          },
+        },
+        extraEvents: (event.mission === 'mine' || event.mission === 'pirate') ? [{
+          type: 'pve-mission-done',
+          payload: {
+            missionType: event.mission,
+            targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
+            originName: originPlanet?.name ?? 'Planète',
+            cargo: {
+              minerai: Number(event.mineraiCargo),
+              silicium: Number(event.siliciumCargo),
+              hydrogene: Number(event.hydrogeneCargo),
+            },
+          },
+        }] : undefined,
+        tutorialChecks: [
+          { type: 'fleet_return', targetId: event.mission, targetValue: 1 },
+          ...(event.mission === 'mine' ? [{ type: 'mission_complete', targetId: 'mine', targetValue: 1 }] : []),
+        ],
       };
     },
 
@@ -575,7 +642,7 @@ export function createFleetService(
         })
         .where(eq(fleetEvents.id, fleetEventId));
 
-      await fleetReturnQueue.add(
+      await fleetQueue.add(
         'return',
         { fleetEventId },
         { delay: duration * 1000, jobId: `fleet-return-${fleetEventId}` },
