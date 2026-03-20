@@ -7,19 +7,21 @@ import { createGameConfigService } from '../modules/admin/game-config.service.js
 import { createAsteroidBeltService } from '../modules/pve/asteroid-belt.service.js';
 import { createPirateService } from '../modules/pve/pirate.service.js';
 import { createPveService } from '../modules/pve/pve.service.js';
+import { createMessageService } from '../modules/message/message.service.js';
 import { fleetArrivalQueue, fleetReturnQueue } from '../queues/queue.js';
 import { publishNotification } from '../modules/notification/notification.publisher.js';
 import { env } from '../config/env.js';
 import { UNIVERSE_CONFIG } from '../modules/universe/universe.config.js';
 
 export function startFleetArrivalWorker(db: ReturnType<typeof createDb>) {
+  const redis = new Redis(env.REDIS_URL);
   const resourceService = createResourceService(db);
   const gameConfigService = createGameConfigService(db);
   const asteroidBeltService = createAsteroidBeltService(db);
   const pirateService = createPirateService(db, gameConfigService);
   const pveService = createPveService(db, asteroidBeltService, pirateService);
-  const fleetService = createFleetService(db, resourceService, fleetArrivalQueue, fleetReturnQueue, UNIVERSE_CONFIG.speed, undefined, gameConfigService, pveService, asteroidBeltService, pirateService);
-  const redis = new Redis(env.REDIS_URL);
+  const messageService = createMessageService(db, redis);
+  const fleetService = createFleetService(db, resourceService, fleetArrivalQueue, fleetReturnQueue, UNIVERSE_CONFIG.speed, messageService, gameConfigService, pveService, asteroidBeltService, pirateService);
 
   const worker = new Worker(
     'fleet-arrival',
