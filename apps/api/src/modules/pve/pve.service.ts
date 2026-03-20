@@ -1,7 +1,7 @@
 import { eq, and, sql, asc } from 'drizzle-orm';
 import { pveMissions, planets } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
-import { accumulationCap } from '@ogame-clone/game-engine';
+import { accumulationCap, poolSize } from '@ogame-clone/game-engine';
 import type { createAsteroidBeltService } from './asteroid-belt.service.js';
 import type { createPirateService } from './pirate.service.js';
 
@@ -64,12 +64,13 @@ export function createPveService(
       if (centerLevel === 0) return;
 
       const cap = accumulationCap(centerLevel);
+      const target = poolSize(centerLevel);
 
       const countResult = await db.execute(sql`
         SELECT COUNT(*) as count FROM pve_missions
         WHERE user_id = ${userId} AND status = 'available'
       `);
-      const currentCount = Number(countResult[0]?.count ?? 0);
+      let currentCount = Number(countResult[0]?.count ?? 0);
 
       if (currentCount >= cap) {
         // At cap: FIFO replace oldest
@@ -83,8 +84,13 @@ export function createPveService(
 
         if (oldest.length > 0) {
           await db.delete(pveMissions).where(eq(pveMissions.id, oldest[0].id));
+          currentCount--;
         }
       }
+
+      // Fill up to target pool size
+      const toGenerate = Math.max(0, target - currentCount);
+      if (toGenerate === 0) return;
 
       // Get player's planets to find their systems
       const playerPlanets = await db.select({
@@ -95,17 +101,19 @@ export function createPveService(
 
       if (playerPlanets.length === 0) return;
 
-      const planet = playerPlanets[Math.floor(Math.random() * playerPlanets.length)];
+      for (let i = 0; i < toGenerate; i++) {
+        const planet = playerPlanets[Math.floor(Math.random() * playerPlanets.length)];
 
-      // Weighted random: 60% mining, 40% combat
-      const isMining = Math.random() < 0.6;
+        // Weighted random: 60% mining, 40% combat
+        const isMining = Math.random() < 0.6;
 
-      if (isMining && centerLevel >= 1) {
-        await this.generateMiningMission(userId, planet.galaxy, planet.system, centerLevel);
-      } else if (!isMining && centerLevel >= 3) {
-        await this.generatePirateMission(userId, planet.galaxy, planet.system, centerLevel);
-      } else if (centerLevel >= 1) {
-        await this.generateMiningMission(userId, planet.galaxy, planet.system, centerLevel);
+        if (isMining && centerLevel >= 1) {
+          await this.generateMiningMission(userId, planet.galaxy, planet.system, centerLevel);
+        } else if (!isMining && centerLevel >= 3) {
+          await this.generatePirateMission(userId, planet.galaxy, planet.system, centerLevel);
+        } else if (centerLevel >= 1) {
+          await this.generateMiningMission(userId, planet.galaxy, planet.system, centerLevel);
+        }
       }
     },
 
