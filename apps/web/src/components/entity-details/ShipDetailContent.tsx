@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
 import { getShipDetails, resolveBuildingName, resolveResearchName } from '@/lib/entity-details';
-import { resolveBonus } from '@ogame-clone/game-engine';
+import { EnergieIcon } from '@/components/common/ResourceIcons';
+import { resolveBonus, solarSatelliteEnergy } from '@ogame-clone/game-engine';
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -33,9 +34,10 @@ function EffectiveStatRow({ label, base, effective, multiplier }: { label: strin
 interface Props {
   shipId: string;
   researchLevels: Record<string, number>;
+  maxTemp?: number;
 }
 
-export function ShipDetailContent({ shipId, researchLevels }: Props) {
+export function ShipDetailContent({ shipId, researchLevels, maxTemp }: Props) {
   const { data: gameConfig } = useGameConfig();
   const details = getShipDetails(shipId, gameConfig ?? undefined);
 
@@ -98,10 +100,14 @@ export function ShipDetailContent({ shipId, researchLevels }: Props) {
             Production d&apos;énergie
           </div>
           <div className="flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">Formule</span>
-            <span className="text-slate-200 font-mono text-[10px]">max(10, ⌊tempMax / 4⌋ + 20)</span>
+            <span className="text-slate-400">Par satellite</span>
+            <span className="text-energy font-mono font-semibold flex items-center gap-1">
+              <EnergieIcon size={12} className="text-energy" />
+              +{fmt(solarSatelliteEnergy(maxTemp ?? 50))}
+            </span>
           </div>
-          <p className="text-[10px] text-slate-500">
+          <p className="text-[10px] text-slate-500 leading-relaxed">
+            L&apos;énergie produite dépend de la température de la planète et de sa position par rapport au soleil.
             Ce vaisseau est stationnaire : il ne peut pas être envoyé en mission et est vulnérable aux attaques.
           </p>
         </div>
