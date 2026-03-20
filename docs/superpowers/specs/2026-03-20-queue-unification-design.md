@@ -12,6 +12,7 @@ Le projet utilise BullMQ (Redis) pour scheduler les jobs delayed (completion de 
 4. **Catchup fragile** : le cron `event-catchup` route manuellement vers la bonne queue via `if/else`, a etendre a chaque nouvelle entite
 5. **Chaque worker recree ses propres instances** de services et Redis
 6. **Pas de retry** : juste un `console.error` sur failure
+7. **Naming incohérent** : research utilise `'tutorial-quest-complete'` comme type d'event alors que building/shipyard utilisent `'tutorial-quest-done'`
 
 ## Design
 
@@ -29,13 +30,14 @@ Le `jobName` BullMQ distingue le sous-type :
 
 Le payload reste identique : `{ buildQueueId }` ou `{ fleetEventId }`.
 
-### 2. Interface de retour standardisee (CompletionResult)
+### 2. Interface de retour standardisee
 
-Chaque service retourne un objet structure commun apres completion :
+Deux types distincts pour les deux domaines, car la logique post-completion differe significativement.
+
+#### BuildCompletionResult (building, research, shipyard)
 
 ```typescript
-type CompletionResult = {
-  success: boolean;
+type BuildCompletionResult = {
   userId: string;
   planetId: string;
   eventType: string;           // 'building-done', 'research-done', 'shipyard-done'
@@ -49,16 +51,51 @@ type CompletionResult = {
 } | null;  // null = entry not found / already completed
 ```
 
-Les methodes `completeUpgrade`, `completeResearch`, `completeUnit` sont enrichies pour retourner ce format. La logique metier interne ne change pas.
+Les methodes `completeUpgrade`, `completeResearch`, `completeUnit` retournent ce format. La logique metier interne ne change pas.
 
-Le worker unifie applique un pipeline post-completion commun :
-1. `result = service.completeXxx(id)`
+Le build worker applique un pipeline post-completion commun :
+1. `result = handler(id)`
 2. Si null, return (entry not found / already completed)
 3. `publishNotification(redis, result.userId, { type: result.eventType, payload: result.notificationPayload })`
 4. `db.insert(gameEvents).values({ userId, planetId, type: eventType, payload: eventPayload })`
 5. Si `result.tutorialCheck` present : `tutorialService.checkAndComplete()` puis notify + event si quete completee
 
-Ce pipeline est ecrit **une seule fois**, quel que soit le type.
+Ce pipeline est ecrit **une seule fois**, quel que soit le type de build.
+
+Normalisation : le type d'event tutorial est unifie en `'tutorial-quest-done'` partout (correction de l'incohérence actuelle dans research).
+
+#### FleetCompletionResult (arrival, return)
+
+```typescript
+type FleetCompletionResult = {
+  userId: string;
+  planetId: string;
+  mission: string;
+  eventType: string;           // 'fleet-arrived', 'fleet-returned'
+  notificationPayload: Record<string, unknown>;
+  eventPayload: Record<string, unknown>;
+  // Optionnel : events supplementaires (ex: pve-mission-done)
+  extraEvents?: Array<{
+    type: string;
+    payload: Record<string, unknown>;
+  }>;
+  // Optionnel : un ou plusieurs tutorial checks (fleet-return en fait 2)
+  tutorialChecks?: Array<{
+    type: string;
+    targetId: string;
+    targetValue: number;
+  }>;
+} | null;
+```
+
+Le fleet worker applique un pipeline similaire mais adapte :
+1. `result = handler(id)`
+2. Si null, return
+3. Notification principale + gameEvent principal
+4. Boucle sur `result.extraEvents` pour inserer les events supplementaires
+5. Boucle sur `result.tutorialChecks` pour chaque check tutorial
+
+Les methodes `processArrival` et `processReturn` construisent ce resultat structure. Les jobs `prospect-done` et `mine-done` retournent null (pas de post-completion, ils redispatchent en interne).
 
 ### 3. Workers unifies
 
@@ -72,6 +109,8 @@ const handlers = {
 };
 ```
 
+Chaque handler retourne un `BuildCompletionResult`. Pipeline post-completion commun.
+
 **Fleet worker** — un seul worker ecoute `fleet` et route par `jobName` :
 
 ```typescript
@@ -83,14 +122,16 @@ const handlers = {
 };
 ```
 
-Meme pipeline post-completion pour les deux workers.
+Chaque handler retourne un `FleetCompletionResult | null`. Pipeline post-completion adapte au domaine fleet.
 
-**Services partages** : les instances `db`, `redis`, `gameConfigService`, `tutorialService` sont creees **une seule fois** dans `worker.ts` et injectees aux deux workers.
+**Services partages** : les instances `db`, `redis`, `gameConfigService`, `tutorialService` sont creees **une seule fois** dans `worker.ts` et injectees aux deux workers (au lieu d'etre recreees dans chaque fichier worker).
 
 **Retry** : config BullMQ commune :
 ```typescript
 { attempts: 3, backoff: { type: 'exponential', delay: 2000 } }
 ```
+
+**Concurrency** : build-completion a concurrency 5, fleet a concurrency 5 (valeur max actuelle entre fleet-arrival=3 et fleet-return=5).
 
 ### 4. Catchup cron simplifie
 
@@ -103,11 +144,20 @@ Meme pipeline post-completion pour les deux workers.
 const expiredBuilds = await db.select().from(buildQueue)
   .where(and(eq(buildQueue.status, 'active'), lte(buildQueue.endTime, now)));
 
+// Mapping type DB -> jobName BullMQ
+const buildJobName: Record<string, string> = {
+  building: 'building',
+  research: 'research',
+  ship: 'shipyard-unit',
+  defense: 'shipyard-unit',
+};
+
 for (const entry of expiredBuilds) {
-  const jobName = entry.type === 'building' ? 'building'
-    : entry.type === 'research' ? 'research'
-    : 'shipyard-unit';
-  const jobId = `${entry.type}-${entry.id}`;
+  const jobName = buildJobName[entry.type] ?? 'shipyard-unit';
+  // Preserve le format de jobId existant (shipyard utilise un suffixe -N)
+  const jobId = (entry.type === 'ship' || entry.type === 'defense')
+    ? `shipyard-${entry.id}-${entry.completedCount + 1}`
+    : `${entry.type}-${entry.id}`;
   const existing = await buildCompletionQueue.getJob(jobId);
   if (!existing) {
     await buildCompletionQueue.add(jobName, { buildQueueId: entry.id }, { jobId });
@@ -115,11 +165,19 @@ for (const entry of expiredBuilds) {
 }
 
 // Fleet catchup — une seule queue cible
+// Mapping des 4 phases possibles vers le jobName correspondant
+const fleetPhaseToJobName: Record<string, string> = {
+  outbound: 'arrive',
+  return: 'return',
+  prospecting: 'prospect-done',
+  mining: 'mine-done',
+};
+
 const expiredFleets = await db.select().from(fleetEvents)
   .where(and(eq(fleetEvents.status, 'active'), lte(fleetEvents.arrivalTime, now)));
 
 for (const fleet of expiredFleets) {
-  const jobName = fleet.phase === 'return' ? 'return' : 'arrive';
+  const jobName = fleetPhaseToJobName[fleet.phase] ?? 'arrive';
   const jobId = `fleet-${jobName}-${fleet.id}`;
   const existing = await fleetQueue.getJob(jobId);
   if (!existing) {
@@ -136,10 +194,22 @@ for (const fleet of expiredFleets) {
 - `shipyardService` : `shipyardCompletionQueue.add('complete-unit', ...)` -> `buildCompletionQueue.add('shipyard-unit', ...)`
 - `fleetService` : `fleetArrivalQueue` / `fleetReturnQueue` -> une seule `fleetQueue`
 
+**fleetService — points de changement specifiques (5 sites d'appel) :**
+- `sendFleet()` : `fleetArrivalQueue.add('arrive', ...)` -> `fleetQueue.add('arrive', ...)`
+- `recallFleet()` : `fleetArrivalQueue.remove(...)` -> `fleetQueue.remove(...)`
+- `recallFleet()` : `fleetReturnQueue.add('return', ...)` -> `fleetQueue.add('return', ...)`
+- `processArrival()` : `fleetArrivalQueue.add(result.schedulePhase.jobName, ...)` -> `fleetQueue.add(...)`
+- `scheduleReturn()` : `fleetReturnQueue.add('return', ...)` -> `fleetQueue.add('return', ...)`
+
+**fleet.types.ts :**
+- `MissionHandlerContext` : remplacer `fleetArrivalQueue: Queue` + `fleetReturnQueue: Queue` par `fleetQueue: Queue`
+
 Chaque service recoit **une seule queue** en injection au lieu d'une queue dediee.
 
 **Cote completion :**
-Les methodes `completeUpgrade`, `completeResearch`, `completeUnit` retournent le `CompletionResult` standardise. La logique metier interne ne change pas.
+- `completeUpgrade`, `completeResearch`, `completeUnit` retournent `BuildCompletionResult` (inclut les infos pour notification, gameEvent, et tutorial check)
+- `processArrival`, `processReturn` retournent `FleetCompletionResult` (inclut extraEvents et tutorialChecks en tableaux)
+- La logique metier interne de ces methodes ne change pas
 
 **Fichiers supprimes :**
 - `queues/queue.ts` -> remplace par un nouveau fichier avec 2 queues
@@ -152,6 +222,7 @@ Les methodes `completeUpgrade`, `completeResearch`, `completeUnit` retournent le
 
 ## Risques et vigilance
 
-- **Transition des jobs en cours** : au deploiement, les jobs deja scheduled dans les anciennes queues ne seront pas traites par les nouveaux workers. Le catchup cron (qui tourne toutes les 30s) rattrapera automatiquement ces jobs en les re-schedulant dans les nouvelles queues.
-- **Nommage des jobId** : les `jobId` restent au meme format pour que les `cancel`/`remove` existants continuent de fonctionner.
-- **Concurrency** : build-completion a concurrency 5, fleet a concurrency 3 (valeurs actuelles conservees).
+- **Transition des jobs en cours** : au deploiement, les jobs deja scheduled dans les anciennes queues ne seront pas traites par les nouveaux workers. Le catchup cron (qui tourne toutes les 30s) rattrapera automatiquement ces jobs en les re-schedulant dans les nouvelles queues. Apres migration, nettoyer les anciennes queues dans Redis (`bull:building-completion:*`, etc.).
+- **Nommage des jobId** : les formats de `jobId` sont preserves a l'identique pour que les `cancel`/`remove` existants continuent de fonctionner. En particulier le format shipyard `shipyard-${id}-${N}`.
+- **Idempotence** : les methodes `completeUpgrade`/`completeResearch`/`completeUnit` retournent deja null si l'entree est deja completed — safe pour les retries. Pour fleet, verifier que `processArrival`/`processReturn` sont idempotents (check `status: 'active'` avant traitement).
+- **Rollback** : en cas de probleme, on peut redéployer l'ancien code. Le catchup cron de l'ancien code re-schedulera les jobs dans les anciennes queues.
