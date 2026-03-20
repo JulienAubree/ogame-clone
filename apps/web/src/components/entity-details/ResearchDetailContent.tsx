@@ -193,6 +193,30 @@ export function ResearchDetailContent({ researchId, researchLevels }: Props) {
         </div>
       )}
 
+      {/* Slag rates for deepSpaceRefining */}
+      {researchId === 'deepSpaceRefining' && gameConfig?.universe && (
+        <div>
+          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2">
+            Taux de scories actuel
+          </div>
+          <div className="space-y-1 text-[11px]">
+            {[8, 16].map((pos) => (
+              ['minerai', 'silicium', 'hydrogene'].map((res) => {
+                const baseRate = Number((gameConfig.universe as Record<string, unknown>)[`slag_rate.pos${pos}.${res}`] ?? 0);
+                const effectiveRate = baseRate * Math.pow(0.85, currentLevel);
+                const effectivePct = (effectiveRate * 100).toFixed(1);
+                return (
+                  <div key={`${pos}-${res}`} className="flex justify-between text-slate-300">
+                    <span>Pos {pos} — {res}</span>
+                    <span className="text-emerald-400">{effectivePct}%</span>
+                  </div>
+                );
+              })
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Affected entities */}
       {affectedEntities?.map((section, idx) => (
         <div key={idx}>
