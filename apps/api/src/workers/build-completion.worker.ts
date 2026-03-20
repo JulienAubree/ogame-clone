@@ -96,10 +96,6 @@ export function startBuildCompletionWorker(db: Database, redis: Redis, services:
     {
       connection: { url: env.REDIS_URL },
       concurrency: 5,
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-      },
     },
   );
 

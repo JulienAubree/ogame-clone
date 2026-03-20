@@ -595,7 +595,7 @@ export function createFleetService(
         }] : undefined,
         tutorialChecks: [
           { type: 'fleet_return', targetId: event.mission, targetValue: 1 },
-          ...(event.mission === 'mine' ? [{ type: 'mission_complete', targetId: 'mine', targetValue: 1 }] : []),
+          ...(event.mission === 'mine' ? [{ type: 'mission_complete' as const, targetId: 'mine', targetValue: 1 }] : []),
         ],
       };
     },

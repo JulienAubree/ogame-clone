@@ -110,10 +110,6 @@ export function startFleetWorker(db: Database, redis: Redis, services: Services)
     {
       connection: { url: env.REDIS_URL },
       concurrency: 5,
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-      },
     },
   );
 

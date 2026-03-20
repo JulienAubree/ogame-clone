@@ -1,3 +1,5 @@
+export type TutorialCheckType = 'building_level' | 'research_level' | 'ship_count' | 'fleet_return' | 'mission_complete';
+
 export type BuildCompletionResult = {
   userId: string;
   planetId: string;
@@ -5,7 +7,7 @@ export type BuildCompletionResult = {
   notificationPayload: Record<string, unknown>;
   eventPayload: Record<string, unknown>;
   tutorialCheck?: {
-    type: string;
+    type: TutorialCheckType;
     targetId: string;
     targetValue: number;
   };
@@ -23,7 +25,7 @@ export type FleetCompletionResult = {
     payload: Record<string, unknown>;
   }>;
   tutorialChecks?: Array<{
-    type: string;
+    type: TutorialCheckType;
     targetId: string;
     targetValue: number;
   }>;
