@@ -15,3 +15,11 @@ function toKebab(id: string): string {
 export function getAssetUrl(category: AssetCategory, id: string, size: AssetSize = 'full'): string {
   return `/assets/${category}/${toKebab(id)}${SUFFIX[size]}.webp`;
 }
+
+export function getPlanetImageUrl(
+  planetClassId: string,
+  imageIndex: number,
+  size: AssetSize = 'full',
+): string {
+  return `/assets/planets/${planetClassId}/${imageIndex}${SUFFIX[size]}.webp`;
+}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
 import { eventTypeColor, formatEventText, formatRelativeTime, eventNavigationTarget, groupEvents } from '@/lib/game-events';
+import { getPlanetImageUrl } from '@/lib/assets';
 
 interface Planet {
   id: string;
@@ -15,6 +16,8 @@ interface Planet {
   galaxy: number;
   system: number;
   position: number;
+  planetClassId: string | null;
+  planetImageIndex: number | null;
 }
 
 function ResourceBadge({ label, value, glowClass, colorClass, icon }: {
@@ -130,10 +133,19 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-accent"
+            className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent"
           >
+            {activePlanet?.planetClassId && activePlanet.planetImageIndex != null ? (
+              <img
+                src={getPlanetImageUrl(activePlanet.planetClassId, activePlanet.planetImageIndex, 'icon')}
+                alt=""
+                className="w-5 h-5 rounded-full object-cover"
+              />
+            ) : (
+              <span className="w-5 h-5 rounded-full bg-primary/30 inline-block" />
+            )}
             <span className="font-medium">
-              {activePlanet ? activePlanet.name : 'Planète'}
+              {activePlanet ? activePlanet.name : 'Planete'}
               {activePlanet && (
                 <span className="hidden lg:inline"> [{activePlanet.galaxy}:{activePlanet.system}:{activePlanet.position}]</span>
               )}
@@ -148,10 +160,19 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
                   key={planet.id}
                   onClick={() => handleSelectPlanet(planet.id)}
                   className={cn(
-                    'flex w-full items-center px-3 py-2 text-sm hover:bg-accent',
+                    'flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent',
                     planet.id === planetId && 'bg-primary/10 text-primary',
                   )}
                 >
+                  {planet.planetClassId && planet.planetImageIndex != null ? (
+                    <img
+                      src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex, 'icon')}
+                      alt=""
+                      className="w-5 h-5 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="w-5 h-5 rounded-full bg-primary/30 inline-block" />
+                  )}
                   {planet.name} [{planet.galaxy}:{planet.system}:{planet.position}]
                 </button>
               ))}

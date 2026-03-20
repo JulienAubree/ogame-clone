@@ -12,6 +12,7 @@ import { QueryError } from '@/components/common/QueryError';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { eventTypeColor, formatEventText, formatRelativeTime, groupEvents } from '@/lib/game-events';
+import { getPlanetImageUrl } from '@/lib/assets';
 
 const MISSION_LABELS: Record<string, string> = {
   transport: 'Transport',
@@ -120,43 +121,58 @@ export default function Overview() {
       </div>
 
       {/* Planet header */}
-      <section className="glass-card p-4 lg:col-span-2 xl:col-span-3">
-        {isRenaming ? (
-          <form
-            className="flex items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (newName.trim()) {
-                renameMutation.mutate({ planetId: planet.id, name: newName.trim() });
-              }
-            }}
-          >
-            <Input
-              autoFocus
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              maxLength={30}
-              className="h-8"
+      <section className="glass-card overflow-hidden lg:col-span-2 xl:col-span-3">
+        {/* Planet hero image */}
+        {planet.planetClassId && planet.planetImageIndex != null && (
+          <div className="relative h-40 lg:h-56 w-full overflow-hidden">
+            <img
+              src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)}
+              alt={planet.name}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
             />
-            <Button type="submit" size="sm" disabled={renameMutation.isPending}>
-              OK
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setIsRenaming(false)}>
-              Annuler
-            </Button>
-          </form>
-        ) : (
-          <h2
-            className={`text-lg font-semibold text-foreground ${!planet.renamed ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
-            onClick={!planet.renamed ? () => { setNewName(planet.name); setIsRenaming(true); } : undefined}
-            title={!planet.renamed ? 'Cliquer pour renommer' : undefined}
-          >
-            {planet.name}
-          </h2>
+            <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+          </div>
         )}
-        <p className="text-sm text-muted-foreground mt-1">
-          [{planet.galaxy}:{planet.system}:{planet.position}]
-        </p>
+
+        <div className="p-4">
+          {isRenaming ? (
+            <form
+              className="flex items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newName.trim()) {
+                  renameMutation.mutate({ planetId: planet.id, name: newName.trim() });
+                }
+              }}
+            >
+              <Input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                maxLength={30}
+                className="h-8"
+              />
+              <Button type="submit" size="sm" disabled={renameMutation.isPending}>
+                OK
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setIsRenaming(false)}>
+                Annuler
+              </Button>
+            </form>
+          ) : (
+            <h2
+              className={`text-lg font-semibold text-foreground ${!planet.renamed ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+              onClick={!planet.renamed ? () => { setNewName(planet.name); setIsRenaming(true); } : undefined}
+              title={!planet.renamed ? 'Cliquer pour renommer' : undefined}
+            >
+              {planet.name}
+            </h2>
+          )}
+          <p className="text-sm text-muted-foreground mt-1">
+            [{planet.galaxy}:{planet.system}:{planet.position}]
+          </p>
+        </div>
       </section>
 
       {/* Activities in progress */}
