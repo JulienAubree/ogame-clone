@@ -116,10 +116,17 @@ export function createPveService(
       const belt = await asteroidBeltService.getOrCreateBelt(galaxy, system, position);
       const deposits = await asteroidBeltService.getDeposits(belt.id);
 
-      const available = deposits.filter(d => Number(d.remainingQuantity) > 0);
+      const available = deposits.filter(d =>
+        Number(d.mineraiRemaining) + Number(d.siliciumRemaining) + Number(d.hydrogeneRemaining) > 0,
+      );
       if (available.length === 0) return;
 
       const deposit = available[Math.floor(Math.random() * available.length)];
+
+      const resources: Record<string, number> = {};
+      if (Number(deposit.mineraiRemaining) > 0) resources.minerai = Number(deposit.mineraiRemaining);
+      if (Number(deposit.siliciumRemaining) > 0) resources.silicium = Number(deposit.siliciumRemaining);
+      if (Number(deposit.hydrogeneRemaining) > 0) resources.hydrogene = Number(deposit.hydrogeneRemaining);
 
       await db.insert(pveMissions).values({
         userId,
@@ -128,13 +135,9 @@ export function createPveService(
           galaxy, system, position,
           beltId: belt.id,
           depositId: deposit.id,
-          resourceType: deposit.resourceType,
-          remainingQuantity: Number(deposit.remainingQuantity),
+          resources,
         },
-        rewards: {
-          resourceType: deposit.resourceType,
-          estimatedQuantity: Number(deposit.remainingQuantity),
-        },
+        rewards: { ...resources },
         status: 'available',
       });
     },
