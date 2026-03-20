@@ -9,12 +9,13 @@ import {
   calculateMaxFields,
 } from '@ogame-clone/game-engine';
 import type { GameConfigService } from '../admin/game-config.service.js';
+import { getRandomPlanetImageIndex } from '../../lib/planet-image.util.js';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function createPlanetService(db: Database, gameConfigService: GameConfigService) {
+export function createPlanetService(db: Database, gameConfigService: GameConfigService, assetsDir: string) {
   return {
     async createHomePlanet(userId: string) {
       const config = await gameConfigService.getFullConfig();
@@ -54,6 +55,7 @@ export function createPlanetService(db: Database, gameConfigService: GameConfigS
           minerai: String(startingMinerai),
           silicium: String(startingSilicium),
           hydrogene: String(startingHydrogene),
+          planetImageIndex: getRandomPlanetImageIndex('homeworld', assetsDir),
         })
         .returning();
 

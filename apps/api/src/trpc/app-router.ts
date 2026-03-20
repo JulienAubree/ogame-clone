@@ -37,6 +37,7 @@ import { createTutorialRouter } from '../modules/tutorial/tutorial.router.js';
 import { createReportService } from '../modules/report/report.service.js';
 import { createReportRouter } from '../modules/report/report.router.js';
 import { UNIVERSE_CONFIG } from '../modules/universe/universe.config.js';
+import { env } from '../config/env.js';
 import type { Database } from '@ogame-clone/db';
 import type Redis from 'ioredis';
 
@@ -45,7 +46,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
 
   const gameConfigService = createGameConfigService(db);
   const authService = createAuthService(db);
-  const planetService = createPlanetService(db, gameConfigService);
+  const planetService = createPlanetService(db, gameConfigService, env.ASSETS_DIR);
   const resourceService = createResourceService(db);
   const buildingService = createBuildingService(db, resourceService, buildingCompletionQueue, gameConfigService);
   const researchService = createResearchService(db, resourceService, researchCompletionQueue, gameConfigService);
