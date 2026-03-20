@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -16,6 +16,7 @@ import { computeSlagRate } from '@ogame-clone/game-engine';
 
 export default function Fleet() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
+  const navigate = useNavigate();
   const utils = trpc.useUtils();
   const addToast = useToastStore((s) => s.addToast);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -98,16 +99,7 @@ export default function Fleet() {
       addToast('Flotte envoyée !', 'success');
       utils.shipyard.ships.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
-      // Reset all state
-      setMission(null);
-      setSelectedShips({});
-      setCargo({ minerai: 0, silicium: 0, hydrogene: 0 });
-      setConfirmSend(false);
-      setPveMissionId(null);
-      setPveMode(false);
-      if (planet) {
-        setTarget({ galaxy: planet.galaxy, system: planet.system, position: planet.position });
-      }
+      navigate('/movements');
     },
   });
 
