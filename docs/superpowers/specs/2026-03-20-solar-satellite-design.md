@@ -62,10 +62,13 @@ Ajout de `solarSatellite: 5` aux entrees existantes des vaisseaux suivants dans 
 ### Formule
 
 ```
-energie par satellite = floor(maxTemp / 4) + 20
+energie par satellite = max(10, floor(maxTemp / 4) + 20)
 ```
 
+Minimum garanti de 10 energie par satellite, meme sur les planetes les plus froides.
+
 Exemples :
+- Planete tres froide (-100C) : 10 energie/satellite (plancher)
 - Planete froide (-40C) : 10 energie/satellite
 - Planete temperee (80C) : 40 energie/satellite
 - Planete chaude (240C) : 80 energie/satellite
@@ -74,7 +77,7 @@ Exemples :
 
 ```ts
 export function solarSatelliteEnergy(maxTemp: number): number {
-  return Math.floor(maxTemp / 4) + 20;
+  return Math.max(10, Math.floor(maxTemp / 4) + 20);
 }
 ```
 
@@ -174,7 +177,7 @@ L'energie des satellites est incluse dans le total `energyProduced` via `calcula
 ### Page d'info du satellite
 
 Afficher :
-- La formule : `floor(tempMax / 4) + 20`
+- La formule : `max(10, floor(tempMax / 4) + 20)`
 - La production par satellite pour la planete courante (ex: "38 energie/satellite a 72C")
 - Le total produit par les satellites en place
 - Rappel qu'ils ne peuvent pas etre envoyes en mission et sont vulnerables aux attaques
