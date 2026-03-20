@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { protectedProcedure, router } from '../../trpc/router.js';
-import { planetTypes } from '@ogame-clone/db';
+import { planetTypes, planetShips } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import type { createResourceService } from './resource.service.js';
 import type { createPlanetService } from '../planet/planet.service.js';
@@ -32,6 +32,8 @@ export function createResourceRouter(
         }
 
         const buildingLevels = await resourceService.getBuildingLevels(input.planetId);
+        const [ships] = await db.select({ solarSatellite: planetShips.solarSatellite })
+          .from(planetShips).where(eq(planetShips.planetId, input.planetId)).limit(1);
         const rates = await resourceService.getProductionRates(input.planetId, planet, bonus);
         return {
           rates,
@@ -46,6 +48,7 @@ export function createResourceRouter(
             siliciumMine: buildingLevels['siliciumMine'] ?? 0,
             hydrogeneSynth: buildingLevels['hydrogeneSynth'] ?? 0,
             solarPlant: buildingLevels['solarPlant'] ?? 0,
+            solarSatelliteCount: ships?.solarSatellite ?? 0,
           },
         };
       }),
