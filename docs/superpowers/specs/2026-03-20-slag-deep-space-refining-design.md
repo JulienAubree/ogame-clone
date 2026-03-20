@@ -16,16 +16,23 @@ Lors d'une mission de minage, un pourcentage de la cargaison est constitué de s
 ### Formules
 
 ```
-slagRate = baseSlagRate × (1 - 0.15)^refiningLevel
+slagRate = clamp(baseSlagRate × 0.85^refiningLevel, 0, 0.99)
 effectiveCargo = cargoCapacity × (1 - slagRate)
-extracted = min(baseExtraction × nbProspectors, effectiveCargo, depositRemaining)
-depositLoss = extracted / (1 - slagRate)
-playerReceives = extracted
+maxExtractable = min(baseExtraction × nbProspectors, effectiveCargo)
+depositLoss = maxExtractable / (1 - slagRate)
+
+if depositRemaining >= depositLoss:
+  playerReceives = maxExtractable
+  actualDepositLoss = depositLoss
+else:
+  actualDepositLoss = depositRemaining
+  playerReceives = depositRemaining × (1 - slagRate)
 ```
 
-- `baseSlagRate` : taux de base, variable selon position et ressource (stocké en DB)
+- `baseSlagRate` : taux de base, variable selon position et ressource (stocké en DB, doit etre dans `[0, 1)`)
 - `refiningLevel` : niveau de la tech "Raffinage en espace lointain"
-- `depositLoss` : ce que le gisement perd (toujours >= playerReceives)
+- `actualDepositLoss` : ce que le gisement perd (toujours >= playerReceives)
+- Le clamp a 0.99 protege contre une division par zero si `baseSlagRate` est mal configure
 
 ### Taux de base (configurables en DB)
 
@@ -55,15 +62,11 @@ prerequisites:
   - missionCenter niveau 2
 ```
 
-### Bonus
+### Calcul de la reduction de scories
 
-```
-sourceType: 'research'
-sourceId: 'deepSpaceRefining'
-stat: 'slag_rate'
-percentPerLevel: -15
-category: null
-```
+Le systeme de bonus existant (`resolveBonus`) applique les reductions lineairement (`1 + percent * level`), ce qui ne correspond pas a la courbe multiplicative voulue (`0.85^level`).
+
+**Decision** : le calcul des scories se fait directement dans `pve.ts` avec `0.85^refiningLevel`, sans passer par `resolveBonus`. Le bonus n'est PAS enregistre dans `bonus_definitions` — le niveau de la tech est lu directement depuis `user_research`.
 
 ### Progression (exemple avec 30% de base)
 
@@ -79,9 +82,11 @@ Réduction multiplicative : chaque niveau réduit les scories restantes de 15%. 
 
 ## Stockage en DB
 
-Toutes les valeurs sont configurables via la table `game_config` existante. Aucune valeur hardcodée dans le game-engine.
+Toutes les valeurs sont configurables en DB. Aucune valeur hardcodee dans le game-engine.
 
-### Nouvelles entrées game_config
+### Taux de scories dans `universe_config`
+
+Les taux de base sont stockes dans la table `universe_config` (key-value existante) :
 
 ```
 slag_rate.pos8.minerai = 0.35
@@ -92,7 +97,11 @@ slag_rate.pos16.silicium = 0.15
 slag_rate.pos16.hydrogene = 0.10
 ```
 
-La tech `deepSpaceRefining` et son bonus suivent le même format que les recherches et bonus existants.
+L'interface `GameConfig` est etendue pour exposer ces valeurs via `getFullConfig()`.
+
+### Tech `deepSpaceRefining`
+
+La definition de la recherche suit le meme format que les recherches existantes dans `research_definitions`.
 
 ## Points d'impact dans le code
 
@@ -104,12 +113,13 @@ La tech `deepSpaceRefining` et son bonus suivent le même format que les recherc
 ### API (`apps/api`)
 
 - `modules/fleet/handlers/mine.handler.ts` : brancher les nouvelles formules lors de la phase mining, utiliser `effectiveCargo` pour le joueur et `depositLoss` pour la déduction du gisement
-- `modules/pve/asteroid-belt.service.ts` : la déduction du gisement utilise `depositLoss` au lieu de `extracted`
+- `modules/pve/asteroid-belt.service.ts` : `extractFromDeposit` recoit `actualDepositLoss` au lieu de `extracted`. Le retour de la methode est utilise pour recalculer `playerReceives` si le gisement etait presque vide
 
 ### DB (`packages/db`)
 
-- `seed-game-config.ts` : ajouter les entrées `slag_rate.*`, la recherche `deepSpaceRefining`, et le bonus associé
-- Pas de migration de schéma nécessaire (utilisation de `game_config` et `bonus` existants)
+- `seed-game-config.ts` : ajouter les entrees `slag_rate.*` dans `universe_config`, la recherche `deepSpaceRefining` dans `research_definitions`
+- **Migration necessaire** : ajouter la colonne `deepSpaceRefining` (default 0) a la table `user_research`
+- Ajouter `maxLevel` au schema `research_definitions` (champ optionnel, applicable a toutes les recherches)
 
 ### Shared (`packages/shared`)
 
@@ -117,5 +127,6 @@ La tech `deepSpaceRefining` et son bonus suivent le même format que les recherc
 
 ### Frontend (`apps/web`)
 
-- Afficher le cargo utile vs cargo total dans l'UI de lancement de mission mine
-- Afficher les scories dans le rapport de retour de mission
+- Afficher le cargo utile vs cargo total dans l'UI de lancement de mission mine (ex: "Cargo utile : 7 000 / 10 000")
+- Afficher les scories dans le rapport de retour de mission (ex: "Scories : 30% — 3 000 tonnes perdues")
+- Afficher le taux de scories actuel (apres bonus tech) dans la fiche de la recherche
