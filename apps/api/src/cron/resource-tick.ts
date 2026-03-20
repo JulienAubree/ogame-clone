@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { planets, planetTypes, planetBuildings } from '@ogame-clone/db';
+import { planets, planetTypes, planetBuildings, planetShips } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { calculateResources } from '@ogame-clone/game-engine';
 
@@ -21,6 +21,13 @@ export async function resourceTick(db: Database) {
     buildingLevelsMap.get(row.planetId)![row.buildingId] = row.level;
   }
 
+  // Pre-load solar satellite counts
+  const allShipRows = await db.select({ planetId: planetShips.planetId, solarSatellite: planetShips.solarSatellite }).from(planetShips);
+  const satCountMap = new Map<string, number>();
+  for (const row of allShipRows) {
+    satCountMap.set(row.planetId, row.solarSatellite);
+  }
+
   let updated = 0;
   for (const planet of allPlanets) {
     const bonus = planet.planetClassId ? ptMap.get(planet.planetClassId) : undefined;
@@ -38,6 +45,7 @@ export async function resourceTick(db: Database) {
         storageSiliciumLevel: buildingLevels['storageSilicium'] ?? 0,
         storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
         maxTemp: planet.maxTemp,
+        solarSatelliteCount: satCountMap.get(planet.id) ?? 0,
         mineraiMinePercent: planet.mineraiMinePercent,
         siliciumMinePercent: planet.siliciumMinePercent,
         hydrogeneSynthPercent: planet.hydrogeneSynthPercent,
