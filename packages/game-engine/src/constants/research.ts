@@ -8,7 +8,8 @@ export type ResearchId =
   | 'weapons'
   | 'shielding'
   | 'armor'
-  | 'rockFracturing';
+  | 'rockFracturing'
+  | 'deepSpaceRefining';
 
 export interface ResearchDefinition {
   id: ResearchId;
@@ -16,6 +17,7 @@ export interface ResearchDefinition {
   description: string;
   baseCost: { minerai: number; silicium: number; hydrogene: number };
   costFactor: number;
+  maxLevel?: number;
   prerequisites: {
     buildings?: { buildingId: string; level: number }[];
     research?: { researchId: ResearchId; level: number }[];
@@ -119,6 +121,18 @@ export const RESEARCH: Record<ResearchId, ResearchDefinition> = {
     prerequisites: {
       buildings: [{ buildingId: 'missionCenter', level: 1 }],
       research: [{ researchId: 'combustion', level: 3 }],
+    },
+  },
+  deepSpaceRefining: {
+    id: 'deepSpaceRefining',
+    name: 'Raffinage en espace lointain',
+    description: 'Développe des techniques de raffinage embarquées qui réduisent les scories lors de l\'extraction minière.',
+    baseCost: { minerai: 2000, silicium: 4000, hydrogene: 1000 },
+    costFactor: 2,
+    maxLevel: 15,
+    prerequisites: {
+      buildings: [{ buildingId: 'missionCenter', level: 2 }],
+      research: [{ researchId: 'rockFracturing', level: 2 }],
     },
   },
 };
