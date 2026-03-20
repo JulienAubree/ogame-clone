@@ -45,6 +45,7 @@ else:
 Logique :
 - Les gisements lointains (pos 16) sont plus purs, compensant le trajet plus long
 - L'hydrogene (gaz) produit moins de déchets solides que les minerais
+- Les positions 8 et 16 sont les seules ceintures d'asteroides ; le taux est lu par correspondance exacte position+ressource (pas d'interpolation)
 
 ## Tech "Raffinage en espace lointain"
 
@@ -66,7 +67,7 @@ prerequisites:
 
 Le systeme de bonus existant (`resolveBonus`) applique les reductions lineairement (`1 + percent * level`), ce qui ne correspond pas a la courbe multiplicative voulue (`0.85^level`).
 
-**Decision** : le calcul des scories se fait directement dans `pve.ts` avec `0.85^refiningLevel`, sans passer par `resolveBonus`. Le bonus n'est PAS enregistre dans `bonus_definitions` — le niveau de la tech est lu directement depuis `user_research`.
+**Decision** : le calcul des scories se fait directement dans `pve.ts` avec `0.85^refiningLevel`, sans passer par `resolveBonus`. Le bonus n'est PAS enregistre dans `bonus_definitions` — le niveau de la tech est lu directement depuis `user_research`. Ajouter un commentaire dans le seed expliquant cette omission intentionnelle.
 
 ### Progression (exemple avec 30% de base)
 
@@ -108,12 +109,12 @@ La definition de la recherche suit le meme format que les recherches existantes 
 ### Game-engine (`packages/game-engine`)
 
 - `formulas/pve.ts` : nouvelle fonction `effectiveCargoCapacity(cargo, slagRates, refiningLevel, position)` et modification de `totalExtracted` pour retourner `{ playerReceives, depositLoss }`
-- `constants/research.ts` : ajout de la définition `deepSpaceRefining`
+- `constants/research.ts` : ajout de `'deepSpaceRefining'` au type `ResearchId` et a l'interface `ResearchDefinition` (ajouter `maxLevel?: number`)
 
 ### API (`apps/api`)
 
 - `modules/fleet/handlers/mine.handler.ts` : brancher les nouvelles formules lors de la phase mining, utiliser `effectiveCargo` pour le joueur et `depositLoss` pour la déduction du gisement
-- `modules/pve/asteroid-belt.service.ts` : `extractFromDeposit` recoit `actualDepositLoss` au lieu de `extracted`. Le retour de la methode est utilise pour recalculer `playerReceives` si le gisement etait presque vide
+- `modules/pve/asteroid-belt.service.ts` : `extractFromDeposit` recoit `depositLoss` (brut). Le SQL existant gere atomiquement le cas ou le gisement n'a pas assez (`GREATEST(0, remaining - amount)`). Le `playerReceives` est derive du retour de `extractFromDeposit` : `actualExtracted × (1 - slagRate)`. Cela evite toute race condition TOCTOU
 
 ### DB (`packages/db`)
 
