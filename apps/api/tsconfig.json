@@ -4,13 +4,5 @@
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src"],
-  "exclude": [
-    "src/workers/building-completion.worker.ts",
-    "src/workers/research-completion.worker.ts",
-    "src/workers/shipyard-completion.worker.ts",
-    "src/workers/fleet-arrival.worker.ts",
-    "src/workers/fleet-return.worker.ts",
-    "src/queues/queue.ts"
-  ]
+  "include": ["src"]
 }
