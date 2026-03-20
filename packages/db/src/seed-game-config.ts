@@ -339,13 +339,9 @@ const UNIVERSE_CONFIG = [
   { key: 'startingMinerai', value: 500 },
   { key: 'startingSilicium', value: 300 },
   { key: 'startingHydrogene', value: 100 },
-  // Slag rates (scories) — per position and resource type
-  { key: 'slag_rate.pos8.minerai', value: 0.35 },
-  { key: 'slag_rate.pos8.silicium', value: 0.30 },
-  { key: 'slag_rate.pos8.hydrogene', value: 0.20 },
-  { key: 'slag_rate.pos16.minerai', value: 0.20 },
-  { key: 'slag_rate.pos16.silicium', value: 0.15 },
-  { key: 'slag_rate.pos16.hydrogene', value: 0.10 },
+  // Slag rates (scories) — per position
+  { key: 'slag_rate.pos8', value: 0.30 },
+  { key: 'slag_rate.pos16', value: 0.15 },
 ];
 
 async function seed() {
