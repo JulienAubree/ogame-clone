@@ -6,6 +6,7 @@ import { researchCost, researchTime, checkResearchPrerequisites, resolveBonus } 
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
+import type { BuildCompletionResult } from '../../workers/completion.types.js';
 
 async function getBuildingLevels(db: Database, planetId: string): Promise<Record<string, number>> {
   const rows = await db
@@ -22,7 +23,7 @@ async function getBuildingLevels(db: Database, planetId: string): Promise<Record
 export function createResearchService(
   db: Database,
   resourceService: ReturnType<typeof createResourceService>,
-  researchQueue: Queue,
+  completionQueue: Queue,
   gameConfigService: GameConfigService,
 ) {
   return {
@@ -134,8 +135,8 @@ export function createResearchService(
         })
         .returning();
 
-      await researchQueue.add(
-        'complete',
+      await completionQueue.add(
+        'research',
         { buildQueueId: entry.id },
         { delay: time * 1000, jobId: `research-${entry.id}` },
       );
@@ -185,13 +186,13 @@ export function createResearchService(
           .where(eq(planets.id, planet.id));
       }
 
-      await researchQueue.remove(`research-${activeResearch.id}`);
+      await completionQueue.remove(`research-${activeResearch.id}`);
       await db.delete(buildQueue).where(eq(buildQueue.id, activeResearch.id));
 
       return { cancelled: true };
     },
 
-    async completeResearch(buildQueueId: string) {
+    async completeResearch(buildQueueId: string): Promise<BuildCompletionResult> {
       const [entry] = await db
         .select()
         .from(buildQueue)
@@ -218,7 +219,37 @@ export function createResearchService(
         .set({ status: 'completed' })
         .where(eq(buildQueue.id, buildQueueId));
 
-      return { researchId: entry.itemId, newLevel };
+      // NEW: fetch planet name and build standardized result
+      const [planet] = await db
+        .select({ name: planets.name })
+        .from(planets)
+        .where(eq(planets.id, entry.planetId))
+        .limit(1);
+
+      const techName = config.research[entry.itemId]?.name ?? entry.itemId;
+      const planetName = planet?.name ?? 'Planète';
+
+      return {
+        userId: entry.userId,
+        planetId: entry.planetId,
+        eventType: 'research-done',
+        notificationPayload: {
+          techId: entry.itemId,
+          name: techName,
+          level: newLevel,
+        },
+        eventPayload: {
+          techId: entry.itemId,
+          name: techName,
+          level: newLevel,
+          planetName,
+        },
+        tutorialCheck: {
+          type: 'research_level',
+          targetId: entry.itemId,
+          targetValue: newLevel,
+        },
+      };
     },
 
     async getOrCreateResearch(userId: string) {
