@@ -1,6 +1,6 @@
 {
-  "id": "snapshot-0002",
-  "prevId": "97658d28-34d8-4022-8c66-e139bb17156c",
+  "id": "037058db-d914-46d6-b32e-db0007583375",
+  "prevId": "eabe1e3a-ed5b-47a7-a9ee-3a5271a58697",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -460,23 +460,47 @@
           "primaryKey": false,
           "notNull": true
         },
-        "resource_type": {
-          "name": "resource_type",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "total_quantity": {
-          "name": "total_quantity",
+        "minerai_total": {
+          "name": "minerai_total",
           "type": "numeric(20, 2)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'0'"
         },
-        "remaining_quantity": {
-          "name": "remaining_quantity",
+        "minerai_remaining": {
+          "name": "minerai_remaining",
           "type": "numeric(20, 2)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'0'"
+        },
+        "silicium_total": {
+          "name": "silicium_total",
+          "type": "numeric(20, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "silicium_remaining": {
+          "name": "silicium_remaining",
+          "type": "numeric(20, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "hydrogene_total": {
+          "name": "hydrogene_total",
+          "type": "numeric(20, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "hydrogene_remaining": {
+          "name": "hydrogene_remaining",
+          "type": "numeric(20, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
         },
         "regenerates_at": {
           "name": "regenerates_at",
@@ -486,17 +510,11 @@
         }
       },
       "indexes": {
-        "deposits_belt_remaining_idx": {
-          "name": "deposits_belt_remaining_idx",
+        "deposits_belt_idx": {
+          "name": "deposits_belt_idx",
           "columns": [
             {
               "expression": "belt_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "remaining_quantity",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -938,6 +956,55 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.bonus_definitions": {
+      "name": "bonus_definitions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(128)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "source_type": {
+          "name": "source_type",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stat": {
+          "name": "stat",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "percent_per_level": {
+          "name": "percent_per_level",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.building_definitions": {
       "name": "building_definitions",
       "schema": "",
@@ -996,18 +1063,6 @@
           "notNull": true,
           "default": 60
         },
-        "build_time_reduction_factor": {
-          "name": "build_time_reduction_factor",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reduces_time_for_category": {
-          "name": "reduces_time_for_category",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "category_id": {
           "name": "category_id",
           "type": "varchar(64)",
@@ -1020,23 +1075,16 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "flavor_text": {
+          "name": "flavor_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "building_definitions_reduces_time_for_category_entity_categories_id_fk": {
-          "name": "building_definitions_reduces_time_for_category_entity_categories_id_fk",
-          "tableFrom": "building_definitions",
-          "tableTo": "entity_categories",
-          "columnsFrom": [
-            "reduces_time_for_category"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "building_definitions_category_id_entity_categories_id_fk": {
           "name": "building_definitions_category_id_entity_categories_id_fk",
           "tableFrom": "building_definitions",
@@ -1212,6 +1260,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "flavor_text": {
+          "name": "flavor_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -1605,6 +1659,24 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "flavor_text": {
+          "name": "flavor_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effect_description": {
+          "name": "effect_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_level": {
+          "name": "max_level",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -1822,6 +1894,13 @@
           "notNull": true,
           "default": 0
         },
+        "is_stationary": {
+          "name": "is_stationary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "category_id": {
           "name": "category_id",
           "type": "varchar(64)",
@@ -1835,12 +1914,11 @@
           "notNull": true,
           "default": 0
         },
-        "is_stationary": {
-          "name": "is_stationary",
-          "type": "boolean",
+        "flavor_text": {
+          "name": "flavor_text",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "notNull": false
         }
       },
       "indexes": {},
@@ -2532,6 +2610,20 @@
         },
         "armor": {
           "name": "armor",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rock_fracturing": {
+          "name": "rock_fracturing",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "deep_space_refining": {
+          "name": "deep_space_refining",
           "type": "smallint",
           "primaryKey": false,
           "notNull": true,
@@ -3236,6 +3328,368 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.tutorial_progress": {
+      "name": "tutorial_progress",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_quest_id": {
+          "name": "current_quest_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'quest_1'"
+        },
+        "completed_quests": {
+          "name": "completed_quests",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "is_complete": {
+          "name": "is_complete",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tutorial_progress_user_id_users_id_fk": {
+          "name": "tutorial_progress_user_id_users_id_fk",
+          "tableFrom": "tutorial_progress",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tutorial_progress_user_id_unique": {
+          "name": "tutorial_progress_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tutorial_quest_definitions": {
+      "name": "tutorial_quest_definitions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(64)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "quest_order": {
+          "name": "quest_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "narrative_text": {
+          "name": "narrative_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "condition_type": {
+          "name": "condition_type",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "condition_target_id": {
+          "name": "condition_target_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "condition_target_value": {
+          "name": "condition_target_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reward_minerai": {
+          "name": "reward_minerai",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "reward_silicium": {
+          "name": "reward_silicium",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "reward_hydrogene": {
+          "name": "reward_hydrogene",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mission_reports": {
+      "name": "mission_reports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fleet_event_id": {
+          "name": "fleet_event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pve_mission_id": {
+          "name": "pve_mission_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mission_type": {
+          "name": "mission_type",
+          "type": "fleet_mission",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coordinates": {
+          "name": "coordinates",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origin_coordinates": {
+          "name": "origin_coordinates",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fleet": {
+          "name": "fleet",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "departure_time": {
+          "name": "departure_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completion_time": {
+          "name": "completion_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "read": {
+          "name": "read",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "mission_reports_user_created_idx": {
+          "name": "mission_reports_user_created_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mission_reports_message_idx": {
+          "name": "mission_reports_message_idx",
+          "columns": [
+            {
+              "expression": "message_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "mission_reports_user_id_users_id_fk": {
+          "name": "mission_reports_user_id_users_id_fk",
+          "tableFrom": "mission_reports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mission_reports_fleet_event_id_fleet_events_id_fk": {
+          "name": "mission_reports_fleet_event_id_fleet_events_id_fk",
+          "tableFrom": "mission_reports",
+          "tableTo": "fleet_events",
+          "columnsFrom": [
+            "fleet_event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "mission_reports_pve_mission_id_pve_missions_id_fk": {
+          "name": "mission_reports_pve_mission_id_pve_missions_id_fk",
+          "tableFrom": "mission_reports",
+          "tableTo": "pve_missions",
+          "columnsFrom": [
+            "pve_mission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "mission_reports_message_id_messages_id_fk": {
+          "name": "mission_reports_message_id_messages_id_fk",
+          "tableFrom": "mission_reports",
+          "tableTo": "messages",
+          "columnsFrom": [
+            "message_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -3295,6 +3749,8 @@
       "schema": "public",
       "values": [
         "outbound",
+        "prospecting",
+        "mining",
         "return"
       ]
     },
@@ -3324,7 +3780,8 @@
         "player",
         "espionage",
         "combat",
-        "alliance"
+        "alliance",
+        "mission"
       ]
     }
   },
