@@ -12,6 +12,7 @@ const COMBAT_STATS: Record<string, UnitCombatStats> = {
   espionageProbe: { weapons: 0,    shield: 0,     armor: 1000 },
   colonyShip:     { weapons: 50,   shield: 100,   armor: 30000 },
   recycler:       { weapons: 1,    shield: 10,    armor: 16000 },
+  solarSatellite: { weapons: 1,    shield: 1,     armor: 2000 },
   rocketLauncher: { weapons: 80,   shield: 20,    armor: 2000 },
   lightLaser:     { weapons: 100,  shield: 25,    armor: 2000 },
   heavyLaser:     { weapons: 250,  shield: 100,   armor: 8000 },
@@ -22,18 +23,19 @@ const COMBAT_STATS: Record<string, UnitCombatStats> = {
 };
 
 const RAPID_FIRE: Record<string, Record<string, number>> = {
-  smallCargo:   { espionageProbe: 5 },
-  largeCargo:   { espionageProbe: 5 },
-  lightFighter: { espionageProbe: 5 },
-  heavyFighter: { espionageProbe: 5, smallCargo: 3 },
-  cruiser:      { espionageProbe: 5, lightFighter: 6, smallCargo: 3, rocketLauncher: 10 },
-  battleship:   { espionageProbe: 5, lightFighter: 4, smallCargo: 4, largeCargo: 4 },
-  colonyShip:   { espionageProbe: 5 },
+  smallCargo:   { espionageProbe: 5, solarSatellite: 5 },
+  largeCargo:   { espionageProbe: 5, solarSatellite: 5 },
+  lightFighter: { espionageProbe: 5, solarSatellite: 5 },
+  heavyFighter: { espionageProbe: 5, smallCargo: 3, solarSatellite: 5 },
+  cruiser:      { espionageProbe: 5, lightFighter: 6, smallCargo: 3, rocketLauncher: 10, solarSatellite: 5 },
+  battleship:   { espionageProbe: 5, lightFighter: 4, smallCargo: 4, largeCargo: 4, solarSatellite: 5 },
+  colonyShip:   { espionageProbe: 5, solarSatellite: 5 },
 };
 
 const SHIP_IDS = new Set([
   'smallCargo', 'largeCargo', 'lightFighter', 'heavyFighter',
   'cruiser', 'battleship', 'espionageProbe', 'colonyShip', 'recycler',
+  'solarSatellite',
 ]);
 
 const DEFENSE_IDS = new Set([
@@ -51,6 +53,7 @@ const SHIP_COSTS: Record<string, { minerai: number; silicium: number }> = {
   espionageProbe: { minerai: 0,     silicium: 1000 },
   colonyShip:     { minerai: 10000, silicium: 20000 },
   recycler:       { minerai: 10000, silicium: 6000 },
+  solarSatellite: { minerai: 0,     silicium: 2000 },
 };
 
 const unitMultipliers = { weapons: 1, shielding: 1, armor: 1 };
@@ -213,6 +216,23 @@ describe('simulateCombat', () => {
       expect(ratio).toBeGreaterThan(0.55);
       expect(ratio).toBeLessThan(0.85);
     }
+  });
+
+  it('solar satellites participate in defense and get destroyed easily', () => {
+    const result = simulateCombat(
+      { cruiser: 1 },
+      { solarSatellite: 5 },
+      unitMultipliers,
+      unitMultipliers,
+      COMBAT_STATS,
+      RAPID_FIRE,
+      SHIP_IDS,
+      SHIP_COSTS,
+      DEFENSE_IDS,
+    );
+    // Cruiser (400 weapons) vs satellites (1 shield, 2000 armor) with rapid fire 5
+    // Satellites should be largely or fully destroyed
+    expect(result.defenderLosses.solarSatellite).toBeGreaterThan(0);
   });
 
   it('rapid fire: cruisers decimate rocket launchers', () => {
