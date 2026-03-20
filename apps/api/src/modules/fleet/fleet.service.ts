@@ -21,6 +21,7 @@ import { AttackHandler } from './handlers/attack.handler.js';
 import { PirateHandler } from './handlers/pirate.handler.js';
 import { MineHandler } from './handlers/mine.handler.js';
 import { buildShipStatsMap } from './fleet.types.js';
+import { env } from '../../config/env.js';
 import type { PhasedMissionHandler, MissionHandler, MissionHandlerContext, SendFleetInput, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
 
 export function createFleetService(
@@ -59,6 +60,7 @@ export function createFleetService(
     fleetArrivalQueue,
     fleetReturnQueue,
     universeSpeed,
+    assetsDir: env.ASSETS_DIR,
   };
 
   return {

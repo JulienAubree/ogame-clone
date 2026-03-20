@@ -72,6 +72,7 @@ export interface MissionHandlerContext {
   fleetArrivalQueue: Queue;
   fleetReturnQueue: Queue;
   universeSpeed: number;
+  assetsDir: string;
 }
 
 // ── Result types ──

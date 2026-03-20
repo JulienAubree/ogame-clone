@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, fleetEvents } from '@ogame-clone/db';
 import { calculateMaxTemp, calculateMinTemp, calculateDiameter, calculateMaxFields } from '@ogame-clone/game-engine';
 import { BELT_POSITIONS } from '../../universe/universe.config.js';
+import { getRandomPlanetImageIndex } from '../../../lib/planet-image.util.js';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
 import { formatDuration } from '../fleet.types.js';
 
@@ -108,6 +109,7 @@ export class ColonizeHandler implements MissionHandler {
       diameter = calculateDiameter(fleetEvent.targetPosition, Math.random());
     }
     const maxFields = calculateMaxFields(diameter, fieldsBonus);
+    const planetImageIndex = getRandomPlanetImageIndex(planetTypeForPos?.id ?? 'homeworld', ctx.assetsDir);
 
     const [newPlanet] = await ctx.db
       .insert(planets)
@@ -123,6 +125,7 @@ export class ColonizeHandler implements MissionHandler {
         maxFields,
         minTemp,
         maxTemp,
+        planetImageIndex,
       })
       .returning();
 
