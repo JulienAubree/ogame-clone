@@ -34,6 +34,8 @@ import { createPveService } from '../modules/pve/pve.service.js';
 import { createPveRouter } from '../modules/pve/pve.router.js';
 import { createTutorialService } from '../modules/tutorial/tutorial.service.js';
 import { createTutorialRouter } from '../modules/tutorial/tutorial.router.js';
+import { createReportService } from '../modules/report/report.service.js';
+import { createReportRouter } from '../modules/report/report.router.js';
 import { UNIVERSE_CONFIG } from '../modules/universe/universe.config.js';
 import type { Database } from '@ogame-clone/db';
 import type Redis from 'ioredis';
@@ -59,6 +61,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const playerAdminService = createPlayerAdminService(db);
   const gameEventService = createGameEventService(db);
   const tutorialService = createTutorialService(db, pveService);
+  const reportService = createReportService(db);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -76,6 +79,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const gameEventRouter = createGameEventRouter(gameEventService);
   const pveRouter = createPveRouter(pveService, asteroidBeltService);
   const tutorialRouter = createTutorialRouter(tutorialService);
+  const reportRouter = createReportRouter(reportService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -98,6 +102,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     gameEvent: gameEventRouter,
     pve: pveRouter,
     tutorial: tutorialRouter,
+    report: reportRouter,
   });
 }
 
