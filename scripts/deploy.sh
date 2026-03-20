@@ -23,11 +23,11 @@ export $(grep -v '^#' .env | xargs)
 
 echo "==> Ensuring uploads directory..."
 UPLOADS_DIR="/opt/ogame-clone/uploads/assets"
-mkdir -p "$UPLOADS_DIR"/{buildings,research,ships,defenses}
+mkdir -p "$UPLOADS_DIR"/{buildings,research,ships,defenses,planets}
 
 # Sync assets from web public to uploads (copies missing files, keeps existing)
 echo "    Syncing assets from web/public to uploads..."
-for cat in buildings research ships defenses; do
+for cat in buildings research ships defenses planets; do
   if [ -d "apps/web/public/assets/$cat" ] && [ -n "$(ls -A apps/web/public/assets/$cat/ 2>/dev/null)" ]; then
     cp -n apps/web/public/assets/$cat/* "$UPLOADS_DIR/$cat/" 2>/dev/null || true
   fi
