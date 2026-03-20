@@ -76,6 +76,7 @@ export interface ResearchConfig {
   levelColumn: string;
   categoryId: string | null;
   sortOrder: number;
+  maxLevel: number | null;
   prerequisites: {
     buildings: { buildingId: string; level: number }[];
     research: { researchId: string; level: number }[];
@@ -258,6 +259,7 @@ export function createGameConfigService(db: Database) {
         levelColumn: r.levelColumn,
         categoryId: r.categoryId,
         sortOrder: r.sortOrder,
+        maxLevel: r.maxLevel ?? null,
         prerequisites: {
           buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
           research: prereqs.filter(p => p.requiredResearchId).map(p => ({ researchId: p.requiredResearchId!, level: p.requiredLevel })),
