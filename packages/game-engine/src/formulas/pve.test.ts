@@ -6,6 +6,8 @@ import {
   miningDuration,
   poolSize,
   accumulationCap,
+  computeSlagRate,
+  computeMiningExtraction,
 } from './pve.js';
 
 describe('baseExtraction', () => {
@@ -104,5 +106,89 @@ describe('accumulationCap', () => {
     expect(accumulationCap(1)).toBe(6);
     expect(accumulationCap(3)).toBe(8);
     expect(accumulationCap(7)).toBe(12);
+  });
+});
+
+describe('computeSlagRate', () => {
+  it('returns baseSlagRate when refining level is 0', () => {
+    expect(computeSlagRate(0.35, 0)).toBeCloseTo(0.35);
+  });
+
+  it('reduces multiplicatively at level 3', () => {
+    expect(computeSlagRate(0.30, 3)).toBeCloseTo(0.30 * 0.85 ** 3);
+  });
+
+  it('reduces to ~2.5% at level 15 with 30% base', () => {
+    expect(computeSlagRate(0.30, 15)).toBeCloseTo(0.30 * 0.85 ** 15);
+  });
+
+  it('clamps to 0.99 max if baseSlagRate is misconfigured', () => {
+    expect(computeSlagRate(1.5, 0)).toBe(0.99);
+  });
+
+  it('clamps to 0 min', () => {
+    expect(computeSlagRate(-0.1, 0)).toBe(0);
+  });
+});
+
+describe('computeMiningExtraction', () => {
+  it('reduces effective cargo and increases deposit loss', () => {
+    const result = computeMiningExtraction({
+      centerLevel: 1,
+      nbProspectors: 3,
+      cargoCapacity: 10000,
+      depositRemaining: 100000,
+      slagRate: 0.30,
+    });
+    expect(result.playerReceives).toBe(6000);
+    expect(result.depositLoss).toBeCloseTo(8571.43, 0);
+  });
+
+  it('caps at effective cargo when extraction exceeds it', () => {
+    const result = computeMiningExtraction({
+      centerLevel: 10,
+      nbProspectors: 10,
+      cargoCapacity: 10000,
+      depositRemaining: 500000,
+      slagRate: 0.30,
+    });
+    expect(result.playerReceives).toBe(7000);
+    expect(result.depositLoss).toBeCloseTo(10000, 0);
+  });
+
+  it('handles deposit nearly depleted (less than depositLoss)', () => {
+    const result = computeMiningExtraction({
+      centerLevel: 1,
+      nbProspectors: 3,
+      cargoCapacity: 10000,
+      depositRemaining: 500,
+      slagRate: 0.30,
+    });
+    expect(result.playerReceives).toBe(350);
+    expect(result.depositLoss).toBe(500);
+  });
+
+  it('returns full extraction when slagRate is 0', () => {
+    const result = computeMiningExtraction({
+      centerLevel: 1,
+      nbProspectors: 3,
+      cargoCapacity: 10000,
+      depositRemaining: 100000,
+      slagRate: 0,
+    });
+    expect(result.playerReceives).toBe(6000);
+    expect(result.depositLoss).toBe(6000);
+  });
+
+  it('handles very high slag rate (0.99)', () => {
+    const result = computeMiningExtraction({
+      centerLevel: 1,
+      nbProspectors: 3,
+      cargoCapacity: 10000,
+      depositRemaining: 100000,
+      slagRate: 0.99,
+    });
+    expect(result.playerReceives).toBe(100);
+    expect(result.depositLoss).toBe(10000);
   });
 });

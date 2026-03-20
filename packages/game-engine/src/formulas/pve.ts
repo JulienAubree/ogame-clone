@@ -53,3 +53,46 @@ export function poolSize(centerLevel: number): number {
 export function accumulationCap(centerLevel: number): number {
   return poolSize(centerLevel) * 2;
 }
+
+/**
+ * Compute effective slag rate after deep space refining tech.
+ * Formula: clamp(baseSlagRate * 0.85^refiningLevel, 0, 0.99)
+ */
+export function computeSlagRate(baseSlagRate: number, refiningLevel: number): number {
+  const rate = baseSlagRate * Math.pow(0.85, refiningLevel);
+  return Math.min(0.99, Math.max(0, rate));
+}
+
+/**
+ * Compute mining extraction with slag mechanics.
+ * Returns playerReceives (net resources) and depositLoss (gross deducted from deposit).
+ */
+export function computeMiningExtraction(params: {
+  centerLevel: number;
+  nbProspectors: number;
+  cargoCapacity: number;
+  depositRemaining: number;
+  slagRate: number;
+}): { playerReceives: number; depositLoss: number } {
+  const { centerLevel, nbProspectors, cargoCapacity, depositRemaining, slagRate } = params;
+  const effectiveProspectors = Math.min(nbProspectors, 10);
+  const rawExtraction = baseExtraction(centerLevel) * effectiveProspectors;
+  const effectiveCargo = cargoCapacity * (1 - slagRate);
+  const maxExtractable = Math.min(rawExtraction, effectiveCargo);
+
+  if (slagRate === 0) {
+    const capped = Math.min(maxExtractable, depositRemaining);
+    return { playerReceives: capped, depositLoss: capped };
+  }
+
+  const depositLoss = maxExtractable / (1 - slagRate);
+
+  if (depositRemaining >= depositLoss) {
+    return { playerReceives: Math.floor(maxExtractable), depositLoss };
+  }
+
+  return {
+    playerReceives: Math.floor(depositRemaining * (1 - slagRate)),
+    depositLoss: depositRemaining,
+  };
+}
