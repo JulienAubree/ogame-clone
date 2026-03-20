@@ -45,7 +45,6 @@ async function buildPlanetLevels(db: Database, planetId: string, planet: {
   mineraiMinePercent: number;
   siliciumMinePercent: number;
   hydrogeneSynthPercent: number;
-  planetClassId?: string | null;
 }) {
   const [buildingLevels, solarSatelliteCount] = await Promise.all([
     getBuildingLevels(db, planetId),
@@ -64,7 +63,6 @@ async function buildPlanetLevels(db: Database, planetId: string, planet: {
     mineraiMinePercent: planet.mineraiMinePercent,
     siliciumMinePercent: planet.siliciumMinePercent,
     hydrogeneSynthPercent: planet.hydrogeneSynthPercent,
-    isHomeworld: planet.planetClassId === 'homeworld',
   };
 }
 
@@ -190,7 +188,6 @@ export function createResourceService(db: Database) {
       mineraiMinePercent: number;
       siliciumMinePercent: number;
       hydrogeneSynthPercent: number;
-      planetClassId?: string | null;
     }, bonus?: PlanetTypeBonus) {
       const levels = await buildPlanetLevels(db, planetId, planet);
       return calculateProductionRates(levels, bonus);

@@ -54,27 +54,6 @@ describe('calculateProductionRates', () => {
     expect(rates.productionFactor).toBe(1);
   });
 
-  it('uses fixed 30 energy per satellite on homeworld regardless of maxTemp', () => {
-    const base = {
-      mineraiMineLevel: 5,
-      siliciumMineLevel: 5,
-      hydrogeneSynthLevel: 0,
-      solarPlantLevel: 1,
-      storageMineraiLevel: 0,
-      storageSiliciumLevel: 0,
-      storageHydrogeneLevel: 0,
-      solarSatelliteCount: 10,
-      isHomeworld: true,
-    };
-    // Position 4 (hot): maxTemp=160 → normal would be 60/sat, but homeworld = 30/sat
-    const hot = calculateProductionRates({ ...base, maxTemp: 160 });
-    // Position 12 (cold): maxTemp=-80 → normal would be 10/sat, but homeworld = 30/sat
-    const cold = calculateProductionRates({ ...base, maxTemp: -80 });
-    // Both should produce 30 * 10 = 300 satellite energy + 22 solar plant = 322
-    expect(hot.energyProduced).toBe(322);
-    expect(cold.energyProduced).toBe(322);
-  });
-
   it('works with zero satellites (backward compat)', () => {
     const rates = calculateProductionRates({
       mineraiMineLevel: 1,
