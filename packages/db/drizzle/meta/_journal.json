@@ -50,6 +50,13 @@
       "when": 1742428800000,
       "tag": "0006_drop_deprecated_building_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1742601600000,
+      "tag": "0007_solar_satellite",
+      "breakpoints": true
     }
   ]
 }
