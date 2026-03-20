@@ -5,5 +5,5 @@
     "rootDir": "src"
   },
   "include": ["src"],
-  "exclude": ["src/seed-game-config.ts", "src/migrate-buildings.ts"]
+  "exclude": ["src/seed-game-config.ts", "src/migrate-buildings.ts", "src/scripts"]
 }
