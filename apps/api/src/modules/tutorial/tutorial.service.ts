@@ -153,7 +153,7 @@ export function createTutorialService(db: Database, pveService?: ReturnType<type
       // Generate tutorial PvE mining mission when quest_14 (prospector built) is completed
       if (quest.id === 'quest_14' && pveService && planet) {
         try {
-          await pveService.generateMiningMission(userId, planet.galaxy, planet.system, 1);
+          await pveService.generateDiscoveredMission(userId, planet.galaxy, planet.system, 1);
           // Query the PvE mission that was just created to store its ID
           const missions = await pveService.getMissions(userId);
           const tutorialMission = missions.find(m =>

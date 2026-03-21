@@ -1,4 +1,4 @@
-import { eq, and, sql, asc, inArray } from 'drizzle-orm';
+import { eq, and, sql, asc } from 'drizzle-orm';
 import { pveMissions, planets, missionCenterState, fleetEvents } from '@ogame-clone/db';
 import { TRPCError } from '@trpc/server';
 import type { Database } from '@ogame-clone/db';
@@ -186,7 +186,7 @@ export function createPveService(
       const [activeFleet] = await db.select({ id: fleetEvents.id }).from(fleetEvents)
         .where(and(
           eq(fleetEvents.pveMissionId, missionId),
-          inArray(fleetEvents.status, ['in_transit', 'active']),
+          eq(fleetEvents.status, 'active'),
         ))
         .limit(1);
       if (activeFleet) {

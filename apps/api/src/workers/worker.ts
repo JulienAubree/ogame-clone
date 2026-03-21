@@ -1,6 +1,5 @@
 import Redis from 'ioredis';
 import { createDb } from '@ogame-clone/db';
-import { sql } from 'drizzle-orm';
 import { env } from '../config/env.js';
 import { createResourceService } from '../modules/resource/resource.service.js';
 import { createBuildingService } from '../modules/building/building.service.js';
@@ -74,20 +73,10 @@ console.log('[worker] Event cleanup cron started (24h)');
 
 setInterval(async () => {
   try {
-    const usersWithCenter = await db.execute(sql`
-      SELECT DISTINCT p.user_id
-      FROM planet_buildings pb
-      JOIN planets p ON p.id = pb.planet_id
-      WHERE pb.building_id = 'missionCenter' AND pb.level >= 1
-      LIMIT 100
-    `);
-    for (const row of usersWithCenter) {
-      await pveService.refreshPool(row.user_id as string);
-    }
     await asteroidBeltService.regenerateDepletedDeposits();
-  } catch (err) { console.error('[mission-refresh] Error:', err); }
+  } catch (err) { console.error('[deposit-regen] Error:', err); }
 }, 30 * 60_000);
-console.log('[worker] Mission refresh cron started (30min)');
+console.log('[worker] Deposit regeneration cron started (30min)');
 
 process.on('SIGTERM', () => {
   console.log('[worker] Shutting down...');
