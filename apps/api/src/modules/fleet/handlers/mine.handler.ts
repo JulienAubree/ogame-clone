@@ -173,7 +173,15 @@ export class MineHandler implements PhasedMissionHandler {
       hydrogeneCargo: String(cargo.hydrogene),
     }).where(eq(fleetEvents.id, fleetEvent.id));
 
-    await ctx.pveService.completeMission(mission.id);
+    // Complete mission only when deposit is fully empty
+    const [updatedDeposit] = await ctx.db.select().from(asteroidDeposits)
+      .where(eq(asteroidDeposits.id, params.depositId)).limit(1);
+    const totalRemaining = updatedDeposit
+      ? Number(updatedDeposit.mineraiRemaining) + Number(updatedDeposit.siliciumRemaining) + Number(updatedDeposit.hydrogeneRemaining)
+      : 0;
+    if (totalRemaining <= 0) {
+      await ctx.pveService.completeMission(mission.id);
+    }
 
     // Build report data
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;

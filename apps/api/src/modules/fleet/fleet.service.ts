@@ -175,7 +175,7 @@ export function createFleetService(
         })
         .returning();
 
-      // Mark PvE mission as in_progress (with ownership check)
+      // Validate PvE mission ownership and status
       if (input.pveMissionId && pveService) {
         const [pveMission] = await db.select().from(pveMissions)
           .where(and(eq(pveMissions.id, input.pveMissionId), eq(pveMissions.userId, userId)))
@@ -186,7 +186,10 @@ export function createFleetService(
         if (pveMission.status !== 'available') {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Mission déjà en cours ou terminée' });
         }
-        await pveService.startMission(input.pveMissionId);
+        // Mine missions stay available until deposit is empty — don't mark in_progress
+        if (pveMission.missionType !== 'mine') {
+          await pveService.startMission(input.pveMissionId);
+        }
       }
 
       // Schedule arrival job
