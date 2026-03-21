@@ -18,13 +18,25 @@ Les missions pirate sont hors scope — elles restent dans le code mais ne sont 
 |---------|------|-------------|
 | `userId` | UUID (PK) | Reference vers `users`, cascade delete |
 | `nextDiscoveryAt` | timestamp with tz | Prochain moment de decouverte |
+| `lastDismissAt` | timestamp with tz (nullable) | Derniere annulation de gisement |
 | `updatedAt` | timestamp with tz | Dernier rattrapage |
 
 Creee quand le joueur construit son premier Centre de Missions. Initialisee avec `nextDiscoveryAt = now + cooldown(level)`.
 
-### Table `pve_missions` (inchangee)
+### Table `pve_missions` (modifiee)
 
-Les gisements decouverts sont des entrees `pve_missions` standard avec `missionType = 'mine'` et `status = 'available'`. Le frontend ne change pas de contrat.
+Les gisements decouverts sont des entrees `pve_missions` standard avec `missionType = 'mine'`.
+
+**Changement de lifecycle** : une mission mine reste `available` tant que le deposit associe a des ressources restantes. Le joueur peut envoyer plusieurs flottes successives sur le meme gisement. La mission passe en `completed` uniquement quand le deposit est vide (remaining total <= 0). Le statut `in_progress` n'est plus utilise pour les missions mine.
+
+## Annulation de gisement
+
+Le joueur peut supprimer un gisement disponible qu'il ne souhaite pas exploiter (mauvaise composition, trop petit) pour liberer un slot sous le cap de 3.
+
+- **Cooldown** : 24h entre deux annulations
+- **Tracking** : champ `lastDismissAt` dans `mission_center_state`
+- **Effet** : la mission passe en statut `expired`, le slot est libere pour la prochaine decouverte
+- **Validation** : refusee si `lastDismissAt` est dans les 24 dernieres heures, ou si la mission est `in_progress` (flotte en cours)
 
 ## Logique de decouverte lazy
 
@@ -123,6 +135,8 @@ Upgrader le Centre donne : decouvertes plus frequentes, gisements plus gros, ext
 | Slag 30%/15% | Slag 45%/30% |
 | 60% mine / 40% pirate | 100% mine (pirates hors scope) |
 | Pas de cooldown explicite | Timer passif par joueur |
+| Mission passe in_progress au premier envoi | Mission reste available tant que deposit non vide |
+| Pas d'annulation | Annulation possible (cooldown 24h) |
 
 ## Notes d'implementation
 
