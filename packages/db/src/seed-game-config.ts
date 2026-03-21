@@ -340,8 +340,8 @@ const UNIVERSE_CONFIG = [
   { key: 'startingSilicium', value: 300 },
   { key: 'startingHydrogene', value: 100 },
   // Slag rates (scories) — per position
-  { key: 'slag_rate.pos8', value: 0.30 },
-  { key: 'slag_rate.pos16', value: 0.15 },
+  { key: 'slag_rate.pos8', value: 0.45 },
+  { key: 'slag_rate.pos16', value: 0.30 },
 ];
 
 async function seed() {
