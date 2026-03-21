@@ -124,6 +124,13 @@ Upgrader le Centre donne : decouvertes plus frequentes, gisements plus gros, ext
 | 60% mine / 40% pirate | 100% mine (pirates hors scope) |
 | Pas de cooldown explicite | Timer passif par joueur |
 
+## Notes d'implementation
+
+- **Slag rates** : les valeurs `slag_rate.pos8` et `slag_rate.pos16` dans `seed-game-config.ts` / `universe_config` DB doivent etre mises a jour (0.45 et 0.30)
+- **Position 16** : le seuil passe de niveau 2 a niveau 3 (mettre a jour `pve.service.ts`)
+- **Joueurs existants** : `materializeDiscoveries` doit creer la ligne `mission_center_state` au premier appel si elle n'existe pas (pour les joueurs qui ont deja un Centre de Missions)
+- **Expiration** : le mecanisme existant `expireOldMissions` (TTL 7 jours) reste actif pour les gisements decouverts passivement
+
 ## Extensibilite future
 
 Le systeme est concu pour accueillir des ameliorations transverses :
