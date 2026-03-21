@@ -155,7 +155,8 @@ export function createShipyardService(
       await resourceService.spendResources(planetId, userId, totalCost);
 
       const existingActive = await this.getShipyardQueue(planetId);
-      const hasActive = existingActive.some((e) => e.status === 'active' && e.type === type);
+      const sameTypeQueue = existingActive.filter((e) => e.type === type);
+      const hasActive = sameTypeQueue.some((e) => e.status === 'active');
 
       const buildingLevels = await this.getBuildingLevels(planetId);
       let unitTime: number;
@@ -166,6 +167,19 @@ export function createShipyardService(
       } else {
         const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
         unitTime = defenseTime(def, bonusMultiplier);
+      }
+
+      // Merge into existing entry if last batch in queue is the same item
+      const lastBatch = sameTypeQueue[sameTypeQueue.length - 1];
+      if (lastBatch && lastBatch.itemId === itemId) {
+        const [updated] = await db
+          .update(buildQueue)
+          .set({ quantity: lastBatch.quantity + quantity })
+          .where(eq(buildQueue.id, lastBatch.id))
+          .returning();
+
+        // If it was the only entry and already active, the BullMQ job is already scheduled
+        return { entry: updated, unitTime };
       }
 
       const now = new Date();
