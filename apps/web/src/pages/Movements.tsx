@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
+import { useGameConfig } from '@/hooks/useGameConfig';
 import { cn } from '@/lib/utils';
 
 const MISSION_LABELS: Record<string, string> = {
@@ -31,6 +32,7 @@ const MISSION_BORDER_COLORS: Record<string, string> = {
 export default function Movements() {
   const utils = trpc.useUtils();
   const [recallConfirm, setRecallConfirm] = useState<string | null>(null);
+  const { data: gameConfig } = useGameConfig();
 
   const { data: movements, isLoading } = trpc.fleet.movements.useQuery();
 
@@ -96,7 +98,7 @@ export default function Movements() {
                   Vaisseaux :{' '}
                   {Object.entries(ships)
                     .filter(([, v]) => v > 0)
-                    .map(([k, v]) => `${k}: ${v}`)
+                    .map(([k, v]) => `${gameConfig?.ships[k]?.name ?? k}: ${v}`)
                     .join(', ')}
                 </div>
                 {(Number(event.mineraiCargo) > 0 || Number(event.siliciumCargo) > 0 || Number(event.hydrogeneCargo) > 0) && (

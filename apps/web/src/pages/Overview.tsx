@@ -155,6 +155,7 @@ export default function Overview() {
   const [newName, setNewName] = useState('');
   const utils = trpc.useUtils();
 
+  const { data: gameConfig } = useGameConfig();
   const { data: planets, isLoading, isError, refetch } = trpc.planet.list.useQuery();
 
   const { data: resourceData } = trpc.resource.production.useQuery(
@@ -395,7 +396,7 @@ export default function Overview() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-sm">
-                        <span className="text-foreground font-medium">{item.itemId}</span>
+                        <span className="text-foreground font-medium">{gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? item.itemId}</span>
                         <span className="text-muted-foreground text-xs">x{item.quantity - (item.completedCount ?? 0)}</span>
                       </div>
                       {item.endTime && (

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/common/PageHeader';
+import { useGameConfig } from '@/hooks/useGameConfig';
 import { cn } from '@/lib/utils';
 
 const MISSION_TYPE_LABELS: Record<string, string> = {
@@ -40,6 +41,7 @@ export default function Reports() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedId = searchParams.get('id');
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const { data: gameConfig } = useGameConfig();
   const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
   const loaderRef = useRef<HTMLDivElement>(null);
   const lastAppendedCursorRef = useRef<string | undefined>(undefined);
@@ -200,7 +202,7 @@ export default function Reports() {
               {Object.entries((selectedReport.fleet as any).ships).map(([ship, count]) => (
                 <span key={ship} className="text-sm">
                   <span className="text-foreground">{String(count)}x</span>{' '}
-                  <span className="text-muted-foreground">{ship}</span>
+                  <span className="text-muted-foreground">{gameConfig?.ships[ship]?.name ?? ship}</span>
                 </span>
               ))}
             </div>
