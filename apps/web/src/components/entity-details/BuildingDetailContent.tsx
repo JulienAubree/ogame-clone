@@ -6,6 +6,7 @@ import {
   mineraiProduction, siliciumProduction, hydrogeneProduction,
   solarPlantEnergy, mineraiMineEnergy, siliciumMineEnergy, hydrogeneSynthEnergy,
   storageCapacity,
+  buildingBonusAtLevel,
 } from '@ogame-clone/game-engine';
 
 interface BuildingListItem {
@@ -119,27 +120,26 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
   const flavorText = configDef?.flavorText ?? '';
   const prerequisites = configDef?.prerequisites ?? [];
 
-  // Active effects: bonuses with stat === 'building_time'
-  const activeEffects = useMemo(() => {
-    if (!gameConfig) return [];
-    return gameConfig.bonuses
-      .filter((b) => b.stat === 'building_time')
-      .map((b) => {
-        const sourceName =
-          b.sourceType === 'building'
-            ? gameConfig.buildings[b.sourceId]?.name ?? b.sourceId
-            : gameConfig.research?.[b.sourceId]?.name ?? b.sourceId;
-        const playerLevel =
-          buildings.find((bld) => bld.id === b.sourceId)?.currentLevel ?? 0;
-        return {
-          sourceId: b.sourceId,
-          sourceType: b.sourceType,
-          sourceName,
-          playerLevel,
-          percentPerLevel: b.percentPerLevel,
-        };
-      });
-  }, [gameConfig, buildings]);
+  // Bonus provided BY this building
+  const buildingBonus = useMemo(() => {
+    if (!gameConfig) return null;
+    const bonus = gameConfig.bonuses.find(
+      (b) => b.sourceType === 'building' && b.sourceId === buildingId,
+    );
+    if (!bonus) return null;
+
+    const STAT_LABELS: Record<string, string> = {
+      building_time: 'Temps de construction',
+      research_time: 'Temps de recherche',
+      ship_build_time: 'Temps de construction vaisseaux',
+      defense_build_time: 'Temps de construction défenses',
+    };
+
+    return {
+      label: STAT_LABELS[bonus.stat] ?? bonus.stat,
+      category: bonus.category,
+    };
+  }, [gameConfig, buildingId]);
 
   // Contextual table
   const tableData = useMemo(
@@ -177,32 +177,40 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
         <p className="text-xs italic text-[#888] leading-relaxed">{flavorText}</p>
       )}
 
-      {/* 4. Effets actifs */}
-      {activeEffects.length > 0 && (
-        <div className="bg-[#1e293b] rounded-lg p-3 space-y-2">
-          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider">
-            Effets actifs
+      {/* 4. Bonus de ce bâtiment */}
+      {buildingBonus && (
+        <div>
+          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2">
+            Bonus : {buildingBonus.label}
           </div>
-          {activeEffects.map((effect) => (
-            <div key={effect.sourceId} className="flex items-center gap-2.5">
-              <GameImage
-                category={effect.sourceType === 'building' ? 'buildings' : 'research'}
-                id={effect.sourceId}
-                size="thumb"
-                alt={effect.sourceName}
-                className="h-7 w-7 rounded-md object-cover"
-              />
-              <div>
-                <div className="text-[11px] text-slate-200">
-                  {effect.sourceName}{' '}
-                  <span className="text-slate-500">niv. {effect.playerLevel}</span>
-                </div>
-                <div className="text-[10px] text-emerald-500">
-                  {effect.percentPerLevel}% par niveau
-                </div>
-              </div>
-            </div>
-          ))}
+          <table className="w-full text-[11px] border-collapse">
+            <thead>
+              <tr className="text-slate-500 text-left">
+                <th className="px-2 py-1.5 border-b border-[#1e293b]">Niveau</th>
+                <th className="px-2 py-1.5 border-b border-[#1e293b] text-right">Réduction</th>
+                <th className="px-2 py-1.5 border-b border-[#1e293b] text-right">Multiplicateur</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-300">
+              {Array.from({ length: 6 }, (_, i) => currentLevel + i).map((level, i) => {
+                const mult = buildingBonusAtLevel(level);
+                const reduction = Math.round((1 - mult) * 100);
+                return (
+                  <tr key={level} className={i % 2 === 0 ? 'bg-[#1e293b]' : ''}>
+                    <td className={`px-2 py-1.5 ${i === 0 ? 'font-semibold text-emerald-400' : ''}`}>
+                      {level}{i === 0 ? ' \u25C4' : ''}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-emerald-500">
+                      {level === 0 ? '\u2014' : `-${reduction}%`}
+                    </td>
+                    <td className="px-2 py-1.5 text-right">
+                      x{mult.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
