@@ -132,4 +132,9 @@ describe('Solar satellite energy', () => {
   it('returns 20 for 0C planet', () => {
     expect(solarSatelliteEnergy(0)).toBe(20);
   });
+  it('returns 50 for home planet regardless of temperature', () => {
+    expect(solarSatelliteEnergy(80, true)).toBe(50);
+    expect(solarSatelliteEnergy(-200, true)).toBe(50);
+    expect(solarSatelliteEnergy(240, true)).toBe(50);
+  });
 });

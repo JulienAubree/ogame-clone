@@ -46,6 +46,7 @@ export async function resourceTick(db: Database) {
         storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
         maxTemp: planet.maxTemp,
         solarSatelliteCount: satCountMap.get(planet.id) ?? 0,
+        isHomePlanet: planet.planetClassId === 'homeworld',
         mineraiMinePercent: planet.mineraiMinePercent,
         siliciumMinePercent: planet.siliciumMinePercent,
         hydrogeneSynthPercent: planet.hydrogeneSynthPercent,

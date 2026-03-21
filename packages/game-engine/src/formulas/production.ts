@@ -76,8 +76,10 @@ export function calculateProductionFactor(energyProduced: number, energyConsumed
 
 /**
  * Solar satellite energy production per unit.
- * Formula: max(10, floor(maxTemp / 4) + 20)
+ * Home planet: always 50.
+ * Other planets: max(10, floor(maxTemp / 4) + 20)
  */
-export function solarSatelliteEnergy(maxTemp: number): number {
+export function solarSatelliteEnergy(maxTemp: number, isHomePlanet: boolean = false): number {
+  if (isHomePlanet) return 50;
   return Math.max(10, Math.floor(maxTemp / 4) + 20);
 }

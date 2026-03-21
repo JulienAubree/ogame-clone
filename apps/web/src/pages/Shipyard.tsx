@@ -335,7 +335,7 @@ export default function Shipyard() {
         onClose={() => setDetailId(null)}
         title={detailId ? gameConfig?.ships[detailId]?.name ?? '' : ''}
       >
-        {detailId && <ShipDetailContent shipId={detailId} researchLevels={researchLevels} maxTemp={resourceData?.maxTemp} />}
+        {detailId && <ShipDetailContent shipId={detailId} researchLevels={researchLevels} maxTemp={resourceData?.maxTemp} isHomePlanet={resourceData?.planetClassId === 'homeworld'} />}
       </EntityDetailOverlay>
 
       <ConfirmDialog

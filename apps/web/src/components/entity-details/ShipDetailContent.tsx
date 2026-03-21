@@ -35,9 +35,10 @@ interface Props {
   shipId: string;
   researchLevels: Record<string, number>;
   maxTemp?: number;
+  isHomePlanet?: boolean;
 }
 
-export function ShipDetailContent({ shipId, researchLevels, maxTemp }: Props) {
+export function ShipDetailContent({ shipId, researchLevels, maxTemp, isHomePlanet }: Props) {
   const { data: gameConfig } = useGameConfig();
   const details = getShipDetails(shipId, gameConfig ?? undefined);
 
@@ -103,7 +104,7 @@ export function ShipDetailContent({ shipId, researchLevels, maxTemp }: Props) {
             <span className="text-slate-400">Par satellite</span>
             <span className="text-energy font-mono font-semibold flex items-center gap-1">
               <EnergieIcon size={12} className="text-energy" />
-              +{fmt(solarSatelliteEnergy(maxTemp ?? 50))}
+              +{fmt(solarSatelliteEnergy(maxTemp ?? 50, isHomePlanet))}
             </span>
           </div>
           <p className="text-[10px] text-slate-500 leading-relaxed">

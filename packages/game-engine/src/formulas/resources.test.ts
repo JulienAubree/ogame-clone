@@ -54,6 +54,23 @@ describe('calculateProductionRates', () => {
     expect(rates.productionFactor).toBe(1);
   });
 
+  it('home planet satellites always produce 50 energy each', () => {
+    const rates = calculateProductionRates({
+      mineraiMineLevel: 5,
+      siliciumMineLevel: 5,
+      hydrogeneSynthLevel: 0,
+      solarPlantLevel: 1,
+      storageMineraiLevel: 0,
+      storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0,
+      maxTemp: -200,
+      solarSatelliteCount: 10,
+      isHomePlanet: true,
+    });
+    // Solar plant L1 = 22, 10 satellites * 50 each = 500, total = 522
+    expect(rates.energyProduced).toBe(522);
+  });
+
   it('works with zero satellites (backward compat)', () => {
     const rates = calculateProductionRates({
       mineraiMineLevel: 1,
