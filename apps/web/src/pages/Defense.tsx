@@ -385,7 +385,7 @@ export default function Defense() {
         onConfirm={() => cancelConfirm && cancelMutation.mutate({ planetId: planetId!, batchId: cancelConfirm })}
         onCancel={() => setCancelConfirm(null)}
         title="Annuler la production ?"
-        description="Les unités restantes seront annulées et les ressources correspondantes remboursées. Les unités déjà produites sont conservées."
+        description="Les unités restantes seront annulées. Le remboursement est proportionnel au temps restant, plafonné à 70% des ressources investies. Les unités déjà produites sont conservées."
         confirmLabel="Annuler la production"
         variant="destructive"
       />

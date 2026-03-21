@@ -279,7 +279,7 @@ export default function Research() {
         onConfirm={() => cancelMutation.mutate()}
         onCancel={() => setCancelConfirm(false)}
         title="Annuler la recherche ?"
-        description="Les ressources investies seront partiellement remboursées."
+        description="Le remboursement est proportionnel au temps restant, plafonné à 70% des ressources investies."
         variant="destructive"
         confirmLabel="Annuler la recherche"
       />
