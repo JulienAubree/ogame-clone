@@ -314,73 +314,51 @@ export default function Overview() {
               <div className="space-y-2">
                 {activeBuilding && activeBuilding.upgradeEndTime && (
                   <div
-                    className="flex gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate('/buildings')}
                   >
-                    <div className="w-9 h-9 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center flex-shrink-0">
-                      <BuildingsIcon width={18} height={18} />
+                    <div className="w-7 h-7 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center flex-shrink-0">
+                      <BuildingsIcon width={14} height={14} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-foreground font-medium">{activeBuilding.name}</span>
-                        <span className="text-muted-foreground text-xs">Niv. {activeBuilding.currentLevel + 1}</span>
+                        <span className="text-muted-foreground">Niv. {activeBuilding.currentLevel + 1}</span>
                       </div>
-                      <div className="mt-1.5 h-1 rounded-full bg-blue-500/15">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
-                            width: `${Math.max(2, Math.min(100, ((activeBuilding.nextLevelTime - (new Date(activeBuilding.upgradeEndTime).getTime() - Date.now()) / 1000) / activeBuilding.nextLevelTime) * 100))}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="mt-1">
-                        <Timer
-                          endTime={new Date(activeBuilding.upgradeEndTime)}
-                          totalDuration={activeBuilding.nextLevelTime}
-                          className="text-[10px] text-muted-foreground"
-                          onComplete={() => {
-                            utils.building.list.invalidate({ planetId: planetId! });
-                            utils.resource.production.invalidate({ planetId: planetId! });
-                          }}
-                        />
-                      </div>
+                      <Timer
+                        endTime={new Date(activeBuilding.upgradeEndTime)}
+                        totalDuration={activeBuilding.nextLevelTime}
+                        className="text-[10px] text-muted-foreground"
+                        onComplete={() => {
+                          utils.building.list.invalidate({ planetId: planetId! });
+                          utils.resource.production.invalidate({ planetId: planetId! });
+                        }}
+                      />
                     </div>
                   </div>
                 )}
 
                 {activeResearch && activeResearch.researchEndTime && (
                   <div
-                    className="flex gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate('/research')}
                   >
-                    <div className="w-9 h-9 rounded-md bg-violet-500/15 text-violet-400 flex items-center justify-center flex-shrink-0">
-                      <ResearchIcon width={18} height={18} />
+                    <div className="w-7 h-7 rounded-md bg-violet-500/15 text-violet-400 flex items-center justify-center flex-shrink-0">
+                      <ResearchIcon width={14} height={14} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-foreground font-medium">{activeResearch.name}</span>
-                        <span className="text-muted-foreground text-xs">Niv. {activeResearch.currentLevel + 1}</span>
+                        <span className="text-muted-foreground">Niv. {activeResearch.currentLevel + 1}</span>
                       </div>
-                      <div className="mt-1.5 h-1 rounded-full bg-violet-500/15">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            background: 'linear-gradient(90deg, #8b5cf6, #a78bfa)',
-                            width: `${Math.max(2, Math.min(100, ((activeResearch.nextLevelTime - (new Date(activeResearch.researchEndTime).getTime() - Date.now()) / 1000) / activeResearch.nextLevelTime) * 100))}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="mt-1">
-                        <Timer
-                          endTime={new Date(activeResearch.researchEndTime)}
-                          totalDuration={activeResearch.nextLevelTime}
-                          className="text-[10px] text-muted-foreground"
-                          onComplete={() => {
-                            utils.research.list.invalidate({ planetId: planetId! });
-                          }}
-                        />
-                      </div>
+                      <Timer
+                        endTime={new Date(activeResearch.researchEndTime)}
+                        totalDuration={activeResearch.nextLevelTime}
+                        className="text-[10px] text-muted-foreground"
+                        onComplete={() => {
+                          utils.research.list.invalidate({ planetId: planetId! });
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -388,42 +366,29 @@ export default function Overview() {
                 {activeQueue.map((item) => (
                   <div
                     key={item.id}
-                    className="flex gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate('/shipyard')}
                   >
-                    <div className="w-9 h-9 rounded-md bg-orange-500/15 text-orange-400 flex items-center justify-center flex-shrink-0">
-                      <ShipyardIcon width={18} height={18} />
+                    <div className="w-7 h-7 rounded-md bg-orange-500/15 text-orange-400 flex items-center justify-center flex-shrink-0">
+                      <ShipyardIcon width={14} height={14} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="text-foreground font-medium">{gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? item.itemId}</span>
-                        <span className="text-muted-foreground text-xs">x{item.quantity - (item.completedCount ?? 0)}</span>
+                        <span className="text-muted-foreground">x{item.quantity - (item.completedCount ?? 0)}</span>
                       </div>
                       {item.status === 'active' && item.endTime ? (
-                        <>
-                          <div className="mt-1.5 h-1 rounded-full bg-orange-500/15">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                background: 'linear-gradient(90deg, #f97316, #fb923c)',
-                                width: `${Math.max(2, Math.min(100, ((Date.now() - new Date(item.startTime).getTime()) / (new Date(item.endTime).getTime() - new Date(item.startTime).getTime())) * 100))}%`,
-                              }}
-                            />
-                          </div>
-                          <div className="mt-1">
-                            <Timer
-                              endTime={new Date(item.endTime)}
-                              totalDuration={Math.floor((new Date(item.endTime).getTime() - new Date(item.startTime).getTime()) / 1000)}
-                              className="text-[10px] text-muted-foreground"
-                              onComplete={() => {
-                                utils.shipyard.queue.invalidate({ planetId: planetId! });
-                                utils.shipyard.ships.invalidate({ planetId: planetId! });
-                              }}
-                            />
-                          </div>
-                        </>
+                        <Timer
+                          endTime={new Date(item.endTime)}
+                          totalDuration={Math.floor((new Date(item.endTime).getTime() - new Date(item.startTime).getTime()) / 1000)}
+                          className="text-[10px] text-muted-foreground"
+                          onComplete={() => {
+                            utils.shipyard.queue.invalidate({ planetId: planetId! });
+                            utils.shipyard.ships.invalidate({ planetId: planetId! });
+                          }}
+                        />
                       ) : (
-                        <div className="mt-1 text-[10px] text-muted-foreground">En attente</div>
+                        <div className="text-[10px] text-muted-foreground">En attente</div>
                       )}
                     </div>
                   </div>
