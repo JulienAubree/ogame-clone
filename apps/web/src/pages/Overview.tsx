@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Timer } from '@/components/common/Timer';
+import { GameImage } from '@/components/common/GameImage';
 import { OverviewSkeleton } from '@/components/common/PageSkeleton';
 import { EmptyState } from '@/components/common/EmptyState';
 import { QueryError } from '@/components/common/QueryError';
@@ -317,9 +318,7 @@ export default function Overview() {
                     className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate('/buildings')}
                   >
-                    <div className="w-7 h-7 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center flex-shrink-0">
-                      <BuildingsIcon width={14} height={14} />
-                    </div>
+                    <GameImage category="buildings" id={activeBuilding.id} size="icon" alt={activeBuilding.name} className="w-7 h-7 rounded-md flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-xs">
                         <span className="text-foreground font-medium">{activeBuilding.name}</span>
@@ -343,9 +342,7 @@ export default function Overview() {
                     className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate('/research')}
                   >
-                    <div className="w-7 h-7 rounded-md bg-violet-500/15 text-violet-400 flex items-center justify-center flex-shrink-0">
-                      <ResearchIcon width={14} height={14} />
-                    </div>
+                    <GameImage category="research" id={activeResearch.id} size="icon" alt={activeResearch.name} className="w-7 h-7 rounded-md flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-xs">
                         <span className="text-foreground font-medium">{activeResearch.name}</span>
@@ -369,9 +366,7 @@ export default function Overview() {
                     className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate('/shipyard')}
                   >
-                    <div className="w-7 h-7 rounded-md bg-orange-500/15 text-orange-400 flex items-center justify-center flex-shrink-0">
-                      <ShipyardIcon width={14} height={14} />
-                    </div>
+                    <GameImage category={item.type === 'defense' ? 'defenses' : 'ships'} id={item.itemId} size="icon" alt={gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? item.itemId} className="w-7 h-7 rounded-md flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-xs">
                         <span className="text-foreground font-medium">{gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? item.itemId}</span>
