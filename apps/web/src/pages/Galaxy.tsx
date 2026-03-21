@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useOutletContext } from 'react-router';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { Link, useNavigate, useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,10 +25,25 @@ export default function Galaxy() {
     }
   }, [activePlanet, initialized]);
 
+  const navigate = useNavigate();
   const { data, isLoading } = trpc.galaxy.system.useQuery(
     { galaxy, system },
   );
   const { data: gameConfig } = useGameConfig();
+  const { data: pveData } = trpc.pve.getMissions.useQuery();
+
+  // Map position → mission for current galaxy:system
+  const missionByPosition = useMemo(() => {
+    const map = new Map<number, { id: string }>();
+    if (!pveData?.missions) return map;
+    for (const m of pveData.missions) {
+      const p = m.parameters as { galaxy?: number; system?: number; position?: number };
+      if (p.galaxy === galaxy && p.system === system && p.position) {
+        map.set(p.position, { id: m.id });
+      }
+    }
+    return map;
+  }, [pveData?.missions, galaxy, system]);
 
   // Touch swipe for system navigation
   const touchStart = useRef<number | null>(null);
@@ -134,10 +149,21 @@ export default function Galaxy() {
                 const isBelt = slot && 'type' in slot && (slot as any).type === 'belt';
 
                 if (isBelt) {
+                  const beltMission = missionByPosition.get(i + 1);
                   return (
                     <div key={i} className="flex items-center gap-3 rounded-lg p-2 bg-orange-500/5 border border-orange-500/20">
                       <span className="w-6 text-center text-xs font-mono text-muted-foreground">{i + 1}</span>
-                      <span className="text-sm text-orange-400">Ceinture d&apos;astéroïdes</span>
+                      <span className="flex-1 text-sm text-orange-400">Ceinture d&apos;astéroïdes</span>
+                      {beltMission && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-6 px-2 border-orange-500/40 text-orange-400 hover:bg-orange-500/20"
+                          onClick={() => navigate(`/fleet?mission=mine&galaxy=${galaxy}&system=${system}&position=${i + 1}&pveMissionId=${beltMission.id}`)}
+                        >
+                          Miner
+                        </Button>
+                      )}
                     </div>
                   );
                 }
@@ -201,11 +227,24 @@ export default function Galaxy() {
                     const isBelt = slot && 'type' in slot && (slot as any).type === 'belt';
 
                     if (isBelt) {
+                      const beltMission = missionByPosition.get(i + 1);
                       return (
                         <tr key={i} className="border-b border-orange-500/20 bg-orange-500/5">
                           <td className="px-2 py-1 text-muted-foreground">{i + 1}</td>
-                          <td colSpan={4} className="px-2 py-1 text-sm text-orange-400">
+                          <td colSpan={3} className="px-2 py-1 text-sm text-orange-400">
                             Ceinture d&apos;astéroïdes
+                          </td>
+                          <td className="px-2 py-1">
+                            {beltMission && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-6 px-2 border-orange-500/40 text-orange-400 hover:bg-orange-500/20"
+                                onClick={() => navigate(`/fleet?mission=mine&galaxy=${galaxy}&system=${system}&position=${i + 1}&pveMissionId=${beltMission.id}`)}
+                              >
+                                Miner
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       );
