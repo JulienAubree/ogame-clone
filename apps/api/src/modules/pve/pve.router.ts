@@ -23,6 +23,13 @@ export function createPveRouter(
         return pveService.getMissionById(ctx.userId!, input.missionId);
       }),
 
+    dismissMission: protectedProcedure
+      .input(z.object({ missionId: z.string().uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        await pveService.dismissMission(ctx.userId!, input.missionId);
+        return { success: true };
+      }),
+
     getSystemBelts: protectedProcedure
       .input(z.object({
         galaxy: z.number().int().min(1).max(9),

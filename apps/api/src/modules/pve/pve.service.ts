@@ -1,5 +1,6 @@
-import { eq, and, sql, asc } from 'drizzle-orm';
-import { pveMissions, planets, missionCenterState } from '@ogame-clone/db';
+import { eq, and, sql, asc, inArray } from 'drizzle-orm';
+import { pveMissions, planets, missionCenterState, fleetEvents } from '@ogame-clone/db';
+import { TRPCError } from '@trpc/server';
 import type { Database } from '@ogame-clone/db';
 import { accumulationCap, poolSize, discoveryCooldown, depositSize, depositComposition } from '@ogame-clone/game-engine';
 import type { createAsteroidBeltService } from './asteroid-belt.service.js';
@@ -151,6 +152,55 @@ export function createPveService(
         rewards: { minerai, silicium, hydrogene },
         status: 'available',
       });
+    },
+
+    async dismissMission(userId: string, missionId: string) {
+      // Check cooldown
+      const [state] = await db.select().from(missionCenterState)
+        .where(eq(missionCenterState.userId, userId)).limit(1);
+
+      if (state?.lastDismissAt) {
+        const hoursSinceLastDismiss = (Date.now() - state.lastDismissAt.getTime()) / (3600 * 1000);
+        if (hoursSinceLastDismiss < 24) {
+          const remainingHours = Math.ceil(24 - hoursSinceLastDismiss);
+          throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: `Vous devez attendre encore ${remainingHours}h avant de pouvoir annuler un gisement`,
+          });
+        }
+      }
+
+      // Check mission exists and belongs to user
+      const [mission] = await db.select().from(pveMissions)
+        .where(and(eq(pveMissions.id, missionId), eq(pveMissions.userId, userId)))
+        .limit(1);
+
+      if (!mission) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Mission non trouvée' });
+      }
+      if (mission.status !== 'available') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seules les missions disponibles peuvent être annulées' });
+      }
+
+      // Check no fleet is currently in flight for this mission
+      const [activeFleet] = await db.select({ id: fleetEvents.id }).from(fleetEvents)
+        .where(and(
+          eq(fleetEvents.pveMissionId, missionId),
+          inArray(fleetEvents.status, ['in_transit', 'active']),
+        ))
+        .limit(1);
+      if (activeFleet) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Une flotte est en cours pour cette mission' });
+      }
+
+      // Expire mission and update dismiss timestamp
+      await db.update(pveMissions)
+        .set({ status: 'expired' })
+        .where(eq(pveMissions.id, missionId));
+
+      await db.update(missionCenterState)
+        .set({ lastDismissAt: new Date() })
+        .where(eq(missionCenterState.userId, userId));
     },
 
     async refreshPool(userId: string) {
