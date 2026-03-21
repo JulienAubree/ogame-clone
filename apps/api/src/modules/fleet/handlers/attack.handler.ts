@@ -255,19 +255,75 @@ export class AttackHandler implements MissionHandler {
       (outcome === 'attacker' ?
         `Pillage : ${pillagedMinerai} minerai, ${pillagedSilicium} silicium, ${pillagedHydrogene} hydrogène\n` : '');
 
+    let messageId: string | undefined;
     if (ctx.messageService) {
-      await ctx.messageService.createSystemMessage(
+      const msg = await ctx.messageService.createSystemMessage(
         fleetEvent.userId,
         'combat',
         `Rapport de combat ${coords} — ${outcomeText}`,
         reportBody,
       );
+      messageId = msg.id;
       await ctx.messageService.createSystemMessage(
         targetPlanet.userId,
         'combat',
         `Rapport de combat ${coords} — ${outcome === 'attacker' ? 'Défaite' : outcome === 'defender' ? 'Victoire' : 'Match nul'}`,
         reportBody,
       );
+    }
+
+    // Fetch origin planet for report
+    const [originPlanet] = await ctx.db.select({
+      galaxy: planets.galaxy,
+      system: planets.system,
+      position: planets.position,
+      name: planets.name,
+    }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+
+    // Create structured mission report
+    if (ctx.reportService) {
+      const reportResult: Record<string, unknown> = {
+        outcome,
+        roundCount,
+        attackerLosses,
+        defenderLosses,
+        defenderFleet,
+        defenderDefenses,
+        repairedDefenses,
+        debris,
+      };
+      if (outcome === 'attacker') {
+        reportResult.pillage = {
+          minerai: pillagedMinerai,
+          silicium: pillagedSilicium,
+          hydrogene: pillagedHydrogene,
+        };
+      }
+      await ctx.reportService.create({
+        userId: fleetEvent.userId,
+        fleetEventId: fleetEvent.id,
+        messageId,
+        missionType: 'attack',
+        title: `Rapport de combat ${coords} — ${outcomeText}`,
+        coordinates: {
+          galaxy: fleetEvent.targetGalaxy,
+          system: fleetEvent.targetSystem,
+          position: fleetEvent.targetPosition,
+        },
+        originCoordinates: originPlanet ? {
+          galaxy: originPlanet.galaxy,
+          system: originPlanet.system,
+          position: originPlanet.position,
+          planetName: originPlanet.name,
+        } : undefined,
+        fleet: {
+          ships,
+          totalCargo: totalCargoCapacity(ships, shipStatsMap),
+        },
+        departureTime: fleetEvent.departureTime,
+        completionTime: fleetEvent.arrivalTime,
+        result: reportResult,
+      });
     }
 
     const hasShips = Object.values(survivingShips).some(v => v > 0);

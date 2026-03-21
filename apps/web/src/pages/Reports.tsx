@@ -399,6 +399,163 @@ export default function Reports() {
             </>
           );
         })()}
+
+        {/* Attack-specific results */}
+        {selectedReport.missionType === 'attack' && (() => {
+          const result = selectedReport.result as any;
+          const OUTCOME_STYLES: Record<string, { label: string; className: string }> = {
+            attacker: { label: 'Victoire', className: 'bg-emerald-500/20 text-emerald-400' },
+            defender: { label: 'Défaite', className: 'bg-red-500/20 text-red-400' },
+            draw: { label: 'Match nul', className: 'bg-amber-500/20 text-amber-400' },
+          };
+          const outcomeStyle = OUTCOME_STYLES[result.outcome] ?? OUTCOME_STYLES.draw;
+          const hasAttackerLosses = result.attackerLosses && Object.keys(result.attackerLosses).length > 0;
+          const hasDefenderLosses = result.defenderLosses && Object.keys(result.defenderLosses).length > 0;
+          return (
+            <>
+              {/* Outcome */}
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Résultat</h3>
+                <div className="rounded border border-border p-3">
+                  <div className="flex items-center gap-3">
+                    <span className={cn('rounded-full px-4 py-1.5 text-sm font-bold', outcomeStyle.className)}>
+                      {outcomeStyle.label}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{result.roundCount} round{result.roundCount > 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Defender fleet & defenses (initial) */}
+              {((result.defenderFleet && Object.keys(result.defenderFleet).length > 0) ||
+                (result.defenderDefenses && Object.keys(result.defenderDefenses).length > 0)) && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Forces du défenseur</h3>
+                  <div className="rounded border border-border p-3 space-y-2">
+                    {result.defenderFleet && Object.keys(result.defenderFleet).length > 0 && (
+                      <div className="flex flex-wrap gap-3">
+                        {Object.entries(result.defenderFleet as Record<string, number>).map(([ship, count]) => (
+                          <span key={ship} className="text-sm">
+                            <span className="text-foreground font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                            <span className="text-muted-foreground">{gameConfig?.ships[ship]?.name ?? ship}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {result.defenderDefenses && Object.keys(result.defenderDefenses).length > 0 && (
+                      <div className="flex flex-wrap gap-3">
+                        {Object.entries(result.defenderDefenses as Record<string, number>).map(([def, count]) => (
+                          <span key={def} className="text-sm">
+                            <span className="text-foreground font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                            <span className="text-muted-foreground">{gameConfig?.defenses[def]?.name ?? def}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Losses */}
+              {(hasAttackerLosses || hasDefenderLosses) && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pertes</h3>
+                  <div className="rounded border border-border p-3 space-y-3">
+                    {hasAttackerLosses && (
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Attaquant</div>
+                        <div className="flex flex-wrap gap-3">
+                          {Object.entries(result.attackerLosses as Record<string, number>).map(([ship, count]) => (
+                            <span key={ship} className="text-sm">
+                              <span className="text-red-400 font-medium">-{(count as number).toLocaleString('fr-FR')}</span>{' '}
+                              <span className="text-muted-foreground">{gameConfig?.ships[ship]?.name ?? ship}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {hasDefenderLosses && (
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Défenseur</div>
+                        <div className="flex flex-wrap gap-3">
+                          {Object.entries(result.defenderLosses as Record<string, number>).map(([unit, count]) => (
+                            <span key={unit} className="text-sm">
+                              <span className="text-red-400 font-medium">-{(count as number).toLocaleString('fr-FR')}</span>{' '}
+                              <span className="text-muted-foreground">{gameConfig?.ships[unit]?.name ?? gameConfig?.defenses[unit]?.name ?? unit}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Repaired defenses */}
+              {result.repairedDefenses && Object.keys(result.repairedDefenses).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Défenses réparées</h3>
+                  <div className="rounded border border-border p-3">
+                    <div className="flex flex-wrap gap-3">
+                      {Object.entries(result.repairedDefenses as Record<string, number>).map(([def, count]) => (
+                        <span key={def} className="text-sm">
+                          <span className="text-emerald-400 font-medium">+{(count as number).toLocaleString('fr-FR')}</span>{' '}
+                          <span className="text-muted-foreground">{gameConfig?.defenses[def]?.name ?? def}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Debris */}
+              {result.debris && (result.debris.minerai > 0 || result.debris.silicium > 0) && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Champ de débris</h3>
+                  <div className="rounded border border-border p-3">
+                    <div className="flex flex-wrap gap-4">
+                      {result.debris.minerai > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className={cn('text-lg font-bold', RESOURCE_COLORS.minerai)}>
+                            {(result.debris.minerai as number).toLocaleString('fr-FR')}
+                          </span>
+                          <span className="text-sm text-muted-foreground">Minerai</span>
+                        </div>
+                      )}
+                      {result.debris.silicium > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className={cn('text-lg font-bold', RESOURCE_COLORS.silicium)}>
+                            {(result.debris.silicium as number).toLocaleString('fr-FR')}
+                          </span>
+                          <span className="text-sm text-muted-foreground">Silicium</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Pillage */}
+              {result.pillage && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ressources pillées</h3>
+                  <div className="rounded border border-border p-3">
+                    <div className="flex flex-wrap gap-4">
+                      {Object.entries(result.pillage as Record<string, number>).map(([resource, amount]) => (
+                        <div key={resource} className="flex items-center gap-2">
+                          <span className={cn('text-lg font-bold', RESOURCE_COLORS[resource])}>
+                            +{(amount as number).toLocaleString('fr-FR')}
+                          </span>
+                          <span className="text-sm text-muted-foreground capitalize">{resource}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
     </section>
   ) : null;
