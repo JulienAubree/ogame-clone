@@ -3,6 +3,9 @@ import {
   baseExtraction,
   prospectionDuration,
   miningDuration,
+  discoveryCooldown,
+  depositSize,
+  depositComposition,
   poolSize,
   accumulationCap,
   computeSlagRate,
@@ -64,6 +67,37 @@ describe('miningDuration', () => {
   });
   it('clamps multiplier at 0.01', () => {
     expect(miningDuration(1, 0.01)).toBeCloseTo(0.15);
+  });
+});
+
+describe('discoveryCooldown', () => {
+  it('returns 8h at level 1', () => { expect(discoveryCooldown(1)).toBe(8); });
+  it('returns 6.8h at level 5', () => { expect(discoveryCooldown(5)).toBeCloseTo(6.8); });
+  it('returns 5.3h at level 10', () => { expect(discoveryCooldown(10)).toBeCloseTo(5.3); });
+  it('floors at 5h for level 11+', () => { expect(discoveryCooldown(11)).toBe(5); expect(discoveryCooldown(15)).toBe(5); });
+});
+
+describe('depositSize', () => {
+  it('returns base 15000 at level 1', () => { expect(depositSize(1, 1.0)).toBe(15000); });
+  it('scales with level', () => { expect(depositSize(10, 1.0)).toBe(60000); });
+  it('applies variance multiplier', () => { expect(depositSize(1, 0.6)).toBe(9000); expect(depositSize(1, 1.6)).toBe(24000); });
+});
+
+describe('depositComposition', () => {
+  it('returns ratios that sum to 1', () => {
+    const comp = depositComposition(0.6, 0.3);
+    expect(comp.minerai + comp.silicium + comp.hydrogene).toBeCloseTo(1);
+  });
+  it('clamps hydrogene to minimum 0.02', () => {
+    const comp = depositComposition(0.15, 0.10);
+    expect(comp.hydrogene).toBeGreaterThanOrEqual(0.02);
+    expect(comp.minerai + comp.silicium + comp.hydrogene).toBeCloseTo(1);
+  });
+  it('uses base ratios with zero offsets', () => {
+    const comp = depositComposition(0, 0);
+    expect(comp.minerai).toBeCloseTo(0.6, 1);
+    expect(comp.silicium).toBeCloseTo(0.3, 1);
+    expect(comp.hydrogene).toBeCloseTo(0.1, 1);
   });
 });
 

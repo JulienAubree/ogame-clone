@@ -23,6 +23,45 @@ export function miningDuration(centerLevel: number, bonusMultiplier: number): nu
 }
 
 /**
+ * Discovery cooldown in hours.
+ * Formula: max(5, 8 - 0.3 * (level - 1))
+ */
+export function discoveryCooldown(centerLevel: number): number {
+  return Math.max(5, 8 - 0.3 * (centerLevel - 1));
+}
+
+/**
+ * Total resource quantity of a deposit.
+ * Formula: floor((15000 + 5000 * (centerLevel - 1)) * varianceMultiplier)
+ */
+export function depositSize(centerLevel: number, varianceMultiplier: number): number {
+  return Math.floor((15000 + 5000 * (centerLevel - 1)) * varianceMultiplier);
+}
+
+/**
+ * Resource composition ratios for a deposit.
+ * Base ratios: 60/30/10. Hydrogene clamped to min 0.02. Normalized so sum = 1.
+ */
+export function depositComposition(
+  mineraiOffset: number,
+  siliciumOffset: number,
+): { minerai: number; silicium: number; hydrogene: number } {
+  const rawMinerai = 0.60 + mineraiOffset;
+  const rawSilicium = 0.30 + siliciumOffset;
+  const unclamped = 1 - rawMinerai - rawSilicium;
+  const hydrogene = Math.max(0.02, unclamped);
+  // Scale minerai and silicium proportionally to fill (1 - hydrogene)
+  const msTotal = rawMinerai + rawSilicium;
+  const msRoom = 1 - hydrogene;
+  const scale = msTotal > 0 ? msRoom / msTotal : 0;
+  return {
+    minerai: rawMinerai * scale,
+    silicium: rawSilicium * scale,
+    hydrogene,
+  };
+}
+
+/**
  * Visible pool size based on Mission Center level.
  */
 export function poolSize(centerLevel: number): number {
