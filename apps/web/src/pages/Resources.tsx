@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
+import { solarSatelliteEnergy } from '@ogame-clone/game-engine';
 import { Badge } from '@/components/ui/badge';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -199,7 +200,8 @@ export default function Resources() {
             <div className="space-y-2">
               {(() => {
                 const satCount = data.levels.solarSatelliteCount ?? 0;
-                const satEnergyPerUnit = Math.max(10, Math.floor(data.maxTemp / 4) + 20);
+                const isHomePlanet = data.planetClassId === 'homeworld';
+                const satEnergyPerUnit = solarSatelliteEnergy(data.maxTemp, isHomePlanet);
                 const satEnergyTotal = satEnergyPerUnit * satCount;
                 const plantEnergy = data.rates.energyProduced - satEnergyTotal;
                 return (
