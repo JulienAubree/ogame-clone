@@ -7,6 +7,7 @@ const researchIds = [
   'espionageTech', 'computerTech', 'energyTech',
   'combustion', 'impulse', 'hyperspaceDrive',
   'weapons', 'shielding', 'armor', 'rockFracturing',
+  'deepSpaceRefining',
 ] as const;
 
 export function createResearchRouter(researchService: ReturnType<typeof createResearchService>) {
