@@ -1,10 +1,10 @@
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, planetBuildings, userResearch, users } from '@ogame-clone/db';
-import { calculateSpyReport, calculateDetectionChance } from '@ogame-clone/game-engine';
+import { calculateSpyReport, calculateDetectionChance, totalCargoCapacity } from '@ogame-clone/game-engine';
 import type { Database } from '@ogame-clone/db';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
-import { formatDuration } from '../fleet.types.js';
+import { formatDuration, buildShipStatsMap } from '../fleet.types.js';
 
 export class SpyHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, _ctx: MissionHandlerContext): Promise<void> {
@@ -48,24 +48,47 @@ export class SpyHandler implements MissionHandler {
 
     const defenderTech = await this.getEspionageTech(ctx.db, targetPlanet.userId);
     const visibility = calculateSpyReport(probeCount, attackerTech, defenderTech);
+    const detectionChance = calculateDetectionChance(probeCount, attackerTech, defenderTech);
+    const detected = Math.random() * 100 < detectionChance;
 
     const duration = formatDuration(fleetEvent.arrivalTime.getTime() - fleetEvent.departureTime.getTime());
     let body = `Rapport d'espionnage de ${coords}\nDurée du trajet : ${duration}\n\n`;
 
+    // Collect structured data for report
+    const reportResult: Record<string, unknown> = {
+      visibility,
+      probeCount,
+      attackerTech,
+      defenderTech,
+      detectionChance,
+      detected,
+    };
+
     if (visibility.resources) {
       await ctx.resourceService.materializeResources(targetPlanet.id, targetPlanet.userId);
       const [planet] = await ctx.db.select().from(planets).where(eq(planets.id, targetPlanet.id)).limit(1);
-      body += `Ressources :\nMinerai : ${Math.floor(Number(planet.minerai))}\nSilicium : ${Math.floor(Number(planet.silicium))}\nHydrogène : ${Math.floor(Number(planet.hydrogene))}\n\n`;
+      const resources = {
+        minerai: Math.floor(Number(planet.minerai)),
+        silicium: Math.floor(Number(planet.silicium)),
+        hydrogene: Math.floor(Number(planet.hydrogene)),
+      };
+      reportResult.resources = resources;
+      body += `Ressources :\nMinerai : ${resources.minerai}\nSilicium : ${resources.silicium}\nHydrogène : ${resources.hydrogene}\n\n`;
     }
 
     if (visibility.fleet) {
       const [targetShips] = await ctx.db.select().from(planetShips).where(eq(planetShips.planetId, targetPlanet.id)).limit(1);
       if (targetShips) {
-        body += `Flotte :\n`;
+        const fleetData: Record<string, number> = {};
         const shipTypes = ['smallCargo', 'largeCargo', 'lightFighter', 'heavyFighter', 'cruiser', 'battleship', 'espionageProbe', 'colonyShip', 'recycler'] as const;
+        body += `Flotte :\n`;
         for (const t of shipTypes) {
-          if (targetShips[t] > 0) body += `${t}: ${targetShips[t]}\n`;
+          if (targetShips[t] > 0) {
+            fleetData[t] = targetShips[t];
+            body += `${t}: ${targetShips[t]}\n`;
+          }
         }
+        reportResult.fleet = fleetData;
         body += '\n';
       }
     }
@@ -73,11 +96,16 @@ export class SpyHandler implements MissionHandler {
     if (visibility.defenses) {
       const [defs] = await ctx.db.select().from(planetDefenses).where(eq(planetDefenses.planetId, targetPlanet.id)).limit(1);
       if (defs) {
-        body += `Défenses :\n`;
+        const defensesData: Record<string, number> = {};
         const defTypes = ['rocketLauncher', 'lightLaser', 'heavyLaser', 'gaussCannon', 'plasmaTurret', 'smallShield', 'largeShield'] as const;
+        body += `Défenses :\n`;
         for (const t of defTypes) {
-          if (defs[t] > 0) body += `${t}: ${defs[t]}\n`;
+          if (defs[t] > 0) {
+            defensesData[t] = defs[t];
+            body += `${t}: ${defs[t]}\n`;
+          }
         }
+        reportResult.defenses = defensesData;
         body += '\n';
       }
     }
@@ -85,35 +113,84 @@ export class SpyHandler implements MissionHandler {
     if (visibility.buildings) {
       const bRows = await ctx.db.select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
         .from(planetBuildings).where(eq(planetBuildings.planetId, targetPlanet.id));
+      const buildingsData: Record<string, number> = {};
       body += `Bâtiments :\n`;
       for (const row of bRows) {
-        if (row.level > 0) body += `${row.buildingId}: ${row.level}\n`;
+        if (row.level > 0) {
+          buildingsData[row.buildingId] = row.level;
+          body += `${row.buildingId}: ${row.level}\n`;
+        }
       }
+      reportResult.buildings = buildingsData;
       body += '\n';
     }
 
     if (visibility.research) {
       const [research] = await ctx.db.select().from(userResearch).where(eq(userResearch.userId, targetPlanet.userId)).limit(1);
       if (research) {
-        body += `Recherches :\n`;
+        const researchData: Record<string, number> = {};
         const researchCols = ['espionageTech', 'computerTech', 'energyTech', 'combustion', 'impulse', 'hyperspaceDrive', 'weapons', 'shielding', 'armor'] as const;
+        body += `Recherches :\n`;
         for (const col of researchCols) {
-          if (research[col] > 0) body += `${col}: ${research[col]}\n`;
+          if (research[col] > 0) {
+            researchData[col] = research[col];
+            body += `${col}: ${research[col]}\n`;
+          }
         }
+        reportResult.research = researchData;
       }
     }
 
+    // Send system message
+    let messageId: string | undefined;
     if (ctx.messageService) {
-      await ctx.messageService.createSystemMessage(
+      const msg = await ctx.messageService.createSystemMessage(
         fleetEvent.userId,
         'espionage',
         `Rapport d'espionnage ${coords}`,
         body,
       );
+      messageId = msg.id;
     }
 
-    const detectionChance = calculateDetectionChance(probeCount, attackerTech, defenderTech);
-    const detected = Math.random() * 100 < detectionChance;
+    // Fetch origin planet for report
+    const [originPlanet] = await ctx.db.select({
+      galaxy: planets.galaxy,
+      system: planets.system,
+      position: planets.position,
+      name: planets.name,
+    }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+
+    // Create structured mission report
+    if (ctx.reportService) {
+      const config = await ctx.gameConfigService.getFullConfig();
+      const shipStatsMap = buildShipStatsMap(config);
+      await ctx.reportService.create({
+        userId: fleetEvent.userId,
+        fleetEventId: fleetEvent.id,
+        messageId,
+        missionType: 'spy',
+        title: `Rapport d'espionnage ${coords}`,
+        coordinates: {
+          galaxy: fleetEvent.targetGalaxy,
+          system: fleetEvent.targetSystem,
+          position: fleetEvent.targetPosition,
+        },
+        originCoordinates: originPlanet ? {
+          galaxy: originPlanet.galaxy,
+          system: originPlanet.system,
+          position: originPlanet.position,
+          planetName: originPlanet.name,
+        } : undefined,
+        fleet: {
+          ships,
+          totalCargo: totalCargoCapacity(ships, shipStatsMap),
+        },
+        departureTime: fleetEvent.departureTime,
+        completionTime: fleetEvent.arrivalTime,
+        result: reportResult,
+      });
+    }
 
     if (detected) {
       if (ctx.messageService) {

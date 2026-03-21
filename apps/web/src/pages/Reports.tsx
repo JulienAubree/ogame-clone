@@ -272,6 +272,133 @@ export default function Reports() {
             </>
           );
         })()}
+
+        {/* Spy-specific results */}
+        {selectedReport.missionType === 'spy' && (() => {
+          const result = selectedReport.result as any;
+          const visibility = result.visibility ?? {};
+          const VISIBILITY_LABELS: Record<string, string> = {
+            resources: 'Ressources',
+            fleet: 'Flotte',
+            defenses: 'Défenses',
+            buildings: 'Bâtiments',
+            research: 'Recherches',
+          };
+          return (
+            <>
+              {/* Visibility & Detection */}
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Informations obtenues</h3>
+                <div className="rounded border border-border p-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {Object.entries(VISIBILITY_LABELS).map(([key, label]) => (
+                      <span
+                        key={key}
+                        className={cn(
+                          'rounded-full px-3 py-1 text-xs font-medium',
+                          visibility[key]
+                            ? 'bg-emerald-500/20 text-emerald-400'
+                            : 'bg-white/5 text-muted-foreground',
+                        )}
+                      >
+                        {visibility[key] ? '\u2713' : '\u2717'} {label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                    <span>Sondes : <span className="text-foreground font-medium">{result.probeCount}</span></span>
+                    <span>Tech espionnage : <span className="text-foreground font-medium">{result.attackerTech}</span> vs <span className="text-foreground font-medium">{result.defenderTech}</span></span>
+                    <span>Chance de détection : <span className={cn('font-medium', result.detectionChance > 50 ? 'text-red-400' : 'text-foreground')}>{result.detectionChance}%</span></span>
+                    {result.detected && <span className="text-red-400 font-medium">Sondes détruites</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Resources */}
+              {result.resources && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ressources</h3>
+                  <div className="rounded border border-border p-3">
+                    <div className="flex flex-wrap gap-4">
+                      {Object.entries(result.resources as Record<string, number>).map(([resource, amount]) => (
+                        <div key={resource} className="flex items-center gap-2">
+                          <span className={cn('text-lg font-bold', RESOURCE_COLORS[resource])}>
+                            {(amount as number).toLocaleString('fr-FR')}
+                          </span>
+                          <span className="text-sm text-muted-foreground capitalize">{resource}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Fleet */}
+              {result.fleet && Object.keys(result.fleet).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Flotte ennemie</h3>
+                  <div className="rounded border border-border p-3">
+                    <div className="flex flex-wrap gap-3">
+                      {Object.entries(result.fleet as Record<string, number>).map(([ship, count]) => (
+                        <span key={ship} className="text-sm">
+                          <span className="text-foreground font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                          <span className="text-muted-foreground">{gameConfig?.ships[ship]?.name ?? ship}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Defenses */}
+              {result.defenses && Object.keys(result.defenses).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Défenses</h3>
+                  <div className="rounded border border-border p-3">
+                    <div className="flex flex-wrap gap-3">
+                      {Object.entries(result.defenses as Record<string, number>).map(([def, count]) => (
+                        <span key={def} className="text-sm">
+                          <span className="text-foreground font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                          <span className="text-muted-foreground">{gameConfig?.defenses[def]?.name ?? def}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Buildings */}
+              {result.buildings && Object.keys(result.buildings).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bâtiments</h3>
+                  <div className="rounded border border-border p-3 space-y-1">
+                    {Object.entries(result.buildings as Record<string, number>).map(([building, level]) => (
+                      <div key={building} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{gameConfig?.buildings[building]?.name ?? building}</span>
+                        <span className="text-foreground font-medium">Niv. {level as number}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Research */}
+              {result.research && Object.keys(result.research).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recherches</h3>
+                  <div className="rounded border border-border p-3 space-y-1">
+                    {Object.entries(result.research as Record<string, number>).map(([tech, level]) => (
+                      <div key={tech} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{gameConfig?.research[tech]?.name ?? tech}</span>
+                        <span className="text-foreground font-medium">Niv. {level as number}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
     </section>
   ) : null;
