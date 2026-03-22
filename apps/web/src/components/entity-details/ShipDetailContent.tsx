@@ -3,7 +3,7 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
 import { getShipDetails, resolveBuildingName, resolveResearchName } from '@/lib/entity-details';
 import { EnergieIcon } from '@/components/common/ResourceIcons';
-import { resolveBonus, solarSatelliteEnergy } from '@ogame-clone/game-engine';
+import { resolveBonus, solarSatelliteEnergy, BASE_EXTRACTION } from '@ogame-clone/game-engine';
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -135,6 +135,27 @@ export function ShipDetailContent({ shipId, researchLevels, maxTemp, isHomePlane
               {DRIVE_LABELS[details.stats.driveType] ?? details.stats.driveType}
             </span>
           </div>
+        </div>
+      )}
+
+      {/* Mining capacity (prospector only) */}
+      {shipId === 'prospector' && (
+        <div className="bg-[#1e293b] rounded-lg p-3 space-y-2">
+          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider">
+            Capacité de minage
+          </div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">Extraction par voyage</span>
+            <span className="text-amber-400 font-mono font-semibold">{fmt(BASE_EXTRACTION)} ressources</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">Prospecteurs efficaces max</span>
+            <span className="text-slate-200 font-mono">10</span>
+          </div>
+          <p className="text-[10px] text-slate-500 leading-relaxed">
+            Chaque prospecteur extrait {fmt(BASE_EXTRACTION)} ressources par voyage de minage (max 10 efficaces).
+            La recherche Fracturation des roches réduit la durée de minage.
+          </p>
         </div>
       )}
 

@@ -151,7 +151,6 @@ export class MineHandler implements PhasedMissionHandler {
     const hydrogeneRemaining = deposit ? Number(deposit.hydrogeneRemaining) : 0;
 
     const extraction = computeMiningExtraction({
-      centerLevel,
       nbProspectors: prospectorCount,
       cargoCapacity,
       mineraiRemaining,

@@ -7,7 +7,7 @@ import {
   solarPlantEnergy, mineraiMineEnergy, siliciumMineEnergy, hydrogeneSynthEnergy,
   storageCapacity,
   buildingBonusAtLevel,
-  discoveryCooldown, depositSize, baseExtraction,
+  discoveryCooldown, depositSize,
 } from '@ogame-clone/game-engine';
 
 interface BuildingListItem {
@@ -29,7 +29,7 @@ interface Props {
 interface MineRow { level: number; production: number; gain: number | null; energy: number }
 interface SolarRow { level: number; production: number; gain: number | null }
 interface StorageRow { level: number; capacity: number; gain: number | null }
-interface MissionCenterRow { level: number; cooldown: number; depositSize: number; extraction: number }
+interface MissionCenterRow { level: number; cooldown: number; depositSize: number }
 
 type TableData =
   | { type: 'mine'; title: string; rows: MineRow[] }
@@ -106,7 +106,6 @@ function getContextualTable(
           level,
           cooldown: discoveryCooldown(level),
           depositSize: depositSize(level, 1.0),
-          extraction: baseExtraction(level),
         })),
       };
     default:
@@ -277,10 +276,7 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
                       Cooldown
                     </th>
                     <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-amber-500">
-                      Gisement
-                    </th>
-                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-emerald-500">
-                      Extraction
+                      Gisement moy.
                     </th>
                   </>
                 )}
@@ -344,7 +340,6 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
                     </td>
                     <td className="px-2 py-1.5 text-right text-cyan-400">{row.cooldown}h</td>
                     <td className="px-2 py-1.5 text-right">{fmt(row.depositSize)}</td>
-                    <td className="px-2 py-1.5 text-right">{fmt(row.extraction)}/prosp.</td>
                   </tr>
                 ))}
             </tbody>

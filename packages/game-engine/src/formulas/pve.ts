@@ -1,10 +1,7 @@
 /**
- * Base extraction per prospector, scales with Mission Center level.
- * Formula: 2000 + 800 * (centerLevel - 1)
+ * Fixed extraction per prospector per mining trip: 2500 resources.
  */
-export function baseExtraction(centerLevel: number): number {
-  return 2000 + 800 * (centerLevel - 1);
-}
+export const BASE_EXTRACTION = 2500;
 
 /**
  * Prospection duration in minutes.
@@ -25,9 +22,8 @@ export function miningDuration(
   nbProspectors: number,
   bonusMultiplier: number,
 ): number {
-  const BASE_RATE = 2000;
   const effectiveProspectors = Math.min(Math.max(nbProspectors, 1), 10);
-  const rawMinutes = (cargoCapacity / (effectiveProspectors * BASE_RATE)) * 10;
+  const rawMinutes = (cargoCapacity / (effectiveProspectors * BASE_EXTRACTION)) * 10;
   return Math.max(5, rawMinutes) * Math.max(0.01, bonusMultiplier);
 }
 
@@ -97,7 +93,6 @@ export interface MultiResourceExtraction {
  * Returns per-resource playerReceives (net) and depositLoss (gross deducted).
  */
 export function computeMiningExtraction(params: {
-  centerLevel: number;
   nbProspectors: number;
   cargoCapacity: number;
   mineraiRemaining: number;
@@ -105,14 +100,14 @@ export function computeMiningExtraction(params: {
   hydrogeneRemaining: number;
   slagRate: number;
 }): MultiResourceExtraction {
-  const { centerLevel, nbProspectors, cargoCapacity, mineraiRemaining, siliciumRemaining, hydrogeneRemaining, slagRate } = params;
+  const { nbProspectors, cargoCapacity, mineraiRemaining, siliciumRemaining, hydrogeneRemaining, slagRate } = params;
 
   const zero: ResourceAmounts = { minerai: 0, silicium: 0, hydrogene: 0 };
   const totalRemaining = mineraiRemaining + siliciumRemaining + hydrogeneRemaining;
   if (totalRemaining <= 0) return { playerReceives: { ...zero }, depositLoss: { ...zero } };
 
   const effectiveProspectors = Math.min(nbProspectors, 10);
-  const rawExtraction = baseExtraction(centerLevel) * effectiveProspectors;
+  const rawExtraction = BASE_EXTRACTION * effectiveProspectors;
   const effectiveCargo = slagRate === 0 ? cargoCapacity : cargoCapacity * (1 - slagRate);
   const maxExtractable = Math.min(rawExtraction, effectiveCargo);
 
