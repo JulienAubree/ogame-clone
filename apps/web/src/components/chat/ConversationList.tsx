@@ -128,7 +128,7 @@ export function ConversationList({ activeThreadId, onSelectThread, onNewConversa
                   <UserAvatar username={conv.otherUser.username} size="md" />
                   {conv.unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center">
-                      {conv.unreadCount}
+                      {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
                     </span>
                   )}
                 </div>

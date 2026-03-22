@@ -33,8 +33,9 @@ export function ChatView({ threadId, otherUsername, onBack, onThreadCreated, cla
     onSuccess: (msg) => {
       utils.message.conversations.invalidate();
       utils.message.unreadCount.invalidate();
-      if (msg.threadId && onThreadCreated) {
-        onThreadCreated(msg.threadId);
+      if (msg.threadId) {
+        utils.message.thread.invalidate({ threadId: msg.threadId });
+        onThreadCreated?.(msg.threadId);
       }
     },
   });
@@ -60,8 +61,8 @@ export function ChatView({ threadId, otherUsername, onBack, onThreadCreated, cla
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
         {onBack && (
-          <button onClick={onBack} className="text-muted-foreground hover:text-foreground mr-1">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          <button onClick={onBack} aria-label="Retour" className="text-muted-foreground hover:text-foreground mr-1">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           </button>
         )}
         <UserAvatar username={otherUsername} size="md" />
