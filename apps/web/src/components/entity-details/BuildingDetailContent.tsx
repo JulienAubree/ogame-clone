@@ -7,6 +7,7 @@ import {
   solarPlantEnergy, mineraiMineEnergy, siliciumMineEnergy, hydrogeneSynthEnergy,
   storageCapacity,
   buildingBonusAtLevel,
+  discoveryCooldown, depositSize, baseExtraction,
 } from '@ogame-clone/game-engine';
 
 interface BuildingListItem {
@@ -28,11 +29,13 @@ interface Props {
 interface MineRow { level: number; production: number; gain: number | null; energy: number }
 interface SolarRow { level: number; production: number; gain: number | null }
 interface StorageRow { level: number; capacity: number; gain: number | null }
+interface MissionCenterRow { level: number; cooldown: number; depositSize: number; extraction: number }
 
 type TableData =
   | { type: 'mine'; title: string; rows: MineRow[] }
   | { type: 'solar'; title: string; rows: SolarRow[] }
-  | { type: 'storage'; title: string; rows: StorageRow[] };
+  | { type: 'storage'; title: string; rows: StorageRow[] }
+  | { type: 'missionCenter'; title: string; rows: MissionCenterRow[] };
 
 function getContextualTable(
   buildingId: string,
@@ -93,6 +96,17 @@ function getContextualTable(
           level,
           capacity: storageCapacity(level),
           gain: i === 0 ? null : storageCapacity(level) - storageCapacity(level - 1),
+        })),
+      };
+    case 'missionCenter':
+      return {
+        type: 'missionCenter',
+        title: 'Progression du Centre de missions',
+        rows: levels.map((level) => ({
+          level,
+          cooldown: discoveryCooldown(level),
+          depositSize: depositSize(level, 1.0),
+          extraction: baseExtraction(level),
         })),
       };
     default:
@@ -257,6 +271,19 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
                     </th>
                   </>
                 )}
+                {tableData.type === 'missionCenter' && (
+                  <>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-cyan-400">
+                      Cooldown
+                    </th>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-amber-500">
+                      Gisement
+                    </th>
+                    <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-emerald-500">
+                      Extraction
+                    </th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody className="text-slate-300">
@@ -304,6 +331,20 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
                     <td className="px-2 py-1.5 text-right text-emerald-500">
                       {row.gain != null ? `+${fmt(row.gain)}` : '\u2014'}
                     </td>
+                  </tr>
+                ))}
+              {tableData.type === 'missionCenter' &&
+                tableData.rows.map((row, i) => (
+                  <tr
+                    key={row.level}
+                    className={i % 2 === 0 ? 'bg-[#1e293b]' : ''}
+                  >
+                    <td className={`px-2 py-1.5 ${i === 0 ? 'font-semibold text-emerald-400' : ''}`}>
+                      {row.level}{i === 0 ? ' \u25C4' : ''}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-cyan-400">{row.cooldown}h</td>
+                    <td className="px-2 py-1.5 text-right">{fmt(row.depositSize)}</td>
+                    <td className="px-2 py-1.5 text-right">{fmt(row.extraction)}/prosp.</td>
                   </tr>
                 ))}
             </tbody>
