@@ -87,6 +87,7 @@ export const shipDefinitions = pgTable('ship_definitions', {
   weapons: integer('weapons').notNull().default(0),
   shield: integer('shield').notNull().default(0),
   armor: integer('armor').notNull().default(0),
+  miningExtraction: integer('mining_extraction').notNull().default(0),
   isStationary: boolean('is_stationary').notNull().default(false),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),

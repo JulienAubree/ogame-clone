@@ -3,11 +3,11 @@ import { shipSpeed, fleetSpeed, travelTime, fuelConsumption, totalCargoCapacity 
 import type { ShipStats } from './fleet.js';
 
 const SHIP_STATS_MAP: Record<string, ShipStats> = {
-  smallCargo: { baseSpeed: 5000, fuelConsumption: 10, cargoCapacity: 5000, driveType: 'combustion' },
-  largeCargo: { baseSpeed: 7500, fuelConsumption: 50, cargoCapacity: 25000, driveType: 'combustion' },
-  lightFighter: { baseSpeed: 12500, fuelConsumption: 20, cargoCapacity: 50, driveType: 'combustion' },
-  cruiser: { baseSpeed: 15000, fuelConsumption: 300, cargoCapacity: 800, driveType: 'impulse' },
-  battleship: { baseSpeed: 10000, fuelConsumption: 500, cargoCapacity: 1500, driveType: 'hyperspaceDrive' },
+  smallCargo: { baseSpeed: 5000, fuelConsumption: 10, cargoCapacity: 5000, driveType: 'combustion', miningExtraction: 0 },
+  largeCargo: { baseSpeed: 7500, fuelConsumption: 50, cargoCapacity: 25000, driveType: 'combustion', miningExtraction: 0 },
+  lightFighter: { baseSpeed: 12500, fuelConsumption: 20, cargoCapacity: 50, driveType: 'combustion', miningExtraction: 0 },
+  cruiser: { baseSpeed: 15000, fuelConsumption: 300, cargoCapacity: 800, driveType: 'impulse', miningExtraction: 0 },
+  battleship: { baseSpeed: 10000, fuelConsumption: 500, cargoCapacity: 1500, driveType: 'hyperspaceDrive', miningExtraction: 0 },
 };
 
 describe('shipSpeed', () => {

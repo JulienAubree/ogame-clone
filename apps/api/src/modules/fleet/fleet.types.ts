@@ -134,6 +134,7 @@ export function buildShipStatsMap(config: GameConfig): Record<string, ShipStats>
       fuelConsumption: ship.fuelConsumption,
       cargoCapacity: ship.cargoCapacity,
       driveType: ship.driveType as ShipStats['driveType'],
+      miningExtraction: ship.miningExtraction ?? 0,
     };
   }
   return map;

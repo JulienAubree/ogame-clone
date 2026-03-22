@@ -1,9 +1,4 @@
 /**
- * Fixed extraction per prospector per mining trip: 2500 resources.
- */
-export const BASE_EXTRACTION = 2500;
-
-/**
  * Prospection duration in minutes.
  * Formula: 5 + floor(depositTotalQuantity / 10000) * 2
  */
@@ -13,17 +8,18 @@ export function prospectionDuration(depositTotalQuantity: number): number {
 
 /**
  * Mining duration in minutes at the belt.
- * Scales with cargo/prospector ratio: more cargo = longer, more prospectors = shorter.
- * Formula: max(5, cargoCapacity / (min(nbProspectors, 10) * 2000) * 10) * bonusMultiplier
+ * Scales with cargo/extraction ratio: more cargo = longer, more extraction = shorter.
+ * Formula: max(5, cargoCapacity / fleetExtraction * 10) * bonusMultiplier
  * Rock fracturing research reduces duration via bonusMultiplier.
+ * @param fleetExtraction - total extraction capacity of the fleet (sum of miningExtraction per ship)
  */
 export function miningDuration(
   cargoCapacity: number,
-  nbProspectors: number,
+  fleetExtraction: number,
   bonusMultiplier: number,
 ): number {
-  const effectiveProspectors = Math.min(Math.max(nbProspectors, 1), 10);
-  const rawMinutes = (cargoCapacity / (effectiveProspectors * BASE_EXTRACTION)) * 10;
+  const effectiveExtraction = Math.max(fleetExtraction, 1);
+  const rawMinutes = (cargoCapacity / effectiveExtraction) * 10;
   return Math.max(5, rawMinutes) * Math.max(0.01, bonusMultiplier);
 }
 
@@ -92,22 +88,24 @@ export interface MultiResourceExtraction {
  * Distributes extraction proportionally to remaining quantities per resource.
  * Returns per-resource playerReceives (net) and depositLoss (gross deducted).
  */
+/**
+ * @param fleetExtraction - total extraction capacity of the fleet (sum of miningExtraction per ship)
+ */
 export function computeMiningExtraction(params: {
-  nbProspectors: number;
+  fleetExtraction: number;
   cargoCapacity: number;
   mineraiRemaining: number;
   siliciumRemaining: number;
   hydrogeneRemaining: number;
   slagRate: number;
 }): MultiResourceExtraction {
-  const { nbProspectors, cargoCapacity, mineraiRemaining, siliciumRemaining, hydrogeneRemaining, slagRate } = params;
+  const { fleetExtraction, cargoCapacity, mineraiRemaining, siliciumRemaining, hydrogeneRemaining, slagRate } = params;
 
   const zero: ResourceAmounts = { minerai: 0, silicium: 0, hydrogene: 0 };
   const totalRemaining = mineraiRemaining + siliciumRemaining + hydrogeneRemaining;
   if (totalRemaining <= 0) return { playerReceives: { ...zero }, depositLoss: { ...zero } };
 
-  const effectiveProspectors = Math.min(nbProspectors, 10);
-  const rawExtraction = BASE_EXTRACTION * effectiveProspectors;
+  const rawExtraction = fleetExtraction;
   const effectiveCargo = slagRate === 0 ? cargoCapacity : cargoCapacity * (1 - slagRate);
   const maxExtractable = Math.min(rawExtraction, effectiveCargo);
 

@@ -3,6 +3,7 @@ export interface ShipStats {
   fuelConsumption: number;
   cargoCapacity: number;
   driveType: 'combustion' | 'impulse' | 'hyperspaceDrive';
+  miningExtraction: number;
 }
 
 interface Coordinates {
@@ -84,6 +85,24 @@ export function totalCargoCapacity(
     if (count > 0) {
       const stats = shipStatsMap[shipId];
       if (stats) total += stats.cargoCapacity * count;
+    }
+  }
+  return total;
+}
+
+/**
+ * Compute the total mining extraction capacity of a fleet.
+ * Only ships with miningExtraction > 0 contribute (e.g. prospectors).
+ */
+export function totalMiningExtraction(
+  ships: Record<string, number>,
+  shipStatsMap: Record<string, ShipStats>,
+): number {
+  let total = 0;
+  for (const [shipId, count] of Object.entries(ships)) {
+    if (count > 0) {
+      const stats = shipStatsMap[shipId];
+      if (stats && stats.miningExtraction > 0) total += stats.miningExtraction * count;
     }
   }
   return total;

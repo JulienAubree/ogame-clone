@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { fleetEvents, pveMissions, asteroidDeposits, userResearch, planets } from '@ogame-clone/db';
-import { prospectionDuration, miningDuration, totalCargoCapacity, resolveBonus, computeSlagRate, computeMiningExtraction } from '@ogame-clone/game-engine';
+import { prospectionDuration, miningDuration, totalCargoCapacity, totalMiningExtraction, resolveBonus, computeSlagRate, computeMiningExtraction } from '@ogame-clone/game-engine';
 import { BELT_POSITIONS } from '../../universe/universe.config.js';
 import type { PhasedMissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult, PhaseResult } from '../fleet.types.js';
 import { buildShipStatsMap, formatDuration } from '../fleet.types.js';
@@ -91,9 +91,9 @@ export class MineHandler implements PhasedMissionHandler {
     const config = await ctx.gameConfigService.getFullConfig();
     const shipStatsMap = buildShipStatsMap(config);
     const cargoCapacity = totalCargoCapacity(fleetEvent.ships, shipStatsMap);
-    const prospectorCount = fleetEvent.ships['prospector'] ?? 0;
+    const fleetExtr = totalMiningExtraction(fleetEvent.ships, shipStatsMap);
     const bonusMultiplier = resolveBonus('mining_duration', null, researchLevels, config.bonuses);
-    const mineMins = miningDuration(cargoCapacity, prospectorCount, bonusMultiplier);
+    const mineMins = miningDuration(cargoCapacity, fleetExtr, bonusMultiplier);
     const mineMs = mineMins * 60 * 1000;
 
     const now = new Date();
@@ -128,11 +128,10 @@ export class MineHandler implements PhasedMissionHandler {
     }
 
     const params = mission.parameters as { depositId: string };
-    const centerLevel = await ctx.pveService.getMissionCenterLevel(fleetEvent.userId);
-    const prospectorCount = ships['prospector'] ?? 0;
     const config = await ctx.gameConfigService.getFullConfig();
     const shipStatsMap = buildShipStatsMap(config);
     const cargoCapacity = totalCargoCapacity(ships, shipStatsMap);
+    const fleetExtr = totalMiningExtraction(ships, shipStatsMap);
 
     // Single slag rate per position
     const position = fleetEvent.targetPosition as 8 | 16;
@@ -151,7 +150,7 @@ export class MineHandler implements PhasedMissionHandler {
     const hydrogeneRemaining = deposit ? Number(deposit.hydrogeneRemaining) : 0;
 
     const extraction = computeMiningExtraction({
-      nbProspectors: prospectorCount,
+      fleetExtraction: fleetExtr,
       cargoCapacity,
       mineraiRemaining,
       siliciumRemaining,

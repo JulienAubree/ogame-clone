@@ -93,6 +93,7 @@ export interface ShipConfig {
   fuelConsumption: number;
   cargoCapacity: number;
   driveType: string;
+  miningExtraction: number;
   weapons: number;
   shield: number;
   armor: number;
@@ -282,6 +283,7 @@ export function createGameConfigService(db: Database) {
         fuelConsumption: s.fuelConsumption,
         cargoCapacity: s.cargoCapacity,
         driveType: s.driveType,
+        miningExtraction: s.miningExtraction,
         weapons: s.weapons,
         shield: s.shield,
         armor: s.armor,
@@ -624,6 +626,7 @@ export function createGameConfigService(db: Database) {
       fuelConsumption?: number;
       cargoCapacity?: number;
       driveType?: string;
+      miningExtraction?: number;
       weapons?: number;
       shield?: number;
       armor?: number;
@@ -643,6 +646,7 @@ export function createGameConfigService(db: Database) {
         fuelConsumption: data.fuelConsumption ?? 0,
         cargoCapacity: data.cargoCapacity ?? 0,
         driveType: data.driveType ?? 'combustion',
+        miningExtraction: data.miningExtraction ?? 0,
         weapons: data.weapons ?? 0,
         shield: data.shield ?? 0,
         armor: data.armor ?? 0,
@@ -677,6 +681,7 @@ export function createGameConfigService(db: Database) {
       fuelConsumption: number;
       cargoCapacity: number;
       driveType: string;
+      miningExtraction: number;
       weapons: number;
       shield: number;
       armor: number;

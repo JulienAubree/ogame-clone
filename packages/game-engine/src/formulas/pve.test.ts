@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  BASE_EXTRACTION,
   prospectionDuration,
   miningDuration,
   discoveryCooldown,
@@ -9,13 +8,6 @@ import {
   computeSlagRate,
   computeMiningExtraction,
 } from './pve.js';
-
-describe('BASE_EXTRACTION', () => {
-  it('is 2500', () => {
-    expect(BASE_EXTRACTION).toBe(2500);
-  });
-});
-
 
 describe('prospectionDuration', () => {
   it('returns 9 min for 20000 deposit', () => {
@@ -36,29 +28,25 @@ describe('prospectionDuration', () => {
 });
 
 describe('miningDuration', () => {
-  // BASE_EXTRACTION=2500
-  // 5 prosp, cargo 3750: 3750 / (5*2500) * 10 = 3 → clamped to 5
-  it('clamps to 5 min when cargo/prosp ratio is low', () => {
-    expect(miningDuration(3750, 5, 1)).toBe(5);
+  // fleetExtraction = sum of miningExtraction per ship (e.g. 5 prospectors × 2500 = 12500)
+  // cargo 3750, extraction 12500: 3750 / 12500 * 10 = 3 → clamped to 5
+  it('clamps to 5 min when cargo/extraction ratio is low', () => {
+    expect(miningDuration(3750, 12500, 1)).toBe(5);
   });
-  // 5 prosp, cargo 25000: 25000 / (5*2500) * 10 = 20
+  // cargo 25000, extraction 12500: 25000 / 12500 * 10 = 20
   it('scales with cargo capacity', () => {
-    expect(miningDuration(25000, 5, 1)).toBe(20);
+    expect(miningDuration(25000, 12500, 1)).toBe(20);
   });
-  // 10 prosp, cargo 25000: 25000 / (10*2500) * 10 = 10
-  it('more prospectors reduce duration', () => {
-    expect(miningDuration(25000, 10, 1)).toBe(10);
+  // cargo 25000, extraction 25000: 25000 / 25000 * 10 = 10
+  it('more extraction reduces duration', () => {
+    expect(miningDuration(25000, 25000, 1)).toBe(10);
   });
   // bonus multiplier applies (rock fracturing)
   it('applies bonus multiplier', () => {
-    expect(miningDuration(25000, 5, 0.5)).toBeCloseTo(10);
+    expect(miningDuration(25000, 12500, 0.5)).toBeCloseTo(10);
   });
-  // caps prospectors at 10
-  it('caps effective prospectors at 10', () => {
-    expect(miningDuration(25000, 15, 1)).toBe(miningDuration(25000, 10, 1));
-  });
-  // minimum 1 prospector
-  it('treats 0 prospectors as 1', () => {
+  // minimum extraction of 1
+  it('treats 0 extraction as 1', () => {
     expect(miningDuration(2500, 0, 1)).toBe(miningDuration(2500, 1, 1));
   });
 });
@@ -117,12 +105,12 @@ describe('computeSlagRate', () => {
 });
 
 describe('computeMiningExtraction', () => {
-  // BASE_EXTRACTION=2500, 3 prosp = 7500 raw extraction
+  // fleetExtraction=7500 (e.g. 3 prospectors × 2500)
   // cargo 10000, slagRate 0.30: effectiveCargo=7000, maxExtractable=min(7500,7000)=7000
   // remaining 50k/30k/20k → ratios 0.5/0.3/0.2
   it('distributes proportionally to remaining quantities', () => {
     const result = computeMiningExtraction({
-      nbProspectors: 3,
+      fleetExtraction: 7500,
       cargoCapacity: 10000,
       mineraiRemaining: 50000,
       siliciumRemaining: 30000,
@@ -137,7 +125,7 @@ describe('computeMiningExtraction', () => {
 
   it('handles deposit nearly depleted (all drained)', () => {
     const result = computeMiningExtraction({
-      nbProspectors: 3,
+      fleetExtraction: 7500,
       cargoCapacity: 10000,
       mineraiRemaining: 200,
       siliciumRemaining: 200,
@@ -156,7 +144,7 @@ describe('computeMiningExtraction', () => {
   // remaining 50k/50k/0 → ratios 0.5/0.5
   it('returns full extraction when slagRate is 0', () => {
     const result = computeMiningExtraction({
-      nbProspectors: 3,
+      fleetExtraction: 7500,
       cargoCapacity: 10000,
       mineraiRemaining: 50000,
       siliciumRemaining: 50000,
@@ -170,7 +158,7 @@ describe('computeMiningExtraction', () => {
   // slagRate=0.15: effectiveCargo=8500, maxExtractable=min(7500,8500)=7500
   it('handles only one resource remaining', () => {
     const result = computeMiningExtraction({
-      nbProspectors: 3,
+      fleetExtraction: 7500,
       cargoCapacity: 10000,
       mineraiRemaining: 0,
       siliciumRemaining: 0,
@@ -183,7 +171,7 @@ describe('computeMiningExtraction', () => {
 
   it('returns all zeros when deposit is empty', () => {
     const result = computeMiningExtraction({
-      nbProspectors: 3,
+      fleetExtraction: 7500,
       cargoCapacity: 10000,
       mineraiRemaining: 0,
       siliciumRemaining: 0,
@@ -194,11 +182,11 @@ describe('computeMiningExtraction', () => {
     expect(result.depositLoss).toEqual({ minerai: 0, silicium: 0, hydrogene: 0 });
   });
 
-  // 10 prosp = 25000 raw, cargo 10000, slagRate 0.30: effectiveCargo=7000
+  // fleetExtraction=25000 (e.g. 10 prosp), cargo 10000, slagRate 0.30: effectiveCargo=7000
   // maxExtractable=min(25000,7000)=7000. ratios: 0.4/0.4/0.2
   it('caps at effective cargo when extraction exceeds it', () => {
     const result = computeMiningExtraction({
-      nbProspectors: 10,
+      fleetExtraction: 25000,
       cargoCapacity: 10000,
       mineraiRemaining: 200000,
       siliciumRemaining: 200000,
