@@ -53,7 +53,7 @@ export function ConversationList({ activeThreadId, onSelectThread, onNewConversa
   return (
     <div className="flex flex-col h-full border-r border-border/30">
       {/* Header */}
-      <div className="p-3 border-b border-border/30 flex items-center gap-2">
+      <div className="p-3 border-b border-border/30 flex items-center gap-2 flex-shrink-0">
         {searchMode ? (
           <>
             <input
