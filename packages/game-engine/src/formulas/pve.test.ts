@@ -69,10 +69,10 @@ describe('miningDuration', () => {
 });
 
 describe('discoveryCooldown', () => {
-  it('returns 8h at level 1', () => { expect(discoveryCooldown(1)).toBe(8); });
-  it('returns 6.8h at level 5', () => { expect(discoveryCooldown(5)).toBeCloseTo(6.8); });
-  it('returns 5.3h at level 10', () => { expect(discoveryCooldown(10)).toBeCloseTo(5.3); });
-  it('floors at 5h for level 11+', () => { expect(discoveryCooldown(11)).toBe(5); expect(discoveryCooldown(15)).toBe(5); });
+  it('returns 7h at level 1', () => { expect(discoveryCooldown(1)).toBe(7); });
+  it('returns 3h at level 5', () => { expect(discoveryCooldown(5)).toBe(3); });
+  it('returns 1h at level 7', () => { expect(discoveryCooldown(7)).toBe(1); });
+  it('floors at 1h for level 8+', () => { expect(discoveryCooldown(8)).toBe(1); expect(discoveryCooldown(15)).toBe(1); });
 });
 
 describe('depositSize', () => {
