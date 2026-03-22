@@ -109,21 +109,21 @@ function ProductionStorageCard({ planetId }: { planetId: string }) {
           capacity={resourceData?.rates.storageMineraiCapacity ?? 1}
           rate={resourceData?.rates.mineraiPerHour ?? 0}
           label="Minerai"
-          color="#f59e0b"
+          color="#fb923c"
         />
         <ResourceGauge
           current={resources?.silicium ?? 0}
           capacity={resourceData?.rates.storageSiliciumCapacity ?? 1}
           rate={resourceData?.rates.siliciumPerHour ?? 0}
           label="Silicium"
-          color="#06b6d4"
+          color="#34d399"
         />
         <ResourceGauge
           current={resources?.hydrogene ?? 0}
           capacity={resourceData?.rates.storageHydrogeneCapacity ?? 1}
           rate={resourceData?.rates.hydrogenePerHour ?? 0}
           label="Hydrogene"
-          color="#10b981"
+          color="#60a5fa"
         />
       </div>
     </section>
