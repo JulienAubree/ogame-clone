@@ -45,35 +45,29 @@ describe('prospectionDuration', () => {
 });
 
 describe('miningDuration', () => {
-  // center 1: baseExtraction = 2000
   // 5 prospectors, cargo 3750: 3750 / (5*2000) * 10 = 3.75 → clamped to 5
   it('clamps to 5 min when cargo/prosp ratio is low', () => {
-    expect(miningDuration(1, 3750, 5, 1)).toBe(5);
+    expect(miningDuration(3750, 5, 1)).toBe(5);
   });
   // 5 prospectors, cargo 20000: 20000 / (5*2000) * 10 = 20
   it('scales with cargo capacity', () => {
-    expect(miningDuration(1, 20000, 5, 1)).toBe(20);
+    expect(miningDuration(20000, 5, 1)).toBe(20);
   });
   // 10 prospectors, cargo 20000: 20000 / (10*2000) * 10 = 10
   it('more prospectors reduce duration', () => {
-    expect(miningDuration(1, 20000, 10, 1)).toBe(10);
+    expect(miningDuration(20000, 10, 1)).toBe(10);
   });
-  // center 5: baseExtraction = 5200
-  // 10 prospectors, cargo 52000: 52000 / (10*5200) * 10 = 10
-  it('higher center level increases extraction rate', () => {
-    expect(miningDuration(5, 52000, 10, 1)).toBe(10);
-  });
-  // bonus multiplier applies
+  // bonus multiplier applies (rock fracturing)
   it('applies bonus multiplier', () => {
-    expect(miningDuration(1, 20000, 5, 0.5)).toBeCloseTo(10);
+    expect(miningDuration(20000, 5, 0.5)).toBeCloseTo(10);
   });
   // caps prospectors at 10
   it('caps effective prospectors at 10', () => {
-    expect(miningDuration(1, 20000, 15, 1)).toBe(miningDuration(1, 20000, 10, 1));
+    expect(miningDuration(20000, 15, 1)).toBe(miningDuration(20000, 10, 1));
   });
   // minimum 1 prospector
   it('treats 0 prospectors as 1', () => {
-    expect(miningDuration(1, 2000, 0, 1)).toBe(miningDuration(1, 2000, 1, 1));
+    expect(miningDuration(2000, 0, 1)).toBe(miningDuration(2000, 1, 1));
   });
 });
 

@@ -17,18 +17,17 @@ export function prospectionDuration(depositTotalQuantity: number): number {
 /**
  * Mining duration in minutes at the belt.
  * Scales with cargo/prospector ratio: more cargo = longer, more prospectors = shorter.
- * Formula: max(5, cargoCapacity / (min(nbProspectors, 10) * extractionRate) * 10) * bonusMultiplier
- * @param bonusMultiplier - result of resolveBonus('mining_duration', null, ...)
+ * Formula: max(5, cargoCapacity / (min(nbProspectors, 10) * 2000) * 10) * bonusMultiplier
+ * Rock fracturing research reduces duration via bonusMultiplier.
  */
 export function miningDuration(
-  centerLevel: number,
   cargoCapacity: number,
   nbProspectors: number,
   bonusMultiplier: number,
 ): number {
+  const BASE_RATE = 2000;
   const effectiveProspectors = Math.min(Math.max(nbProspectors, 1), 10);
-  const extractionRate = baseExtraction(centerLevel);
-  const rawMinutes = (cargoCapacity / (effectiveProspectors * extractionRate)) * 10;
+  const rawMinutes = (cargoCapacity / (effectiveProspectors * BASE_RATE)) * 10;
   return Math.max(5, rawMinutes) * Math.max(0.01, bonusMultiplier);
 }
 
