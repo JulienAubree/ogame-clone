@@ -7,7 +7,6 @@ import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
 import type { BuildCompletionResult } from '../../workers/completion.types.js';
-import { CANCEL_REFUND_RATIO } from '../universe/universe.config.js';
 
 export function createBuildingService(
   db: Database,
@@ -168,6 +167,7 @@ export function createBuildingService(
       }
 
       const config = await gameConfigService.getFullConfig();
+      const cancelRefundRatio = Number(config.universe.cancel_refund_ratio) || 0.7;
       const def = config.buildings[activeBuild.itemId];
       const planet = await this.getOwnedPlanet(userId, planetId);
       const buildingLevels = await this.getBuildingLevels(planetId);
@@ -178,7 +178,7 @@ export function createBuildingService(
       const now = Date.now();
       const totalDuration = new Date(activeBuild.endTime).getTime() - new Date(activeBuild.startTime).getTime();
       const timeLeft = Math.max(0, new Date(activeBuild.endTime).getTime() - now);
-      const refundRatio = Math.min(CANCEL_REFUND_RATIO, totalDuration > 0 ? timeLeft / totalDuration : 0);
+      const refundRatio = Math.min(cancelRefundRatio, totalDuration > 0 ? timeLeft / totalDuration : 0);
       const refund = {
         minerai: Math.floor(cost.minerai * refundRatio),
         silicium: Math.floor(cost.silicium * refundRatio),
