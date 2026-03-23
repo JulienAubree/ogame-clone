@@ -158,25 +158,25 @@ export function ResearchDetailContent({ researchId, researchLevels }: Props) {
     return sections.length > 0 ? sections : null;
   }, [gameConfig, matchingBonuses, researchLevels]);
 
-  const progressionRows = useMemo(() => {
+  const progressionData = useMemo(() => {
     if (matchingBonuses.length === 0) return null;
 
     const levels = Array.from({ length: 6 }, (_, i) => currentLevel + i);
+    const bonuses = matchingBonuses.map((b) => ({
+      stat: b.stat,
+      label: STAT_LABELS[b.stat] ?? b.stat,
+      percentPerLevel: b.percentPerLevel,
+    }));
 
-    return levels.map((level, i) => ({
+    const rows = levels.map((level, i) => ({
       level,
       isCurrent: i === 0,
-      values: matchingBonuses.map((b) => {
-        const pct = b.percentPerLevel * level;
-        const sign = pct >= 0 ? '+' : '';
-        const gain = i === 0 ? null : b.percentPerLevel;
-        return {
-          label: STAT_LABELS[b.stat] ?? b.stat,
-          percentage: `${sign}${pct}%`,
-          gain: gain !== null ? `${gain > 0 ? '+' : ''}${gain}%` : null,
-        };
-      }),
+      values: matchingBonuses.map((b) => ({
+        totalPct: b.percentPerLevel * level,
+      })),
     }));
+
+    return { bonuses, rows };
   }, [matchingBonuses, currentLevel]);
 
   const hasBuildingPrereqs = details.prerequisites.buildings && details.prerequisites.buildings.length > 0;
@@ -273,7 +273,7 @@ export function ResearchDetailContent({ researchId, researchLevels }: Props) {
       ))}
 
       {/* Progression table */}
-      {progressionRows && (
+      {progressionData && (
         <div>
           <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2">
             Progression
@@ -282,21 +282,33 @@ export function ResearchDetailContent({ researchId, researchLevels }: Props) {
             <thead>
               <tr className="text-slate-500 text-left">
                 <th className="px-2 py-1.5 border-b border-[#1e293b]">Niveau</th>
-                <th className="px-2 py-1.5 border-b border-[#1e293b] text-right">Bonus</th>
-                <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-emerald-500">Gain</th>
+                {progressionData.bonuses.map((b) => (
+                  <th key={b.stat} className="px-2 py-1.5 border-b border-[#1e293b] text-right">
+                    {b.label}
+                  </th>
+                ))}
+                <th className="px-2 py-1.5 border-b border-[#1e293b] text-right text-emerald-500">
+                  /niv.
+                </th>
               </tr>
             </thead>
             <tbody className="text-slate-300">
-              {progressionRows.map((row, i) => (
+              {progressionData.rows.map((row, i) => (
                 <tr key={row.level} className={i % 2 === 0 ? 'bg-[#1e293b]' : ''}>
                   <td className={`px-2 py-1.5 ${row.isCurrent ? 'font-semibold text-emerald-400' : ''}`}>
                     {row.level}{row.isCurrent ? ' \u25C4' : ''}
                   </td>
-                  <td className="px-2 py-1.5 text-right">
-                    {row.values.map((v) => v.percentage).join(', ')}
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-emerald-500">
-                    {row.values[0]?.gain ?? '\u2014'}
+                  {row.values.map((v, j) => {
+                    const ppl = progressionData.bonuses[j].percentPerLevel;
+                    const isPositive = ppl > 0;
+                    return (
+                      <td key={j} className={`px-2 py-1.5 text-right ${isPositive ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {row.level === 0 ? '\u2014' : `${isPositive ? '+' : ''}${v.totalPct}%`}
+                      </td>
+                    );
+                  })}
+                  <td className="px-2 py-1.5 text-right text-slate-500">
+                    {progressionData.bonuses.map((b) => `${b.percentPerLevel > 0 ? '+' : ''}${b.percentPerLevel}%`).join(', ')}
                   </td>
                 </tr>
               ))}
