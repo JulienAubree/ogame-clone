@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { Timer } from '@/components/common/Timer';
@@ -32,6 +33,12 @@ const PHASE_STYLE: Record<string, { label: string; classes: string; dot: string;
 };
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
+
+const DRIVE_LABELS: Record<string, string> = {
+  combustion: 'Combustion',
+  impulse: 'Impulsion',
+  hyperspaceDrive: 'Hyperespace',
+};
 
 // ── Progress hook (updates every second) ──
 
@@ -90,6 +97,8 @@ function MovementCard({
   recallingId: string | null;
   onTimerComplete: () => void;
 }) {
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
   const progress = useProgress(event.departureTime, event.arrivalTime);
   const ships = event.ships as Record<string, number>;
   const shipEntries = Object.entries(ships).filter(([, v]) => v > 0);
@@ -117,11 +126,30 @@ function MovementCard({
   const fromLabel = isReturn ? targetCoords : `${originLabel} ${originCoords}`;
   const toLabel = isReturn ? `${originLabel} ${originCoords}` : targetCoords;
 
+  // Ship stats for expanded panel
+  const shipStats = gameConfig?.ships as Record<string, {
+    baseSpeed: number; cargoCapacity: number; fuelConsumption: number;
+    driveType: string; miningExtraction: number; weapons: number; shield: number; armor: number;
+  }> | undefined;
+
+  // Cargo capacity of the fleet
+  const fleetCargoCapacity = shipEntries.reduce((sum, [id, count]) => {
+    return sum + (shipStats?.[id]?.cargoCapacity ?? 0) * count;
+  }, 0);
+
+  // Slowest speed (determines fleet speed)
+  const slowestSpeed = shipEntries.reduce((min, [id]) => {
+    const spd = shipStats?.[id]?.baseSpeed ?? Infinity;
+    return Math.min(min, spd);
+  }, Infinity);
+
   return (
     <div className={cn('glass-card border-l-4 overflow-hidden', mStyle.border)}>
+      {/* Clickable summary */}
       <div
-        className="relative p-4 space-y-3"
+        className="relative p-4 space-y-3 cursor-pointer select-none"
         style={{ background: `linear-gradient(135deg, ${mStyle.hex}08 0%, transparent 50%)` }}
+        onClick={() => setExpanded((v) => !v)}
       >
         {/* Header: Mission + Phase + Timer */}
         <div className="flex items-start justify-between gap-3">
@@ -137,10 +165,18 @@ function MovementCard({
               {pStyle.label}
             </span>
           </div>
-          <Timer
-            endTime={new Date(event.arrivalTime)}
-            onComplete={onTimerComplete}
-          />
+          <div className="flex items-center gap-2">
+            <Timer
+              endTime={new Date(event.arrivalTime)}
+              onComplete={onTimerComplete}
+            />
+            <svg
+              width="12" height="12" viewBox="0 0 12 12"
+              className={cn('text-muted-foreground/40 transition-transform duration-200', expanded && 'rotate-180')}
+            >
+              <polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         </div>
 
         {/* Route + Progress */}
@@ -177,7 +213,7 @@ function MovementCard({
           </div>
         </div>
 
-        {/* Ships */}
+        {/* Ships (summary) */}
         <div className="flex flex-wrap gap-1.5 items-center">
           {shipEntries.map(([id, count]) => (
             <span
@@ -195,7 +231,7 @@ function MovementCard({
           )}
         </div>
 
-        {/* Cargo */}
+        {/* Cargo (summary) */}
         {hasCargo && (
           <div className="flex items-center gap-3 text-xs">
             <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold">
@@ -226,21 +262,156 @@ function MovementCard({
             </span>
           </div>
         )}
+      </div>
 
-        {/* Recall */}
-        {canRecall && (
-          <div className="flex justify-end pt-0.5">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 text-xs h-7"
-              onClick={() => onRecall(event.id)}
-              disabled={recallingId === event.id}
-            >
-              Rappeler
-            </Button>
+      {/* ── Expanded detail panel ── */}
+      <div className={cn(
+        'grid transition-[grid-template-rows] duration-300 ease-in-out',
+        expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+      )}>
+        <div className="overflow-hidden">
+          <div className="border-t border-white/[0.06] px-4 py-3 space-y-4 text-xs">
+
+            {/* Horaires */}
+            <div>
+              <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold mb-1.5">
+                Horaires
+              </div>
+              <div className="grid grid-cols-2 gap-y-1 text-muted-foreground">
+                <span>Depart</span>
+                <span className="text-foreground text-right">
+                  {new Date(event.departureTime).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+                <span>Arrivee estimee</span>
+                <span className="text-foreground text-right">
+                  {new Date(event.arrivalTime).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+                <span>Progression</span>
+                <span className="text-foreground text-right">{Math.round(progress)}%</span>
+              </div>
+            </div>
+
+            {/* Detail des vaisseaux */}
+            {shipStats && (
+              <div>
+                <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold mb-1.5">
+                  Detail des vaisseaux
+                </div>
+                <div className="rounded-md border border-white/[0.06] overflow-hidden">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="text-muted-foreground/60 border-b border-white/[0.06]">
+                        <th className="text-left px-2 py-1.5 font-medium">Vaisseau</th>
+                        <th className="text-right px-2 py-1.5 font-medium">Qte</th>
+                        <th className="text-right px-2 py-1.5 font-medium">Vitesse</th>
+                        <th className="text-right px-2 py-1.5 font-medium">Soute</th>
+                        <th className="text-right px-2 py-1.5 font-medium">Propulsion</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shipEntries.map(([id, count], i) => {
+                        const stats = shipStats[id];
+                        const isSlowest = stats && stats.baseSpeed === slowestSpeed && slowestSpeed < Infinity;
+                        return (
+                          <tr key={id} className={i % 2 === 0 ? 'bg-white/[0.02]' : ''}>
+                            <td className="px-2 py-1.5 text-foreground">{getShipName(id, gameConfig)}</td>
+                            <td className="px-2 py-1.5 text-right text-foreground font-semibold">{count}</td>
+                            <td className={cn('px-2 py-1.5 text-right', isSlowest ? 'text-amber-400' : 'text-muted-foreground')}>
+                              {stats ? fmt(stats.baseSpeed) : '—'}
+                              {isSlowest && shipEntries.length > 1 && (
+                                <span className="ml-0.5 text-[9px] text-amber-400/60">lent</span>
+                              )}
+                            </td>
+                            <td className="px-2 py-1.5 text-right text-muted-foreground">
+                              {stats ? fmt(stats.cargoCapacity * count) : '—'}
+                            </td>
+                            <td className="px-2 py-1.5 text-right text-muted-foreground">
+                              {stats ? DRIVE_LABELS[stats.driveType] ?? stats.driveType : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-white/[0.06] text-foreground font-semibold">
+                        <td className="px-2 py-1.5">Total</td>
+                        <td className="px-2 py-1.5 text-right">{shipCount}</td>
+                        <td className="px-2 py-1.5 text-right text-amber-400">
+                          {slowestSpeed < Infinity ? fmt(slowestSpeed) : '—'}
+                        </td>
+                        <td className="px-2 py-1.5 text-right">{fmt(fleetCargoCapacity)}</td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Detail du cargo */}
+            {hasCargo && (
+              <div>
+                <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold mb-1.5">
+                  Cargo embarque
+                </div>
+                <div className="space-y-1.5">
+                  {([
+                    { label: 'Minerai', value: minerai, color: 'bg-minerai', textColor: 'text-minerai' },
+                    { label: 'Silicium', value: silicium, color: 'bg-silicium', textColor: 'text-silicium' },
+                    { label: 'Hydrogene', value: hydrogene, color: 'bg-hydrogene', textColor: 'text-hydrogene' },
+                  ] as const).filter(r => r.value > 0).map((res) => {
+                    const pct = fleetCargoCapacity > 0 ? (res.value / fleetCargoCapacity) * 100 : 0;
+                    return (
+                      <div key={res.label}>
+                        <div className="flex justify-between mb-0.5">
+                          <span className={cn('font-medium', res.textColor)}>{res.label}</span>
+                          <span className="text-muted-foreground">{fmt(res.value)}</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
+                          <div className={cn('h-full rounded-full', res.color)} style={{ width: `${pct}%`, opacity: 0.7 }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between pt-1 text-muted-foreground/60">
+                    <span>Utilisation soute</span>
+                    <span>{fmt(totalCargo)} / {fmt(fleetCargoCapacity)} ({fleetCargoCapacity > 0 ? Math.round((totalCargo / fleetCargoCapacity) * 100) : 0}%)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Origine */}
+            {originPlanet && (
+              <div>
+                <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold mb-1.5">
+                  Origine
+                </div>
+                <button
+                  className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); navigate('/overview'); }}
+                >
+                  {originLabel} {originCoords}
+                </button>
+              </div>
+            )}
+
+            {/* Recall (moved inside expanded for cleaner look) */}
+            {canRecall && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 text-xs h-7"
+                  onClick={(e) => { e.stopPropagation(); onRecall(event.id); }}
+                  disabled={recallingId === event.id}
+                >
+                  Rappeler la flotte
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
