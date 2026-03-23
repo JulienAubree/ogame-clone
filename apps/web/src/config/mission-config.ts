@@ -1,4 +1,7 @@
-export type Mission = 'transport' | 'station' | 'spy' | 'attack' | 'colonize' | 'recycle' | 'mine' | 'pirate';
+import { MissionType } from '@ogame-clone/shared';
+
+/** String union derived from MissionType enum — compatible with string literals */
+export type Mission = `${MissionType}`;
 
 const COMBAT_SHIPS = ['lightFighter', 'heavyFighter', 'cruiser', 'battleship'] as const;
 

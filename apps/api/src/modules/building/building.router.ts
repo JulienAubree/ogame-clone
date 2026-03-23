@@ -1,23 +1,6 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createBuildingService } from './building.service.js';
-import type { BuildingId } from '@ogame-clone/game-engine';
-
-const buildingIds = [
-  'mineraiMine',
-  'siliciumMine',
-  'hydrogeneSynth',
-  'solarPlant',
-  'robotics',
-  'shipyard',
-  'arsenal',
-  'commandCenter',
-  'researchLab',
-  'storageMinerai',
-  'storageSilicium',
-  'storageHydrogene',
-  'missionCenter',
-] as const;
 
 export function createBuildingRouter(buildingService: ReturnType<typeof createBuildingService>) {
   return router({
@@ -31,14 +14,14 @@ export function createBuildingRouter(buildingService: ReturnType<typeof createBu
       .input(
         z.object({
           planetId: z.string().uuid(),
-          buildingId: z.enum(buildingIds),
+          buildingId: z.string().min(1),
         }),
       )
       .mutation(async ({ ctx, input }) => {
         return buildingService.startUpgrade(
           ctx.userId!,
           input.planetId,
-          input.buildingId as BuildingId,
+          input.buildingId,
         );
       }),
 

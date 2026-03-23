@@ -7,6 +7,7 @@ import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
 import type { BuildCompletionResult } from '../../workers/completion.types.js';
+import { CANCEL_REFUND_RATIO } from '../universe/universe.config.js';
 
 async function getBuildingLevels(db: Database, planetId: string): Promise<Record<string, number>> {
   const rows = await db
@@ -173,7 +174,7 @@ export function createResearchService(
       const now = Date.now();
       const totalDuration = new Date(activeResearch.endTime).getTime() - new Date(activeResearch.startTime).getTime();
       const remaining = Math.max(0, new Date(activeResearch.endTime).getTime() - now);
-      const refundRatio = Math.min(0.7, totalDuration > 0 ? remaining / totalDuration : 0);
+      const refundRatio = Math.min(CANCEL_REFUND_RATIO, totalDuration > 0 ? remaining / totalDuration : 0);
       const refund = {
         minerai: Math.floor(cost.minerai * refundRatio),
         silicium: Math.floor(cost.silicium * refundRatio),

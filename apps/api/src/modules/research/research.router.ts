@@ -1,14 +1,6 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createResearchService } from './research.service.js';
-import type { ResearchId } from '@ogame-clone/game-engine';
-
-const researchIds = [
-  'espionageTech', 'computerTech', 'energyTech',
-  'combustion', 'impulse', 'hyperspaceDrive',
-  'weapons', 'shielding', 'armor', 'rockFracturing',
-  'deepSpaceRefining',
-] as const;
 
 export function createResearchRouter(researchService: ReturnType<typeof createResearchService>) {
   return router({
@@ -21,10 +13,10 @@ export function createResearchRouter(researchService: ReturnType<typeof createRe
     start: protectedProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        researchId: z.enum(researchIds),
+        researchId: z.string().min(1),
       }))
       .mutation(async ({ ctx, input }) => {
-        return researchService.startResearch(ctx.userId!, input.planetId, input.researchId as ResearchId);
+        return researchService.startResearch(ctx.userId!, input.planetId, input.researchId);
       }),
 
     cancel: protectedProcedure

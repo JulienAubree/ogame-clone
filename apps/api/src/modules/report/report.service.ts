@@ -55,7 +55,7 @@ export function createReportService(db: Database) {
 
       if (options?.missionTypes && options.missionTypes.length > 0) {
         conditions.push(
-          inArray(missionReports.missionType, options.missionTypes as ['mine' | 'transport' | 'spy' | 'attack' | 'pirate' | 'colonize' | 'recycle' | 'station', ...('mine' | 'transport' | 'spy' | 'attack' | 'pirate' | 'colonize' | 'recycle' | 'station')[]]),
+          inArray(missionReports.missionType, options.missionTypes as typeof missionReports.missionType.enumValues),
         );
       }
 

@@ -7,6 +7,7 @@ import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
 import type { BuildCompletionResult } from '../../workers/completion.types.js';
+import { CANCEL_REFUND_RATIO } from '../universe/universe.config.js';
 
 export function createShipyardService(
   db: Database,
@@ -406,19 +407,19 @@ export function createShipyardService(
         const now = Date.now();
         const totalDuration = new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime();
         const timeLeft = Math.max(0, new Date(entry.endTime).getTime() - now);
-        const currentUnitRatio = Math.min(0.7, totalDuration > 0 ? timeLeft / totalDuration : 0);
+        const currentUnitRatio = Math.min(CANCEL_REFUND_RATIO, totalDuration > 0 ? timeLeft / totalDuration : 0);
 
         refund = {
-          minerai: Math.floor(unitCost.minerai * currentUnitRatio) + Math.floor(unitCost.minerai * 0.7) * waitingUnits,
-          silicium: Math.floor(unitCost.silicium * currentUnitRatio) + Math.floor(unitCost.silicium * 0.7) * waitingUnits,
-          hydrogene: Math.floor(unitCost.hydrogene * currentUnitRatio) + Math.floor(unitCost.hydrogene * 0.7) * waitingUnits,
+          minerai: Math.floor(unitCost.minerai * currentUnitRatio) + Math.floor(unitCost.minerai * CANCEL_REFUND_RATIO) * waitingUnits,
+          silicium: Math.floor(unitCost.silicium * currentUnitRatio) + Math.floor(unitCost.silicium * CANCEL_REFUND_RATIO) * waitingUnits,
+          hydrogene: Math.floor(unitCost.hydrogene * currentUnitRatio) + Math.floor(unitCost.hydrogene * CANCEL_REFUND_RATIO) * waitingUnits,
         };
       } else {
-        // Queued: nothing started → 70% refund
+        // Queued: nothing started → full refund ratio
         refund = {
-          minerai: Math.floor(unitCost.minerai * 0.7) * remaining,
-          silicium: Math.floor(unitCost.silicium * 0.7) * remaining,
-          hydrogene: Math.floor(unitCost.hydrogene * 0.7) * remaining,
+          minerai: Math.floor(unitCost.minerai * CANCEL_REFUND_RATIO) * remaining,
+          silicium: Math.floor(unitCost.silicium * CANCEL_REFUND_RATIO) * remaining,
+          hydrogene: Math.floor(unitCost.hydrogene * CANCEL_REFUND_RATIO) * remaining,
         };
       }
 

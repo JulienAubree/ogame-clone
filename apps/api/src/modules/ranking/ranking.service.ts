@@ -40,36 +40,18 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
 
         const [research] = await db.select().from(userResearch).where(eq(userResearch.userId, user.id)).limit(1);
         const researchPoints = research
-          ? calculateResearchPoints({
-              espionageTech: research.espionageTech,
-              computerTech: research.computerTech,
-              energyTech: research.energyTech,
-              combustion: research.combustion,
-              impulse: research.impulse,
-              hyperspaceDrive: research.hyperspaceDrive,
-              weapons: research.weapons,
-              shielding: research.shielding,
-              armor: research.armor,
-            }, config.research)
+          ? (() => {
+              const { userId: _, ...levels } = research;
+              return calculateResearchPoints(levels as Record<string, number>, config.research);
+            })()
           : 0;
 
         let fleetPoints = 0;
         for (const planet of userPlanets) {
           const [ships] = await db.select().from(planetShips).where(eq(planetShips.planetId, planet.id)).limit(1);
           if (ships) {
-            fleetPoints += calculateFleetPoints({
-              smallCargo: ships.smallCargo,
-              largeCargo: ships.largeCargo,
-              lightFighter: ships.lightFighter,
-              heavyFighter: ships.heavyFighter,
-              cruiser: ships.cruiser,
-              battleship: ships.battleship,
-              espionageProbe: ships.espionageProbe,
-              colonyShip: ships.colonyShip,
-              recycler: ships.recycler,
-              prospector: ships.prospector,
-              explorer: ships.explorer,
-            }, config.ships);
+            const { planetId: _, ...counts } = ships;
+            fleetPoints += calculateFleetPoints(counts as Record<string, number>, config.ships);
           }
         }
 
@@ -77,15 +59,8 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
         for (const planet of userPlanets) {
           const [defenses] = await db.select().from(planetDefenses).where(eq(planetDefenses.planetId, planet.id)).limit(1);
           if (defenses) {
-            defensePoints += calculateDefensePoints({
-              rocketLauncher: defenses.rocketLauncher,
-              lightLaser: defenses.lightLaser,
-              heavyLaser: defenses.heavyLaser,
-              gaussCannon: defenses.gaussCannon,
-              plasmaTurret: defenses.plasmaTurret,
-              smallShield: defenses.smallShield,
-              largeShield: defenses.largeShield,
-            }, config.defenses);
+            const { planetId: _, ...counts } = defenses;
+            defensePoints += calculateDefensePoints(counts as Record<string, number>, config.defenses);
           }
         }
 

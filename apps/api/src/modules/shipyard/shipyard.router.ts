@@ -2,17 +2,6 @@ import { z } from 'zod';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createShipyardService } from './shipyard.service.js';
 
-const shipIds = [
-  'smallCargo', 'largeCargo', 'lightFighter', 'heavyFighter',
-  'cruiser', 'battleship', 'espionageProbe', 'colonyShip', 'recycler',
-  'prospector', 'explorer', 'solarSatellite',
-] as const;
-
-const defenseIds = [
-  'rocketLauncher', 'lightLaser', 'heavyLaser',
-  'gaussCannon', 'plasmaTurret', 'smallShield', 'largeShield',
-] as const;
-
 export function createShipyardRouter(shipyardService: ReturnType<typeof createShipyardService>) {
   return router({
     ships: protectedProcedure
@@ -36,7 +25,7 @@ export function createShipyardRouter(shipyardService: ReturnType<typeof createSh
     buildShip: protectedProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        shipId: z.enum(shipIds),
+        shipId: z.string().min(1),
         quantity: z.number().int().min(1).max(9999),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -46,7 +35,7 @@ export function createShipyardRouter(shipyardService: ReturnType<typeof createSh
     buildDefense: protectedProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        defenseId: z.enum(defenseIds),
+        defenseId: z.string().min(1),
         quantity: z.number().int().min(1).max(9999),
       }))
       .mutation(async ({ ctx, input }) => {

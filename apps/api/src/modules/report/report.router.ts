@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { MissionType } from '@ogame-clone/shared';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createReportService } from './report.service.js';
 
-const missionTypeEnum = z.enum(['mine', 'transport', 'spy', 'attack', 'pirate', 'colonize', 'recycle', 'station']);
+const missionValues = Object.values(MissionType) as [string, ...string[]];
 
 export function createReportRouter(reportService: ReturnType<typeof createReportService>) {
   return router({
@@ -10,7 +11,7 @@ export function createReportRouter(reportService: ReturnType<typeof createReport
       .input(z.object({
         cursor: z.string().uuid().optional(),
         limit: z.number().int().min(1).max(100).default(20),
-        missionTypes: z.array(missionTypeEnum).optional(),
+        missionTypes: z.array(z.enum(missionValues)).optional(),
       }).optional())
       .query(async ({ ctx, input }) => {
         return reportService.list(ctx.userId!, {

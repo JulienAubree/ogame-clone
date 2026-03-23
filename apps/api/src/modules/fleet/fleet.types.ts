@@ -19,7 +19,7 @@ export interface SendFleetInput {
   targetGalaxy: number;
   targetSystem: number;
   targetPosition: number;
-  mission: 'transport' | 'station' | 'spy' | 'attack' | 'colonize' | 'recycle' | 'mine' | 'pirate';
+  mission: string;
   ships: Record<string, number>;
   mineraiCargo?: number;
   siliciumCargo?: number;
@@ -167,24 +167,16 @@ export async function getCombatMultipliers(
   bonusDefs: BonusDefinition[],
 ): Promise<CombatMultipliers> {
   const [research] = await db
-    .select({
-      weapons: userResearch.weapons,
-      shielding: userResearch.shielding,
-      armor: userResearch.armor,
-    })
+    .select()
     .from(userResearch)
     .where(eq(userResearch.userId, userId))
     .limit(1);
 
-  const levels: Record<string, number> = {
-    weapons: research?.weapons ?? 0,
-    shielding: research?.shielding ?? 0,
-    armor: research?.armor ?? 0,
-  };
+  const { userId: _, ...levels } = research ?? {};
 
   return {
-    weapons: resolveBonus('weapons', null, levels, bonusDefs),
-    shielding: resolveBonus('shielding', null, levels, bonusDefs),
-    armor: resolveBonus('armor', null, levels, bonusDefs),
+    weapons: resolveBonus('weapons', null, levels as Record<string, number>, bonusDefs),
+    shielding: resolveBonus('shielding', null, levels as Record<string, number>, bonusDefs),
+    armor: resolveBonus('armor', null, levels as Record<string, number>, bonusDefs),
   };
 }

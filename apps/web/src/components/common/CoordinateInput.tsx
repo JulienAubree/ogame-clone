@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
+import { useGameConfig } from '@/hooks/useGameConfig';
 
 interface CoordinateInputProps {
   galaxy: number;
@@ -15,12 +16,17 @@ export function CoordinateInput({ galaxy, system, position, onChange, disabled, 
   const galaxyRef = useRef<HTMLInputElement>(null);
   const systemRef = useRef<HTMLInputElement>(null);
   const positionRef = useRef<HTMLInputElement>(null);
+  const { data: gameConfig } = useGameConfig();
+
+  const maxGalaxy = Number(gameConfig?.universe?.galaxies) || 9;
+  const maxSystem = Number(gameConfig?.universe?.systems) || 499;
+  const maxPosition = Number(gameConfig?.universe?.positions) || 16;
 
   const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
 
   const handleChange = (field: 'galaxy' | 'system' | 'position', raw: string) => {
     const num = Number(raw) || 0;
-    const limits = { galaxy: [1, 9], system: [1, 499], position: [1, 16] } as const;
+    const limits = { galaxy: [1, maxGalaxy], system: [1, maxSystem], position: [1, maxPosition] } as const;
     const [min, max] = limits[field];
     const clamped = num === 0 ? 0 : clamp(num, min, max);
     onChange({ galaxy, system, position, [field]: clamped });
@@ -63,7 +69,7 @@ export function CoordinateInput({ galaxy, system, position, onChange, disabled, 
           ref={galaxyRef}
           type="number"
           min={1}
-          max={9}
+          max={maxGalaxy}
           value={galaxy || ''}
           onChange={(e) => handleChange('galaxy', e.target.value)}
           onBlur={() => handleBlur('galaxy')}
@@ -81,7 +87,7 @@ export function CoordinateInput({ galaxy, system, position, onChange, disabled, 
           ref={systemRef}
           type="number"
           min={1}
-          max={499}
+          max={maxSystem}
           value={system || ''}
           onChange={(e) => handleChange('system', e.target.value)}
           onBlur={() => handleBlur('system')}
@@ -101,7 +107,7 @@ export function CoordinateInput({ galaxy, system, position, onChange, disabled, 
               ref={positionRef}
               type="number"
               min={1}
-              max={16}
+              max={maxPosition}
               value={position || ''}
               onChange={(e) => handleChange('position', e.target.value)}
               onBlur={() => handleBlur('position')}

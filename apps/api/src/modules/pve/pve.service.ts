@@ -5,6 +5,7 @@ import type { Database } from '@ogame-clone/db';
 import { discoveryCooldown, depositSize, depositComposition } from '@ogame-clone/game-engine';
 import type { createAsteroidBeltService } from './asteroid-belt.service.js';
 import type { createPirateService } from './pirate.service.js';
+import { UNIVERSE_CONFIG, BELT_POSITIONS } from '../universe/universe.config.js';
 
 export function createPveService(
   db: Database,
@@ -144,11 +145,11 @@ export function createPveService(
 
     async generateDiscoveredMission(userId: string, galaxy: number, system: number, centerLevel: number) {
       // Build candidate coordinates (nearby systems × available positions)
-      const positions: (8 | 16)[] = centerLevel >= 3 ? [8, 16] : [8];
+      const positions = centerLevel >= 3 ? [...BELT_POSITIONS] : [BELT_POSITIONS[0]];
       const candidates: { system: number; position: 8 | 16 }[] = [];
       for (let offset = 0; offset <= 5; offset++) {
         for (const pos of positions) {
-          if (system + offset <= 499) candidates.push({ system: system + offset, position: pos });
+          if (system + offset <= UNIVERSE_CONFIG.systems) candidates.push({ system: system + offset, position: pos });
           if (offset > 0 && system - offset >= 1) candidates.push({ system: system - offset, position: pos });
         }
       }
@@ -269,9 +270,10 @@ export function createPveService(
 
       // Random position in system (exclude belt positions)
       let position: number;
+      const beltSet = new Set<number>(BELT_POSITIONS);
       do {
-        position = 1 + Math.floor(Math.random() * 16);
-      } while (position === 8 || position === 16);
+        position = 1 + Math.floor(Math.random() * UNIVERSE_CONFIG.positions);
+      } while (beltSet.has(position));
 
       const rewards = template.rewards as {
         minerai: number; silicium: number; hydrogene: number;
