@@ -17,19 +17,6 @@ interface GameConfigLike {
   defenses?: Record<string, { name: string }>;
 }
 
-const RESEARCH_NAMES: Record<string, string> = {
-  espionageTech: 'Technologie Espionnage',
-  computerTech: 'Technologie Ordinateur',
-  energyTech: 'Technologie Energie',
-  combustion: 'Reacteur a combustion',
-  impulse: 'Reacteur a impulsion',
-  hyperspaceDrive: 'Propulsion hyperespace',
-  weapons: 'Technologie Armes',
-  shielding: 'Technologie Bouclier',
-  armor: 'Technologie Protection',
-  rockFracturing: 'Fracturation des roches',
-  deepSpaceRefining: 'Raffinage en espace lointain',
-};
 
 export function getBuildingName(id: string, config?: GameConfigLike | null): string {
   return config?.buildings?.[id]?.name
@@ -40,7 +27,6 @@ export function getBuildingName(id: string, config?: GameConfigLike | null): str
 export function getResearchName(id: string, config?: GameConfigLike | null): string {
   return config?.research?.[id]?.name
     ?? RESEARCH[id as ResearchId]?.name
-    ?? RESEARCH_NAMES[id]
     ?? id.replace(/([A-Z])/g, ' $1').trim();
 }
 
@@ -73,6 +59,5 @@ export function getEntityName(id: string, config?: GameConfigLike | null): strin
     ?? RESEARCH[id as ResearchId]?.name
     ?? SHIPS[id as ShipId]?.name
     ?? DEFENSES[id as DefenseId]?.name
-    ?? RESEARCH_NAMES[id]
     ?? id.replace(/([A-Z])/g, ' $1').trim();
 }

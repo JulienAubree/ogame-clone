@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
+import { useGameConfig } from '@/hooks/useGameConfig';
 import { eventTypeColor, formatEventText, formatRelativeTime, eventNavigationTarget, groupEvents } from '@/lib/game-events';
 import { getPlanetImageUrl } from '@/lib/assets';
 
@@ -39,6 +40,7 @@ function ResourceBadge({ label, value, glowClass, colorClass, icon }: {
 }
 
 export function TopBar({ planetId, planets }: { planetId: string | null; planets: Planet[] }) {
+  const { data: gameConfig } = useGameConfig();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -249,7 +251,7 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
                     >
                       <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${eventTypeColor(event.type)}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="truncate">{formatEventText(event)}</p>
+                        <p className="truncate">{formatEventText(event, { missions: gameConfig?.missions })}</p>
                         <span className="text-xs text-muted-foreground/60">{formatRelativeTime(event.createdAt)}</span>
                       </div>
                     </button>

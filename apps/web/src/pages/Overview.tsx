@@ -476,7 +476,7 @@ export default function Overview() {
                   <div key={event.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/30 last:border-0">
                     <div className="flex items-center gap-2">
                       <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${eventTypeColor(event.type)}`} />
-                      <span className="text-muted-foreground">{formatEventText(event)}</span>
+                      <span className="text-muted-foreground">{formatEventText(event, { missions: gameConfig?.missions })}</span>
                     </div>
                     <span className="text-xs text-muted-foreground/60 shrink-0 ml-2">{formatRelativeTime(event.createdAt)}</span>
                   </div>

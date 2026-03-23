@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { trpc } from '@/trpc';
 import { PageHeader } from '@/components/common/PageHeader';
+import { useGameConfig } from '@/hooks/useGameConfig';
 import { eventTypeColor, eventTypeLabel, formatEventText, formatDateTime, groupEvents } from '@/lib/game-events';
 
 const EVENT_TYPE_OPTIONS = [
@@ -16,6 +17,7 @@ const EVENT_TYPE_OPTIONS = [
 type GameEventType = (typeof EVENT_TYPE_OPTIONS)[number]['value'];
 
 export default function History() {
+  const { data: gameConfig } = useGameConfig();
   const [selectedTypes, setSelectedTypes] = useState<GameEventType[]>([]);
   const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -100,9 +102,9 @@ export default function History() {
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${eventTypeColor(event.type)}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground">{eventTypeLabel(event.type)}</span>
+                <span className="text-xs font-medium text-muted-foreground">{eventTypeLabel(event.type, gameConfig?.labels)}</span>
               </div>
-              <p className="text-sm">{formatEventText(event, { includePlanet: true })}</p>
+              <p className="text-sm">{formatEventText(event, { includePlanet: true, missions: gameConfig?.missions })}</p>
             </div>
             <span className="text-xs text-muted-foreground/60 shrink-0">{formatDateTime(event.createdAt)}</span>
           </div>

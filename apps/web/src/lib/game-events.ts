@@ -11,43 +11,26 @@ export function eventTypeColor(type: string) {
   }
 }
 
-export function eventTypeLabel(type: string) {
-  switch (type) {
-    case 'building-done': return 'Construction';
-    case 'research-done': return 'Recherche';
-    case 'shipyard-done': return 'Chantier';
-    case 'fleet-arrived': return 'Flotte arrivée';
-    case 'fleet-returned': return 'Flotte de retour';
-    case 'pve-mission-done': return 'Mission PvE';
-    case 'tutorial-quest-done': return 'Tutoriel';
-    default: return 'Événement';
-  }
+export function eventTypeLabel(type: string, labels?: Record<string, string>): string {
+  return labels?.[`event.${type}`] ?? type;
 }
 
 import { getEntityName } from './entity-names';
 
-const MISSION_LABELS: Record<string, string> = {
-  transport: 'Transport',
-  station: 'Stationnement',
-  spy: 'Espionnage',
-  attack: 'Attaque',
-  colonize: 'Colonisation',
-  recycle: 'Recyclage',
-  mine: 'Minage',
-  pirate: 'Pirate',
-};
-
-export function formatEventText(event: { type: string; payload?: unknown }, options?: { includePlanet?: boolean }) {
+export function formatEventText(
+  event: { type: string; payload?: unknown },
+  options?: { includePlanet?: boolean; missions?: Record<string, { label: string }> },
+) {
   const p = event.payload as any;
   const planet = options?.includePlanet && p.planetName ? ` sur ${p.planetName}` : '';
   switch (event.type) {
     case 'building-done': return `${p.name ?? getEntityName(p.buildingId)} niveau ${p.level}${planet}`;
     case 'research-done': return `${p.name ?? getEntityName(p.techId)} niveau ${p.level}${planet}`;
     case 'shipyard-done': return `${p.count}x ${p.name ?? getEntityName(p.unitId)}${planet}`;
-    case 'fleet-arrived': return `Mission ${MISSION_LABELS[p.mission] ?? p.mission} arrivée en ${p.targetCoords}`;
+    case 'fleet-arrived': return `Mission ${options?.missions?.[p.mission]?.label ?? p.mission} arrivée en ${p.targetCoords}`;
     case 'fleet-returned': return `Flotte rentrée sur ${p.originName}`;
     case 'pve-mission-done': {
-      const mLabel = p.missionType === 'pirate' ? 'Pirate' : 'Minage';
+      const mLabel = options?.missions?.[p.missionType]?.label ?? p.missionType;
       const loot = [
         p.cargo?.minerai ? `${p.cargo.minerai.toLocaleString('fr-FR')} minerai` : '',
         p.cargo?.silicium ? `${p.cargo.silicium.toLocaleString('fr-FR')} silicium` : '',
