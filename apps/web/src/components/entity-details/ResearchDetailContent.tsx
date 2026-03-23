@@ -16,6 +16,7 @@ const STAT_LABELS: Record<string, string> = {
   fleet_count: 'Flottes simultanées',
   spy_range: "Portée d'espionnage",
   mining_duration: 'Durée de minage',
+  mining_extraction: "Capacité d'extraction",
 };
 
 const DRIVE_LABELS: Record<string, string> = {
@@ -113,6 +114,30 @@ export function ResearchDetailContent({ researchId, researchLevels }: Props) {
           const driveLabel = DRIVE_LABELS[bonus.category] ?? bonus.category;
           sections.push({
             label: `Vaisseaux affectés (${driveLabel})`,
+            type: 'units',
+            items,
+            percentPerLevel: bonus.percentPerLevel,
+          });
+        }
+      } else if (bonus.stat === 'mining_extraction') {
+        const items: Array<{ id: string; category: string; name: string; baseValue: number; effectiveValue: number }> = [];
+        const mult = resolveBonus('mining_extraction', null, researchLevels, gameConfig.bonuses);
+
+        for (const ship of Object.values(gameConfig.ships)) {
+          const baseValue = (ship as any).miningExtraction ?? 0;
+          if (baseValue === 0) continue;
+          items.push({
+            id: ship.id,
+            category: 'ships',
+            name: ship.name,
+            baseValue,
+            effectiveValue: Math.floor(baseValue * mult),
+          });
+        }
+
+        if (items.length > 0) {
+          sections.push({
+            label: "Extraction par vaisseau",
             type: 'units',
             items,
             percentPerLevel: bonus.percentPerLevel,
