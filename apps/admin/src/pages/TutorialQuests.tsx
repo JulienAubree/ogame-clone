@@ -6,12 +6,6 @@ import { EditModal } from '@/components/ui/EditModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Plus, Pencil, Trash2, GraduationCap } from 'lucide-react';
 
-const CONDITION_LABELS: Record<string, string> = {
-  building_level: 'Niveau batiment',
-  ship_count: 'Nombre vaisseaux',
-  mission_complete: 'Mission completee',
-};
-
 const FIELDS = [
   { key: 'id', label: 'ID (slug)', type: 'text' as const },
   { key: 'order', label: 'Ordre', type: 'number' as const },
@@ -21,9 +15,12 @@ const FIELDS = [
     { value: 'building_level', label: 'Niveau batiment' },
     { value: 'ship_count', label: 'Nombre vaisseaux' },
     { value: 'mission_complete', label: 'Mission completee' },
+    { value: 'research_level', label: 'Niveau recherche' },
+    { value: 'fleet_return', label: 'Retour de flotte' },
   ]},
   { key: 'conditionTargetId', label: 'Cible (ID batiment/vaisseau/mission)', type: 'text' as const },
   { key: 'conditionTargetValue', label: 'Valeur cible', type: 'number' as const },
+  { key: 'conditionLabel', label: 'Label condition', type: 'text' as const },
   { key: 'rewardMinerai', label: 'Recompense Minerai', type: 'number' as const },
   { key: 'rewardSilicium', label: 'Recompense Silicium', type: 'number' as const },
   { key: 'rewardHydrogene', label: 'Recompense Hydrogene', type: 'number' as const },
@@ -40,6 +37,7 @@ function defaultForm(): Record<string, string | number> {
     conditionType: 'building_level',
     conditionTargetId: '',
     conditionTargetValue: 1,
+    conditionLabel: '',
     rewardMinerai: 0,
     rewardSilicium: 0,
     rewardHydrogene: 0,
@@ -54,6 +52,7 @@ function questToForm(q: any): Record<string, string | number> {
     conditionType: q.conditionType,
     conditionTargetId: q.conditionTargetId,
     conditionTargetValue: q.conditionTargetValue,
+    conditionLabel: q.conditionLabel ?? '',
     rewardMinerai: q.rewardMinerai ?? 0,
     rewardSilicium: q.rewardSilicium ?? 0,
     rewardHydrogene: q.rewardHydrogene ?? 0,
@@ -66,9 +65,10 @@ function formToCreateData(values: Record<string, string | number>) {
     order: Number(values.order),
     title: String(values.title),
     narrativeText: String(values.narrativeText),
-    conditionType: String(values.conditionType) as 'building_level' | 'ship_count' | 'mission_complete',
+    conditionType: String(values.conditionType) as 'building_level' | 'ship_count' | 'mission_complete' | 'research_level' | 'fleet_return',
     conditionTargetId: String(values.conditionTargetId),
     conditionTargetValue: Number(values.conditionTargetValue),
+    conditionLabel: String(values.conditionLabel) || null,
     rewardMinerai: Number(values.rewardMinerai),
     rewardSilicium: Number(values.rewardSilicium),
     rewardHydrogene: Number(values.rewardHydrogene),
@@ -144,7 +144,7 @@ export default function TutorialQuests() {
                 <td className="font-medium">{q.title}</td>
                 <td>
                   <span className="inline-block px-2 py-0.5 rounded text-xs font-medium text-cyan-400 bg-cyan-900/20">
-                    {CONDITION_LABELS[q.conditionType] ?? q.conditionType}
+                    {q.conditionLabel ?? q.conditionType}
                   </span>
                 </td>
                 <td className="font-mono text-gray-400 text-xs">{q.conditionTargetId}</td>

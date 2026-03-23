@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { trpc } from '@/trpc';
 import { EditModal } from '@/components/ui/EditModal';
@@ -7,23 +7,6 @@ import { PageSkeleton } from '@/components/ui/LoadingSpinner';
 import { PrerequisitesEditor, type MixedPrereq } from '@/components/ui/PrerequisitesEditor';
 import { Pencil, Plus, Trash2, Link } from 'lucide-react';
 import { AdminImageUpload } from '@/components/ui/AdminImageUpload';
-
-const STAT_OPTIONS = [
-  { value: 'building_time', label: 'Temps construction' },
-  { value: 'research_time', label: 'Temps recherche' },
-  { value: 'ship_build_time', label: 'Temps vaisseau' },
-  { value: 'defense_build_time', label: 'Temps défense' },
-  { value: 'ship_speed', label: 'Vitesse vaisseau' },
-  { value: 'weapons', label: 'Armes' },
-  { value: 'shielding', label: 'Boucliers' },
-  { value: 'armor', label: 'Blindage' },
-  { value: 'mining_duration', label: 'Durée minage' },
-  { value: 'cargo_capacity', label: 'Capacité cargo' },
-  { value: 'fuel_consumption', label: 'Conso carburant' },
-  { value: 'resource_production', label: 'Production' },
-  { value: 'fleet_count', label: 'Nb flottes' },
-  { value: 'spy_range', label: 'Portée espionnage' },
-];
 
 const FIELDS = [
   { key: 'name', label: 'Nom', type: 'text' as const },
@@ -50,6 +33,17 @@ export default function Research() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editingPrereqs, setEditingPrereqs] = useState<string | null>(null);
+
+  const statOptions = useMemo(() => {
+    if (!data?.bonuses) return [];
+    const seen = new Map<string, string>();
+    for (const b of data.bonuses) {
+      if (!seen.has(b.stat)) {
+        seen.set(b.stat, b.statLabel ?? b.stat);
+      }
+    }
+    return Array.from(seen.entries()).map(([value, label]) => ({ value, label }));
+  }, [data?.bonuses]);
 
   const updateMutation = trpc.gameConfig.admin.updateResearch.useMutation({
     onSuccess: () => {
@@ -155,7 +149,7 @@ export default function Research() {
                       <div className="space-y-1">
                         {researchBonuses.map((bn) => (
                           <div key={bn.id} className="flex items-center gap-1 text-gray-300">
-                            <span>{STAT_OPTIONS.find(s => s.value === bn.stat)?.label ?? bn.stat}</span>
+                            <span>{bn.statLabel ?? bn.stat}</span>
                             <span className={bn.percentPerLevel < 0 ? 'text-emerald-400' : 'text-sky-400'}>
                               {bn.percentPerLevel > 0 ? '+' : ''}{bn.percentPerLevel}%/niv
                             </span>
@@ -176,7 +170,7 @@ export default function Research() {
                               onChange={(e) => setNewBonusStat(e.target.value)}
                               className="bg-panel border border-panel-border rounded px-1 py-0.5 text-xs"
                             >
-                              {STAT_OPTIONS.map((s) => (
+                              {statOptions.map((s) => (
                                 <option key={s.value} value={s.value}>{s.label}</option>
                               ))}
                             </select>
