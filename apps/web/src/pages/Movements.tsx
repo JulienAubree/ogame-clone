@@ -8,7 +8,6 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { MISSION_CONFIG } from '@/config/mission-config';
 import { getShipName } from '@/lib/entity-names';
 import { resolveBonus } from '@ogame-clone/game-engine';
 import { cn } from '@/lib/utils';
@@ -215,7 +214,7 @@ function MovementCard({
 
   const mStyle = MISSION_STYLE[event.mission] ?? MISSION_STYLE.transport;
   const pStyle = PHASE_STYLE[event.phase] ?? PHASE_STYLE.outbound;
-  const missionLabel = MISSION_CONFIG[event.mission as keyof typeof MISSION_CONFIG]?.label ?? event.mission;
+  const missionLabel = gameConfig?.missions?.[event.mission]?.label ?? event.mission;
 
   const minerai = Number(event.mineraiCargo);
   const silicium = Number(event.siliciumCargo);
@@ -575,7 +574,7 @@ export default function Movements() {
 
   const recallingEvent = recallConfirm ? sorted.find((m) => m.id === recallConfirm) : null;
   const recallingLabel = recallingEvent
-    ? (MISSION_CONFIG[recallingEvent.mission as keyof typeof MISSION_CONFIG]?.label ?? recallingEvent.mission)
+    ? (gameConfig?.missions[recallingEvent.mission]?.label ?? recallingEvent.mission)
     : '';
   const recallingCoords = recallingEvent
     ? `[${recallingEvent.targetGalaxy}:${recallingEvent.targetSystem}:${recallingEvent.targetPosition}]`

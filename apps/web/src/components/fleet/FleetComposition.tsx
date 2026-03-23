@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { categorizeShip, type Mission, type ShipCategory, MISSION_CONFIG } from '@/config/mission-config';
+import { categorizeShip, type Mission, type ShipCategory } from '@/config/mission-config';
+import { useGameConfig } from '@/hooks/useGameConfig';
 
 const COLLAPSED_COUNT = 3;
 
@@ -95,6 +96,8 @@ function CollapsibleShipList({ ships, selectedShips, onChange, disabled }: {
 }
 
 export function FleetComposition({ ships, mission, selectedShips, onChange }: FleetCompositionProps) {
+  const { data: gameConfig } = useGameConfig();
+
   if (!mission) {
     return (
       <div className="rounded-lg border border-border bg-card p-4 text-center text-sm text-muted-foreground">
@@ -103,15 +106,15 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
     );
   }
 
-  const config = MISSION_CONFIG[mission];
+  const config = gameConfig?.missions[mission];
   const categorized: Record<ShipCategory, Ship[]> = { required: [], optional: [], disabled: [] };
 
   for (const ship of ships) {
-    const category = categorizeShip(ship.id, ship.count, mission, { isStationary: ship.isStationary });
+    const category = categorizeShip(ship.id, ship.count, gameConfig?.missions[mission], { isStationary: ship.isStationary });
     categorized[category].push(ship);
   }
 
-  const sectionLabel = config.requiredShips ? '★ Requis' : '★ Recommandés';
+  const sectionLabel = config?.requiredShipRoles ? '★ Requis' : '★ Recommandés';
   const showRequired = categorized.required.length > 0;
 
   return (

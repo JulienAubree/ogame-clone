@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import type { Mission } from '@/config/mission-config';
-import { MISSION_CONFIG } from '@/config/mission-config';
+import { useGameConfig } from '@/hooks/useGameConfig';
 
 interface MiningStats {
   fleetExtraction: number;
@@ -38,8 +38,9 @@ function fmt(n: number) {
 }
 
 export function FleetSummaryBar({ mission, selectedShips, totalCargo, cargoCapacity, miningStats, fuel, duration, disabled, sending, onSend }: FleetSummaryBarProps) {
+  const { data: gameConfig } = useGameConfig();
   const shipCount = Object.values(selectedShips).reduce((sum, n) => sum + n, 0);
-  const config = mission ? MISSION_CONFIG[mission] : null;
+  const config = mission ? gameConfig?.missions[mission] : null;
   const buttonLabel = config?.buttonLabel ?? 'Envoyer';
   const isMine = mission === 'mine';
 

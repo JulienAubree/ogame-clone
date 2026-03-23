@@ -12,7 +12,7 @@ import { MissionSelector } from '@/components/fleet/MissionSelector';
 import { PveMissionBanner } from '@/components/fleet/PveMissionBanner';
 import { FleetComposition } from '@/components/fleet/FleetComposition';
 import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
-import { MISSION_CONFIG, getCargoCapacity, type Mission } from '@/config/mission-config';
+import { getCargoCapacity, type Mission } from '@/config/mission-config';
 import { getShipName } from '@/lib/entity-names';
 import { computeSlagRate, miningDuration, resolveBonus } from '@ogame-clone/game-engine';
 import { cn } from '@/lib/utils';
@@ -83,11 +83,11 @@ export default function Fleet() {
   useEffect(() => {
     if (!ships || !prefillRef.current) return;
     const missionType = prefillRef.current.mission;
-    const config = MISSION_CONFIG[missionType];
+    const config = gameConfig?.missions[missionType];
 
-    if (config.requiredShips) {
+    if (config?.requiredShipRoles) {
       const preselect: Record<string, number> = {};
-      for (const shipId of config.requiredShips) {
+      for (const shipId of config.requiredShipRoles) {
         const ship = ships.find((s) => s.id === shipId);
         if (ship && ship.count > 0) preselect[shipId] = ship.count;
       }
@@ -140,26 +140,26 @@ export default function Fleet() {
     if (fleetSlots && fleetSlots.current >= fleetSlots.max) return `Nombre max de flottes atteint (${fleetSlots.max}). Améliorez Technologie informatique.`;
     if (!target.galaxy || !target.system || !target.position) return 'Destination incomplète';
 
-    const config = MISSION_CONFIG[mission];
+    const config = gameConfig?.missions[mission];
 
-    if (config.requiresPveMission && !pveMissionId) {
+    if (config?.requiresPveMission && !pveMissionId) {
       return 'Cette mission doit être lancée depuis la page Missions';
     }
 
     const selected = Object.entries(selectedShips).filter(([, c]) => c > 0);
     if (selected.length === 0) return 'Sélectionnez au moins un vaisseau';
 
-    if (config.requiredShips && !config.recommendedShips) {
-      const hasRequired = config.requiredShips.some((id) => (selectedShips[id] ?? 0) > 0);
+    if (config?.requiredShipRoles && !config.recommendedShipRoles) {
+      const hasRequired = config.requiredShipRoles.some((id) => (selectedShips[id] ?? 0) > 0);
       if (!hasRequired) {
-        const names = config.requiredShips.map((id) => getShipName(id)).join(', ');
+        const names = config.requiredShipRoles.map((id) => getShipName(id)).join(', ');
         return `Cette mission nécessite : ${names}`;
       }
     }
 
-    if (config.exclusive && config.requiredShips) {
-      const hasDisallowed = selected.some(([id]) => !config.requiredShips!.includes(id));
-      if (hasDisallowed) return `Cette mission n'autorise que : ${config.requiredShips.map((id) => getShipName(id)).join(', ')}`;
+    if (config?.exclusive && config.requiredShipRoles) {
+      const hasDisallowed = selected.some(([id]) => !config.requiredShipRoles!.includes(id));
+      if (hasDisallowed) return `Cette mission n'autorise que : ${config.requiredShipRoles.map((id) => getShipName(id)).join(', ')}`;
     }
 
     // Check total cargo does not exceed capacity
@@ -270,7 +270,7 @@ export default function Fleet() {
       {/* Mission Hint (only in direct mode, not PvE — banner replaces it) */}
       {mission && !pveMode && (
         <div className="rounded-lg border border-blue-800/40 bg-blue-950/30 p-2 text-center text-xs text-blue-300">
-          {MISSION_CONFIG[mission].hint}
+          {gameConfig?.missions[mission]?.hint ?? ''}
         </div>
       )}
 
@@ -330,7 +330,7 @@ export default function Fleet() {
         disabled={!!validationError}
         sending={sendMutation.isPending}
         onSend={() => {
-          if (mission && MISSION_CONFIG[mission].dangerous) {
+          if (mission && gameConfig?.missions[mission]?.dangerous) {
             setConfirmSend(true);
           } else {
             handleSend();
@@ -343,8 +343,8 @@ export default function Fleet() {
         open={confirmSend}
         onConfirm={() => { setConfirmSend(false); handleSend(); }}
         onCancel={() => setConfirmSend(false)}
-        title={`Confirmer la mission ${mission ? MISSION_CONFIG[mission].label : ''} ?`}
-        description={`Vous êtes sur le point d'envoyer votre flotte en mission ${mission ? MISSION_CONFIG[mission].label.toLowerCase() : ''} vers [${target.galaxy}:${target.system}:${target.position}].`}
+        title={`Confirmer la mission ${mission ? (gameConfig?.missions[mission]?.label ?? '') : ''} ?`}
+        description={`Vous êtes sur le point d'envoyer votre flotte en mission ${mission ? (gameConfig?.missions[mission]?.label ?? '').toLowerCase() : ''} vers [${target.galaxy}:${target.system}:${target.position}].`}
         variant="destructive"
         confirmLabel="Envoyer"
       />

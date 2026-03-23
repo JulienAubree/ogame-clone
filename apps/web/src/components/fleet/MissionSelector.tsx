@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
-import { MISSION_CONFIG, type Mission } from '@/config/mission-config';
+import { type Mission } from '@/config/mission-config';
+import { useGameConfig } from '@/hooks/useGameConfig';
 
 interface MissionSelectorProps {
   selected: Mission | null;
@@ -10,6 +11,8 @@ interface MissionSelectorProps {
 const SELECTABLE_MISSIONS: Mission[] = ['transport', 'station', 'spy', 'attack', 'colonize', 'recycle'];
 
 export function MissionSelector({ selected, onChange, locked }: MissionSelectorProps) {
+  const { data: gameConfig } = useGameConfig();
+
   // In PvE mode, include the pre-filled mission (mine/pirate) even though it's not manually selectable
   const missions = selected && !SELECTABLE_MISSIONS.includes(selected)
     ? [...SELECTABLE_MISSIONS, selected]
@@ -25,7 +28,7 @@ export function MissionSelector({ selected, onChange, locked }: MissionSelectorP
       </div>
       <div className="flex flex-wrap gap-1.5">
         {missions.map((m) => {
-          const config = MISSION_CONFIG[m];
+          const config = gameConfig?.missions[m];
           const isSelected = selected === m;
           return (
             <button
@@ -41,7 +44,7 @@ export function MissionSelector({ selected, onChange, locked }: MissionSelectorP
                     : 'bg-muted text-muted-foreground hover:bg-muted/80 cursor-pointer',
               )}
             >
-              {isSelected && '✓ '}{config.label}
+              {isSelected && '✓ '}{config?.label ?? m}
             </button>
           );
         })}

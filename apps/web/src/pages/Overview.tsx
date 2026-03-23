@@ -13,7 +13,6 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { eventTypeColor, formatEventText, formatRelativeTime, groupEvents } from '@/lib/game-events';
 import { getPlanetImageUrl } from '@/lib/assets';
-import { MISSION_CONFIG } from '@/config/mission-config';
 import { getUnitName } from '@/lib/entity-names';
 import {
   HistoryIcon,
@@ -396,7 +395,7 @@ export default function Overview() {
                   const isReturn = event.phase === 'return';
                   const ships = event.ships as Record<string, number>;
                   const shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
-                  const missionLabel = MISSION_CONFIG[event.mission as keyof typeof MISSION_CONFIG]?.label ?? event.mission;
+                  const missionLabel = gameConfig?.missions[event.mission]?.label ?? event.mission;
                   const targetCoords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
                   const originCoords = planet ? `[${planet.galaxy}:${planet.system}:${planet.position}]` : '';
 
