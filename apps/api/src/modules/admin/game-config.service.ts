@@ -17,6 +17,8 @@ import {
   planets,
   pirateTemplates,
   tutorialQuestDefinitions,
+  missionDefinitions,
+  uiLabels,
 } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { TRPCError } from '@trpc/server';
@@ -35,6 +37,21 @@ export interface BonusConfig {
   stat: string;
   percentPerLevel: number;
   category: string | null;
+  statLabel: string | null;
+}
+
+export interface MissionConfig {
+  id: string;
+  label: string;
+  hint: string;
+  buttonLabel: string;
+  color: string;
+  sortOrder: number;
+  dangerous: boolean;
+  requiredShipRoles: string[] | null;
+  exclusive: boolean;
+  recommendedShipRoles: string[] | null;
+  requiresPveMission: boolean;
 }
 
 export interface GameConfig {
@@ -50,6 +67,8 @@ export interface GameConfig {
   pirateTemplates: PirateTemplateConfig[];
   tutorialQuests: TutorialQuestConfig[];
   bonuses: BonusConfig[];
+  missions: Record<string, MissionConfig>;
+  labels: Record<string, string>;
 }
 
 export interface BuildingConfig {
@@ -170,6 +189,7 @@ export interface TutorialQuestConfig {
   rewardMinerai: number;
   rewardSilicium: number;
   rewardHydrogene: number;
+  conditionLabel: string | null;
 }
 
 let cache: GameConfig | null = null;
@@ -200,6 +220,8 @@ export function createGameConfigService(db: Database) {
       pirateTemplateRows,
       tutorialQuestRows,
       bonusRows,
+      missionsRows,
+      labelsRows,
     ] = await Promise.all([
       db.select().from(entityCategories),
       db.select().from(buildingDefinitions),
@@ -217,6 +239,8 @@ export function createGameConfigService(db: Database) {
       db.select().from(pirateTemplates),
       db.select().from(tutorialQuestDefinitions),
       db.select().from(bonusDefinitions),
+      db.select().from(missionDefinitions).orderBy(missionDefinitions.sortOrder),
+      db.select().from(uiLabels),
     ]);
 
     // Categories
@@ -386,6 +410,7 @@ export function createGameConfigService(db: Database) {
       rewardMinerai: tq.rewardMinerai,
       rewardSilicium: tq.rewardSilicium,
       rewardHydrogene: tq.rewardHydrogene,
+      conditionLabel: tq.conditionLabel ?? null,
     }));
 
     // Bonuses
@@ -396,9 +421,34 @@ export function createGameConfigService(db: Database) {
       stat: b.stat,
       percentPerLevel: b.percentPerLevel,
       category: b.category,
+      statLabel: b.statLabel ?? null,
     }));
 
-    cache = { categories, buildings, research, ships, defenses, rapidFire: rf, production, universe, planetTypes: ptConfigs, pirateTemplates: ptTemplates, tutorialQuests: tqConfigs, bonuses };
+    // Missions
+    const missions: Record<string, MissionConfig> = {};
+    for (const m of missionsRows) {
+      missions[m.id] = {
+        id: m.id,
+        label: m.label,
+        hint: m.hint,
+        buttonLabel: m.buttonLabel,
+        color: m.color,
+        sortOrder: m.sortOrder,
+        dangerous: m.dangerous,
+        requiredShipRoles: m.requiredShipRoles as string[] | null,
+        exclusive: m.exclusive,
+        recommendedShipRoles: m.recommendedShipRoles as string[] | null,
+        requiresPveMission: m.requiresPveMission,
+      };
+    }
+
+    // Labels
+    const labels: Record<string, string> = {};
+    for (const l of labelsRows) {
+      labels[l.key] = l.label;
+    }
+
+    cache = { categories, buildings, research, ships, defenses, rapidFire: rf, production, universe, planetTypes: ptConfigs, pirateTemplates: ptTemplates, tutorialQuests: tqConfigs, bonuses, missions, labels };
     return cache;
   }
 
@@ -923,6 +973,7 @@ export function createGameConfigService(db: Database) {
       rewardMinerai?: number;
       rewardSilicium?: number;
       rewardHydrogene?: number;
+      conditionLabel?: string | null;
     }) {
       await db.insert(tutorialQuestDefinitions).values({
         id: data.id,
@@ -935,6 +986,7 @@ export function createGameConfigService(db: Database) {
         rewardMinerai: data.rewardMinerai ?? 0,
         rewardSilicium: data.rewardSilicium ?? 0,
         rewardHydrogene: data.rewardHydrogene ?? 0,
+        conditionLabel: data.conditionLabel ?? null,
       });
       invalidateCache();
     },
@@ -949,6 +1001,7 @@ export function createGameConfigService(db: Database) {
       rewardMinerai: number;
       rewardSilicium: number;
       rewardHydrogene: number;
+      conditionLabel: string | null;
     }>) {
       await db.update(tutorialQuestDefinitions).set(data).where(eq(tutorialQuestDefinitions.id, id));
       invalidateCache();
@@ -968,6 +1021,7 @@ export function createGameConfigService(db: Database) {
       stat: string;
       percentPerLevel: number;
       category?: string | null;
+      statLabel?: string | null;
     }) {
       await db.insert(bonusDefinitions).values({
         id: data.id,
@@ -976,6 +1030,7 @@ export function createGameConfigService(db: Database) {
         stat: data.stat,
         percentPerLevel: data.percentPerLevel,
         category: data.category ?? null,
+        statLabel: data.statLabel ?? null,
       });
       invalidateCache();
     },
@@ -984,6 +1039,7 @@ export function createGameConfigService(db: Database) {
       stat: string;
       percentPerLevel: number;
       category: string | null;
+      statLabel: string | null;
     }>) {
       await db.update(bonusDefinitions).set(data).where(eq(bonusDefinitions.id, id));
       invalidateCache();
@@ -991,6 +1047,45 @@ export function createGameConfigService(db: Database) {
 
     async deleteBonus(id: string) {
       await db.delete(bonusDefinitions).where(eq(bonusDefinitions.id, id));
+      invalidateCache();
+    },
+
+    // ── Missions ──
+
+    async createMission(data: {
+      id: string; label: string; hint?: string; buttonLabel?: string;
+      color?: string; sortOrder?: number; dangerous?: boolean;
+      requiredShipRoles?: string[] | null; exclusive?: boolean;
+      recommendedShipRoles?: string[] | null; requiresPveMission?: boolean;
+    }) {
+      await db.insert(missionDefinitions).values(data);
+      invalidateCache();
+    },
+
+    async updateMission(id: string, data: Partial<Omit<typeof missionDefinitions.$inferInsert, 'id'>>) {
+      await db.update(missionDefinitions).set(data).where(eq(missionDefinitions.id, id));
+      invalidateCache();
+    },
+
+    async deleteMission(id: string) {
+      await db.delete(missionDefinitions).where(eq(missionDefinitions.id, id));
+      invalidateCache();
+    },
+
+    // ── Labels ──
+
+    async createLabel(data: { key: string; label: string }) {
+      await db.insert(uiLabels).values(data);
+      invalidateCache();
+    },
+
+    async updateLabel(key: string, data: { label: string }) {
+      await db.update(uiLabels).set(data).where(eq(uiLabels.key, key));
+      invalidateCache();
+    },
+
+    async deleteLabel(key: string) {
+      await db.delete(uiLabels).where(eq(uiLabels.key, key));
       invalidateCache();
     },
   };
