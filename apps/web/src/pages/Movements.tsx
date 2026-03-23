@@ -155,6 +155,30 @@ function MiningPhaseStepper({ phase, progress, hex }: { phase: string; progress:
           );
         })}
       </div>
+
+      {/* Return progress bar (last phase has no connecting line) */}
+      {phase === 'return' && (
+        <div className="relative h-1.5 mt-1">
+          <div className="absolute inset-0 rounded-full bg-white/[0.04]" />
+          <div
+            className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-linear"
+            style={{
+              width: `${progress}%`,
+              background: `linear-gradient(90deg, ${hex}30, ${hex})`,
+            }}
+          />
+          {progress > 0 && progress < 100 && (
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-[left] duration-1000 ease-linear"
+              style={{
+                left: `calc(${progress}% - 5px)`,
+                background: hex,
+                boxShadow: `0 0 10px ${hex}80, 0 0 3px ${hex}`,
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
