@@ -48,6 +48,7 @@ export function ShipDetailContent({ shipId, researchLevels, maxTemp, isHomePlane
     const shieldMult = resolveBonus('shielding', null, researchLevels, defs);
     const armorMult = resolveBonus('armor', null, researchLevels, defs);
     const speedMult = resolveBonus('ship_speed', details.stats.driveType, researchLevels, defs);
+    const miningMult = resolveBonus('mining_extraction', null, researchLevels, defs);
     return {
       weapons: Math.floor(details.combat.weapons * weaponsMult),
       weaponsMult,
@@ -57,6 +58,8 @@ export function ShipDetailContent({ shipId, researchLevels, maxTemp, isHomePlane
       armorMult,
       speed: Math.floor(details.stats.baseSpeed * speedMult),
       speedMult,
+      mining: Math.floor(details.stats.miningExtraction * miningMult),
+      miningMult,
     };
   }, [researchLevels, details, gameConfig?.bonuses]);
 
@@ -144,13 +147,12 @@ export function ShipDetailContent({ shipId, researchLevels, maxTemp, isHomePlane
           <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider">
             Capacité de minage
           </div>
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">Extraction par voyage</span>
-            <span className="text-amber-400 font-mono font-semibold">{fmt(details.stats.miningExtraction)} ressources</span>
-          </div>
-          <p className="text-[10px] text-slate-500 leading-relaxed">
-            La recherche Fracturation des roches réduit la durée de minage.
-          </p>
+          <EffectiveStatRow
+            label="Extraction par voyage"
+            base={details.stats.miningExtraction}
+            effective={effective.mining}
+            multiplier={effective.miningMult}
+          />
         </div>
       )}
 
