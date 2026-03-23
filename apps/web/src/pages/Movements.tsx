@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { MISSION_CONFIG } from '@/config/mission-config';
 import { getShipName } from '@/lib/entity-names';
+import { resolveBonus } from '@ogame-clone/game-engine';
 import { cn } from '@/lib/utils';
 
 // ── Mission theming ──
@@ -183,6 +184,7 @@ function MovementCard({
   event,
   originPlanet,
   gameConfig,
+  researchLevels,
   onRecall,
   recallingId,
   onTimerComplete,
@@ -190,6 +192,7 @@ function MovementCard({
   event: MovementEvent;
   originPlanet?: { name: string; galaxy: number; system: number; position: number };
   gameConfig: any;
+  researchLevels: Record<string, number>;
   onRecall: (id: string) => void;
   recallingId: string | null;
   onTimerComplete: () => void;
@@ -234,9 +237,23 @@ function MovementCard({
     return sum + (shipStats?.[id]?.cargoCapacity ?? 0) * count;
   }, 0);
 
+  // Effective speed per ship (with research bonuses)
+  const effectiveSpeeds = useMemo(() => {
+    const speeds: Record<string, number> = {};
+    if (!shipStats || !gameConfig?.bonuses) return speeds;
+    for (const [id] of shipEntries) {
+      const stats = shipStats[id];
+      if (stats) {
+        const multiplier = resolveBonus('ship_speed', stats.driveType, researchLevels, gameConfig.bonuses);
+        speeds[id] = Math.floor(stats.baseSpeed * multiplier);
+      }
+    }
+    return speeds;
+  }, [shipEntries, shipStats, researchLevels, gameConfig?.bonuses]);
+
   // Slowest speed (determines fleet speed)
   const slowestSpeed = shipEntries.reduce((min, [id]) => {
-    const spd = shipStats?.[id]?.baseSpeed ?? Infinity;
+    const spd = effectiveSpeeds[id] ?? shipStats?.[id]?.baseSpeed ?? Infinity;
     return Math.min(min, spd);
   }, Infinity);
 
@@ -411,13 +428,14 @@ function MovementCard({
                     <tbody>
                       {shipEntries.map(([id, count], i) => {
                         const stats = shipStats[id];
-                        const isSlowest = stats && stats.baseSpeed === slowestSpeed && slowestSpeed < Infinity;
+                        const shipSpeed = effectiveSpeeds[id] ?? stats?.baseSpeed ?? 0;
+                        const isSlowest = stats && shipSpeed === slowestSpeed && slowestSpeed < Infinity;
                         return (
                           <tr key={id} className={i % 2 === 0 ? 'bg-white/[0.02]' : ''}>
                             <td className="px-2 py-1.5 text-foreground">{getShipName(id, gameConfig)}</td>
                             <td className="px-2 py-1.5 text-right text-foreground font-semibold">{count}</td>
                             <td className={cn('px-2 py-1.5 text-right', isSlowest ? 'text-amber-400' : 'text-muted-foreground')}>
-                              {stats ? fmt(stats.baseSpeed) : '—'}
+                              {stats ? fmt(shipSpeed) : '—'}
                               {isSlowest && shipEntries.length > 1 && (
                                 <span className="ml-0.5 text-[9px] text-amber-400/60">lent</span>
                               )}
@@ -525,6 +543,15 @@ export default function Movements() {
   const { data: gameConfig } = useGameConfig();
   const { data: movements, isLoading } = trpc.fleet.movements.useQuery();
   const { data: planets } = trpc.planet.list.useQuery();
+  const firstPlanetId = planets?.[0]?.id;
+  const { data: researchList } = trpc.research.list.useQuery(
+    { planetId: firstPlanetId! },
+    { enabled: !!firstPlanetId },
+  );
+  const researchLevels = useMemo(() => {
+    if (!researchList) return {};
+    return Object.fromEntries(researchList.map((r) => [r.id, r.currentLevel]));
+  }, [researchList]);
 
   const recallMutation = trpc.fleet.recall.useMutation({
     onSuccess: () => {
@@ -577,6 +604,7 @@ export default function Movements() {
                 event={event as unknown as MovementEvent}
                 originPlanet={origin ? { name: origin.name, galaxy: origin.galaxy, system: origin.system, position: origin.position } : undefined}
                 gameConfig={gameConfig}
+                researchLevels={researchLevels}
                 onRecall={setRecallConfirm}
                 recallingId={recallConfirm}
                 onTimerComplete={() => utils.fleet.movements.invalidate()}
