@@ -14,7 +14,7 @@ import { FleetComposition } from '@/components/fleet/FleetComposition';
 import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { MISSION_CONFIG, getCargoCapacity, type Mission } from '@/config/mission-config';
 import { getShipName } from '@/lib/entity-names';
-import { computeSlagRate } from '@ogame-clone/game-engine';
+import { computeSlagRate, miningDuration, resolveBonus } from '@ogame-clone/game-engine';
 
 export default function Fleet() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
@@ -176,22 +176,49 @@ export default function Fleet() {
   const totalCargo = cargo.minerai + cargo.silicium + cargo.hydrogene;
   const cargoCapacity = getCargoCapacity(selectedShips, gameConfig?.ships ?? {});
 
-  // Compute effective cargo for mine missions (slag reduction)
+  // Mining-specific stats
   const { data: researchList } = trpc.research.list.useQuery(
     { planetId: planetId! },
     { enabled: !!planetId && mission === 'mine' },
   );
-  const effectiveCargo = (() => {
+  const miningStats = (() => {
     if (mission !== 'mine' || !gameConfig || !researchList) return undefined;
+
+    // Extraction capacity
+    const baseExtraction = Object.entries(selectedShips).reduce((sum, [id, count]) => {
+      const stats = gameConfig.ships[id];
+      return sum + (stats?.miningExtraction ?? 0) * count;
+    }, 0);
+    const extractionMultiplier = resolveBonus(
+      'mining_extraction', null,
+      Object.fromEntries(researchList.map((r) => [r.id, r.currentLevel])),
+      gameConfig.bonuses,
+    );
+    const fleetExtraction = Math.floor(baseExtraction * extractionMultiplier);
+
+    // Slag rate
     const refiningLevel = researchList.find((r) => r.id === 'deepSpaceRefining')?.currentLevel ?? 0;
-    // Use an average slag rate across resources for the summary display
     const position = target.position as 8 | 16;
-    const slagKeys = ['minerai', 'silicium', 'hydrogene'].map((res) => `slag_rate.pos${position}.${res}`);
-    const rates = slagKeys.map((key) => Number(gameConfig.universe[key] ?? 0));
-    const maxRate = Math.max(...rates);
-    if (maxRate === 0) return undefined;
-    const slagRate = computeSlagRate(maxRate, refiningLevel);
-    return Math.floor(cargoCapacity * (1 - slagRate));
+    const baseSlagRate = Number(gameConfig.universe[`slag_rate.pos${position}`] ?? 0);
+    const slagRate = computeSlagRate(baseSlagRate, refiningLevel);
+
+    // Effective cargo (after slag)
+    const effectiveCargo = Math.floor(cargoCapacity * (1 - slagRate));
+
+    // What the fleet will actually bring back per cycle
+    const maxPerCycle = Math.min(fleetExtraction, effectiveCargo);
+
+    // Mining duration estimate
+    const mineDuration = miningDuration(cargoCapacity, fleetExtraction, 1);
+
+    return {
+      fleetExtraction,
+      extractionBonus: extractionMultiplier > 1 ? Math.round((extractionMultiplier - 1) * 100) : 0,
+      slagRate,
+      effectiveCargo: slagRate > 0 ? effectiveCargo : undefined,
+      maxPerCycle,
+      mineDuration,
+    };
   })();
 
   const validationError = getValidationError();
@@ -281,7 +308,7 @@ export default function Fleet() {
         selectedShips={selectedShips}
         totalCargo={totalCargo}
         cargoCapacity={cargoCapacity}
-        effectiveCargo={effectiveCargo}
+        miningStats={miningStats}
         fuel={hasShips ? (estimate?.fuel ?? null) : null}
         duration={hasShips ? (estimate?.duration ?? null) : null}
         disabled={!!validationError}
