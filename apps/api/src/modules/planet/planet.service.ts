@@ -9,7 +9,6 @@ import {
 } from '@ogame-clone/game-engine';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import { getRandomPlanetImageIndex } from '../../lib/planet-image.util.js';
-import { UNIVERSE_CONFIG } from '../universe/universe.config.js';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -26,17 +25,19 @@ export function createPlanetService(db: Database, gameConfigService: GameConfigS
 
       const galaxy = randomInt(1, galaxies);
       const system = randomInt(1, systems);
-      const position = randomInt(4, 12);
+      const posMin = Number(universe.home_planet_position_min) || 4;
+      const posMax = Number(universe.home_planet_position_max) || 12;
+      const position = randomInt(posMin, posMax);
 
       const randomOffset = randomInt(-20, 20);
       const maxTemp = calculateMaxTemp(position, randomOffset);
       const minTemp = calculateMinTemp(maxTemp);
-      const diameter = Number(universe.homePlanetDiameter) || UNIVERSE_CONFIG.homePlanetDiameter;
+      const diameter = Number(universe.homePlanetDiameter) || 12000;
       const maxFields = calculateMaxFields(diameter);
 
-      const startingMinerai = Number(universe.startingMinerai) || UNIVERSE_CONFIG.startingResources.minerai;
-      const startingSilicium = Number(universe.startingSilicium) || UNIVERSE_CONFIG.startingResources.silicium;
-      const startingHydrogene = Number(universe.startingHydrogene) || UNIVERSE_CONFIG.startingResources.hydrogene;
+      const startingMinerai = Number(universe.startingMinerai) || 500;
+      const startingSilicium = Number(universe.startingSilicium) || 300;
+      const startingHydrogene = Number(universe.startingHydrogene) || 100;
 
       const [planet] = await db
         .insert(planets)
