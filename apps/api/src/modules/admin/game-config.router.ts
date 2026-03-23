@@ -459,12 +459,13 @@ export function createGameConfigRouter(
         order: z.number().int(),
         title: z.string().min(1),
         narrativeText: z.string().min(1),
-        conditionType: z.enum(['building_level', 'ship_count', 'mission_complete']),
+        conditionType: z.enum(['building_level', 'ship_count', 'mission_complete', 'research_level', 'fleet_return']),
         conditionTargetId: z.string().min(1),
         conditionTargetValue: z.number().int(),
         rewardMinerai: z.number().int().optional(),
         rewardSilicium: z.number().int().optional(),
         rewardHydrogene: z.number().int().optional(),
+        conditionLabel: z.string().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createTutorialQuest(input);
@@ -478,12 +479,13 @@ export function createGameConfigRouter(
           order: z.number().int().optional(),
           title: z.string().optional(),
           narrativeText: z.string().optional(),
-          conditionType: z.enum(['building_level', 'ship_count', 'mission_complete']).optional(),
+          conditionType: z.enum(['building_level', 'ship_count', 'mission_complete', 'research_level', 'fleet_return']).optional(),
           conditionTargetId: z.string().optional(),
           conditionTargetValue: z.number().int().optional(),
           rewardMinerai: z.number().int().optional(),
           rewardSilicium: z.number().int().optional(),
           rewardHydrogene: z.number().int().optional(),
+          conditionLabel: z.string().nullable().optional(),
         }),
       }))
       .mutation(async ({ input }) => {
@@ -508,6 +510,7 @@ export function createGameConfigRouter(
         stat: z.string().min(1),
         percentPerLevel: z.number(),
         category: z.string().nullable().optional(),
+        statLabel: z.string().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createBonus(input);
@@ -521,6 +524,7 @@ export function createGameConfigRouter(
           stat: z.string().optional(),
           percentPerLevel: z.number().optional(),
           category: z.string().nullable().optional(),
+          statLabel: z.string().nullable().optional(),
         }),
       }))
       .mutation(async ({ input }) => {
@@ -532,6 +536,78 @@ export function createGameConfigRouter(
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input }) => {
         await gameConfigService.deleteBonus(input.id);
+        return { success: true };
+      }),
+
+    // ── Missions ──
+
+    createMission: adminProcedure
+      .input(z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        hint: z.string().optional(),
+        buttonLabel: z.string().optional(),
+        color: z.string().optional(),
+        sortOrder: z.number().int().optional(),
+        dangerous: z.boolean().optional(),
+        requiredShipRoles: z.array(z.string()).nullable().optional(),
+        exclusive: z.boolean().optional(),
+        recommendedShipRoles: z.array(z.string()).nullable().optional(),
+        requiresPveMission: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.createMission(input);
+        return { success: true };
+      }),
+
+    updateMission: adminProcedure
+      .input(z.object({
+        id: z.string(),
+        data: z.object({
+          label: z.string().min(1).optional(),
+          hint: z.string().optional(),
+          buttonLabel: z.string().optional(),
+          color: z.string().optional(),
+          sortOrder: z.number().int().optional(),
+          dangerous: z.boolean().optional(),
+          requiredShipRoles: z.array(z.string()).nullable().optional(),
+          exclusive: z.boolean().optional(),
+          recommendedShipRoles: z.array(z.string()).nullable().optional(),
+          requiresPveMission: z.boolean().optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.updateMission(input.id, input.data);
+        return { success: true };
+      }),
+
+    deleteMission: adminProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.deleteMission(input.id);
+        return { success: true };
+      }),
+
+    // ── Labels ──
+
+    createLabel: adminProcedure
+      .input(z.object({ key: z.string().min(1), label: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.createLabel(input);
+        return { success: true };
+      }),
+
+    updateLabel: adminProcedure
+      .input(z.object({ key: z.string(), data: z.object({ label: z.string().min(1) }) }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.updateLabel(input.key, input.data);
+        return { success: true };
+      }),
+
+    deleteLabel: adminProcedure
+      .input(z.object({ key: z.string() }))
+      .mutation(async ({ input }) => {
+        await gameConfigService.deleteLabel(input.key);
         return { success: true };
       }),
   });
