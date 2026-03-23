@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 import { Input } from '@/components/ui/input';
+import { CoordinateInput } from '@/components/common/CoordinateInput';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PageHeader } from '@/components/common/PageHeader';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
@@ -212,37 +213,14 @@ export default function Fleet() {
 
       {/* Destination */}
       <div className="flex items-center justify-center gap-2">
-        <span className="text-sm text-muted-foreground">Cible :</span>
-        <Input
-          type="number"
-          min={1}
-          max={9}
-          value={target.galaxy}
-          onChange={(e) => setTarget((t) => ({ ...t, galaxy: Number(e.target.value) || 1 }))}
+        <span className="text-sm text-muted-foreground">Cible</span>
+        <CoordinateInput
+          galaxy={target.galaxy}
+          system={target.system}
+          position={target.position}
+          onChange={setTarget}
           disabled={pveMode}
-          className="h-8 w-14 text-center"
         />
-        <span className="text-muted-foreground">:</span>
-        <Input
-          type="number"
-          min={1}
-          max={499}
-          value={target.system}
-          onChange={(e) => setTarget((t) => ({ ...t, system: Number(e.target.value) || 1 }))}
-          disabled={pveMode}
-          className="h-8 w-16 text-center"
-        />
-        <span className="text-muted-foreground">:</span>
-        <Input
-          type="number"
-          min={1}
-          max={16}
-          value={target.position}
-          onChange={(e) => setTarget((t) => ({ ...t, position: Number(e.target.value) || 1 }))}
-          disabled={pveMode}
-          className="h-8 w-14 text-center"
-        />
-        {pveMode && <span className="text-xs text-yellow-500">🔒</span>}
       </div>
 
       {/* Mission Hint (only in direct mode, not PvE — banner replaces it) */}
