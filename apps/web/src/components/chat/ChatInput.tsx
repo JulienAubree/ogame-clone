@@ -35,7 +35,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Ecrire un message..
         placeholder={placeholder}
         rows={1}
         disabled={disabled}
-        className="flex-1 resize-none rounded-2xl bg-muted/30 border border-border/50 px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        className="flex-1 resize-none rounded-2xl bg-muted/30 border border-border/50 px-4 py-2 text-base md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <button
         onClick={handleSend}
