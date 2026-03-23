@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { eventTypeColor, formatEventText, formatRelativeTime, groupEvents } from '@/lib/game-events';
 import { getPlanetImageUrl } from '@/lib/assets';
+import { MISSION_CONFIG, SHIP_NAMES } from '@/config/mission-config';
 import {
   HistoryIcon,
   MovementsIcon,
@@ -27,15 +28,6 @@ import {
   ShipyardIcon,
   GalaxyIcon,
 } from '@/lib/icons';
-
-const MISSION_LABELS: Record<string, string> = {
-  transport: 'Transport',
-  station: 'Stationner',
-  spy: 'Espionnage',
-  attack: 'Attaque',
-  colonize: 'Colonisation',
-  recycle: 'Recyclage',
-};
 
 // ── Circular gauge (inline, used only here) ──
 
@@ -366,10 +358,10 @@ export default function Overview() {
                     className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate('/shipyard')}
                   >
-                    <GameImage category={item.type === 'defense' ? 'defenses' : 'ships'} id={item.itemId} size="icon" alt={gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? item.itemId} className="w-7 h-7 rounded-md flex-shrink-0" />
+                    <GameImage category={item.type === 'defense' ? 'defenses' : 'ships'} id={item.itemId} size="icon" alt={gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? SHIP_NAMES[item.itemId] ?? item.itemId} className="w-7 h-7 rounded-md flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-xs">
-                        <span className="text-foreground font-medium">{gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? item.itemId}</span>
+                        <span className="text-foreground font-medium">{gameConfig?.ships[item.itemId]?.name ?? gameConfig?.defenses[item.itemId]?.name ?? SHIP_NAMES[item.itemId] ?? item.itemId}</span>
                         <span className="text-muted-foreground">x{item.quantity - (item.completedCount ?? 0)}</span>
                       </div>
                       {item.status === 'active' && item.endTime ? (
@@ -417,7 +409,7 @@ export default function Overview() {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm text-foreground font-medium">
-                          {isReturn ? 'Retour — ' : ''}{MISSION_LABELS[event.mission] ?? event.mission}
+                          {isReturn ? 'Retour — ' : ''}{MISSION_CONFIG[event.mission as keyof typeof MISSION_CONFIG]?.label ?? event.mission}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           [{event.targetGalaxy}:{event.targetSystem}:{event.targetPosition}]

@@ -7,17 +7,8 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { MISSION_CONFIG, SHIP_NAMES } from '@/config/mission-config';
 import { cn } from '@/lib/utils';
-
-const MISSION_LABELS: Record<string, string> = {
-  transport: 'Transport',
-  station: 'Stationner',
-  spy: 'Espionnage',
-  attack: 'Attaque',
-  colonize: 'Colonisation',
-  mine: 'Extraction',
-  pirate: 'Pirate',
-};
 
 const MISSION_BORDER_COLORS: Record<string, string> = {
   transport: 'border-l-primary',
@@ -81,7 +72,7 @@ export default function Movements() {
               <div key={event.id} className={cn('glass-card border-l-4 p-4 space-y-2', borderColor)}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium">{MISSION_LABELS[event.mission] ?? event.mission}</span>
+                    <span className="text-sm font-medium">{MISSION_CONFIG[event.mission as keyof typeof MISSION_CONFIG]?.label ?? event.mission}</span>
                     <span className="text-xs text-muted-foreground ml-2">
                       {phaseLabel}
                     </span>
@@ -98,7 +89,7 @@ export default function Movements() {
                   Vaisseaux :{' '}
                   {Object.entries(ships)
                     .filter(([, v]) => v > 0)
-                    .map(([k, v]) => `${gameConfig?.ships[k]?.name ?? k}: ${v}`)
+                    .map(([k, v]) => `${gameConfig?.ships[k]?.name ?? SHIP_NAMES[k] ?? k}: ${v}`)
                     .join(', ')}
                 </div>
                 {(Number(event.mineraiCargo) > 0 || Number(event.siliciumCargo) > 0 || Number(event.hydrogeneCargo) > 0) && (
