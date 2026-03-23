@@ -1,4 +1,4 @@
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, count as dbCount } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, fleetEvents, userResearch, pveMissions } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
@@ -68,6 +68,22 @@ export function createFleetService(
       const config = await gameConfigService.getFullConfig();
       const shipStatsMap = buildShipStatsMap(config);
 
+      // Get research levels (used for fleet limit + speed calculation)
+      const researchLevels = await this.getResearchLevels(userId);
+
+      // Validate fleet slot limit (computerTech)
+      const maxFleets = Math.floor(resolveBonus('fleet_count', null, researchLevels, config.bonuses));
+      const [{ count: activeFleets }] = await db
+        .select({ count: dbCount() })
+        .from(fleetEvents)
+        .where(and(eq(fleetEvents.userId, userId), eq(fleetEvents.status, 'active')));
+      if (activeFleets >= maxFleets) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Nombre maximum de flottes atteint (${maxFleets}). Améliorez la Technologie informatique pour envoyer plus de flottes.`,
+        });
+      }
+
       // Validate ships are available
       const planetShipRow = await this.getOrCreateShips(input.originPlanetId);
       for (const [shipId, count] of Object.entries(input.ships)) {
@@ -80,9 +96,6 @@ export function createFleetService(
           });
         }
       }
-
-      // Get research levels for speed calculation
-      const researchLevels = await this.getResearchLevels(userId);
       const speedMultipliers = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
       const speed = fleetSpeed(input.ships, shipStatsMap, speedMultipliers);
       if (speed === 0) {
@@ -259,6 +272,17 @@ export function createFleetService(
       );
 
       return { recalled: true, returnTime: returnTime.toISOString() };
+    },
+
+    async getFleetSlots(userId: string) {
+      const config = await gameConfigService.getFullConfig();
+      const researchLevels = await this.getResearchLevels(userId);
+      const max = Math.floor(resolveBonus('fleet_count', null, researchLevels, config.bonuses));
+      const [{ count: current }] = await db
+        .select({ count: dbCount() })
+        .from(fleetEvents)
+        .where(and(eq(fleetEvents.userId, userId), eq(fleetEvents.status, 'active')));
+      return { current: Number(current), max };
     },
 
     async listMovements(userId: string) {

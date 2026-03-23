@@ -15,6 +15,7 @@ import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { MISSION_CONFIG, getCargoCapacity, type Mission } from '@/config/mission-config';
 import { getShipName } from '@/lib/entity-names';
 import { computeSlagRate, miningDuration, resolveBonus } from '@ogame-clone/game-engine';
+import { cn } from '@/lib/utils';
 
 export default function Fleet() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
@@ -41,6 +42,7 @@ export default function Fleet() {
     { planetId: planetId! },
     { enabled: !!planetId },
   );
+  const { data: fleetSlots } = trpc.fleet.slots.useQuery();
 
   const { data: planets } = trpc.planet.list.useQuery();
   const planet = planets?.find((p) => p.id === planetId);
@@ -101,6 +103,7 @@ export default function Fleet() {
       addToast('Flotte envoyée !', 'success');
       utils.shipyard.ships.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
+      utils.fleet.slots.invalidate();
       navigate('/movements');
     },
   });
@@ -134,6 +137,7 @@ export default function Fleet() {
   // Validation
   const getValidationError = (): string | null => {
     if (!mission) return 'Sélectionnez une mission';
+    if (fleetSlots && fleetSlots.current >= fleetSlots.max) return `Nombre max de flottes atteint (${fleetSlots.max}). Améliorez Technologie informatique.`;
     if (!target.galaxy || !target.system || !target.position) return 'Destination incomplète';
 
     const config = MISSION_CONFIG[mission];
@@ -227,7 +231,19 @@ export default function Fleet() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-3 pb-4">
-      <PageHeader title="Flotte" />
+      <div className="flex items-center justify-between">
+        <PageHeader title="Flotte" />
+        {fleetSlots && (
+          <span className={cn(
+            'text-xs font-mono px-2 py-1 rounded border',
+            fleetSlots.current >= fleetSlots.max
+              ? 'text-destructive border-destructive/30 bg-destructive/10'
+              : 'text-muted-foreground border-border bg-card/60',
+          )}>
+            Flottes : {fleetSlots.current}/{fleetSlots.max}
+          </span>
+        )}
+      </div>
 
       {/* PvE Mission Banner */}
       {pveMissionId && <PveMissionBanner pveMissionId={pveMissionId} />}

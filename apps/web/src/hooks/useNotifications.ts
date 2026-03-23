@@ -121,6 +121,7 @@ export function useNotifications() {
       }
       case 'fleet-arrived':
         utils.fleet.movements.invalidate();
+        utils.fleet.slots.invalidate();
         utils.resource.production.invalidate();
         utils.report.list.invalidate();
         utils.report.unreadCount.invalidate();
@@ -129,6 +130,7 @@ export function useNotifications() {
         break;
       case 'fleet-returned':
         utils.fleet.movements.invalidate();
+        utils.fleet.slots.invalidate();
         utils.resource.production.invalidate();
         utils.report.list.invalidate();
         utils.report.unreadCount.invalidate();
