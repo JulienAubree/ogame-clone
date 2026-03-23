@@ -1,11 +1,15 @@
 import { eq, and } from 'drizzle-orm';
 import { planets, users, debrisFields, allianceMembers, alliances } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
-import { BELT_POSITIONS, UNIVERSE_CONFIG } from '../universe/universe.config.js';
+import type { GameConfigService } from '../admin/game-config.service.js';
 
-export function createGalaxyService(db: Database) {
+export function createGalaxyService(db: Database, gameConfigService: GameConfigService) {
   return {
     async getSystem(galaxy: number, system: number, _currentUserId?: string) {
+      const config = await gameConfigService.getFullConfig();
+      const positions = Number(config.universe.positions) || 16;
+      const beltPositions = (config.universe.belt_positions as number[]) ?? [8, 16];
+
       const systemPlanets = await db
         .select({
           position: planets.position,
@@ -23,10 +27,10 @@ export function createGalaxyService(db: Database) {
         .leftJoin(alliances, eq(alliances.id, allianceMembers.allianceId))
         .where(and(eq(planets.galaxy, galaxy), eq(planets.system, system)));
 
-      const slots: (typeof systemPlanets[number] | { type: 'belt'; position: number } | null)[] = Array(UNIVERSE_CONFIG.positions).fill(null);
+      const slots: (typeof systemPlanets[number] | { type: 'belt'; position: number } | null)[] = Array(positions).fill(null);
 
       // Mark belt positions
-      for (const pos of BELT_POSITIONS) {
+      for (const pos of beltPositions) {
         slots[pos - 1] = { type: 'belt', position: pos };
       }
 

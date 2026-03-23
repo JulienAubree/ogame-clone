@@ -53,7 +53,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const buildingService = createBuildingService(db, resourceService, buildCompletionQueue, gameConfigService);
   const researchService = createResearchService(db, resourceService, buildCompletionQueue, gameConfigService);
   const shipyardService = createShipyardService(db, resourceService, buildCompletionQueue, gameConfigService);
-  const galaxyService = createGalaxyService(db);
+  const galaxyService = createGalaxyService(db, gameConfigService);
   const messageService = createMessageService(db, redis);
   const rankingService = createRankingService(db, gameConfigService);
   const asteroidBeltService = createAsteroidBeltService(db);
