@@ -12,11 +12,28 @@ BEGIN;
 -- Fleets in transit would have stale coordinates after relocation.
 -- Return ships + cargo to origin planet before cancelling.
 
--- 0a. Refund ships from active fleets to origin planets
+-- 0a. camelCase (JSONB) -> snake_case (DB) ship column mapping
+CREATE TEMP TABLE ship_column_map (camel TEXT PRIMARY KEY, snake TEXT NOT NULL);
+INSERT INTO ship_column_map VALUES
+  ('smallCargo', 'small_cargo'),
+  ('largeCargo', 'large_cargo'),
+  ('lightFighter', 'light_fighter'),
+  ('heavyFighter', 'heavy_fighter'),
+  ('cruiser', 'cruiser'),
+  ('battleship', 'battleship'),
+  ('espionageProbe', 'espionage_probe'),
+  ('colonyShip', 'colony_ship'),
+  ('recycler', 'recycler'),
+  ('prospector', 'prospector'),
+  ('explorer', 'explorer'),
+  ('solarSatellite', 'solar_satellite');
+
+-- 0b. Refund ships from active fleets to origin planets
 DO $$
 DECLARE
   fe RECORD;
   ship_key TEXT;
+  ship_col TEXT;
   ship_count INT;
 BEGIN
   FOR fe IN
@@ -28,13 +45,18 @@ BEGIN
     VALUES (fe.origin_planet_id)
     ON CONFLICT (planet_id) DO NOTHING;
 
-    -- Return each ship type
+    -- Return each ship type (camelCase -> snake_case)
     FOR ship_key, ship_count IN
       SELECT key, (value)::INT FROM jsonb_each_text(fe.ships) WHERE (value)::INT > 0
     LOOP
+      SELECT snake INTO ship_col FROM ship_column_map WHERE camel = ship_key;
+      IF ship_col IS NULL THEN
+        RAISE NOTICE '  SKIP unknown ship type: %', ship_key;
+        CONTINUE;
+      END IF;
       EXECUTE format(
         'UPDATE planet_ships SET %I = %I + $1 WHERE planet_id = $2',
-        ship_key, ship_key
+        ship_col, ship_col
       ) USING ship_count, fe.origin_planet_id;
     END LOOP;
 
