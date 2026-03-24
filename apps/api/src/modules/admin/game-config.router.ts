@@ -52,6 +52,7 @@ export function createGameConfigRouter(
         flavorText: z.string().nullable().optional(),
         categoryId: z.string().nullable().optional(),
         sortOrder: z.number().int().optional(),
+        role: z.string().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createBuilding(input);
@@ -79,6 +80,7 @@ export function createGameConfigRouter(
           flavorText: z.string().nullable().optional(),
           categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
+          role: z.string().nullable().optional(),
         }),
       }))
       .mutation(async ({ input }) => {
@@ -180,6 +182,7 @@ export function createGameConfigRouter(
         flavorText: z.string().nullable().optional(),
         categoryId: z.string().nullable().optional(),
         sortOrder: z.number().int().optional(),
+        role: z.string().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createShip(input);
@@ -212,6 +215,7 @@ export function createGameConfigRouter(
           flavorText: z.string().nullable().optional(),
           categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
+          role: z.string().nullable().optional(),
         }),
       }))
       .mutation(async ({ input }) => {
@@ -348,6 +352,7 @@ export function createGameConfigRouter(
         diameterMax: z.number().int(),
         fieldsBonus: z.number().optional(),
         sortOrder: z.number().int().optional(),
+        role: z.string().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createPlanetType(input);
@@ -368,6 +373,7 @@ export function createGameConfigRouter(
           diameterMax: z.number().int().optional(),
           fieldsBonus: z.number().optional(),
           sortOrder: z.number().int().optional(),
+          role: z.string().nullable().optional(),
         }),
       }))
       .mutation(async ({ input }) => {
