@@ -38,20 +38,26 @@ Le calcul des survivants par type : parcourir le tableau d'unites, filtrer les n
 
 ### Fichier : `apps/api/src/modules/fleet/handlers/attack.handler.ts`
 
+#### Variables a extraire hors du bloc if/else
+
+`result.rounds` est scope dans le bloc `else` (ligne 118-130) et n'est pas accessible la ou `reportResult` est construit. Il faut declarer `let rounds: RoundResult[] = [];` avant le `if (!hasDefenders)`, puis assigner `rounds = result.rounds` dans le bloc `else` (comme c'est deja fait pour `roundCount`, `attackerLosses`, etc.).
+
 #### Enrichir le result JSONB
 
 Ajouter 4 nouvelles cles au `reportResult` :
 
 | Cle | Type | Source | Description |
 |-----|------|--------|-------------|
-| `attackerFleet` | `Record<string, number>` | `ships` (parametre existant) | Flotte initiale de l'attaquant |
+| `attackerFleet` | `Record<string, number>` | `ships` (parametre existant) | Flotte initiale de l'attaquant. Duplique intentionnellement `report.fleet.ships` pour que le frontend puisse lire les deux camps uniformement depuis `result.*` |
 | `attackerSurvivors` | `Record<string, number>` | `survivingShips` (deja calcule ligne 133) | Unites restantes de l'attaquant |
 | `defenderSurvivors` | `Record<string, number>` | Calcule | Unites restantes du defenseur |
-| `rounds` | `RoundResult[]` | `result.rounds` (deja disponible) | Detail round par round |
+| `rounds` | `RoundResult[]` | Variable `rounds` (extraite ci-dessus) | Detail round par round |
 
 Le `roundCount` reste present (backward compat, et evite de compter `rounds.length` cote client).
 
-**Calcul de `defenderSurvivors`** : pour chaque type dans `defenderFleet` et `defenderDefenses`, soustraire les pertes (`defenderLosses`) et ajouter les reparations (`repairedDefenses`). Ne garder que les entrees > 0.
+**Calcul de `defenderSurvivors`** : iterer sur `{...defenderFleet, ...defenderDefenses}` (les deux variables qui existent deja). Pour chaque `[type, count]`, calculer `count - (defenderLosses[type] ?? 0) + (repairedDefenses[type] ?? 0)`. Ne garder que les entrees > 0.
+
+**Cas sans defenseur (`!hasDefenders`)** : quand il n'y a pas de defenseur, les nouvelles valeurs sont : `rounds = []`, `attackerSurvivors = { ...ships }` (copie de la flotte initiale, aucune perte), `defenderSurvivors = {}`.
 
 #### Creer le rapport du defenseur
 
@@ -60,24 +66,28 @@ Apres la creation du rapport de l'attaquant (ligne 312), appeler `reportService.
 ```
 userId: targetPlanet.userId
 fleetEventId: null  (ce n'est pas la flotte du defenseur)
-messageId: messageId du message systeme du defenseur (capturer l'id du 2e createSystemMessage)
+messageId: defenderMsg.id (voir ci-dessous)
 missionType: 'attack'
 title: perspective inversee — si outcome=attacker → "Defaite", si outcome=defender → "Victoire", si draw → "Match nul"
 coordinates: coordonnees de la planete cible (c'est la planete du defenseur)
 originCoordinates: memes coordonnees d'origine (planete de l'attaquant)
-fleet: null ou objet vide (le defenseur n'a pas envoye de flotte)
+fleet: { ships: {}, totalCargo: 0 }  (le defenseur n'a pas envoye de flotte — le champ est NOT NULL en base)
 departureTime: fleetEvent.departureTime
 completionTime: fleetEvent.arrivalTime
 result: meme objet reportResult que l'attaquant
 ```
 
-**Message systeme du defenseur** : capturer le `messageId` retourne par le second `createSystemMessage` (ligne 276) pour le lier au rapport. Actuellement le `messageId` n'est pas capture — ajouter `const defenderMsg = await ctx.messageService.createSystemMessage(...)` et utiliser `defenderMsg.id`.
+**Message systeme du defenseur** : capturer le `messageId` retourne par le second `createSystemMessage` (ligne 276) pour le lier au rapport. Actuellement le `messageId` n'est pas capture — changer en `const defenderMsg = await ctx.messageService.createSystemMessage(...)` et utiliser `defenderMsg.id`.
 
 ---
 
 ## Frontend
 
 ### Fichier : `apps/web/src/pages/Reports.tsx`
+
+#### Section generique "Flotte"
+
+La section generique qui affiche `selectedReport.fleet.ships` (avant les sections specifiques par type) doit etre gardee pour les rapports d'attaque du defenseur : si `fleet.ships` est un objet vide (`Object.keys(fleet.ships).length === 0`), ne pas afficher cette section. Cela evite un affichage vide pour les rapports du defenseur.
 
 #### Structure du rapport d'attaque (section `missionType === 'attack'`)
 
