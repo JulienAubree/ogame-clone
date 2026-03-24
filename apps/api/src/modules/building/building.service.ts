@@ -44,14 +44,18 @@ export function createBuildingService(
         )
         .limit(1);
 
+      const phaseMap = config.universe.phase_multiplier
+        ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
+        : undefined;
+
       return Object.values(config.buildings)
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((def) => {
           const currentLevel = buildingLevels[def.id] ?? 0;
           const nextLevel = currentLevel + 1;
-          const cost = buildingCost(def, nextLevel);
+          const cost = buildingCost(def, nextLevel, phaseMap);
           const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
-          const time = buildingTime(def, nextLevel, bonusMultiplier);
+          const time = buildingTime(def, nextLevel, bonusMultiplier, phaseMap);
 
           return {
             id: def.id,
@@ -112,11 +116,15 @@ export function createBuildingService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Plus de champs disponibles' });
       }
 
+      const phaseMap = config.universe.phase_multiplier
+        ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
+        : undefined;
+
       const currentLevel = buildingLevels[buildingId] ?? 0;
       const nextLevel = currentLevel + 1;
-      const cost = buildingCost(def, nextLevel);
+      const cost = buildingCost(def, nextLevel, phaseMap);
       const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
-      const time = buildingTime(def, nextLevel, bonusMultiplier);
+      const time = buildingTime(def, nextLevel, bonusMultiplier, phaseMap);
 
       // Spend resources (atomic)
       await resourceService.spendResources(planetId, userId, cost);
@@ -172,7 +180,10 @@ export function createBuildingService(
       const planet = await this.getOwnedPlanet(userId, planetId);
       const buildingLevels = await this.getBuildingLevels(planetId);
       const currentLevel = buildingLevels[activeBuild.itemId] ?? 0;
-      const cost = def ? buildingCost(def, currentLevel + 1) : { minerai: 0, silicium: 0, hydrogene: 0 };
+      const phaseMap = config.universe.phase_multiplier
+        ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
+        : undefined;
+      const cost = def ? buildingCost(def, currentLevel + 1, phaseMap) : { minerai: 0, silicium: 0, hydrogene: 0 };
 
       // Pro-rata refund capped at 70%
       const now = Date.now();

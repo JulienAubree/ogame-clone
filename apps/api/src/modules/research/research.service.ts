@@ -45,14 +45,19 @@ export function createResearchService(
         )
         .limit(1);
 
+      const phaseMap = config.universe.phase_multiplier
+        ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
+        : undefined;
+      const timeDivisor = Number(config.universe.research_time_divisor) || 1000;
+
       return Object.values(config.research)
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((def) => {
           const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
           const nextLevel = currentLevel + 1;
-          const cost = researchCost(def, nextLevel);
+          const cost = researchCost(def, nextLevel, phaseMap);
           const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
-          const time = researchTime(def, nextLevel, bonusMultiplier);
+          const time = researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap });
 
           const researchLevels: Record<string, number> = {};
           for (const [key, rDef] of Object.entries(config.research)) {
@@ -113,9 +118,13 @@ export function createResearchService(
       if (def.maxLevel != null && nextLevel > def.maxLevel) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: `Niveau maximum atteint (${def.maxLevel})` });
       }
-      const cost = researchCost(def, nextLevel);
+      const phaseMap = config.universe.phase_multiplier
+        ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
+        : undefined;
+      const timeDivisor = Number(config.universe.research_time_divisor) || 1000;
+      const cost = researchCost(def, nextLevel, phaseMap);
       const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
-      const time = researchTime(def, nextLevel, bonusMultiplier);
+      const time = researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap });
 
       await resourceService.spendResources(planetId, userId, cost);
 
@@ -168,7 +177,10 @@ export function createResearchService(
       const currentLevel = def
         ? (research[def.levelColumn as keyof typeof research] ?? 0) as number
         : 0;
-      const cost = def ? researchCost(def, currentLevel + 1) : { minerai: 0, silicium: 0, hydrogene: 0 };
+      const phaseMap = config.universe.phase_multiplier
+        ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
+        : undefined;
+      const cost = def ? researchCost(def, currentLevel + 1, phaseMap) : { minerai: 0, silicium: 0, hydrogene: 0 };
 
       // Pro-rata refund capped at 70%
       const now = Date.now();

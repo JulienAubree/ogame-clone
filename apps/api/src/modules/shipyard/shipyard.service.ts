@@ -56,7 +56,8 @@ export function createShipyardService(
 
           const buildCategory = getShipBuildCategory(def, config.bonuses);
           const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
-          const time = shipTime(def, bonusMultiplier);
+          const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
+          const time = shipTime(def, bonusMultiplier, timeDivisor);
 
           return {
             id: def.id,
@@ -88,7 +89,8 @@ export function createShipyardService(
           const cost = defenseCost(def);
 
           const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
-          const time = defenseTime(def, bonusMultiplier);
+          const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
+          const time = defenseTime(def, bonusMultiplier, timeDivisor);
 
           return {
             id: def.id,
@@ -159,14 +161,15 @@ export function createShipyardService(
       const hasActive = sameTypeQueue.some((e) => e.status === 'active');
 
       const buildingLevels = await this.getBuildingLevels(planetId);
+      const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
       let unitTime: number;
       if (type === 'ship') {
         const buildCategory = getShipBuildCategory(def as any, config.bonuses);
         const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
-        unitTime = shipTime(def, bonusMultiplier);
+        unitTime = shipTime(def, bonusMultiplier, timeDivisor);
       } else {
         const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
-        unitTime = defenseTime(def, bonusMultiplier);
+        unitTime = defenseTime(def, bonusMultiplier, timeDivisor);
       }
 
       // Merge into existing entry if last batch in queue is the same item
@@ -295,15 +298,16 @@ export function createShipyardService(
       const def = entry.type === 'ship' ? config.ships[entry.itemId] : config.defenses[entry.itemId];
 
       const buildingLevels = await this.getBuildingLevels(entry.planetId);
+      const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
       let unitTime = 60;
       if (def) {
         if (entry.type === 'ship') {
           const buildCategory = getShipBuildCategory(def as any, config.bonuses);
           const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
-          unitTime = shipTime(def, bonusMultiplier);
+          unitTime = shipTime(def, bonusMultiplier, timeDivisor);
         } else {
           const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
-          unitTime = defenseTime(def, bonusMultiplier);
+          unitTime = defenseTime(def, bonusMultiplier, timeDivisor);
         }
       }
 
@@ -343,15 +347,16 @@ export function createShipyardService(
       const def = nextBatch.type === 'ship' ? config.ships[nextBatch.itemId] : config.defenses[nextBatch.itemId];
 
       const buildingLevels = await this.getBuildingLevels(planetId);
+      const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
       let unitTime = 60;
       if (def) {
         if (nextBatch.type === 'ship') {
           const buildCategory = getShipBuildCategory(def as any, config.bonuses);
           const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
-          unitTime = shipTime(def, bonusMultiplier);
+          unitTime = shipTime(def, bonusMultiplier, timeDivisor);
         } else {
           const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
-          unitTime = defenseTime(def, bonusMultiplier);
+          unitTime = defenseTime(def, bonusMultiplier, timeDivisor);
         }
       }
 

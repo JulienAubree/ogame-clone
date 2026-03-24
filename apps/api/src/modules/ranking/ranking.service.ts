@@ -27,6 +27,7 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
     async recalculateAll() {
       const allUsers = await db.select({ id: users.id }).from(users);
       const config = await gameConfigService.getFullConfig();
+      const pointsDivisor = Number(config.universe.ranking_points_divisor) || 1000;
 
       const pointsPerUser: { userId: string; totalPoints: number }[] = [];
 
@@ -35,14 +36,14 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
         let buildingPoints = 0;
         for (const planet of userPlanets) {
           const buildingLevels = await getBuildingLevels(db, planet.id);
-          buildingPoints += calculateBuildingPoints(buildingLevels, config.buildings);
+          buildingPoints += calculateBuildingPoints(buildingLevels, config.buildings, pointsDivisor);
         }
 
         const [research] = await db.select().from(userResearch).where(eq(userResearch.userId, user.id)).limit(1);
         const researchPoints = research
           ? (() => {
               const { userId: _, ...levels } = research;
-              return calculateResearchPoints(levels as Record<string, number>, config.research);
+              return calculateResearchPoints(levels as Record<string, number>, config.research, pointsDivisor);
             })()
           : 0;
 
@@ -51,7 +52,7 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
           const [ships] = await db.select().from(planetShips).where(eq(planetShips.planetId, planet.id)).limit(1);
           if (ships) {
             const { planetId: _, ...counts } = ships;
-            fleetPoints += calculateFleetPoints(counts as Record<string, number>, config.ships);
+            fleetPoints += calculateFleetPoints(counts as Record<string, number>, config.ships, pointsDivisor);
           }
         }
 
@@ -60,7 +61,7 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
           const [defenses] = await db.select().from(planetDefenses).where(eq(planetDefenses.planetId, planet.id)).limit(1);
           if (defenses) {
             const { planetId: _, ...counts } = defenses;
-            defensePoints += calculateDefensePoints(counts as Record<string, number>, config.defenses);
+            defensePoints += calculateDefensePoints(counts as Record<string, number>, config.defenses, pointsDivisor);
           }
         }
 

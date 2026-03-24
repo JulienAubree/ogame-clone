@@ -82,8 +82,10 @@ export function createPveService(
       let [state] = await db.select().from(missionCenterState)
         .where(eq(missionCenterState.userId, userId)).limit(1);
 
+      const cooldownBase = Number(config.universe.pve_discovery_cooldown_base) || 7;
+
       if (!state) {
-        const cooldownMs = discoveryCooldown(centerLevel) * 3600 * 1000;
+        const cooldownMs = discoveryCooldown(centerLevel, { base: cooldownBase, minimum: 1 }) * 3600 * 1000;
         // Set nextDiscoveryAt to now so the first visit triggers an immediate discovery
         const [created] = await db.insert(missionCenterState).values({
           userId,
@@ -113,7 +115,7 @@ export function createPveService(
 
       if (!state || state.nextDiscoveryAt > now) return;
 
-      const cooldownMs = discoveryCooldown(centerLevel) * 3600 * 1000;
+      const cooldownMs = discoveryCooldown(centerLevel, { base: cooldownBase, minimum: 1 }) * 3600 * 1000;
       const elapsed = now.getTime() - state.nextDiscoveryAt.getTime();
       // +1 because the discovery at nextDiscoveryAt itself counts as the first one
       const n = Math.floor(elapsed / cooldownMs) + 1;
@@ -182,10 +184,15 @@ export function createPveService(
       const varianceMin = Number(config.universe.pve_deposit_variance_min) || 0.6;
       const varianceMax = Number(config.universe.pve_deposit_variance_max) || 1.6;
       const varianceMultiplier = varianceMin + Math.random() * (varianceMax - varianceMin);
-      const totalQuantity = depositSize(centerLevel, varianceMultiplier);
+      const depositSizeBase = Number(config.universe.pve_deposit_size_base) || 15000;
+      const depositIncrement = Number(config.universe.pve_deposit_size_increment) || 5000;
+      const totalQuantity = depositSize(centerLevel, varianceMultiplier, { base: depositSizeBase, increment: depositIncrement });
       const mineraiOffset = (Math.random() * 0.30) - 0.15; // -0.15 to +0.15
       const siliciumOffset = (Math.random() * 0.20) - 0.10; // -0.10 to +0.10
-      const composition = depositComposition(mineraiOffset, siliciumOffset);
+      const compBaseMinerai = Number(config.universe.pve_composition_base_minerai) || 0.60;
+      const compBaseSilicium = Number(config.universe.pve_composition_base_silicium) || 0.30;
+      const compMinHydrogene = Number(config.universe.pve_composition_min_hydrogene) || 0.02;
+      const composition = depositComposition(mineraiOffset, siliciumOffset, { baseMinerai: compBaseMinerai, baseSilicium: compBaseSilicium, minHydrogene: compMinHydrogene });
 
       let minerai = Math.floor(totalQuantity * composition.minerai);
       let silicium = Math.floor(totalQuantity * composition.silicium);
