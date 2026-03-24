@@ -16,6 +16,7 @@ import {
   ReportsIcon,
   RankingIcon,
   HistoryIcon,
+  ProfileIcon,
 } from '@/lib/icons';
 import { useUIStore } from '@/stores/ui.store';
 import { useAuthStore } from '@/stores/auth.store';
@@ -27,8 +28,8 @@ const TAB_GROUPS = {
   accueil: ['/'],
   base: ['/resources', '/buildings', '/research', '/shipyard', '/defense'],
   galaxie: ['/galaxy', '/fleet', '/missions', '/movements'],
-  social: ['/messages', '/reports', '/alliance', '/ranking', '/alliance-ranking'],
-} as const;
+  social: ['/profile', '/messages', '/reports', '/alliance', '/ranking', '/alliance-ranking'],
+};
 
 type TabGroup = keyof typeof TAB_GROUPS;
 
@@ -47,12 +48,13 @@ const SHEET_ITEMS = {
     { label: 'Mouvements', path: '/movements', icon: MovementsIcon },
   ],
   social: [
+    { label: 'Profil', path: '/profile', icon: ProfileIcon },
     { label: 'Messages', path: '/messages', icon: MessagesIcon },
     { label: 'Rapports', path: '/reports', icon: ReportsIcon },
     { label: 'Alliance', path: '/alliance', icon: AllianceIcon },
     { label: 'Classement', path: '/ranking', icon: RankingIcon },
   ],
-} as const;
+};
 
 function getActiveTab(pathname: string): TabGroup | null {
   if (pathname === '/') return 'accueil';

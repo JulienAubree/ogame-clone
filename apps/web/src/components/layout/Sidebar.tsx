@@ -17,6 +17,7 @@ import {
   AllianceIcon,
   AllianceRankingIcon,
   HistoryIcon,
+  ProfileIcon,
 } from '@/lib/icons';
 
 interface NavItem {
@@ -55,6 +56,7 @@ const sections: { title: string; items: NavItem[] }[] = [
   {
     title: 'Social',
     items: [
+      { label: 'Profil', path: '/profile', icon: ProfileIcon },
       { label: 'Messages', path: '/messages', icon: MessagesIcon },
       { label: 'Rapports', path: '/reports', icon: ReportsIcon },
       { label: 'Alliance', path: '/alliance', icon: AllianceIcon },
