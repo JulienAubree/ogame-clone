@@ -2,8 +2,10 @@ import { eq } from 'drizzle-orm';
 import { planets, planetTypes, planetBuildings, planetShips } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { calculateResources } from '@ogame-clone/game-engine';
+import { findBuildingByRole, findPlanetTypeByRole } from '../lib/config-helpers.js';
+import type { GameConfigService } from '../modules/admin/game-config.service.js';
 
-export async function resourceTick(db: Database) {
+export async function resourceTick(db: Database, gameConfigService: GameConfigService) {
   const now = new Date();
   const allPlanets = await db.select().from(planets);
 
@@ -28,6 +30,17 @@ export async function resourceTick(db: Database) {
     satCountMap.set(row.planetId, row.solarSatellite);
   }
 
+  // Resolve building IDs by role
+  const config = await gameConfigService.getFullConfig();
+  const mineraiMineId = findBuildingByRole(config, 'producer_minerai').id;
+  const siliciumMineId = findBuildingByRole(config, 'producer_silicium').id;
+  const hydrogeneSynthId = findBuildingByRole(config, 'producer_hydrogene').id;
+  const solarPlantId = findBuildingByRole(config, 'producer_energy').id;
+  const storageMineraiId = findBuildingByRole(config, 'storage_minerai').id;
+  const storageSiliciumId = findBuildingByRole(config, 'storage_silicium').id;
+  const storageHydrogeneId = findBuildingByRole(config, 'storage_hydrogene').id;
+  const homeworldTypeId = findPlanetTypeByRole(config, 'homeworld').id;
+
   let updated = 0;
   for (const planet of allPlanets) {
     const bonus = planet.planetClassId ? ptMap.get(planet.planetClassId) : undefined;
@@ -37,16 +50,16 @@ export async function resourceTick(db: Database) {
         minerai: Number(planet.minerai),
         silicium: Number(planet.silicium),
         hydrogene: Number(planet.hydrogene),
-        mineraiMineLevel: buildingLevels['mineraiMine'] ?? 0,
-        siliciumMineLevel: buildingLevels['siliciumMine'] ?? 0,
-        hydrogeneSynthLevel: buildingLevels['hydrogeneSynth'] ?? 0,
-        solarPlantLevel: buildingLevels['solarPlant'] ?? 0,
-        storageMineraiLevel: buildingLevels['storageMinerai'] ?? 0,
-        storageSiliciumLevel: buildingLevels['storageSilicium'] ?? 0,
-        storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
+        mineraiMineLevel: buildingLevels[mineraiMineId] ?? 0,
+        siliciumMineLevel: buildingLevels[siliciumMineId] ?? 0,
+        hydrogeneSynthLevel: buildingLevels[hydrogeneSynthId] ?? 0,
+        solarPlantLevel: buildingLevels[solarPlantId] ?? 0,
+        storageMineraiLevel: buildingLevels[storageMineraiId] ?? 0,
+        storageSiliciumLevel: buildingLevels[storageSiliciumId] ?? 0,
+        storageHydrogeneLevel: buildingLevels[storageHydrogeneId] ?? 0,
         maxTemp: planet.maxTemp,
         solarSatelliteCount: satCountMap.get(planet.id) ?? 0,
-        isHomePlanet: planet.planetClassId === 'homeworld',
+        isHomePlanet: planet.planetClassId === homeworldTypeId,
         mineraiMinePercent: planet.mineraiMinePercent,
         siliciumMinePercent: planet.siliciumMinePercent,
         hydrogeneSynthPercent: planet.hydrogeneSynthPercent,

@@ -56,7 +56,7 @@ setInterval(async () => {
 console.log('[worker] Event catchup cron started (30s)');
 
 setInterval(async () => {
-  try { await resourceTick(db); } catch (err) { console.error('[resource-tick] Error:', err); }
+  try { await resourceTick(db, gameConfigService); } catch (err) { console.error('[resource-tick] Error:', err); }
 }, 15 * 60_000);
 console.log('[worker] Resource tick cron started (15min)');
 
