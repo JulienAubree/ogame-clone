@@ -2,8 +2,20 @@ import { eq, and, or } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { friendships, users } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
+import type Redis from 'ioredis';
+import { publishNotification } from '../notification/notification.publisher.js';
+import type { createGameEventService } from '../game-event/game-event.service.js';
 
-export function createFriendService(db: Database) {
+export function createFriendService(
+  db: Database,
+  redis: Redis,
+  gameEventService: ReturnType<typeof createGameEventService>,
+) {
+  async function getUsername(userId: string): Promise<string> {
+    const [user] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
+    return user?.username ?? 'Joueur inconnu';
+  }
+
   return {
     async list(userId: string) {
       const rows = await db.select({
@@ -82,6 +94,11 @@ export function createFriendService(db: Database) {
         addresseeId,
       }).returning();
 
+      const username = await getUsername(requesterId);
+      const payload = { fromUserId: requesterId, fromUsername: username };
+      await publishNotification(redis, addresseeId, { type: 'friend-request', payload });
+      await gameEventService.insert(addresseeId, null, 'friend-request', payload);
+
       return row;
     },
 
@@ -94,6 +111,11 @@ export function createFriendService(db: Database) {
       await db.update(friendships)
         .set({ status: 'accepted', updatedAt: new Date() })
         .where(eq(friendships.id, friendshipId));
+
+      const username = await getUsername(userId);
+      const payload = { fromUserId: userId, fromUsername: username };
+      await publishNotification(redis, fs.requesterId, { type: 'friend-accepted', payload });
+      await gameEventService.insert(fs.requesterId, null, 'friend-accepted', payload);
     },
 
     async decline(friendshipId: string, userId: string) {
@@ -101,6 +123,11 @@ export function createFriendService(db: Database) {
       if (!fs) throw new TRPCError({ code: 'NOT_FOUND' });
       if (fs.addresseeId !== userId) throw new TRPCError({ code: 'FORBIDDEN' });
       if (fs.status !== 'pending') throw new TRPCError({ code: 'BAD_REQUEST' });
+
+      const username = await getUsername(userId);
+      const payload = { fromUserId: userId, fromUsername: username };
+      await publishNotification(redis, fs.requesterId, { type: 'friend-declined', payload });
+      await gameEventService.insert(fs.requesterId, null, 'friend-declined', payload);
 
       await db.delete(friendships).where(eq(friendships.id, friendshipId));
     },

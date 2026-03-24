@@ -3,7 +3,7 @@ import { eq, and, desc, lt, sql, inArray } from 'drizzle-orm';
 import { gameEvents } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 
-export type GameEventType = 'building-done' | 'research-done' | 'shipyard-done' | 'fleet-arrived' | 'fleet-returned' | 'pve-mission-done' | 'tutorial-quest-done';
+export type GameEventType = 'building-done' | 'research-done' | 'shipyard-done' | 'fleet-arrived' | 'fleet-returned' | 'pve-mission-done' | 'tutorial-quest-done' | 'friend-request' | 'friend-accepted' | 'friend-declined';
 
 export function createGameEventService(db: Database) {
   return {
