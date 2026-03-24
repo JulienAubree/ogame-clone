@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vue d'ensemble — Mockup v2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+
+  .page { max-width: 1200px; margin: 0 auto; padding: 16px; }
+
+  /* ── SVG icon base ── */
+  .icon-svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; flex-shrink: 0; }
+  .icon-svg.lg { width: 18px; height: 18px; }
+  .activity-icon-wrap .icon-svg { width: 18px; height: 18px; opacity: 1; }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative; width: 100%; height: 220px; border-radius: 12px; overflow: hidden;
+    background: linear-gradient(135deg, #1a1a3e 0%, #2d1b4e 40%, #0f172a 100%);
+    margin-bottom: 20px;
+  }
+  .hero-gradient {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, #0a0e1a 0%, rgba(10,14,26,0.7) 40%, rgba(10,14,26,0.2) 100%);
+  }
+  .hero-content {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 24px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .hero-name {
+    font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px;
+    cursor: pointer; transition: color 0.2s;
+  }
+  .hero-name:hover { color: #60a5fa; }
+  .hero-coords { font-size: 13px; color: #94a3b8; }
+  .hero-right { text-align: right; }
+  .hero-stat { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+  .hero-stat span { color: #cbd5e1; }
+
+  /* ── Layout ── */
+  .layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 1024px) { .layout { grid-template-columns: 2fr 1fr; } }
+  .main-col, .side-col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── Glass card ── */
+  .g-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 16px;
+  }
+  .g-card-title {
+    font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Activites ── */
+  .activity-item {
+    display: flex; gap: 10px; padding: 10px; border-radius: 8px; margin-bottom: 8px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .activity-item:last-child { margin-bottom: 0; }
+  .activity-item:hover { background: rgba(255,255,255,0.04); }
+  .activity-icon-wrap {
+    width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .activity-icon-wrap.build { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .activity-icon-wrap.research { background: rgba(139,92,246,0.15); color: #a78bfa; }
+  .activity-icon-wrap.shipyard { background: rgba(249,115,22,0.15); color: #fb923c; }
+  .activity-body { flex: 1; min-width: 0; }
+  .activity-header { display: flex; justify-content: space-between; font-size: 12px; }
+  .activity-name { color: #e2e8f0; font-weight: 500; }
+  .activity-level { color: #94a3b8; font-size: 11px; }
+  .progress-bar { margin-top: 5px; height: 4px; border-radius: 2px; }
+  .progress-bar .track { height: 100%; border-radius: 2px; }
+  .progress-bar.blue { background: rgba(59,130,246,0.15); }
+  .progress-bar.blue .track { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .progress-bar.purple { background: rgba(139,92,246,0.15); }
+  .progress-bar.purple .track { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+  .progress-bar.orange { background: rgba(249,115,22,0.15); }
+  .progress-bar.orange .track { background: linear-gradient(90deg, #f97316, #fb923c); }
+  .activity-timer { color: #64748b; font-size: 10px; margin-top: 3px; }
+
+  /* ── Fleet movements ── */
+  .fleet-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px;
+    margin-bottom: 6px; cursor: pointer; transition: background 0.15s;
+  }
+  .fleet-item:hover { background: rgba(255,255,255,0.04); }
+  .fleet-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .fleet-dot.outgoing { background: #3b82f6; box-shadow: 0 0 6px rgba(59,130,246,0.5); }
+  .fleet-dot.returning { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+  .fleet-info { flex: 1; font-size: 12px; }
+  .fleet-mission { color: #e2e8f0; font-weight: 500; }
+  .fleet-target { color: #64748b; font-size: 11px; }
+  .fleet-timer { color: #94a3b8; font-size: 11px; flex-shrink: 0; }
+
+  /* ── Events ── */
+  .event-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px;
+  }
+  .event-item:last-child { border-bottom: none; }
+  .event-left { display: flex; align-items: center; gap: 8px; }
+  .event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .event-dot.green { background: #22c55e; }
+  .event-dot.blue { background: #3b82f6; }
+  .event-dot.yellow { background: #eab308; }
+  .event-text { color: #94a3b8; }
+  .event-time { color: #475569; font-size: 11px; }
+
+  /* ── Unit grid (ships / defenses) ── */
+  .unit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; }
+  .unit-item {
+    display: flex; justify-content: space-between; padding: 5px 8px;
+    background: rgba(255,255,255,0.03); border-radius: 5px;
+  }
+  .unit-name { color: #94a3b8; }
+  .unit-count { color: #cbd5e1; font-weight: 600; }
+
+  /* ── Jauges circulaires ── */
+  .gauges { display: flex; justify-content: space-around; padding: 8px 0; }
+  .gauge { text-align: center; }
+  .gauge-circle {
+    width: 66px; height: 66px; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gauge-circle svg.ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+  .gauge-pct { font-size: 12px; font-weight: 600; }
+  .gauge-label { font-size: 10px; margin-top: 4px; font-weight: 500; }
+  .gauge-rate { font-size: 10px; color: #64748b; margin-top: 1px; }
+
+  /* ── Infos planete ── */
+  .info-row {
+    display: flex; justify-content: space-between; font-size: 12px;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: #64748b; }
+  .info-value { color: #cbd5e1; font-weight: 500; }
+
+  /* ── Quick actions ── */
+  .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .qa-btn {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; cursor: pointer; transition: all 0.15s; font-size: 12px; color: #cbd5e1;
+  }
+  .qa-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+  .qa-btn .icon-svg { opacity: 0.8; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ════ HERO ════ -->
+  <div class="hero">
+    <div style="position:absolute;inset:0;background:linear-gradient(135deg, #1e0a3a 0%, #2d1b69 30%, #0c1445 60%, #0a0e1a 100%);"></div>
+    <div style="position:absolute;top:20%;right:15%;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle, rgba(139,92,246,0.3), transparent 70%);filter:blur(30px);"></div>
+    <div class="hero-gradient"></div>
+    <div class="hero-content">
+      <div>
+        <div class="hero-name">Exilium Prime</div>
+        <div class="hero-coords">[1:45:8]</div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-stat"><span>-23°C</span> a <span>17°C</span></div>
+        <div class="hero-stat"><span>12 800</span> km</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ LAYOUT ════ -->
+  <div class="layout">
+
+    <!-- ── COLONNE PRINCIPALE ── -->
+    <div class="main-col">
+
+      <!-- Activites en cours -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <!-- HistoryIcon / timer -->
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+          Activites en cours
+        </div>
+
+        <!-- Construction -->
+        <div class="activity-item">
+          <div class="activity-icon-wrap build">
+            <svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+          </div>
+          <div class="activity-body">
+            <div class="activity-header">
+              <span class="activity-name">Mine de minerai</span>
+              <span class="activity-level">Niv. 5</span>
+            </div>
+            <div class="progress-bar blue"><div class="track" style="width:45%"></div></div>
+            <div class="activity-timer">2h 34m restantes</div>
+          </div>
+        </div>
+
+        <!-- Recherche -->
+        <div class="activity-item">
+          <div class="activity-icon-wrap research">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+          </div>
+          <div class="activity-body">
+            <div class="activity-header">
+              <span class="activity-name">Technologie laser</span>
+              <span class="activity-level">Niv. 3</span>
+            </div>
+            <div class="progress-bar purple"><div class="track" style="width:72%"></div></div>
+            <div class="activity-timer">45m 12s restantes</div>
+          </div>
+        </div>
+
+        <!-- Chantier -->
+        <div class="activity-item">
+          <div class="activity-icon-wrap shipyard">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2L4 7v10l8 5 8-5V7l-8-5Z"/><path d="M12 22V12"/><path d="M20 7l-8 5-8-5"/></svg>
+          </div>
+          <div class="activity-body">
+            <div class="activity-header">
+              <span class="activity-name">Chasseur leger</span>
+              <span class="activity-level">x12</span>
+            </div>
+            <div class="progress-bar orange"><div class="track" style="width:30%"></div></div>
+            <div class="activity-timer">1h 15m restantes</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mouvements de flotte -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          Mouvements de flotte
+        </div>
+        <div class="fleet-item">
+          <div class="fleet-dot outgoing"></div>
+          <div class="fleet-info">
+            <div class="fleet-mission">Transport</div>
+            <div class="fleet-target">[1:45:12]</div>
+          </div>
+          <div class="fleet-timer">12m 45s</div>
+        </div>
+        <div class="fleet-item">
+          <div class="fleet-dot returning"></div>
+          <div class="fleet-info">
+            <div class="fleet-mission">Retour — Espionnage</div>
+            <div class="fleet-target">[2:100:3]</div>
+          </div>
+          <div class="fleet-timer">3m 20s</div>
+        </div>
+      </div>
+
+      <!-- Evenements recents -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h12"/><circle cx="2" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="2" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="2" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
+          Evenements recents
+        </div>
+        <div class="event-item">
+          <div class="event-left"><div class="event-dot green"></div><span class="event-text">Flotte arrivee a destination</span></div>
+          <span class="event-time">il y a 5min</span>
+        </div>
+        <div class="event-item">
+          <div class="event-left"><div class="event-dot blue"></div><span class="event-text">Construction terminee : Usine de nanites Niv. 2</span></div>
+          <span class="event-time">il y a 1h</span>
+        </div>
+        <div class="event-item">
+          <div class="event-left"><div class="event-dot yellow"></div><span class="event-text">Recherche terminee : Bouclier Niv. 4</span></div>
+          <span class="event-time">il y a 3h</span>
+        </div>
+      </div>
+
+      <!-- Flotte stationnee -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2L2 19h20L12 2Z"/><path d="M12 9v4"/></svg>
+          Flotte stationnee
+        </div>
+        <div class="unit-grid">
+          <div class="unit-item"><span class="unit-name">Chasseur leger</span><span class="unit-count">45</span></div>
+          <div class="unit-item"><span class="unit-name">Chasseur lourd</span><span class="unit-count">12</span></div>
+          <div class="unit-item"><span class="unit-name">Croiseur</span><span class="unit-count">8</span></div>
+          <div class="unit-item"><span class="unit-name">Petit transporteur</span><span class="unit-count">30</span></div>
+          <div class="unit-item"><span class="unit-name">Grand transporteur</span><span class="unit-count">5</span></div>
+          <div class="unit-item"><span class="unit-name">Sonde espionnage</span><span class="unit-count">120</span></div>
+        </div>
+      </div>
+
+      <!-- Defenses planetaires -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+          Defenses planetaires
+        </div>
+        <div class="unit-grid">
+          <div class="unit-item"><span class="unit-name">Lanceur de missiles</span><span class="unit-count">80</span></div>
+          <div class="unit-item"><span class="unit-name">Artillerie laser leg.</span><span class="unit-count">50</span></div>
+          <div class="unit-item"><span class="unit-name">Artillerie laser lou.</span><span class="unit-count">15</span></div>
+          <div class="unit-item"><span class="unit-name">Canon de Gauss</span><span class="unit-count">3</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SIDEBAR ── -->
+    <div class="side-col">
+
+      <!-- Production — jauges circulaires -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <!-- Gear / production icon -->
+          <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          Production & Stockage
+        </div>
+        <div class="gauges">
+          <div class="gauge">
+            <div class="gauge-circle">
+              <svg class="ring" width="66" height="66">
+                <circle cx="33" cy="33" r="28" fill="none" stroke="rgba(245,158,11,0.2)" stroke-width="3"/>
+                <circle cx="33" cy="33" r="28" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="176" stroke-dashoffset="114" stroke-linecap="round"/>
+              </svg>
+              <span class="gauge-pct" style="color:#f59e0b;">35%</span>
+            </div>
+            <div class="gauge-label" style="color:#f59e0b;">Minerai</div>
+            <div class="gauge-rate">+1 200/h</div>
+          </div>
+          <div class="gauge">
+            <div class="gauge-circle">
+              <svg class="ring" width="66" height="66">
+                <circle cx="33" cy="33" r="28" fill="none" stroke="rgba(6,182,212,0.2)" stroke-width="3"/>
+                <circle cx="33" cy="33" r="28" fill="none" stroke="#06b6d4" stroke-width="3" stroke-dasharray="176" stroke-dashoffset="79" stroke-linecap="round"/>
+              </svg>
+              <span class="gauge-pct" style="color:#06b6d4;">55%</span>
+            </div>
+            <div class="gauge-label" style="color:#06b6d4;">Silicium</div>
+            <div class="gauge-rate">+800/h</div>
+          </div>
+          <div class="gauge">
+            <div class="gauge-circle">
+              <svg class="ring" width="66" height="66">
+                <circle cx="33" cy="33" r="28" fill="none" stroke="rgba(16,185,129,0.2)" stroke-width="3"/>
+                <circle cx="33" cy="33" r="28" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="176" stroke-dashoffset="150" stroke-linecap="round"/>
+              </svg>
+              <span class="gauge-pct" style="color:#10b981;">15%</span>
+            </div>
+            <div class="gauge-label" style="color:#10b981;">Hydrogene</div>
+            <div class="gauge-rate">+200/h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Infos planete -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+          Informations planete
+        </div>
+        <div class="info-row">
+          <span class="info-label">Cases</span>
+          <span class="info-value">42 / 180</span>
+        </div>
+        <div style="margin: 4px 0 8px;">
+          <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;">
+            <div style="width:23%;height:100%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:2px;"></div>
+          </div>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Energie</span>
+          <span class="info-value" style="color:#facc15;">142 / 180</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Diametre</span>
+          <span class="info-value">12 800 km</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Temperature</span>
+          <span class="info-value">-23°C a 17°C</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="g-card">
+        <div class="g-card-title">
+          <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Actions rapides
+        </div>
+        <div class="quick-actions">
+          <div class="qa-btn">
+            <svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+            Batiments
+          </div>
+          <div class="qa-btn">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+            Recherche
+          </div>
+          <div class="qa-btn">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2L4 7v10l8 5 8-5V7l-8-5Z"/><path d="M12 22V12"/><path d="M20 7l-8 5-8-5"/></svg>
+            Chantier
+          </div>
+          <div class="qa-btn">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+            Defenses
+          </div>
+          <div class="qa-btn">
+            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2L2 19h20L12 2Z"/><path d="M12 9v4"/></svg>
+            Flotte
+          </div>
+          <div class="qa-btn">
+            <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>
+            Galaxie
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

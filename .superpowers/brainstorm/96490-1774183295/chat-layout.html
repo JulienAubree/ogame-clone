@@ -1,0 +1,244 @@
+<h2>Chat Messenger - Layout principal</h2>
+<p class="subtitle">Page /messages redesignee en style chat. Clique sur l'option qui te plait le plus.</p>
+
+<div class="cards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+  <!-- Option A: Split panel -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 0;">
+      <h3 style="padding: 12px 16px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1);">A) Split panel (Messenger desktop)</h3>
+      <div style="display: flex; height: 420px; font-size: 12px; background: #0d1117;">
+
+        <!-- Conversation list -->
+        <div style="width: 240px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column;">
+          <div style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <div style="background: rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; color: #6b7280; font-size: 11px;">Rechercher...</div>
+          </div>
+
+          <!-- Active conversation -->
+          <div style="padding: 10px 12px; background: rgba(99,102,241,0.12); display: flex; gap: 10px; align-items: center; cursor: pointer;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; flex-shrink: 0;">DR</div>
+            <div style="min-width: 0;">
+              <div style="color: #e5e7eb; font-weight: 600; font-size: 12px;">DarkRaider</div>
+              <div style="color: #6b7280; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Ok deal, 50k minerai contre...</div>
+            </div>
+          </div>
+
+          <!-- Other conversations -->
+          <div style="padding: 10px 12px; display: flex; gap: 10px; align-items: center; cursor: pointer;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #059669, #10b981); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; flex-shrink: 0;">SN</div>
+            <div style="min-width: 0;">
+              <div style="color: #e5e7eb; font-weight: 600; font-size: 12px;">StarNova <span style="width: 6px; height: 6px; border-radius: 50%; background: #6366f1; display: inline-block; margin-left: 4px;"></span></div>
+              <div style="color: #6b7280; font-size: 11px;">Bienvenue dans l'alliance !</div>
+            </div>
+          </div>
+
+          <div style="padding: 10px 12px; display: flex; gap: 10px; align-items: center; cursor: pointer;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #dc2626, #ef4444); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; flex-shrink: 0;">XK</div>
+            <div style="min-width: 0;">
+              <div style="color: #9ca3af; font-size: 12px;">XenoKnight</div>
+              <div style="color: #6b7280; font-size: 11px;">GG pour le combat</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat area -->
+        <div style="flex: 1; display: flex; flex-direction: column;">
+          <!-- Chat header -->
+          <div style="padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px;">
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white;">DR</div>
+            <div>
+              <div style="color: #e5e7eb; font-weight: 600; font-size: 12px;">DarkRaider</div>
+              <div style="color: #6b7280; font-size: 10px;">[2:145:7]</div>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div style="flex: 1; padding: 12px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+            <!-- Date separator -->
+            <div style="text-align: center; color: #4b5563; font-size: 10px; margin: 4px 0;">Aujourd'hui, 14:30</div>
+
+            <!-- Received message -->
+            <div style="display: flex; gap: 6px; align-items: flex-end; max-width: 80%;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 600;">DR</div>
+              <div style="background: rgba(255,255,255,0.08); border-radius: 12px 12px 12px 4px; padding: 8px 12px; color: #e5e7eb; font-size: 12px; line-height: 1.4;">
+                Salut ! Tu serais partant pour un echange de ressources ?
+              </div>
+            </div>
+
+            <!-- Sent message -->
+            <div style="display: flex; justify-content: flex-end;">
+              <div style="background: #4f46e5; border-radius: 12px 12px 4px 12px; padding: 8px 12px; color: white; font-size: 12px; max-width: 80%; line-height: 1.4;">
+                Carrément ! De quoi t'as besoin ?
+              </div>
+            </div>
+
+            <!-- Received -->
+            <div style="display: flex; gap: 6px; align-items: flex-end; max-width: 80%;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 600;">DR</div>
+              <div style="background: rgba(255,255,255,0.08); border-radius: 12px 12px 12px 4px; padding: 8px 12px; color: #e5e7eb; font-size: 12px; line-height: 1.4;">
+                J'ai besoin de silicium, j'ai du minerai en rab. 50k minerai contre 30k silicium ca te va ?
+              </div>
+            </div>
+
+            <!-- Sent -->
+            <div style="display: flex; justify-content: flex-end;">
+              <div style="background: #4f46e5; border-radius: 12px 12px 4px 12px; padding: 8px 12px; color: white; font-size: 12px; max-width: 80%; line-height: 1.4;">
+                Ok deal, 50k minerai contre 30k silicium. J'envoie un cargo maintenant !
+              </div>
+            </div>
+
+            <!-- Received -->
+            <div style="display: flex; gap: 6px; align-items: flex-end; max-width: 80%;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 600;">DR</div>
+              <div style="background: rgba(255,255,255,0.08); border-radius: 12px 12px 12px 4px; padding: 8px 12px; color: #e5e7eb; font-size: 12px; line-height: 1.4;">
+                Ok deal, 50k minerai contre 30k silicium
+              </div>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div style="padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; gap: 8px; align-items: center;">
+            <input style="flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 8px 14px; color: #e5e7eb; font-size: 12px; outline: none;" placeholder="Ecrire un message..." />
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: #4f46e5; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Full width chat (no sidebar on mobile) -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 0;">
+      <h3 style="padding: 12px 16px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1);">B) Full-width mobile (tap to open)</h3>
+      <div style="height: 420px; font-size: 12px; background: #0d1117; display: flex; flex-direction: column;">
+
+        <!-- Header -->
+        <div style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
+          <div style="color: #e5e7eb; font-weight: 700; font-size: 16px;">Messages</div>
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(99,102,241,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+        </div>
+
+        <!-- Conversation list (full width) -->
+        <div style="flex: 1; overflow-y: auto;">
+
+          <div style="padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer;">
+            <div style="position: relative;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: white;">DR</div>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="color: #e5e7eb; font-weight: 600; font-size: 13px;">DarkRaider</span>
+                <span style="color: #6b7280; font-size: 10px;">14:52</span>
+              </div>
+              <div style="color: #6b7280; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Ok deal, 50k minerai contre 30k silicium</div>
+            </div>
+          </div>
+
+          <div style="padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; background: rgba(99,102,241,0.05);">
+            <div style="position: relative;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #059669, #10b981); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: white;">SN</div>
+              <div style="position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px; border-radius: 50%; background: #6366f1; border: 2px solid #0d1117;"></div>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="color: #e5e7eb; font-weight: 700; font-size: 13px;">StarNova</span>
+                <span style="color: #6b7280; font-size: 10px;">12:05</span>
+              </div>
+              <div style="color: #e5e7eb; font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Bienvenue dans l'alliance !</div>
+            </div>
+          </div>
+
+          <div style="padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #dc2626, #ef4444); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: white;">XK</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="color: #9ca3af; font-size: 13px;">XenoKnight</span>
+                <span style="color: #6b7280; font-size: 10px;">Hier</span>
+              </div>
+              <div style="color: #6b7280; font-size: 12px;">GG pour le combat</div>
+            </div>
+          </div>
+
+          <div style="padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #d97706, #f59e0b); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: white;">VX</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="color: #9ca3af; font-size: 13px;">VortexPrime</span>
+                <span style="color: #6b7280; font-size: 10px;">Lun.</span>
+              </div>
+              <div style="color: #6b7280; font-size: 12px;">Merci pour le tip !</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px;">
+  <h3>Desktop overlay (en plus de la page)</h3>
+  <p class="subtitle">Petite fenetre de chat en bas a droite, depliable comme Facebook Messenger</p>
+</div>
+
+<div class="mockup" style="margin-top: 12px;">
+  <div class="mockup-header">Desktop - Overlay en bas a droite (sur n'importe quelle page)</div>
+  <div class="mockup-body" style="height: 300px; position: relative; background: #0d1117;">
+    <!-- Fake game content behind -->
+    <div style="padding: 20px; opacity: 0.3;">
+      <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; margin-bottom: 12px; height: 60px;"></div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; height: 100px;"></div>
+        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; height: 100px;"></div>
+        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; height: 100px;"></div>
+      </div>
+    </div>
+
+    <!-- Chat overlay -->
+    <div style="position: absolute; bottom: 0; right: 16px; width: 300px; border-radius: 10px 10px 0 0; overflow: hidden; box-shadow: 0 -4px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-bottom: none;">
+      <!-- Overlay header (click to expand/collapse) -->
+      <div style="background: #1e1b4b; padding: 8px 12px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: white;">DR</div>
+        <span style="color: #e5e7eb; font-weight: 600; font-size: 12px; flex: 1;">DarkRaider</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </div>
+      <!-- Overlay messages -->
+      <div style="background: #0f0f23; padding: 10px; display: flex; flex-direction: column; gap: 6px; height: 160px; overflow-y: auto;">
+        <div style="display: flex; gap: 6px; align-items: flex-end; max-width: 85%;">
+          <div style="width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); flex-shrink: 0;"></div>
+          <div style="background: rgba(255,255,255,0.08); border-radius: 10px 10px 10px 4px; padding: 6px 10px; color: #e5e7eb; font-size: 11px;">50k minerai contre 30k silicium ?</div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <div style="background: #4f46e5; border-radius: 10px 10px 4px 10px; padding: 6px 10px; color: white; font-size: 11px; max-width: 85%;">Ok deal !</div>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: flex-end; max-width: 85%;">
+          <div style="width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); flex-shrink: 0;"></div>
+          <div style="background: rgba(255,255,255,0.08); border-radius: 10px 10px 10px 4px; padding: 6px 10px; color: #e5e7eb; font-size: 11px;">J'envoie le cargo</div>
+        </div>
+      </div>
+      <!-- Input -->
+      <div style="background: #0f0f23; padding: 8px 10px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; gap: 6px;">
+        <input style="flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 6px 12px; color: #e5e7eb; font-size: 11px; outline: none;" placeholder="Aa" />
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: #4f46e5; display: flex; align-items: center; justify-content: center;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini chat bubbles (other conversations) -->
+    <div style="position: absolute; bottom: 8px; right: 328px; display: flex; flex-direction: column; gap: 6px; align-items: center;">
+      <div style="position: relative;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #059669, #10b981); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">SN</div>
+        <div style="position: absolute; top: -4px; right: -4px; width: 16px; height: 16px; border-radius: 50%; background: #ef4444; font-size: 9px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid #0d1117;">1</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 16px;">L'option A montre le layout desktop split (conversations + chat). L'option B montre la liste mobile full-width. L'overlay en bas est un bonus desktop qui s'ajoute a l'un ou l'autre.</p>

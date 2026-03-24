@@ -1,0 +1,68 @@
+<h2>Layout des cartes sous le hero</h2>
+<p class="subtitle">Comment organiser les blocs d'information ?</p>
+
+<div class="cards">
+  <!-- Option A: 2 colonnes equilibrees -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: rgba(255,255,255,0.03);">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+        <div style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); border-radius: 6px; padding: 10px;">
+          <div style="color: #60a5fa; font-weight: 600; margin-bottom: 4px;">Activites en cours</div>
+          <div style="color: #94a3b8; font-size: 10px;">Construction Niv.5<br>Recherche Niv.3</div>
+        </div>
+        <div style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); border-radius: 6px; padding: 10px;">
+          <div style="color: #a78bfa; font-weight: 600; margin-bottom: 4px;">Production /h</div>
+          <div style="color: #94a3b8; font-size: 10px;">Minerai +1,200<br>Silicium +800</div>
+        </div>
+        <div style="background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 6px; padding: 10px;">
+          <div style="color: #4ade80; font-weight: 600; margin-bottom: 4px;">Mouvements</div>
+          <div style="color: #94a3b8; font-size: 10px;">2 flottes en vol</div>
+        </div>
+        <div style="background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; padding: 10px;">
+          <div style="color: #fbbf24; font-weight: 600; margin-bottom: 4px;">Evenements</div>
+          <div style="color: #94a3b8; font-size: 10px;">3 evenements recents</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Grille 2 colonnes</h3>
+      <p>Cartes de taille egale, compactes. Bon equilibre info/espace. Se collapse en 1 colonne sur mobile.</p>
+    </div>
+  </div>
+
+  <!-- Option B: colonne principale + sidebar -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: rgba(255,255,255,0.03);">
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px; font-size: 11px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); border-radius: 6px; padding: 10px;">
+            <div style="color: #60a5fa; font-weight: 600; margin-bottom: 4px;">Activites en cours</div>
+            <div style="color: #94a3b8; font-size: 10px;">Construction Niv.5 — 2h34 restantes<br>Recherche Niv.3 — 45min</div>
+          </div>
+          <div style="background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 6px; padding: 10px;">
+            <div style="color: #4ade80; font-weight: 600; margin-bottom: 4px;">Mouvements de flotte</div>
+            <div style="color: #94a3b8; font-size: 10px;">Transport vers [1:45:8] — 12min</div>
+          </div>
+          <div style="background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; padding: 10px;">
+            <div style="color: #fbbf24; font-weight: 600; margin-bottom: 4px;">Evenements recents</div>
+            <div style="color: #94a3b8; font-size: 10px;">Flotte arrivee il y a 5min<br>Construction terminee il y a 1h</div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); border-radius: 6px; padding: 10px;">
+            <div style="color: #a78bfa; font-weight: 600; margin-bottom: 4px;">Production</div>
+            <div style="color: #94a3b8; font-size: 10px;">Min +1.2k<br>Sil +800<br>Hyd +200</div>
+          </div>
+          <div style="background: rgba(100,116,139,0.15); border: 1px solid rgba(100,116,139,0.3); border-radius: 6px; padding: 10px;">
+            <div style="color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Planete</div>
+            <div style="color: #94a3b8; font-size: 10px;">Aride<br>42/180 cases<br>-23°C a 17°C</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Principal + sidebar</h3>
+      <p>Colonne large pour le contenu dynamique (activites, flottes, events). Colonne etroite pour les infos statiques (production, planete). Hierarchie naturelle.</p>
+    </div>
+  </div>
+</div>

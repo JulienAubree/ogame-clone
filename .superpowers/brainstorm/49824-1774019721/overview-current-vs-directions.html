@@ -1,0 +1,44 @@
+<h2>Redesign de la Vue d'ensemble</h2>
+<p class="subtitle">Quelle direction visuelle te parle le plus ?</p>
+
+<p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
+  Actuellement, la page affiche : image hero planete, nom/coordonnees, activites en cours, mouvements de flotte, evenements recents, production/h, et infos planete — le tout dans des cartes simples en grille. Voici 3 directions possibles :
+</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Dashboard compact & data-dense</h3>
+      <p>Inspiration tableau de bord spatial. Hero planete reduit, toutes les infos visibles d'un coup. Widgets compacts avec icones, barres de progression pour le stockage, mini-graphiques de production. Layout dense mais organise. Priorite : voir tout sans scroller.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Tout visible d'un coup</li><li>Efficace pour joueurs reguliers</li><li>Style "poste de commande"</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Peut sembler charge sur mobile</li><li>Moins immersif visuellement</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hero immersif + cartes enrichies</h3>
+      <p>Grand hero planete avec overlay d'infos (nom, type, coordonnees, temperature). En dessous, cartes visuellement enrichies : icones de ressources colorees, barres de stockage, timers avec barres de progression, badges de statut. La planete est la star de la page.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Visuellement impressionnant</li><li>Met en valeur les images planetes</li><li>Ambiance spatiale forte</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Plus de scroll</li><li>Infos moins denses</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Split : sidebar planete + contenu principal</h3>
+      <p>A gauche (ou en haut sur mobile) : panneau fixe avec image planete, infos planete, production, stockage. A droite : activites, flottes, evenements en flux vertical. Separation claire entre "etat de la planete" et "ce qui se passe".</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Separation logique claire</li><li>Infos planete toujours visibles</li><li>Naturel sur desktop</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Moins bien sur mobile (collapse)</li><li>Moins de wow effect</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

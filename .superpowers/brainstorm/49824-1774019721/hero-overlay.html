@@ -1,0 +1,68 @@
+<h2>Contenu du hero planete</h2>
+<p class="subtitle">Quelles infos afficher en overlay sur l'image de la planete ?</p>
+
+<p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
+  Le hero prend toute la largeur avec l'image de la planete en fond. On y superpose des infos en overlay avec un gradient sombre. Que veux-tu y voir ?
+</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="name" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Nom de la planete + renommage</h3>
+      <p>Le nom en grand, cliquable pour renommer (comme actuellement)</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="coords" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Coordonnees</h3>
+      <p>[1:45:8] — position dans la galaxie</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="type" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Type de planete</h3>
+      <p>Badge avec le type (Aride, Glacee, Gazeuse...) et ses bonus en couleur</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="fields" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Cases utilisees</h3>
+      <p>Barre de progression : 42/180 cases occupees</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="temp" onclick="toggleSelect(this)">
+    <div class="letter">5</div>
+    <div class="content">
+      <h3>Temperature</h3>
+      <p>-23°C a 17°C</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="diameter" onclick="toggleSelect(this)">
+    <div class="letter">6</div>
+    <div class="content">
+      <h3>Diametre</h3>
+      <p>12 800 km</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="energy" onclick="toggleSelect(this)">
+    <div class="letter">7</div>
+    <div class="content">
+      <h3>Energie disponible</h3>
+      <p>Icone + energie actuelle / totale (si dispo dans les donnees)</p>
+    </div>
+  </div>
+</div>
+
+<p style="color: var(--text-secondary); margin-top: 16px; font-size: 13px;">
+  Multi-selection : clique sur tous les elements que tu veux voir dans le hero. Les autres iront dans la sidebar "Infos planete".
+</p>

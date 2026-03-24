@@ -1,0 +1,94 @@
+<h2>Bloc production dans la sidebar</h2>
+<p class="subtitle">Comment afficher la production et le stockage des ressources ?</p>
+
+<div class="cards">
+  <!-- Option A: simple avec barres de stockage -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: rgba(255,255,255,0.03);">
+      <div style="font-size: 11px; display: flex; flex-direction: column; gap: 12px; max-width: 200px; margin: 0 auto;">
+        <!-- Minerai -->
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span style="color: #f59e0b; font-weight: 500;">Minerai</span>
+            <span style="color: #94a3b8;">+1 200/h</span>
+          </div>
+          <div style="height: 4px; background: rgba(245,158,11,0.15); border-radius: 2px;">
+            <div style="width: 35%; height: 100%; background: #f59e0b; border-radius: 2px;"></div>
+          </div>
+          <div style="color: #64748b; font-size: 9px; margin-top: 2px;">42 000 / 120 000</div>
+        </div>
+        <!-- Silicium -->
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span style="color: #06b6d4; font-weight: 500;">Silicium</span>
+            <span style="color: #94a3b8;">+800/h</span>
+          </div>
+          <div style="height: 4px; background: rgba(6,182,212,0.15); border-radius: 2px;">
+            <div style="width: 55%; height: 100%; background: #06b6d4; border-radius: 2px;"></div>
+          </div>
+          <div style="color: #64748b; font-size: 9px; margin-top: 2px;">66 000 / 120 000</div>
+        </div>
+        <!-- Hydrogene -->
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span style="color: #10b981; font-weight: 500;">Hydrogene</span>
+            <span style="color: #94a3b8;">+200/h</span>
+          </div>
+          <div style="height: 4px; background: rgba(16,185,129,0.15); border-radius: 2px;">
+            <div style="width: 15%; height: 100%; background: #10b981; border-radius: 2px;"></div>
+          </div>
+          <div style="color: #64748b; font-size: 9px; margin-top: 2px;">9 000 / 60 000</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Barres de stockage lineaires</h3>
+      <p>Nom + taux /h, barre de remplissage, quantite actuelle / max. Simple, lisible, compact.</p>
+    </div>
+  </div>
+
+  <!-- Option B: radial/circular -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: rgba(255,255,255,0.03);">
+      <div style="display: flex; justify-content: center; gap: 16px;">
+        <!-- Minerai circle -->
+        <div style="text-align: center;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(245,158,11,0.2); position: relative; display: flex; align-items: center; justify-content: center;">
+            <svg width="52" height="52" style="position: absolute; top: -3px; left: -3px; transform: rotate(-90deg);">
+              <circle cx="26" cy="26" r="23" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="144.5" stroke-dashoffset="94" stroke-linecap="round"/>
+            </svg>
+            <span style="color: #f59e0b; font-size: 10px; font-weight: 600;">35%</span>
+          </div>
+          <div style="color: #f59e0b; font-size: 9px; margin-top: 4px; font-weight: 500;">Minerai</div>
+          <div style="color: #94a3b8; font-size: 9px;">+1.2k/h</div>
+        </div>
+        <!-- Silicium circle -->
+        <div style="text-align: center;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(6,182,212,0.2); position: relative; display: flex; align-items: center; justify-content: center;">
+            <svg width="52" height="52" style="position: absolute; top: -3px; left: -3px; transform: rotate(-90deg);">
+              <circle cx="26" cy="26" r="23" fill="none" stroke="#06b6d4" stroke-width="3" stroke-dasharray="144.5" stroke-dashoffset="65" stroke-linecap="round"/>
+            </svg>
+            <span style="color: #06b6d4; font-size: 10px; font-weight: 600;">55%</span>
+          </div>
+          <div style="color: #06b6d4; font-size: 9px; margin-top: 4px; font-weight: 500;">Silicium</div>
+          <div style="color: #94a3b8; font-size: 9px;">+800/h</div>
+        </div>
+        <!-- Hydrogene circle -->
+        <div style="text-align: center;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(16,185,129,0.2); position: relative; display: flex; align-items: center; justify-content: center;">
+            <svg width="52" height="52" style="position: absolute; top: -3px; left: -3px; transform: rotate(-90deg);">
+              <circle cx="26" cy="26" r="23" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="144.5" stroke-dashoffset="123" stroke-linecap="round"/>
+            </svg>
+            <span style="color: #10b981; font-size: 10px; font-weight: 600;">15%</span>
+          </div>
+          <div style="color: #10b981; font-size: 9px; margin-top: 4px; font-weight: 500;">Hydrogene</div>
+          <div style="color: #94a3b8; font-size: 9px;">+200/h</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Jauges circulaires</h3>
+      <p>Cercles de progression avec pourcentage de remplissage, taux /h en dessous. Plus visuel et "sci-fi", mais moins d'info detaillee.</p>
+    </div>
+  </div>
+</div>

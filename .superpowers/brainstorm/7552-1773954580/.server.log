@@ -1,0 +1,6 @@
+{"type":"server-started","port":51104,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:51104","screen_dir":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/7552-1773954580"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/7552-1773954580/card-layout-options.html"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/7552-1773954580/detail-panel.html"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/7552-1773954580/detail-panel-v2.html"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/7552-1773954580/waiting-2.html"}
+{"type":"server-stopped","reason":"idle timeout"}
