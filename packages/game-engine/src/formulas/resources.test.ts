@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateResources, calculateProductionRates } from './resources.js';
+import type { ProductionConfig } from './resources.js';
 
 describe('calculateProductionRates', () => {
   it('returns hourly rates for level 1 mines, solar 1, no energy deficit', () => {
@@ -123,5 +124,29 @@ describe('calculateResources', () => {
     const result = calculateResources(basePlanet, now, now);
     expect(result.minerai).toBe(500);
     expect(result.silicium).toBe(500);
+  });
+});
+
+describe('calculateProductionRates with custom config', () => {
+  it('uses custom production config', () => {
+    const customConfig: ProductionConfig = {
+      minerai: { baseProduction: 60, exponentBase: 1.1 },
+      silicium: { baseProduction: 20, exponentBase: 1.1 },
+      hydrogene: { baseProduction: 10, exponentBase: 1.1, tempCoeffA: 1.36, tempCoeffB: 0.004 },
+      solar: { baseProduction: 20, exponentBase: 1.1 },
+      mineraiEnergy: { baseConsumption: 10, exponentBase: 1.1 },
+      siliciumEnergy: { baseConsumption: 10, exponentBase: 1.1 },
+      hydrogeneEnergy: { baseConsumption: 20, exponentBase: 1.1 },
+      storage: { storageBase: 5000, coeffA: 2.5, coeffB: 20, coeffC: 33 },
+      satellite: { homePlanetEnergy: 50, baseDivisor: 4, baseOffset: 20 },
+    };
+    const planet = {
+      mineraiMineLevel: 1, siliciumMineLevel: 0, hydrogeneSynthLevel: 0,
+      solarPlantLevel: 5, storageMineraiLevel: 0, storageSiliciumLevel: 0,
+      storageHydrogeneLevel: 0, maxTemp: 50, solarSatelliteCount: 0,
+    };
+    const rates = calculateProductionRates(planet, undefined, customConfig);
+    // With baseProduction=60: 60 * 1 * 1.1 = 66 (vs default 33)
+    expect(rates.mineraiPerHour).toBe(66);
   });
 });
