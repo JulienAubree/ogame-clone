@@ -81,6 +81,7 @@ export interface BuildingConfig {
   flavorText: string | null;
   categoryId: string | null;
   sortOrder: number;
+  role: string | null;
   prerequisites: { buildingId: string; level: number }[];
 }
 
@@ -120,6 +121,7 @@ export interface ShipConfig {
   categoryId: string | null;
   sortOrder: number;
   isStationary: boolean;
+  role: string | null;
   prerequisites: {
     buildings: { buildingId: string; level: number }[];
     research: { researchId: string; level: number }[];
@@ -157,6 +159,7 @@ export interface PlanetTypeConfig {
   diameterMax: number;
   fieldsBonus: number;
   sortOrder: number;
+  role: string | null;
 }
 
 export interface ProductionConfigEntry {
@@ -264,6 +267,7 @@ export function createGameConfigService(db: Database) {
         flavorText: b.flavorText ?? null,
         categoryId: b.categoryId,
         sortOrder: b.sortOrder,
+        role: b.role ?? null,
         prerequisites: buildingPrereqRows
           .filter(p => p.buildingId === b.id)
           .map(p => ({ buildingId: p.requiredBuildingId, level: p.requiredLevel })),
@@ -315,6 +319,7 @@ export function createGameConfigService(db: Database) {
         categoryId: s.categoryId,
         sortOrder: s.sortOrder,
         isStationary: s.isStationary,
+        role: s.role ?? null,
         prerequisites: {
           buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
           research: prereqs.filter(p => p.requiredResearchId).map(p => ({ researchId: p.requiredResearchId!, level: p.requiredLevel })),
@@ -384,6 +389,7 @@ export function createGameConfigService(db: Database) {
       diameterMax: pt.diameterMax,
       fieldsBonus: pt.fieldsBonus,
       sortOrder: pt.sortOrder,
+      role: pt.role ?? null,
     }));
 
     // Pirate templates
@@ -483,6 +489,7 @@ export function createGameConfigService(db: Database) {
       flavorText?: string | null;
       categoryId?: string | null;
       sortOrder?: number;
+      role?: string | null;
     }) {
       await db.insert(buildingDefinitions).values({
         id: data.id,
@@ -496,6 +503,7 @@ export function createGameConfigService(db: Database) {
         flavorText: data.flavorText ?? null,
         categoryId: data.categoryId ?? null,
         sortOrder: data.sortOrder ?? 0,
+        role: data.role ?? null,
       });
       invalidateCache();
     },
@@ -556,6 +564,7 @@ export function createGameConfigService(db: Database) {
       flavorText: string | null;
       categoryId: string | null;
       sortOrder: number;
+      role: string | null;
     }>) {
       await db.update(buildingDefinitions).set(data).where(eq(buildingDefinitions.id, id));
       invalidateCache();
@@ -683,6 +692,7 @@ export function createGameConfigService(db: Database) {
       flavorText?: string | null;
       categoryId?: string | null;
       sortOrder?: number;
+      role?: string | null;
     }) {
       await db.insert(shipDefinitions).values({
         id: data.id,
@@ -703,6 +713,7 @@ export function createGameConfigService(db: Database) {
         flavorText: data.flavorText ?? null,
         categoryId: data.categoryId ?? null,
         sortOrder: data.sortOrder ?? 0,
+        role: data.role ?? null,
       });
       invalidateCache();
     },
@@ -738,6 +749,7 @@ export function createGameConfigService(db: Database) {
       flavorText: string | null;
       categoryId: string | null;
       sortOrder: number;
+      role: string | null;
     }>) {
       await db.update(shipDefinitions).set(data).where(eq(shipDefinitions.id, id));
       invalidateCache();
@@ -880,6 +892,7 @@ export function createGameConfigService(db: Database) {
       diameterMax: number;
       fieldsBonus?: number;
       sortOrder?: number;
+      role?: string | null;
     }) {
       await db.insert(planetTypes).values({
         id: data.id,
@@ -893,6 +906,7 @@ export function createGameConfigService(db: Database) {
         diameterMax: data.diameterMax,
         fieldsBonus: data.fieldsBonus ?? 1.0,
         sortOrder: data.sortOrder ?? 0,
+        role: data.role ?? null,
       });
       invalidateCache();
     },
@@ -908,6 +922,7 @@ export function createGameConfigService(db: Database) {
       diameterMax: number;
       fieldsBonus: number;
       sortOrder: number;
+      role: string | null;
     }>) {
       await db.update(planetTypes).set(data).where(eq(planetTypes.id, id));
       invalidateCache();
