@@ -143,6 +143,22 @@ export function useNotifications() {
         addToast(`Quête terminée : ${event.payload.questTitle}`);
         showBrowserNotification('Quête terminée !', String(event.payload.questTitle));
         break;
+      case 'friend-request':
+        utils.friend.pendingReceived.invalidate();
+        addToast(`${event.payload.fromUsername} vous a envoyé une demande d'ami`);
+        showBrowserNotification('Demande d\'ami', `${event.payload.fromUsername} vous a envoyé une demande d'ami`);
+        break;
+      case 'friend-accepted':
+        utils.friend.list.invalidate();
+        utils.friend.pendingSent.invalidate();
+        addToast(`${event.payload.fromUsername} a accepté votre demande d'ami`);
+        showBrowserNotification('Ami accepté', `${event.payload.fromUsername} a accepté votre demande d'ami`);
+        break;
+      case 'friend-declined':
+        utils.friend.pendingSent.invalidate();
+        addToast(`${event.payload.fromUsername} a refusé votre demande d'ami`);
+        showBrowserNotification('Demande refusée', `${event.payload.fromUsername} a refusé votre demande d'ami`);
+        break;
     }
   });
 }

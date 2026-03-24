@@ -7,6 +7,9 @@ export function eventTypeColor(type: string) {
     case 'fleet-returned': return 'bg-emerald-500';
     case 'pve-mission-done': return 'bg-amber-500';
     case 'tutorial-quest-done': return 'bg-cyan-500';
+    case 'friend-request': return 'bg-sky-500';
+    case 'friend-accepted': return 'bg-emerald-500';
+    case 'friend-declined': return 'bg-red-500';
     default: return 'bg-muted';
   }
 }
@@ -39,6 +42,9 @@ export function formatEventText(
       return `${mLabel} en ${p.targetCoords}${loot ? ` — ${loot}` : ''}`;
     }
     case 'tutorial-quest-done': return `Quête "${p.questTitle}" terminée`;
+    case 'friend-request': return `Demande d'ami de ${p.fromUsername}`;
+    case 'friend-accepted': return `${p.fromUsername} a accepté votre demande`;
+    case 'friend-declined': return `${p.fromUsername} a refusé votre demande`;
     default: return 'Événement';
   }
 }
@@ -110,6 +116,9 @@ export function eventNavigationTarget(type: string, payload?: unknown): string {
     case 'fleet-returned': return '/movements';
     case 'pve-mission-done': return '/missions';
     case 'tutorial-quest-done': return '/';
+    case 'friend-request': return '/profile';
+    case 'friend-accepted': return p?.fromUserId ? `/player/${p.fromUserId}` : '/profile';
+    case 'friend-declined': return '/profile';
     default: return '/';
   }
 }
