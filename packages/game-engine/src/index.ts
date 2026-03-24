@@ -11,3 +11,4 @@ export * from './formulas/combat.js';
 export * from './formulas/espionage.js';
 export * from './formulas/pve.js';
 export * from './formulas/bonus.js';
+export * from './formulas/attack-detection.js';

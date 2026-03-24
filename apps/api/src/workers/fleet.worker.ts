@@ -29,6 +29,14 @@ export function startFleetWorker(db: Database, redis: Redis, services: Services)
       const { fleetEventId } = job.data as { fleetEventId: string };
       console.log(`[fleet] Processing ${job.name} job ${job.id}`);
 
+      // Detection jobs have extra data and no completion result
+      if (job.name === 'fleet-detected') {
+        const { defenderId } = job.data as { fleetEventId: string; defenderId: string };
+        await fleetService.processDetection(fleetEventId, defenderId);
+        console.log(`[fleet] Detection fired for ${fleetEventId}`);
+        return;
+      }
+
       const handler = handlers[job.name];
       if (!handler) {
         console.error(`[fleet] Unknown job name: ${job.name}`);

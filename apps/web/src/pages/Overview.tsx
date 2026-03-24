@@ -463,79 +463,148 @@ export default function Overview() {
           )}
 
           {/* Flottes entrantes */}
-          {planetInbound && planetInbound.length > 0 && (
-            <section className="glass-card p-4 ring-1 ring-yellow-500/10">
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-                <span className="text-yellow-400">Flottes entrantes</span>
-                <span className="text-[10px] text-yellow-400/60 ml-auto">{planetInbound.length}</span>
-              </h2>
-              <div className="space-y-1.5">
-                {planetInbound.map((event) => {
-                  const ships = event.ships as Record<string, number>;
-                  const shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
-                  const missionLabel = gameConfig?.missions[event.mission]?.label ?? event.mission;
-                  const hex = gameConfig?.missions[event.mission]?.color ?? '#eab308';
+          {planetInbound && planetInbound.length > 0 && (() => {
+            const hostileInbound = planetInbound.filter((e) => (e as any).hostile);
+            const peacefulInbound = planetInbound.filter((e) => !(e as any).hostile);
+            return (
+            <>
+              {/* Hostile inbound */}
+              {hostileInbound.length > 0 && (
+                <section className="glass-card p-4 ring-1 ring-red-500/10">
+                  <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-red-400">Attaques detectees</span>
+                    <span className="text-[10px] text-red-400/60 ml-auto">{hostileInbound.length}</span>
+                  </h2>
+                  <div className="space-y-1.5">
+                    {hostileInbound.map((event) => {
+                      const tier = (event as any).detectionTier ?? 0;
+                      const ships = event.ships as Record<string, number>;
+                      const shipCount = tier >= 3
+                        ? Object.values(ships).reduce((sum, n) => sum + n, 0)
+                        : tier >= 2 ? ((event as any).shipCount ?? 0) : 0;
+                      const hasOrigin = tier >= 1;
+                      const hasSender = tier >= 4;
 
-                  const originCoords = `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]`;
-                  const hasCargo = Number(event.mineraiCargo) > 0 || Number(event.siliciumCargo) > 0 || Number(event.hydrogeneCargo) > 0;
+                      const dep = new Date(event.departureTime).getTime();
+                      const arr = new Date(event.arrivalTime).getTime();
+                      const total = arr - dep;
+                      const progress = total > 0 ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100)) : 100;
 
-                  const dep = new Date(event.departureTime).getTime();
-                  const arr = new Date(event.arrivalTime).getTime();
-                  const total = arr - dep;
-                  const progress = total > 0 ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100)) : 100;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-yellow-500/5 transition-colors space-y-1.5"
-                      onClick={() => navigate('/movements')}
-                    >
-                      {/* Line 1: Mission + Sender + Timer */}
-                      <div className="flex items-center gap-2">
+                      return (
                         <div
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: hex, boxShadow: `0 0 6px ${hex}60` }}
-                        />
-                        <span className="text-sm font-medium text-foreground">{missionLabel}</span>
-                        <span className="text-[10px] text-muted-foreground/70">
-                          {event.allianceTag && <span className="text-yellow-400 font-semibold mr-1">[{event.allianceTag}]</span>}
-                          {event.senderUsername}
-                        </span>
-                        <div className="ml-auto flex-shrink-0">
-                          <Timer
-                            endTime={new Date(event.arrivalTime)}
-                            onComplete={() => utils.fleet.inbound.invalidate()}
-                          />
+                          key={event.id}
+                          className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-red-500/5 transition-colors space-y-1.5"
+                          onClick={() => navigate('/movements')}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0 bg-red-500" style={{ boxShadow: '0 0 6px rgba(239,68,68,0.6)' }} />
+                            <span className="text-sm font-medium text-red-400">Attaque</span>
+                            {hasSender && (
+                              <span className="text-[10px] text-muted-foreground/70">
+                                {event.allianceTag && <span className="text-red-400 font-semibold mr-1">[{event.allianceTag}]</span>}
+                                {event.senderUsername}
+                              </span>
+                            )}
+                            <div className="ml-auto flex-shrink-0">
+                              <Timer
+                                endTime={new Date(event.arrivalTime)}
+                                onComplete={() => utils.fleet.inbound.invalidate()}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-4">
+                            <span className="truncate">
+                              {hasOrigin ? `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]` : '???'} → ici
+                            </span>
+                            {shipCount > 0 && (
+                              <>
+                                <span className="text-muted-foreground/30 flex-shrink-0">·</span>
+                                <span className="flex-shrink-0">{shipCount} vsx</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="h-0.5 rounded-full bg-white/[0.04] overflow-hidden ml-4">
+                            <div className="h-full rounded-full" style={{ width: `${progress}%`, background: '#ef4444' }} />
+                          </div>
                         </div>
-                      </div>
-                      {/* Line 2: Origin + ship count */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-4">
-                        <span className="truncate">
-                          {event.originPlanetName ?? 'Planète'} {originCoords} → ici
-                        </span>
-                        <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                        <span className="flex-shrink-0">{shipCount} vsx</span>
-                        {hasCargo && (
-                          <>
-                            <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                            <span className="flex-shrink-0 text-amber-400/70">cargo</span>
-                          </>
-                        )}
-                      </div>
-                      {/* Mini progress bar */}
-                      <div className="h-0.5 rounded-full bg-white/[0.04] overflow-hidden ml-4">
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* Peaceful inbound */}
+              {peacefulInbound.length > 0 && (
+                <section className="glass-card p-4 ring-1 ring-yellow-500/10">
+                  <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                    <span className="text-yellow-400">Flottes entrantes</span>
+                    <span className="text-[10px] text-yellow-400/60 ml-auto">{peacefulInbound.length}</span>
+                  </h2>
+                  <div className="space-y-1.5">
+                    {peacefulInbound.map((event) => {
+                      const ships = event.ships as Record<string, number>;
+                      const shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
+                      const missionLabel = gameConfig?.missions[event.mission]?.label ?? event.mission;
+                      const hex = gameConfig?.missions[event.mission]?.color ?? '#eab308';
+
+                      const originCoords = `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]`;
+                      const hasCargo = Number(event.mineraiCargo) > 0 || Number(event.siliciumCargo) > 0 || Number(event.hydrogeneCargo) > 0;
+
+                      const dep = new Date(event.departureTime).getTime();
+                      const arr = new Date(event.arrivalTime).getTime();
+                      const total = arr - dep;
+                      const progress = total > 0 ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100)) : 100;
+
+                      return (
                         <div
-                          className="h-full rounded-full"
-                          style={{ width: `${progress}%`, background: hex }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+                          key={event.id}
+                          className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-yellow-500/5 transition-colors space-y-1.5"
+                          onClick={() => navigate('/movements')}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ background: hex, boxShadow: `0 0 6px ${hex}60` }}
+                            />
+                            <span className="text-sm font-medium text-foreground">{missionLabel}</span>
+                            <span className="text-[10px] text-muted-foreground/70">
+                              {event.allianceTag && <span className="text-yellow-400 font-semibold mr-1">[{event.allianceTag}]</span>}
+                              {event.senderUsername}
+                            </span>
+                            <div className="ml-auto flex-shrink-0">
+                              <Timer
+                                endTime={new Date(event.arrivalTime)}
+                                onComplete={() => utils.fleet.inbound.invalidate()}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-4">
+                            <span className="truncate">
+                              {event.originPlanetName ?? 'Planète'} {originCoords} → ici
+                            </span>
+                            <span className="text-muted-foreground/30 flex-shrink-0">·</span>
+                            <span className="flex-shrink-0">{shipCount} vsx</span>
+                            {hasCargo && (
+                              <>
+                                <span className="text-muted-foreground/30 flex-shrink-0">·</span>
+                                <span className="flex-shrink-0 text-amber-400/70">cargo</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="h-0.5 rounded-full bg-white/[0.04] overflow-hidden ml-4">
+                            <div className="h-full rounded-full" style={{ width: `${progress}%`, background: hex }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+            </>
+            );
+          })()}
 
           {/* Evenements recents */}
           <section className="glass-card p-4">

@@ -166,6 +166,11 @@ export function useNotifications() {
         addToast(`Flotte en approche : ${event.payload.missionLabel} de ${event.payload.senderUsername} [${event.payload.originCoords}]`);
         showBrowserNotification('Flotte en approche', `${event.payload.senderUsername} envoie une mission ${event.payload.missionLabel}`);
         break;
+      case 'fleet-hostile-inbound':
+        utils.fleet.inbound.invalidate();
+        addToast(`Attaque détectée vers ${event.payload.targetCoords} !`);
+        showBrowserNotification('Attaque détectée !', `Flotte hostile en approche vers ${event.payload.targetCoords}`);
+        break;
       case 'new-alliance-message': {
         const allianceId = String(event.payload.allianceId);
         utils.message.allianceChat.invalidate({ allianceId });

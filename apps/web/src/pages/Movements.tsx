@@ -545,6 +545,9 @@ interface InboundEvent {
   originGalaxy: number;
   originSystem: number;
   originPosition: number;
+  hostile?: boolean;
+  detectionTier?: number | null;
+  shipCount?: number | null;
 }
 
 function InboundFleetCard({
@@ -558,19 +561,30 @@ function InboundFleetCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const progress = useProgress(event.departureTime, event.arrivalTime);
+
+  const isHostile = !!event.hostile;
+  const tier = event.detectionTier ?? 5;
+
   const ships = event.ships as Record<string, number>;
   const shipEntries = Object.entries(ships).filter(([, v]) => v > 0);
-  const shipCount = shipEntries.reduce((sum, [, n]) => sum + n, 0);
+  const shipCount = isHostile && tier < 3 ? (event.shipCount ?? 0) : shipEntries.reduce((sum, [, n]) => sum + n, 0);
 
-  const missionHex = gameConfig?.missions?.[event.mission]?.color ?? '#888';
-  const missionLabel = gameConfig?.missions?.[event.mission]?.label ?? event.mission;
+  const missionHex = isHostile ? '#ef4444' : (gameConfig?.missions?.[event.mission]?.color ?? '#888');
+  const missionLabel = isHostile && tier < 3
+    ? 'Flotte hostile'
+    : (gameConfig?.missions?.[event.mission]?.label ?? event.mission);
   const pStyle = PHASE_STYLE[event.phase] ?? PHASE_STYLE.outbound;
   const phaseLabel = gameConfig?.labels?.[`phase.${event.phase}`] ?? event.phase;
 
-  const originCoords = `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]`;
+  const hasOrigin = !isHostile || tier >= 1;
+  const originCoords = hasOrigin ? `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]` : '';
   const targetCoords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
   const isReturn = event.phase === 'return';
-  const fromLabel = isReturn ? targetCoords : `${event.originPlanetName ?? 'Planète'} ${originCoords}`;
+  const fromLabel = !hasOrigin
+    ? '???'
+    : isReturn
+      ? targetCoords
+      : `${event.originPlanetName ?? 'Planète'} ${originCoords}`;
   const toLabel = isReturn ? `${event.originPlanetName ?? 'Planète'} ${originCoords}` : targetCoords;
 
   const minerai = Number(event.mineraiCargo);
@@ -578,21 +592,41 @@ function InboundFleetCard({
   const hydrogene = Number(event.hydrogeneCargo);
   const hasCargo = minerai > 0 || silicium > 0 || hydrogene > 0;
 
+  const hasSender = !isHostile || tier >= 4;
+  const hasShipDetails = !isHostile || tier >= 3;
+  const hasShipCount = !isHostile || tier >= 2;
+
+  const borderColor = isHostile ? 'border-l-red-500/70' : 'border-l-yellow-500/70';
+  const ringColor = isHostile ? 'ring-red-500/10' : 'ring-yellow-500/10';
+  const badgeBorder = isHostile ? 'border-red-500/30 bg-red-500/10 text-red-400' : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400';
+  const badgeLabel = isHostile ? 'Attaque détectée' : 'Entrante';
+  const bgGradient = isHostile
+    ? 'linear-gradient(135deg, rgba(239,68,68,0.04) 0%, rgba(239,68,68,0.02) 100%)'
+    : `linear-gradient(135deg, ${missionHex}06 0%, rgba(234,179,8,0.03) 100%)`;
+
   return (
-    <div className="glass-card border-l-4 border-l-yellow-500/70 overflow-hidden ring-1 ring-yellow-500/10">
+    <div className={cn('glass-card border-l-4 overflow-hidden ring-1', borderColor, ringColor)}>
       <div
         className="relative p-4 space-y-3 cursor-pointer select-none"
-        style={{ background: `linear-gradient(135deg, ${missionHex}06 0%, rgba(234,179,8,0.03) 100%)` }}
+        style={{ background: bgGradient }}
         onClick={() => setExpanded((v) => !v)}
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-yellow-500/30 bg-yellow-500/10 text-yellow-400">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              Entrante
+            <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border', badgeBorder)}>
+              {isHostile ? (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              )}
+              {badgeLabel}
             </span>
             <span className="text-base font-bold tracking-tight" style={{ color: missionHex }}>
               {missionLabel}
@@ -619,15 +653,21 @@ function InboundFleetCard({
         {/* Sender */}
         <div className="flex items-center gap-1.5 text-xs">
           <span className="text-muted-foreground">De :</span>
-          {event.allianceTag && (
-            <span className="text-yellow-400 font-semibold">[{event.allianceTag}]</span>
+          {hasSender ? (
+            <>
+              {event.allianceTag && (
+                <span className={cn(isHostile ? 'text-red-400' : 'text-yellow-400', 'font-semibold')}>[{event.allianceTag}]</span>
+              )}
+              <span className="text-foreground font-medium">{event.senderUsername ?? 'Inconnu'}</span>
+            </>
+          ) : (
+            <span className="text-muted-foreground/50 italic">???</span>
           )}
-          <span className="text-foreground font-medium">{event.senderUsername ?? 'Inconnu'}</span>
         </div>
 
         {/* Route */}
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-foreground font-medium truncate">{fromLabel}</span>
+          <span className={cn('font-medium truncate', hasOrigin ? 'text-foreground' : 'text-muted-foreground/50 italic')}>{fromLabel}</span>
           <svg width="24" height="10" viewBox="0 0 24 10" className="flex-shrink-0 opacity-40">
             <line x1="0" y1="5" x2="17" y2="5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 2" />
             <polyline points="15,2 19,5 15,8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
@@ -658,25 +698,35 @@ function InboundFleetCard({
         </div>
 
         {/* Ships */}
-        <div className="flex flex-wrap gap-1.5 items-center">
-          {shipEntries.map(([id, count]) => (
-            <span
-              key={id}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[11px]"
-            >
-              <span className="text-foreground font-semibold">{count}&times;</span>
-              <span className="text-muted-foreground">{getShipName(id, gameConfig)}</span>
-            </span>
-          ))}
-          {shipCount > 1 && (
-            <span className="text-[10px] text-muted-foreground/50 ml-1">
-              ({shipCount} vaisseaux)
-            </span>
-          )}
-        </div>
+        {hasShipDetails ? (
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {shipEntries.map(([id, count]) => (
+              <span
+                key={id}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[11px]"
+              >
+                <span className="text-foreground font-semibold">{count}&times;</span>
+                <span className="text-muted-foreground">{getShipName(id, gameConfig)}</span>
+              </span>
+            ))}
+            {shipCount > 1 && (
+              <span className="text-[10px] text-muted-foreground/50 ml-1">
+                ({shipCount} vaisseaux)
+              </span>
+            )}
+          </div>
+        ) : hasShipCount ? (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground/60">Vaisseaux :</span>
+            <span className="text-foreground font-semibold">{shipCount}</span>
+            <span className="text-muted-foreground/40 italic text-[10px]">(composition inconnue)</span>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground/40 italic">Composition de la flotte inconnue</div>
+        )}
 
         {/* Cargo */}
-        {hasCargo && (
+        {hasCargo && !isHostile && (
           <div className="flex items-center gap-3 text-xs">
             <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold">
               Cargo
@@ -724,6 +774,33 @@ function InboundFleetCard({
               <span>Progression</span>
               <span className="text-foreground text-right">{Math.round(progress)}%</span>
             </div>
+
+            {/* Detection tier info for hostile fleets */}
+            {isHostile && (
+              <div className="pt-1 border-t border-white/[0.06]">
+                <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold mb-1.5">
+                  Niveau de detection
+                </div>
+                <div className="flex gap-1">
+                  {[0, 1, 2, 3, 4].map((t) => (
+                    <div
+                      key={t}
+                      className={cn(
+                        'h-1.5 flex-1 rounded-full',
+                        t <= tier ? 'bg-red-500' : 'bg-white/[0.06]',
+                      )}
+                    />
+                  ))}
+                </div>
+                <div className="text-[10px] text-muted-foreground/40 mt-1">
+                  {tier === 0 && 'Alerte minimale — origine et composition inconnues'}
+                  {tier === 1 && 'Coordonnees d\'origine detectees'}
+                  {tier === 2 && 'Nombre de vaisseaux detecte'}
+                  {tier === 3 && 'Composition de la flotte detectee'}
+                  {tier >= 4 && 'Detection complete — identite de l\'attaquant connue'}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -787,13 +864,28 @@ export default function Movements() {
       <PageHeader title="Mouvements" />
 
       {/* Inbound fleets */}
-      {sortedInbound.length > 0 && (
+      {sortedInbound.length > 0 && (() => {
+        const hostileCount = sortedInbound.filter((e) => (e as unknown as InboundEvent).hostile).length;
+        const peacefulCount = sortedInbound.length - hostileCount;
+        return (
         <div className="space-y-4 lg:max-w-4xl lg:mx-auto">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-            <span className="text-xs text-yellow-400/80 uppercase tracking-wider font-semibold">
-              {sortedInbound.length} flotte{sortedInbound.length > 1 ? 's' : ''} entrante{sortedInbound.length > 1 ? 's' : ''}
-            </span>
+          <div className="flex items-center gap-3">
+            {peacefulCount > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                <span className="text-xs text-yellow-400/80 uppercase tracking-wider font-semibold">
+                  {peacefulCount} flotte{peacefulCount > 1 ? 's' : ''} entrante{peacefulCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+            {hostileCount > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs text-red-400/80 uppercase tracking-wider font-semibold">
+                  {hostileCount} attaque{hostileCount > 1 ? 's' : ''} detectee{hostileCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
           </div>
           {sortedInbound.map((event) => (
             <InboundFleetCard
@@ -804,7 +896,8 @@ export default function Movements() {
             />
           ))}
         </div>
-      )}
+        );
+      })()}
 
       {/* Own movements */}
       {sorted.length === 0 && sortedInbound.length === 0 ? (

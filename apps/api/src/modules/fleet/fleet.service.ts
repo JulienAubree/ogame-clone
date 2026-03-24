@@ -2,7 +2,7 @@ import { eq, and, inArray, count as dbCount, sql, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, fleetEvents, userResearch, pveMissions, users, allianceMembers, alliances } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
-import { fleetSpeed, travelTime, distance, fuelConsumption, totalCargoCapacity, resolveBonus } from '@ogame-clone/game-engine';
+import { fleetSpeed, travelTime, distance, fuelConsumption, totalCargoCapacity, resolveBonus, calculateAttackDetection, detectionDelay } from '@ogame-clone/game-engine';
 import type { BonusDefinition, ShipStats, FleetConfig } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { createMessageService } from '../message/message.service.js';
@@ -249,6 +249,37 @@ export function createFleetService(
         });
       }
 
+      // Schedule attack detection for dangerous missions targeting other players
+      if (missionDef?.dangerous && targetPlanet?.userId && targetPlanet.userId !== userId) {
+        const [defenderResearch] = await db
+          .select({ sensorNetwork: userResearch.sensorNetwork })
+          .from(userResearch)
+          .where(eq(userResearch.userId, targetPlanet.userId))
+          .limit(1);
+
+        const defSensor = defenderResearch?.sensorNetwork ?? 0;
+        const atkStealth = researchLevels.stealthTech ?? 0;
+
+        const scoreThresholds: number[] = JSON.parse(String(config.universe.attack_detection_score_thresholds ?? '[0,1,3,5,7]'));
+        const timingPercents: number[] = JSON.parse(String(config.universe.attack_detection_timing ?? '[20,40,60,80,100]'));
+
+        const detection = calculateAttackDetection(defSensor, atkStealth, scoreThresholds, timingPercents);
+
+        await db
+          .update(fleetEvents)
+          .set({ detectionScore: detection.score })
+          .where(eq(fleetEvents.id, event.id));
+
+        const travelDurationMs = duration * 1000;
+        const detDelay = detectionDelay(travelDurationMs, detection.detectionPercent);
+
+        await fleetQueue.add(
+          'fleet-detected',
+          { fleetEventId: event.id, defenderId: targetPlanet.userId },
+          { delay: detDelay, jobId: `fleet-detected-${event.id}` },
+        );
+      }
+
       return {
         event,
         arrivalTime: arrivalTime.toISOString(),
@@ -287,6 +318,9 @@ export function createFleetService(
       };
       const jobId = jobIdMap[event.phase];
       if (jobId) await fleetQueue.remove(jobId);
+
+      // Also cancel pending detection job
+      await fleetQueue.remove(`fleet-detected-${event.id}`);
 
       // Release PvE mission back to available if recalling
       if (event.pveMissionId && pveService) {
@@ -337,13 +371,6 @@ export function createFleetService(
     async listInboundFleets(userId: string) {
       const config = await gameConfigService.getFullConfig();
 
-      // Get non-dangerous mission types from config
-      const peacefulMissions = Object.entries(config.missions)
-        .filter(([, m]) => !m.dangerous)
-        .map(([id]) => id);
-
-      if (peacefulMissions.length === 0) return [];
-
       // Get user's planet IDs
       const userPlanets = await db
         .select({ id: planets.id })
@@ -353,42 +380,190 @@ export function createFleetService(
       if (userPlanets.length === 0) return [];
       const planetIds = userPlanets.map((p) => p.id);
 
-      // Query inbound peaceful fleets targeting user's planets
-      return db
-        .select({
-          id: fleetEvents.id,
-          userId: fleetEvents.userId,
-          originPlanetId: fleetEvents.originPlanetId,
-          targetGalaxy: fleetEvents.targetGalaxy,
-          targetSystem: fleetEvents.targetSystem,
-          targetPosition: fleetEvents.targetPosition,
-          mission: fleetEvents.mission,
-          phase: fleetEvents.phase,
-          departureTime: fleetEvents.departureTime,
-          arrivalTime: fleetEvents.arrivalTime,
-          mineraiCargo: fleetEvents.mineraiCargo,
-          siliciumCargo: fleetEvents.siliciumCargo,
-          hydrogeneCargo: fleetEvents.hydrogeneCargo,
-          ships: fleetEvents.ships,
-          senderUsername: users.username,
-          allianceTag: alliances.tag,
-          originPlanetName: sql<string>`(SELECT name FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_planet_name'),
-          originGalaxy: sql<number>`(SELECT galaxy FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_galaxy'),
-          originSystem: sql<number>`(SELECT system FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_system'),
-          originPosition: sql<number>`(SELECT position FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_position'),
-        })
+      const inboundSelect = {
+        id: fleetEvents.id,
+        userId: fleetEvents.userId,
+        originPlanetId: fleetEvents.originPlanetId,
+        targetGalaxy: fleetEvents.targetGalaxy,
+        targetSystem: fleetEvents.targetSystem,
+        targetPosition: fleetEvents.targetPosition,
+        mission: fleetEvents.mission,
+        phase: fleetEvents.phase,
+        departureTime: fleetEvents.departureTime,
+        arrivalTime: fleetEvents.arrivalTime,
+        mineraiCargo: fleetEvents.mineraiCargo,
+        siliciumCargo: fleetEvents.siliciumCargo,
+        hydrogeneCargo: fleetEvents.hydrogeneCargo,
+        ships: fleetEvents.ships,
+        detectionScore: fleetEvents.detectionScore,
+        senderUsername: users.username,
+        allianceTag: alliances.tag,
+        originPlanetName: sql<string>`(SELECT name FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_planet_name'),
+        originGalaxy: sql<number>`(SELECT galaxy FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_galaxy'),
+        originSystem: sql<number>`(SELECT system FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_system'),
+        originPosition: sql<number>`(SELECT position FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_position'),
+      };
+
+      const baseJoin = () =>
+        db
+          .select(inboundSelect)
+          .from(fleetEvents)
+          .innerJoin(users, eq(users.id, fleetEvents.userId))
+          .leftJoin(allianceMembers, eq(allianceMembers.userId, fleetEvents.userId))
+          .leftJoin(alliances, eq(alliances.id, allianceMembers.allianceId));
+
+      // Get non-dangerous mission types from config
+      const peacefulMissions = Object.entries(config.missions)
+        .filter(([, m]) => !m.dangerous)
+        .map(([id]) => id);
+
+      // Get dangerous mission types
+      const dangerousMissions = Object.entries(config.missions)
+        .filter(([, m]) => m.dangerous)
+        .map(([id]) => id);
+
+      // Query inbound peaceful fleets
+      const peacefulFleets = peacefulMissions.length > 0
+        ? await baseJoin().where(
+            and(
+              inArray(fleetEvents.targetPlanetId, planetIds),
+              eq(fleetEvents.status, 'active'),
+              ne(fleetEvents.userId, userId),
+              sql`${fleetEvents.mission}::text IN (${sql.join(peacefulMissions.map((m) => sql`${m}`), sql`, `)})`,
+            ),
+          )
+        : [];
+
+      // Query detected hostile fleets
+      const hostileRaw = dangerousMissions.length > 0
+        ? await baseJoin().where(
+            and(
+              inArray(fleetEvents.targetPlanetId, planetIds),
+              eq(fleetEvents.status, 'active'),
+              ne(fleetEvents.userId, userId),
+              sql`${fleetEvents.detectedAt} IS NOT NULL`,
+              sql`${fleetEvents.mission}::text IN (${sql.join(dangerousMissions.map((m) => sql`${m}`), sql`, `)})`,
+            ),
+          )
+        : [];
+
+      // Apply visibility masking on hostile fleets based on detection tier
+      const scoreThresholds: number[] = JSON.parse(String(config.universe.attack_detection_score_thresholds ?? '[0,1,3,5,7]'));
+
+      const hostileFleets = hostileRaw.map((f) => {
+        let tier = 0;
+        const score = f.detectionScore ?? 0;
+        for (let i = scoreThresholds.length - 1; i >= 0; i--) {
+          if (score >= scoreThresholds[i]) { tier = i; break; }
+        }
+
+        const ships = f.ships as Record<string, number>;
+        const totalShips = Object.values(ships).reduce((sum, n) => sum + n, 0);
+
+        return {
+          id: f.id,
+          userId: f.userId,
+          originPlanetId: f.originPlanetId,
+          targetGalaxy: f.targetGalaxy,
+          targetSystem: f.targetSystem,
+          targetPosition: f.targetPosition,
+          mission: f.mission,
+          phase: f.phase,
+          departureTime: f.departureTime,
+          arrivalTime: f.arrivalTime,
+          mineraiCargo: '0' as string,
+          siliciumCargo: '0' as string,
+          hydrogeneCargo: '0' as string,
+          ships: tier >= 3 ? f.ships : {},
+          detectionScore: f.detectionScore,
+          senderUsername: tier >= 4 ? f.senderUsername : null,
+          allianceTag: tier >= 4 ? f.allianceTag : null,
+          originPlanetName: tier >= 1 ? f.originPlanetName : null,
+          originGalaxy: tier >= 1 ? f.originGalaxy : 0,
+          originSystem: tier >= 1 ? f.originSystem : 0,
+          originPosition: tier >= 1 ? f.originPosition : 0,
+          hostile: true as const,
+          detectionTier: tier,
+          shipCount: tier >= 2 ? totalShips : null as number | null,
+        };
+      });
+
+      return [
+        ...peacefulFleets.map((f) => ({
+          ...f,
+          hostile: false as const,
+          detectionTier: null as number | null,
+          shipCount: null as number | null,
+        })),
+        ...hostileFleets,
+      ];
+    },
+
+    async processDetection(fleetEventId: string, defenderId: string) {
+      const [event] = await db
+        .select()
         .from(fleetEvents)
-        .innerJoin(users, eq(users.id, fleetEvents.userId))
-        .leftJoin(allianceMembers, eq(allianceMembers.userId, fleetEvents.userId))
-        .leftJoin(alliances, eq(alliances.id, allianceMembers.allianceId))
-        .where(
-          and(
-            inArray(fleetEvents.targetPlanetId, planetIds),
-            eq(fleetEvents.status, 'active'),
-            ne(fleetEvents.userId, userId),
-            sql`${fleetEvents.mission}::text IN (${sql.join(peacefulMissions.map((m) => sql`${m}`), sql`, `)})`,
-          ),
-        );
+        .where(and(eq(fleetEvents.id, fleetEventId), eq(fleetEvents.status, 'active'), eq(fleetEvents.phase, 'outbound')))
+        .limit(1);
+
+      if (!event) return null;
+
+      // Mark as detected
+      await db
+        .update(fleetEvents)
+        .set({ detectedAt: new Date() })
+        .where(eq(fleetEvents.id, fleetEventId));
+
+      // Calculate tier for notification content
+      const config = await gameConfigService.getFullConfig();
+      const scoreThresholds: number[] = JSON.parse(String(config.universe.attack_detection_score_thresholds ?? '[0,1,3,5,7]'));
+
+      let tier = 0;
+      const score = event.detectionScore ?? 0;
+      for (let i = scoreThresholds.length - 1; i >= 0; i--) {
+        if (score >= scoreThresholds[i]) { tier = i; break; }
+      }
+
+      // Build notification payload — only include fields the defender can see
+      const payload: Record<string, unknown> = {
+        tier,
+        arrivalTime: event.arrivalTime.toISOString(),
+        targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
+        mission: event.mission,
+        missionLabel: config.missions[event.mission]?.label ?? event.mission,
+      };
+
+      if (tier >= 1) {
+        const [originPlanet] = await db
+          .select({ galaxy: planets.galaxy, system: planets.system, position: planets.position })
+          .from(planets)
+          .where(eq(planets.id, event.originPlanetId))
+          .limit(1);
+        if (originPlanet) {
+          payload.originCoords = `${originPlanet.galaxy}:${originPlanet.system}:${originPlanet.position}`;
+        }
+      }
+
+      if (tier >= 2) {
+        const ships = event.ships as Record<string, number>;
+        payload.shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
+      }
+
+      if (tier >= 4) {
+        const [attacker] = await db
+          .select({ username: users.username })
+          .from(users)
+          .where(eq(users.id, event.userId))
+          .limit(1);
+        payload.attackerName = attacker?.username ?? null;
+      }
+
+      publishNotification(redis, defenderId, {
+        type: 'fleet-hostile-inbound',
+        payload,
+      });
+
+      return { detected: true };
     },
 
     async processArrival(fleetEventId: string): Promise<FleetCompletionResult> {

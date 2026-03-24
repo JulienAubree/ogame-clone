@@ -38,6 +38,8 @@ export const fleetEvents = pgTable('fleet_events', {
   ships: jsonb('ships').notNull().default('{}'),
   metadata: jsonb('metadata'),
   pveMissionId: uuid('pve_mission_id').references(() => pveMissions.id, { onDelete: 'set null' }),
+  detectedAt: timestamp('detected_at', { withTimezone: true }),
+  detectionScore: smallint('detection_score'),
 }, (table) => [
   index('fleet_events_arrival_idx').on(table.arrivalTime).where(sql`status = 'active'`),
   index('fleet_events_user_idx').on(table.userId),
