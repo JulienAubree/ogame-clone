@@ -422,24 +422,26 @@ export function createFleetService(
         .filter(([, m]) => m.dangerous)
         .map(([id]) => id);
 
-      // Query inbound peaceful fleets
+      // Query inbound peaceful fleets (outbound only — not returning)
       const peacefulFleets = peacefulMissions.length > 0
         ? await baseJoin().where(
             and(
               inArray(fleetEvents.targetPlanetId, planetIds),
               eq(fleetEvents.status, 'active'),
+              eq(fleetEvents.phase, 'outbound'),
               ne(fleetEvents.userId, userId),
               sql`${fleetEvents.mission}::text IN (${sql.join(peacefulMissions.map((m) => sql`${m}`), sql`, `)})`,
             ),
           )
         : [];
 
-      // Query detected hostile fleets
+      // Query detected hostile fleets (outbound only — not returning)
       const hostileRaw = dangerousMissions.length > 0
         ? await baseJoin().where(
             and(
               inArray(fleetEvents.targetPlanetId, planetIds),
               eq(fleetEvents.status, 'active'),
+              eq(fleetEvents.phase, 'outbound'),
               ne(fleetEvents.userId, userId),
               sql`${fleetEvents.detectedAt} IS NOT NULL`,
               sql`${fleetEvents.mission}::text IN (${sql.join(dangerousMissions.map((m) => sql`${m}`), sql`, `)})`,
