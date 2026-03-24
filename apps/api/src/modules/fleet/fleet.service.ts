@@ -1,6 +1,6 @@
-import { eq, and, inArray, count as dbCount } from 'drizzle-orm';
+import { eq, and, inArray, count as dbCount, sql, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, fleetEvents, userResearch, pveMissions } from '@ogame-clone/db';
+import { planets, planetShips, fleetEvents, userResearch, pveMissions, users, allianceMembers, alliances } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { fleetSpeed, travelTime, distance, fuelConsumption, totalCargoCapacity, resolveBonus } from '@ogame-clone/game-engine';
 import type { BonusDefinition, ShipStats, FleetConfig } from '@ogame-clone/game-engine';
@@ -12,6 +12,8 @@ import type { createPveService } from '../pve/pve.service.js';
 import type { createAsteroidBeltService } from '../pve/asteroid-belt.service.js';
 import type { createPirateService } from '../pve/pirate.service.js';
 import type { createReportService } from '../report/report.service.js';
+import type Redis from 'ioredis';
+import { publishNotification } from '../notification/notification.publisher.js';
 import { TransportHandler } from './handlers/transport.handler.js';
 import { StationHandler } from './handlers/station.handler.js';
 import { SpyHandler } from './handlers/spy.handler.js';
@@ -31,6 +33,7 @@ export function createFleetService(
   fleetQueue: Queue,
   messageService: ReturnType<typeof createMessageService> | undefined,
   gameConfigService: GameConfigService,
+  redis: Redis,
   pveService?: ReturnType<typeof createPveService>,
   asteroidBeltService?: ReturnType<typeof createAsteroidBeltService>,
   pirateService?: ReturnType<typeof createPirateService>,
@@ -224,6 +227,28 @@ export function createFleetService(
         { delay: duration * 1000, jobId: `fleet-arrive-${event.id}` },
       );
 
+      // Notify target planet owner for non-dangerous missions
+      const missionDef = config.missions[input.mission];
+      if (missionDef && !missionDef.dangerous && targetPlanet && targetPlanet.userId !== userId) {
+        const [sender] = await db
+          .select({ username: users.username })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        publishNotification(redis, targetPlanet.userId, {
+          type: 'fleet-inbound',
+          payload: {
+            mission: input.mission,
+            missionLabel: missionDef.label,
+            senderUsername: sender?.username ?? null,
+            originCoords: `${planet.galaxy}:${planet.system}:${planet.position}`,
+            targetCoords: `${input.targetGalaxy}:${input.targetSystem}:${input.targetPosition}`,
+            arrivalTime: arrivalTime.toISOString(),
+          },
+        });
+      }
+
       return {
         event,
         arrivalTime: arrivalTime.toISOString(),
@@ -305,6 +330,63 @@ export function createFleetService(
           and(
             eq(fleetEvents.userId, userId),
             eq(fleetEvents.status, 'active'),
+          ),
+        );
+    },
+
+    async listInboundFleets(userId: string) {
+      const config = await gameConfigService.getFullConfig();
+
+      // Get non-dangerous mission types from config
+      const peacefulMissions = Object.entries(config.missions)
+        .filter(([, m]) => !m.dangerous)
+        .map(([id]) => id);
+
+      if (peacefulMissions.length === 0) return [];
+
+      // Get user's planet IDs
+      const userPlanets = await db
+        .select({ id: planets.id })
+        .from(planets)
+        .where(eq(planets.userId, userId));
+
+      if (userPlanets.length === 0) return [];
+      const planetIds = userPlanets.map((p) => p.id);
+
+      // Query inbound peaceful fleets targeting user's planets
+      return db
+        .select({
+          id: fleetEvents.id,
+          userId: fleetEvents.userId,
+          originPlanetId: fleetEvents.originPlanetId,
+          targetGalaxy: fleetEvents.targetGalaxy,
+          targetSystem: fleetEvents.targetSystem,
+          targetPosition: fleetEvents.targetPosition,
+          mission: fleetEvents.mission,
+          phase: fleetEvents.phase,
+          departureTime: fleetEvents.departureTime,
+          arrivalTime: fleetEvents.arrivalTime,
+          mineraiCargo: fleetEvents.mineraiCargo,
+          siliciumCargo: fleetEvents.siliciumCargo,
+          hydrogeneCargo: fleetEvents.hydrogeneCargo,
+          ships: fleetEvents.ships,
+          senderUsername: users.username,
+          allianceTag: alliances.tag,
+          originPlanetName: sql<string>`(SELECT name FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_planet_name'),
+          originGalaxy: sql<number>`(SELECT galaxy FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_galaxy'),
+          originSystem: sql<number>`(SELECT system FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_system'),
+          originPosition: sql<number>`(SELECT position FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_position'),
+        })
+        .from(fleetEvents)
+        .innerJoin(users, eq(users.id, fleetEvents.userId))
+        .leftJoin(allianceMembers, eq(allianceMembers.userId, fleetEvents.userId))
+        .leftJoin(alliances, eq(alliances.id, allianceMembers.allianceId))
+        .where(
+          and(
+            inArray(fleetEvents.targetPlanetId, planetIds),
+            eq(fleetEvents.status, 'active'),
+            ne(fleetEvents.userId, userId),
+            sql`${fleetEvents.mission}::text IN (${sql.join(peacefulMissions.map((m) => sql`${m}`), sql`, `)})`,
           ),
         );
     },

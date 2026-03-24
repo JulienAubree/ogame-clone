@@ -39,7 +39,7 @@ const researchService = createResearchService(db, resourceService, buildCompleti
 const shipyardService = createShipyardService(db, resourceService, buildCompletionQueue, gameConfigService);
 
 // Fleet service (receives the unified fleet queue)
-const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, pveService, asteroidBeltService, pirateService, reportService);
+const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, redis, pveService, asteroidBeltService, pirateService, reportService);
 
 console.log('[worker] Starting workers...');
 

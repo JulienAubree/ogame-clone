@@ -53,5 +53,10 @@ export function createFleetRouter(fleetService: ReturnType<typeof createFleetSer
       .query(async ({ ctx }) => {
         return fleetService.listMovements(ctx.userId!);
       }),
+
+    inbound: protectedProcedure
+      .query(async ({ ctx }) => {
+        return fleetService.listInboundFleets(ctx.userId!);
+      }),
   });
 }

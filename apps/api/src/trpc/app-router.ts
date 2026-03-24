@@ -64,7 +64,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const userService = createUserService(db, env.ASSETS_DIR);
   const gameEventService = createGameEventService(db);
   const friendService = createFriendService(db, redis, gameEventService);
-  const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, pveService, asteroidBeltService, pirateService, reportService);
+  const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, redis, pveService, asteroidBeltService, pirateService, reportService);
   const allianceService = createAllianceService(db, messageService);
   const playerAdminService = createPlayerAdminService(db);
   const tutorialService = createTutorialService(db, pveService);

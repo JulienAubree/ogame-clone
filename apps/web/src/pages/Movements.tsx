@@ -524,6 +524,213 @@ function MovementCard({
   );
 }
 
+// ── Inbound Fleet Card ──
+
+interface InboundEvent {
+  id: string;
+  mission: string;
+  phase: string;
+  departureTime: string;
+  arrivalTime: string;
+  mineraiCargo: string | number;
+  siliciumCargo: string | number;
+  hydrogeneCargo: string | number;
+  ships: unknown;
+  targetGalaxy: number;
+  targetSystem: number;
+  targetPosition: number;
+  senderUsername: string | null;
+  allianceTag: string | null;
+  originPlanetName: string | null;
+  originGalaxy: number;
+  originSystem: number;
+  originPosition: number;
+}
+
+function InboundFleetCard({
+  event,
+  gameConfig,
+  onTimerComplete,
+}: {
+  event: InboundEvent;
+  gameConfig: any;
+  onTimerComplete: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const progress = useProgress(event.departureTime, event.arrivalTime);
+  const ships = event.ships as Record<string, number>;
+  const shipEntries = Object.entries(ships).filter(([, v]) => v > 0);
+  const shipCount = shipEntries.reduce((sum, [, n]) => sum + n, 0);
+
+  const missionHex = gameConfig?.missions?.[event.mission]?.color ?? '#888';
+  const missionLabel = gameConfig?.missions?.[event.mission]?.label ?? event.mission;
+  const pStyle = PHASE_STYLE[event.phase] ?? PHASE_STYLE.outbound;
+  const phaseLabel = gameConfig?.labels?.[`phase.${event.phase}`] ?? event.phase;
+
+  const originCoords = `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]`;
+  const targetCoords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
+  const isReturn = event.phase === 'return';
+  const fromLabel = isReturn ? targetCoords : `${event.originPlanetName ?? 'Planète'} ${originCoords}`;
+  const toLabel = isReturn ? `${event.originPlanetName ?? 'Planète'} ${originCoords}` : targetCoords;
+
+  const minerai = Number(event.mineraiCargo);
+  const silicium = Number(event.siliciumCargo);
+  const hydrogene = Number(event.hydrogeneCargo);
+  const hasCargo = minerai > 0 || silicium > 0 || hydrogene > 0;
+
+  return (
+    <div className="glass-card border-l-4 border-l-yellow-500/70 overflow-hidden ring-1 ring-yellow-500/10">
+      <div
+        className="relative p-4 space-y-3 cursor-pointer select-none"
+        style={{ background: `linear-gradient(135deg, ${missionHex}06 0%, rgba(234,179,8,0.03) 100%)` }}
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-yellow-500/30 bg-yellow-500/10 text-yellow-400">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              Entrante
+            </span>
+            <span className="text-base font-bold tracking-tight" style={{ color: missionHex }}>
+              {missionLabel}
+            </span>
+            <span className={cn(
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border',
+              pStyle.classes,
+            )}>
+              <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', pStyle.dot, pStyle.pulse && 'animate-pulse')} />
+              {phaseLabel}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Timer endTime={new Date(event.arrivalTime)} onComplete={onTimerComplete} />
+            <svg
+              width="12" height="12" viewBox="0 0 12 12"
+              className={cn('text-muted-foreground/40 transition-transform duration-200', expanded && 'rotate-180')}
+            >
+              <polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Sender */}
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">De :</span>
+          {event.allianceTag && (
+            <span className="text-yellow-400 font-semibold">[{event.allianceTag}]</span>
+          )}
+          <span className="text-foreground font-medium">{event.senderUsername ?? 'Inconnu'}</span>
+        </div>
+
+        {/* Route */}
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-foreground font-medium truncate">{fromLabel}</span>
+          <svg width="24" height="10" viewBox="0 0 24 10" className="flex-shrink-0 opacity-40">
+            <line x1="0" y1="5" x2="17" y2="5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 2" />
+            <polyline points="15,2 19,5 15,8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+          </svg>
+          <span className="text-foreground font-medium truncate">{toLabel}</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="relative h-1.5">
+          <div className="absolute inset-0 rounded-full bg-white/[0.04]" />
+          <div
+            className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-linear"
+            style={{
+              width: `${progress}%`,
+              background: `linear-gradient(90deg, ${missionHex}30, ${missionHex})`,
+            }}
+          />
+          {progress > 0 && progress < 100 && (
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-[left] duration-1000 ease-linear"
+              style={{
+                left: `calc(${progress}% - 5px)`,
+                background: missionHex,
+                boxShadow: `0 0 10px ${missionHex}90, 0 0 3px ${missionHex}`,
+              }}
+            />
+          )}
+        </div>
+
+        {/* Ships */}
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {shipEntries.map(([id, count]) => (
+            <span
+              key={id}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[11px]"
+            >
+              <span className="text-foreground font-semibold">{count}&times;</span>
+              <span className="text-muted-foreground">{getShipName(id, gameConfig)}</span>
+            </span>
+          ))}
+          {shipCount > 1 && (
+            <span className="text-[10px] text-muted-foreground/50 ml-1">
+              ({shipCount} vaisseaux)
+            </span>
+          )}
+        </div>
+
+        {/* Cargo */}
+        {hasCargo && (
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold">
+              Cargo
+            </span>
+            <div className="flex gap-3">
+              {minerai > 0 && (
+                <span className="text-minerai">
+                  <span className="font-semibold">{fmt(minerai)}</span>
+                  <span className="opacity-50 ml-0.5 text-[10px]">M</span>
+                </span>
+              )}
+              {silicium > 0 && (
+                <span className="text-silicium">
+                  <span className="font-semibold">{fmt(silicium)}</span>
+                  <span className="opacity-50 ml-0.5 text-[10px]">S</span>
+                </span>
+              )}
+              {hydrogene > 0 && (
+                <span className="text-hydrogene">
+                  <span className="font-semibold">{fmt(hydrogene)}</span>
+                  <span className="opacity-50 ml-0.5 text-[10px]">H</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Expanded details */}
+      <div className={cn(
+        'grid transition-[grid-template-rows] duration-300 ease-in-out',
+        expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+      )}>
+        <div className="overflow-hidden">
+          <div className="border-t border-white/[0.06] px-4 py-3 space-y-3 text-xs">
+            <div className="grid grid-cols-2 gap-y-1 text-muted-foreground">
+              <span>Depart</span>
+              <span className="text-foreground text-right">
+                {new Date(event.departureTime).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+              <span>Arrivee estimee</span>
+              <span className="text-foreground text-right">
+                {new Date(event.arrivalTime).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+              <span>Progression</span>
+              <span className="text-foreground text-right">{Math.round(progress)}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──
 
 export default function Movements() {
@@ -531,6 +738,7 @@ export default function Movements() {
   const [recallConfirm, setRecallConfirm] = useState<string | null>(null);
   const { data: gameConfig } = useGameConfig();
   const { data: movements, isLoading } = trpc.fleet.movements.useQuery();
+  const { data: inboundFleets } = trpc.fleet.inbound.useQuery();
   const { data: planets } = trpc.planet.list.useQuery();
   const firstPlanetId = planets?.[0]?.id;
   const { data: researchList } = trpc.research.list.useQuery(
@@ -562,6 +770,10 @@ export default function Movements() {
     ? [...movements].sort((a, b) => new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime())
     : [];
 
+  const sortedInbound = inboundFleets
+    ? [...inboundFleets].sort((a, b) => new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime())
+    : [];
+
   const recallingEvent = recallConfirm ? sorted.find((m) => m.id === recallConfirm) : null;
   const recallingLabel = recallingEvent
     ? (gameConfig?.missions[recallingEvent.mission]?.label ?? recallingEvent.mission)
@@ -574,12 +786,33 @@ export default function Movements() {
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Mouvements" />
 
-      {sorted.length === 0 ? (
+      {/* Inbound fleets */}
+      {sortedInbound.length > 0 && (
+        <div className="space-y-4 lg:max-w-4xl lg:mx-auto">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+            <span className="text-xs text-yellow-400/80 uppercase tracking-wider font-semibold">
+              {sortedInbound.length} flotte{sortedInbound.length > 1 ? 's' : ''} entrante{sortedInbound.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          {sortedInbound.map((event) => (
+            <InboundFleetCard
+              key={event.id}
+              event={event as unknown as InboundEvent}
+              gameConfig={gameConfig}
+              onTimerComplete={() => utils.fleet.inbound.invalidate()}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Own movements */}
+      {sorted.length === 0 && sortedInbound.length === 0 ? (
         <EmptyState
           title="Aucun mouvement en cours"
           description="Envoyez une flotte depuis la page Flotte pour voir vos mouvements ici."
         />
-      ) : (
+      ) : sorted.length > 0 ? (
         <div className="space-y-4 lg:max-w-4xl lg:mx-auto">
           <div className="text-xs text-muted-foreground/60">
             {sorted.length} mouvement{sorted.length > 1 ? 's' : ''} en cours
@@ -601,7 +834,7 @@ export default function Movements() {
             );
           })}
         </div>
-      )}
+      ) : null}
 
       <ConfirmDialog
         open={!!recallConfirm}

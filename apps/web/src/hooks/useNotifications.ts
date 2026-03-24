@@ -121,6 +121,7 @@ export function useNotifications() {
       }
       case 'fleet-arrived':
         utils.fleet.movements.invalidate();
+        utils.fleet.inbound.invalidate();
         utils.fleet.slots.invalidate();
         utils.resource.production.invalidate();
         utils.report.list.invalidate();
@@ -130,6 +131,7 @@ export function useNotifications() {
         break;
       case 'fleet-returned':
         utils.fleet.movements.invalidate();
+        utils.fleet.inbound.invalidate();
         utils.fleet.slots.invalidate();
         utils.resource.production.invalidate();
         utils.report.list.invalidate();
@@ -158,6 +160,11 @@ export function useNotifications() {
         utils.friend.pendingSent.invalidate();
         addToast(`${event.payload.fromUsername} a refusé votre demande d'ami`);
         showBrowserNotification('Demande refusée', `${event.payload.fromUsername} a refusé votre demande d'ami`);
+        break;
+      case 'fleet-inbound':
+        utils.fleet.inbound.invalidate();
+        addToast(`Flotte en approche : ${event.payload.missionLabel} de ${event.payload.senderUsername} [${event.payload.originCoords}]`);
+        showBrowserNotification('Flotte en approche', `${event.payload.senderUsername} envoie une mission ${event.payload.missionLabel}`);
         break;
       case 'new-alliance-message': {
         const allianceId = String(event.payload.allianceId);
