@@ -19,6 +19,7 @@ const FIELDS = [
   { key: 'diameterMax', label: 'Diametre Max', type: 'number' as const },
   { key: 'fieldsBonus', label: 'Bonus Cases', type: 'number' as const, step: '0.1' },
   { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
+  { key: 'role', label: 'Rôle', type: 'text' as const },
 ];
 
 const EDIT_FIELDS = FIELDS.filter((f) => f.key !== 'id');
@@ -36,6 +37,7 @@ function defaultForm(): Record<string, string | number> {
     diameterMax: 15000,
     fieldsBonus: 1.0,
     sortOrder: 0,
+    role: '',
   };
 }
 
@@ -115,6 +117,7 @@ export default function PlanetTypes() {
         diameterMax: editingType.diameterMax,
         fieldsBonus: editingType.fieldsBonus,
         sortOrder: editingType.sortOrder,
+        role: editingType.role ?? '',
       }
     : {};
 
@@ -145,6 +148,7 @@ export default function PlanetTypes() {
               <th>Diam. Max</th>
               <th>Cases</th>
               <th>Ordre</th>
+              <th>Rôle</th>
               <th></th>
             </tr>
           </thead>
@@ -170,6 +174,7 @@ export default function PlanetTypes() {
                     x{pt.fieldsBonus}
                   </td>
                   <td>{pt.sortOrder}</td>
+                  <td className="text-xs text-gray-500">{pt.role ?? '-'}</td>
                   <td>
                     <div className="flex gap-1">
                       <button
@@ -188,7 +193,7 @@ export default function PlanetTypes() {
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={11} className="px-2 pb-2">
+                  <td colSpan={12} className="px-2 pb-2">
                     <PlanetImagePool planetClassId={pt.id} />
                   </td>
                 </tr>
@@ -225,6 +230,7 @@ export default function PlanetTypes() {
             diameterMax: Number(values.diameterMax),
             fieldsBonus: Number(values.fieldsBonus),
             sortOrder: Number(values.sortOrder),
+            role: (String(values.role)) || null,
           });
         }}
       />
@@ -260,6 +266,7 @@ export default function PlanetTypes() {
               diameterMax: Number(values.diameterMax),
               fieldsBonus: Number(values.fieldsBonus),
               sortOrder: Number(values.sortOrder),
+              role: (String(values.role)) || null,
             },
           });
         }}

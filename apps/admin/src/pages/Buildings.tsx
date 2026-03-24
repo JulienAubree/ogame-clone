@@ -19,6 +19,7 @@ function getFields() {
     { key: 'baseTime', label: 'Temps de base (s)', type: 'number' as const },
     { key: 'flavorText', label: "Texte d'ambiance", type: 'textarea' as const },
     { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
+    { key: 'role', label: 'Rôle', type: 'text' as const },
   ];
 }
 
@@ -198,6 +199,7 @@ export default function Buildings() {
               <th>H₂</th>
               <th>Facteur</th>
               <th>Temps</th>
+              <th>Rôle</th>
               <th>Bonus</th>
               <th>Prerequis</th>
               <th></th>
@@ -245,6 +247,7 @@ export default function Buildings() {
                     <td className="font-mono text-sm">{b.baseCost.hydrogene}</td>
                     <td className="font-mono text-sm">{b.costFactor}</td>
                     <td className="font-mono text-sm">{b.baseTime}s</td>
+                    <td className="text-xs text-gray-500">{b.role ?? '-'}</td>
                     <td className="text-xs">
                       {(() => {
                         const buildingBonuses = data.bonuses?.filter(
@@ -370,7 +373,7 @@ export default function Buildings() {
                   </tr>
                   {isExpanded && (
                     <tr key={`${b.id}-levels`}>
-                      <td colSpan={12} className="!p-0 !bg-panel/60">
+                      <td colSpan={13} className="!p-0 !bg-panel/60">
                         <div className="px-6 py-3">
                           <div className="text-xs font-medium text-hull-400 mb-2 uppercase tracking-wider">
                             Progression niveaux 1–{MAX_LEVEL}
@@ -451,6 +454,7 @@ export default function Buildings() {
             costFactor: editingBuilding.costFactor,
             baseTime: editingBuilding.baseTime,
             sortOrder: editingBuilding.sortOrder,
+            role: editingBuilding.role ?? '',
           }}
           onSave={(values) => {
             updateMutation.mutate({
@@ -464,6 +468,7 @@ export default function Buildings() {
                 costFactor: values.costFactor as number,
                 baseTime: values.baseTime as number,
                 sortOrder: values.sortOrder as number,
+                role: (values.role as string) || null,
               },
             });
           }}
@@ -487,6 +492,7 @@ export default function Buildings() {
             costFactor: 1.5,
             baseTime: 60,
             sortOrder: 0,
+            role: '',
           }}
           onSave={(values) => {
             createMutation.mutate({
@@ -499,6 +505,7 @@ export default function Buildings() {
               costFactor: values.costFactor as number,
               baseTime: values.baseTime as number,
               sortOrder: values.sortOrder as number,
+              role: (values.role as string) || null,
             });
           }}
           onClose={() => setCreating(false)}

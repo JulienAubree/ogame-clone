@@ -22,6 +22,7 @@ const FIELDS = [
   { key: 'cargoCapacity', label: 'Cargo', type: 'number' as const },
   { key: 'flavorText', label: "Texte d'ambiance", type: 'textarea' as const },
   { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
+  { key: 'role', label: 'Rôle', type: 'text' as const },
 ];
 
 const CREATE_FIELDS = [
@@ -110,6 +111,7 @@ export default function Ships() {
               <th>Vitesse</th>
               <th>Cargo</th>
               <th>Moteur</th>
+              <th>Rôle</th>
               <th>Prerequis</th>
               <th></th>
             </tr>
@@ -131,6 +133,7 @@ export default function Ships() {
                 <td className="font-mono text-sm">{s.baseSpeed}</td>
                 <td className="font-mono text-sm">{s.cargoCapacity}</td>
                 <td className="text-xs text-gray-500">{s.driveType}</td>
+                <td className="text-xs text-gray-500">{s.role ?? '-'}</td>
                 <td className="text-xs text-gray-500">
                   <button
                     onClick={() => setEditingPrereqs(s.id)}
@@ -182,6 +185,7 @@ export default function Ships() {
             fuelConsumption: editingShip.fuelConsumption,
             cargoCapacity: editingShip.cargoCapacity,
             sortOrder: editingShip.sortOrder,
+            role: editingShip.role ?? '',
           }}
           onSave={(values) => {
             updateMutation.mutate({
@@ -199,6 +203,7 @@ export default function Ships() {
                 fuelConsumption: values.fuelConsumption as number,
                 cargoCapacity: values.cargoCapacity as number,
                 sortOrder: values.sortOrder as number,
+                role: (values.role as string) || null,
               },
             });
           }}
@@ -228,6 +233,7 @@ export default function Ships() {
             fuelConsumption: 0,
             cargoCapacity: 0,
             sortOrder: 0,
+            role: '',
           }}
           onSave={(values) => {
             createMutation.mutate({
@@ -246,6 +252,7 @@ export default function Ships() {
               fuelConsumption: values.fuelConsumption as number,
               cargoCapacity: values.cargoCapacity as number,
               sortOrder: values.sortOrder as number,
+              role: (values.role as string) || null,
             });
           }}
           onClose={() => setCreating(false)}
