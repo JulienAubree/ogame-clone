@@ -8,6 +8,8 @@ import {
   type ResourceCost,
   type PlanetTypeBonus,
 } from '@ogame-clone/game-engine';
+import { findBuildingByRole, findPlanetTypeByRole } from '../../lib/config-helpers.js';
+import type { GameConfigService } from '../admin/game-config.service.js';
 
 async function loadPlanetTypeBonus(db: Database, planetClassId: string | null): Promise<PlanetTypeBonus | undefined> {
   if (!planetClassId) return undefined;
@@ -40,35 +42,63 @@ async function getSolarSatelliteCount(db: Database, planetId: string): Promise<n
   return row?.solarSatellite ?? 0;
 }
 
-async function buildPlanetLevels(db: Database, planetId: string, planet: {
-  maxTemp: number;
-  mineraiMinePercent: number;
-  siliciumMinePercent: number;
-  hydrogeneSynthPercent: number;
-  planetClassId?: string | null;
-}) {
+async function buildPlanetLevels(
+  db: Database,
+  planetId: string,
+  planet: {
+    maxTemp: number;
+    mineraiMinePercent: number;
+    siliciumMinePercent: number;
+    hydrogeneSynthPercent: number;
+    planetClassId?: string | null;
+  },
+  roleMap: {
+    producerMinerai: string;
+    producerSilicium: string;
+    producerHydrogene: string;
+    producerEnergy: string;
+    storageMinerai: string;
+    storageSilicium: string;
+    storageHydrogene: string;
+    homeworldTypeId: string;
+  },
+) {
   const [buildingLevels, solarSatelliteCount] = await Promise.all([
     getBuildingLevels(db, planetId),
     getSolarSatelliteCount(db, planetId),
   ]);
   return {
-    mineraiMineLevel: buildingLevels['mineraiMine'] ?? 0,
-    siliciumMineLevel: buildingLevels['siliciumMine'] ?? 0,
-    hydrogeneSynthLevel: buildingLevels['hydrogeneSynth'] ?? 0,
-    solarPlantLevel: buildingLevels['solarPlant'] ?? 0,
-    storageMineraiLevel: buildingLevels['storageMinerai'] ?? 0,
-    storageSiliciumLevel: buildingLevels['storageSilicium'] ?? 0,
-    storageHydrogeneLevel: buildingLevels['storageHydrogene'] ?? 0,
+    mineraiMineLevel: buildingLevels[roleMap.producerMinerai] ?? 0,
+    siliciumMineLevel: buildingLevels[roleMap.producerSilicium] ?? 0,
+    hydrogeneSynthLevel: buildingLevels[roleMap.producerHydrogene] ?? 0,
+    solarPlantLevel: buildingLevels[roleMap.producerEnergy] ?? 0,
+    storageMineraiLevel: buildingLevels[roleMap.storageMinerai] ?? 0,
+    storageSiliciumLevel: buildingLevels[roleMap.storageSilicium] ?? 0,
+    storageHydrogeneLevel: buildingLevels[roleMap.storageHydrogene] ?? 0,
     maxTemp: planet.maxTemp,
     solarSatelliteCount,
-    isHomePlanet: planet.planetClassId === 'homeworld',
+    isHomePlanet: planet.planetClassId === roleMap.homeworldTypeId,
     mineraiMinePercent: planet.mineraiMinePercent,
     siliciumMinePercent: planet.siliciumMinePercent,
     hydrogeneSynthPercent: planet.hydrogeneSynthPercent,
   };
 }
 
-export function createResourceService(db: Database) {
+export function createResourceService(db: Database, gameConfigService: GameConfigService) {
+  async function getRoleMap() {
+    const config = await gameConfigService.getFullConfig();
+    return {
+      producerMinerai: findBuildingByRole(config, 'producer_minerai').id,
+      producerSilicium: findBuildingByRole(config, 'producer_silicium').id,
+      producerHydrogene: findBuildingByRole(config, 'producer_hydrogene').id,
+      producerEnergy: findBuildingByRole(config, 'producer_energy').id,
+      storageMinerai: findBuildingByRole(config, 'storage_minerai').id,
+      storageSilicium: findBuildingByRole(config, 'storage_silicium').id,
+      storageHydrogene: findBuildingByRole(config, 'storage_hydrogene').id,
+      homeworldTypeId: findPlanetTypeByRole(config, 'homeworld').id,
+    };
+  }
+
   return {
     async getBuildingLevels(planetId: string): Promise<Record<string, number>> {
       return getBuildingLevels(db, planetId);
@@ -86,7 +116,8 @@ export function createResourceService(db: Database) {
       }
 
       const bonus = await loadPlanetTypeBonus(db, planet.planetClassId);
-      const levels = await buildPlanetLevels(db, planetId, planet);
+      const roleMap = await getRoleMap();
+      const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
 
       const now = new Date();
       const resources = calculateResources(
@@ -127,7 +158,8 @@ export function createResourceService(db: Database) {
       }
 
       const bonus = await loadPlanetTypeBonus(db, planet.planetClassId);
-      const levels = await buildPlanetLevels(db, planetId, planet);
+      const roleMap = await getRoleMap();
+      const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
 
       const now = new Date();
       const produced = calculateResources(
@@ -192,7 +224,8 @@ export function createResourceService(db: Database) {
       hydrogeneSynthPercent: number;
       planetClassId?: string | null;
     }, bonus?: PlanetTypeBonus) {
-      const levels = await buildPlanetLevels(db, planetId, planet);
+      const roleMap = await getRoleMap();
+      const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
       return calculateProductionRates(levels, bonus);
     },
   };

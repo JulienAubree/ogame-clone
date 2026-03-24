@@ -48,7 +48,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const gameConfigService = createGameConfigService(db);
   const authService = createAuthService(db);
   const planetService = createPlanetService(db, gameConfigService, env.ASSETS_DIR);
-  const resourceService = createResourceService(db);
+  const resourceService = createResourceService(db, gameConfigService);
   const buildingService = createBuildingService(db, resourceService, buildCompletionQueue, gameConfigService);
   const researchService = createResearchService(db, resourceService, buildCompletionQueue, gameConfigService);
   const shipyardService = createShipyardService(db, resourceService, buildCompletionQueue, gameConfigService);

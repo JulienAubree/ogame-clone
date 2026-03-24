@@ -25,7 +25,7 @@ import { eventCleanup } from '../cron/event-cleanup.js';
 const db = createDb(env.DATABASE_URL);
 const redis = new Redis(env.REDIS_URL);
 const gameConfigService = createGameConfigService(db);
-const resourceService = createResourceService(db);
+const resourceService = createResourceService(db, gameConfigService);
 const messageService = createMessageService(db, redis);
 const asteroidBeltService = createAsteroidBeltService(db);
 const pirateService = createPirateService(db, gameConfigService);
