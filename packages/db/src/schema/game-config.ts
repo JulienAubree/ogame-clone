@@ -22,6 +22,7 @@ export const buildingDefinitions = pgTable('building_definitions', {
   baseTime: integer('base_time').notNull().default(60),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
+  role: varchar('role', { length: 64 }).unique(),
   flavorText: text('flavor_text'),
 });
 
@@ -92,6 +93,7 @@ export const shipDefinitions = pgTable('ship_definitions', {
   isStationary: boolean('is_stationary').notNull().default(false),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
+  role: varchar('role', { length: 64 }).unique(),
   flavorText: text('flavor_text'),
 });
 
@@ -164,6 +166,7 @@ export const planetTypes = pgTable('planet_types', {
   diameterMax: integer('diameter_max').notNull(),
   fieldsBonus: real('fields_bonus').notNull().default(1.0),
   sortOrder: integer('sort_order').notNull().default(0),
+  role: varchar('role', { length: 64 }).unique(),
 });
 
 // ── Universe Config ──
