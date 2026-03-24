@@ -184,23 +184,25 @@ export default function Reports() {
       </div>
 
       <div className="space-y-4">
-        {/* Fleet */}
-        <div>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Flotte</h3>
-          <div className="rounded border border-border p-3">
-            <div className="flex flex-wrap gap-3">
-              {Object.entries((selectedReport.fleet as any).ships).map(([ship, count]) => (
-                <span key={ship} className="text-sm">
-                  <span className="text-foreground">{String(count)}x</span>{' '}
-                  <span className="text-muted-foreground">{getShipName(ship, gameConfig)}</span>
-                </span>
-              ))}
-            </div>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Capacite cargo : {((selectedReport.fleet as any).totalCargo ?? 0).toLocaleString('fr-FR')}
+        {/* Fleet — hide if empty (defender attack reports) */}
+        {Object.keys((selectedReport.fleet as any).ships ?? {}).length > 0 && (
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Flotte</h3>
+            <div className="rounded border border-border p-3">
+              <div className="flex flex-wrap gap-3">
+                {Object.entries((selectedReport.fleet as any).ships).map(([ship, count]) => (
+                  <span key={ship} className="text-sm">
+                    <span className="text-foreground">{String(count)}x</span>{' '}
+                    <span className="text-muted-foreground">{getShipName(ship, gameConfig)}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Capacite cargo : {((selectedReport.fleet as any).totalCargo ?? 0).toLocaleString('fr-FR')}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Mine-specific results */}
         {selectedReport.missionType === 'mine' && (() => {
@@ -400,7 +402,7 @@ export default function Reports() {
             <>
               {/* Outcome */}
               <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Résultat</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Resultat</h3>
                 <div className="rounded border border-border p-3">
                   <div className="flex items-center gap-3">
                     <span className={cn('rounded-full px-4 py-1.5 text-sm font-bold', outcomeClassName)}>
@@ -411,31 +413,131 @@ export default function Reports() {
                 </div>
               </div>
 
-              {/* Defender fleet & defenses (initial) */}
-              {((result.defenderFleet && Object.keys(result.defenderFleet).length > 0) ||
-                (result.defenderDefenses && Object.keys(result.defenderDefenses).length > 0)) && (
-                <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Forces du défenseur</h3>
-                  <div className="rounded border border-border p-3 space-y-2">
-                    {result.defenderFleet && Object.keys(result.defenderFleet).length > 0 && (
+              {/* Initial forces — attacker + defender */}
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Forces initiales</h3>
+                <div className="rounded border border-border p-3 space-y-3">
+                  {result.attackerFleet && Object.keys(result.attackerFleet).length > 0 && (
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Attaquant</div>
                       <div className="flex flex-wrap gap-3">
-                        {Object.entries(result.defenderFleet as Record<string, number>).map(([ship, count]) => (
+                        {Object.entries(result.attackerFleet as Record<string, number>).map(([ship, count]) => (
                           <span key={ship} className="text-sm">
                             <span className="text-foreground font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
                             <span className="text-muted-foreground">{getShipName(ship, gameConfig)}</span>
                           </span>
                         ))}
                       </div>
-                    )}
-                    {result.defenderDefenses && Object.keys(result.defenderDefenses).length > 0 && (
+                    </div>
+                  )}
+                  {((result.defenderFleet && Object.keys(result.defenderFleet).length > 0) ||
+                    (result.defenderDefenses && Object.keys(result.defenderDefenses).length > 0)) && (
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Defenseur</div>
                       <div className="flex flex-wrap gap-3">
-                        {Object.entries(result.defenderDefenses as Record<string, number>).map(([def, count]) => (
+                        {result.defenderFleet && Object.entries(result.defenderFleet as Record<string, number>).map(([ship, count]) => (
+                          <span key={ship} className="text-sm">
+                            <span className="text-foreground font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                            <span className="text-muted-foreground">{getShipName(ship, gameConfig)}</span>
+                          </span>
+                        ))}
+                        {result.defenderDefenses && Object.entries(result.defenderDefenses as Record<string, number>).map(([def, count]) => (
                           <span key={def} className="text-sm">
                             <span className="text-foreground font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
                             <span className="text-muted-foreground">{getDefenseName(def, gameConfig)}</span>
                           </span>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Round-by-round detail — collapsible */}
+              {result.rounds && result.rounds.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Detail des rounds</h3>
+                  <div className="space-y-1">
+                    {(result.rounds as any[]).map((round: any) => (
+                      <details key={round.round} className="rounded border border-border">
+                        <summary className="cursor-pointer px-3 py-2 text-sm font-medium hover:bg-accent/50 transition-colors">
+                          Round {round.round}
+                          <span className="ml-3 text-xs text-muted-foreground">
+                            Att: {round.attackersRemaining} — Def: {round.defendersRemaining}
+                          </span>
+                        </summary>
+                        <div className="px-3 pb-3 pt-1 space-y-2 border-t border-border/50">
+                          {round.attackerShips && Object.keys(round.attackerShips).length > 0 && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Attaquant</div>
+                              <div className="flex flex-wrap gap-3">
+                                {Object.entries(round.attackerShips as Record<string, number>).map(([ship, count]) => (
+                                  <span key={ship} className="text-xs">
+                                    <span className="text-foreground">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                                    <span className="text-muted-foreground">{getShipName(ship, gameConfig)}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {round.defenderShips && Object.keys(round.defenderShips).length > 0 && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Defenseur</div>
+                              <div className="flex flex-wrap gap-3">
+                                {Object.entries(round.defenderShips as Record<string, number>).map(([ship, count]) => (
+                                  <span key={ship} className="text-xs">
+                                    <span className="text-foreground">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                                    <span className="text-muted-foreground">{getUnitName(ship, gameConfig)}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {round.attackerShips && Object.keys(round.attackerShips).length === 0 &&
+                           round.defenderShips && Object.keys(round.defenderShips).length === 0 && (
+                            <div className="text-xs text-muted-foreground">Toutes les unites ont ete detruites</div>
+                          )}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Survivors */}
+              {(result.attackerSurvivors || result.defenderSurvivors) && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Survivants</h3>
+                  <div className="rounded border border-border p-3 space-y-3">
+                    {result.attackerSurvivors && Object.keys(result.attackerSurvivors).length > 0 && (
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Attaquant</div>
+                        <div className="flex flex-wrap gap-3">
+                          {Object.entries(result.attackerSurvivors as Record<string, number>).map(([ship, count]) => (
+                            <span key={ship} className="text-sm">
+                              <span className="text-emerald-400 font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                              <span className="text-muted-foreground">{getShipName(ship, gameConfig)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {result.defenderSurvivors && Object.keys(result.defenderSurvivors).length > 0 && (
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Defenseur</div>
+                        <div className="flex flex-wrap gap-3">
+                          {Object.entries(result.defenderSurvivors as Record<string, number>).map(([ship, count]) => (
+                            <span key={ship} className="text-sm">
+                              <span className="text-emerald-400 font-medium">{(count as number).toLocaleString('fr-FR')}x</span>{' '}
+                              <span className="text-muted-foreground">{getUnitName(ship, gameConfig)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {(!result.attackerSurvivors || Object.keys(result.attackerSurvivors).length === 0) &&
+                     (!result.defenderSurvivors || Object.keys(result.defenderSurvivors).length === 0) && (
+                      <div className="text-sm text-muted-foreground">Aucun survivant</div>
                     )}
                   </div>
                 </div>
@@ -461,7 +563,7 @@ export default function Reports() {
                     )}
                     {hasDefenderLosses && (
                       <div>
-                        <div className="text-xs text-muted-foreground mb-1">Défenseur</div>
+                        <div className="text-xs text-muted-foreground mb-1">Defenseur</div>
                         <div className="flex flex-wrap gap-3">
                           {Object.entries(result.defenderLosses as Record<string, number>).map(([unit, count]) => (
                             <span key={unit} className="text-sm">
@@ -479,7 +581,7 @@ export default function Reports() {
               {/* Repaired defenses */}
               {result.repairedDefenses && Object.keys(result.repairedDefenses).length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Défenses réparées</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Defenses reparees</h3>
                   <div className="rounded border border-border p-3">
                     <div className="flex flex-wrap gap-3">
                       {Object.entries(result.repairedDefenses as Record<string, number>).map(([def, count]) => (
@@ -496,7 +598,7 @@ export default function Reports() {
               {/* Debris */}
               {result.debris && (result.debris.minerai > 0 || result.debris.silicium > 0) && (
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Champ de débris</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Champ de debris</h3>
                   <div className="rounded border border-border p-3">
                     <div className="flex flex-wrap gap-4">
                       {result.debris.minerai > 0 && (
@@ -523,7 +625,7 @@ export default function Reports() {
               {/* Pillage */}
               {result.pillage && (
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ressources pillées</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ressources pillees</h3>
                   <div className="rounded border border-border p-3">
                     <div className="flex flex-wrap gap-4">
                       {Object.entries(result.pillage as Record<string, number>).map(([resource, amount]) => (
