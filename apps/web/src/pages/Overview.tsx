@@ -468,15 +468,49 @@ export default function Overview() {
             const peacefulInbound = planetInbound.filter((e) => !(e as any).hostile);
             return (
             <>
-              {/* Hostile inbound */}
+              {/* Hostile inbound — alert banner */}
               {hostileInbound.length > 0 && (
-                <section className="glass-card p-4 ring-1 ring-red-500/10">
-                  <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-red-400">Attaques detectees</span>
-                    <span className="text-[10px] text-red-400/60 ml-auto">{hostileInbound.length}</span>
-                  </h2>
-                  <div className="space-y-1.5">
+                <section
+                  className="relative overflow-hidden rounded-xl border border-red-500/40 cursor-pointer hover:border-red-500/60 transition-colors"
+                  style={{ background: 'linear-gradient(135deg, rgba(127,29,29,0.5) 0%, rgba(69,10,10,0.6) 50%, rgba(127,29,29,0.4) 100%)' }}
+                  onClick={() => navigate('/movements')}
+                >
+                  {/* Animated scan line */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.08) 50%, transparent 100%)',
+                      animation: 'scan 3s ease-in-out infinite',
+                    }}
+                  />
+                  <style>{`@keyframes scan { 0%,100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }`}</style>
+
+                  {/* Top red accent bar */}
+                  <div className="h-1 w-full bg-gradient-to-r from-red-600 via-red-500 to-red-600" />
+
+                  <div className="px-4 py-3 space-y-2.5 relative">
+                    {/* Header */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                          <div className="absolute inset-0 w-3 h-3 rounded-full bg-red-500 animate-ping opacity-40" />
+                        </div>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                      <span className="text-red-400 font-bold text-sm uppercase tracking-wider">
+                        Attaque imminente
+                      </span>
+                      <span className="text-red-400/60 text-[10px] font-semibold ml-auto">
+                        {hostileInbound.length} flotte{hostileInbound.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {/* Fleet entries */}
                     {hostileInbound.map((event) => {
                       const tier = (event as any).detectionTier ?? 0;
                       const ships = event.ships as Record<string, number>;
@@ -492,40 +526,40 @@ export default function Overview() {
                       const progress = total > 0 ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100)) : 100;
 
                       return (
-                        <div
-                          key={event.id}
-                          className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-red-500/5 transition-colors space-y-1.5"
-                          onClick={() => navigate('/movements')}
-                        >
+                        <div key={event.id} className="space-y-1.5 border-t border-red-500/20 pt-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full flex-shrink-0 bg-red-500" style={{ boxShadow: '0 0 6px rgba(239,68,68,0.6)' }} />
-                            <span className="text-sm font-medium text-red-400">Attaque</span>
-                            {hasSender && (
-                              <span className="text-[10px] text-muted-foreground/70">
-                                {event.allianceTag && <span className="text-red-400 font-semibold mr-1">[{event.allianceTag}]</span>}
-                                {event.senderUsername}
-                              </span>
-                            )}
-                            <div className="ml-auto flex-shrink-0">
+                            <span className="text-sm font-semibold text-red-300">
+                              {hasSender ? (
+                                <>
+                                  {event.allianceTag && <span className="text-red-400 mr-1">[{event.allianceTag}]</span>}
+                                  {event.senderUsername}
+                                </>
+                              ) : (
+                                <span className="italic text-red-400/50">Attaquant inconnu</span>
+                              )}
+                            </span>
+                            <div className="ml-auto">
                               <Timer
                                 endTime={new Date(event.arrivalTime)}
                                 onComplete={() => utils.fleet.inbound.invalidate()}
+                                className="!text-red-400 font-bold"
                               />
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-4">
-                            <span className="truncate">
-                              {hasOrigin ? `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]` : '???'} → ici
-                            </span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-red-300/60">
+                            <span>{hasOrigin ? `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]` : '???'} → ici</span>
                             {shipCount > 0 && (
                               <>
-                                <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                                <span className="flex-shrink-0">{shipCount} vsx</span>
+                                <span className="text-red-500/30">·</span>
+                                <span>{shipCount} vaisseaux</span>
                               </>
                             )}
                           </div>
-                          <div className="h-0.5 rounded-full bg-white/[0.04] overflow-hidden ml-4">
-                            <div className="h-full rounded-full" style={{ width: `${progress}%`, background: '#ef4444' }} />
+                          <div className="h-1 rounded-full bg-red-950/60 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400"
+                              style={{ width: `${progress}%` }}
+                            />
                           </div>
                         </div>
                       );
