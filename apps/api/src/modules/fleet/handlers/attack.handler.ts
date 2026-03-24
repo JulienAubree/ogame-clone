@@ -2,7 +2,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, debrisFields } from '@ogame-clone/db';
 import { simulateCombat, totalCargoCapacity } from '@ogame-clone/game-engine';
-import type { CombatConfig } from '@ogame-clone/game-engine';
+import type { CombatConfig, RoundResult } from '@ogame-clone/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
 import { buildShipStatsMap, buildCombatStats, buildShipCosts, getCombatMultipliers, formatDuration } from '../fleet.types.js';
 
@@ -112,6 +112,7 @@ export class AttackHandler implements MissionHandler {
     let debris = { minerai: 0, silicium: 0 };
     let repairedDefenses: Record<string, number> = {};
     let roundCount = 0;
+    let rounds: RoundResult[] = [];
 
     if (!hasDefenders) {
       outcome = 'attacker';
@@ -127,6 +128,7 @@ export class AttackHandler implements MissionHandler {
       debris = result.debris;
       repairedDefenses = result.repairedDefenses;
       roundCount = result.rounds.length;
+      rounds = result.rounds;
     }
 
     // Apply attacker losses
@@ -265,6 +267,7 @@ export class AttackHandler implements MissionHandler {
         `Pillage : ${pillagedMinerai} minerai, ${pillagedSilicium} silicium, ${pillagedHydrogene} hydrogène\n` : '');
 
     let messageId: string | undefined;
+    let defenderMsgId: string | undefined;
     if (ctx.messageService) {
       const msg = await ctx.messageService.createSystemMessage(
         fleetEvent.userId,
@@ -273,12 +276,13 @@ export class AttackHandler implements MissionHandler {
         reportBody,
       );
       messageId = msg.id;
-      await ctx.messageService.createSystemMessage(
+      const defenderMsg = await ctx.messageService.createSystemMessage(
         targetPlanet.userId,
         'combat',
         `Rapport de combat ${coords} — ${outcome === 'attacker' ? 'Défaite' : outcome === 'defender' ? 'Victoire' : 'Match nul'}`,
         reportBody,
       );
+      defenderMsgId = defenderMsg.id;
     }
 
     // Fetch origin planet for report
@@ -295,12 +299,24 @@ export class AttackHandler implements MissionHandler {
       const reportResult: Record<string, unknown> = {
         outcome,
         roundCount,
+        attackerFleet: ships,
         attackerLosses,
-        defenderLosses,
+        attackerSurvivors: survivingShips,
         defenderFleet,
         defenderDefenses,
+        defenderLosses,
+        defenderSurvivors: (() => {
+          const combined: Record<string, number> = { ...defenderFleet, ...defenderDefenses };
+          const survivors: Record<string, number> = {};
+          for (const [type, count] of Object.entries(combined)) {
+            const remaining = count - (defenderLosses[type] ?? 0) + (repairedDefenses[type] ?? 0);
+            if (remaining > 0) survivors[type] = remaining;
+          }
+          return survivors;
+        })(),
         repairedDefenses,
         debris,
+        rounds,
       };
       if (outcome === 'attacker') {
         reportResult.pillage = {
@@ -335,6 +351,29 @@ export class AttackHandler implements MissionHandler {
         result: reportResult,
       });
       reportId = report.id;
+      const defenderOutcomeText = outcome === 'attacker' ? 'Défaite' :
+                                  outcome === 'defender' ? 'Victoire' : 'Match nul';
+      await ctx.reportService.create({
+        userId: targetPlanet.userId,
+        messageId: defenderMsgId,
+        missionType: 'attack',
+        title: `Rapport de combat ${coords} — ${defenderOutcomeText}`,
+        coordinates: {
+          galaxy: fleetEvent.targetGalaxy,
+          system: fleetEvent.targetSystem,
+          position: fleetEvent.targetPosition,
+        },
+        originCoordinates: originPlanet ? {
+          galaxy: originPlanet.galaxy,
+          system: originPlanet.system,
+          position: originPlanet.position,
+          planetName: originPlanet.name,
+        } : undefined,
+        fleet: { ships: {}, totalCargo: 0 },
+        departureTime: fleetEvent.departureTime,
+        completionTime: fleetEvent.arrivalTime,
+        result: reportResult,
+      });
     }
 
     const hasShips = Object.values(survivingShips).some(v => v > 0);
