@@ -9,6 +9,7 @@ import {
   type PlanetTypeBonus,
 } from '@ogame-clone/game-engine';
 import { findBuildingByRole, findPlanetTypeByRole } from '../../lib/config-helpers.js';
+import { buildProductionConfig } from '../../lib/production-config.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 
 async function loadPlanetTypeBonus(db: Database, planetClassId: string | null): Promise<PlanetTypeBonus | undefined> {
@@ -118,6 +119,8 @@ export function createResourceService(db: Database, gameConfigService: GameConfi
       const bonus = await loadPlanetTypeBonus(db, planet.planetClassId);
       const roleMap = await getRoleMap();
       const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
+      const config = await gameConfigService.getFullConfig();
+      const prodConfig = buildProductionConfig(config);
 
       const now = new Date();
       const resources = calculateResources(
@@ -130,6 +133,7 @@ export function createResourceService(db: Database, gameConfigService: GameConfi
         planet.resourcesUpdatedAt,
         now,
         bonus,
+        prodConfig,
       );
 
       const [updated] = await db
@@ -160,6 +164,8 @@ export function createResourceService(db: Database, gameConfigService: GameConfi
       const bonus = await loadPlanetTypeBonus(db, planet.planetClassId);
       const roleMap = await getRoleMap();
       const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
+      const config = await gameConfigService.getFullConfig();
+      const prodConfig = buildProductionConfig(config);
 
       const now = new Date();
       const produced = calculateResources(
@@ -172,6 +178,7 @@ export function createResourceService(db: Database, gameConfigService: GameConfi
         planet.resourcesUpdatedAt,
         now,
         bonus,
+        prodConfig,
       );
 
       if (produced.minerai < cost.minerai || produced.silicium < cost.silicium || produced.hydrogene < cost.hydrogene) {
@@ -226,7 +233,9 @@ export function createResourceService(db: Database, gameConfigService: GameConfi
     }, bonus?: PlanetTypeBonus) {
       const roleMap = await getRoleMap();
       const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
-      return calculateProductionRates(levels, bonus);
+      const config = await gameConfigService.getFullConfig();
+      const prodConfig = buildProductionConfig(config);
+      return calculateProductionRates(levels, bonus, prodConfig);
     },
   };
 }

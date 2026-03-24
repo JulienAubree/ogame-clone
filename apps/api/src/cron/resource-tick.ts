@@ -3,6 +3,7 @@ import { planets, planetTypes, planetBuildings, planetShips } from '@ogame-clone
 import type { Database } from '@ogame-clone/db';
 import { calculateResources } from '@ogame-clone/game-engine';
 import { findBuildingByRole, findPlanetTypeByRole } from '../lib/config-helpers.js';
+import { buildProductionConfig } from '../lib/production-config.js';
 import type { GameConfigService } from '../modules/admin/game-config.service.js';
 
 export async function resourceTick(db: Database, gameConfigService: GameConfigService) {
@@ -32,6 +33,7 @@ export async function resourceTick(db: Database, gameConfigService: GameConfigSe
 
   // Resolve building IDs by role
   const config = await gameConfigService.getFullConfig();
+  const prodConfig = buildProductionConfig(config);
   const mineraiMineId = findBuildingByRole(config, 'producer_minerai').id;
   const siliciumMineId = findBuildingByRole(config, 'producer_silicium').id;
   const hydrogeneSynthId = findBuildingByRole(config, 'producer_hydrogene').id;
@@ -67,6 +69,7 @@ export async function resourceTick(db: Database, gameConfigService: GameConfigSe
       planet.resourcesUpdatedAt,
       now,
       bonus,
+      prodConfig,
     );
 
     await db
