@@ -5,6 +5,8 @@ import { planetTypes, planetShips } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import type { createResourceService } from './resource.service.js';
 import type { createPlanetService } from '../planet/planet.service.js';
+import type { GameConfigService } from '../admin/game-config.service.js';
+import { findBuildingByRole } from '../../lib/config-helpers.js';
 
 const percentSchema = z.number().int().min(0).max(100).refine((v) => v % 10 === 0, {
   message: 'Le pourcentage doit etre un multiple de 10',
@@ -14,6 +16,7 @@ export function createResourceRouter(
   resourceService: ReturnType<typeof createResourceService>,
   planetService: ReturnType<typeof createPlanetService>,
   db: Database,
+  gameConfigService: GameConfigService,
 ) {
   return router({
     production: protectedProcedure
@@ -31,6 +34,12 @@ export function createResourceRouter(
           bonus = pt ?? undefined;
         }
 
+        const config = await gameConfigService.getFullConfig();
+        const mineraiMineId = findBuildingByRole(config, 'producer_minerai').id;
+        const siliciumMineId = findBuildingByRole(config, 'producer_silicium').id;
+        const hydrogeneSynthId = findBuildingByRole(config, 'producer_hydrogene').id;
+        const solarPlantId = findBuildingByRole(config, 'producer_energy').id;
+
         const buildingLevels = await resourceService.getBuildingLevels(input.planetId);
         const [ships] = await db.select({ solarSatellite: planetShips.solarSatellite })
           .from(planetShips).where(eq(planetShips.planetId, input.planetId)).limit(1);
@@ -44,10 +53,10 @@ export function createResourceRouter(
           maxTemp: planet.maxTemp,
           planetClassId: planet.planetClassId,
           levels: {
-            mineraiMine: buildingLevels['mineraiMine'] ?? 0,
-            siliciumMine: buildingLevels['siliciumMine'] ?? 0,
-            hydrogeneSynth: buildingLevels['hydrogeneSynth'] ?? 0,
-            solarPlant: buildingLevels['solarPlant'] ?? 0,
+            mineraiMine: buildingLevels[mineraiMineId] ?? 0,
+            siliciumMine: buildingLevels[siliciumMineId] ?? 0,
+            hydrogeneSynth: buildingLevels[hydrogeneSynthId] ?? 0,
+            solarPlant: buildingLevels[solarPlantId] ?? 0,
             solarSatelliteCount: ships?.solarSatellite ?? 0,
           },
         };
