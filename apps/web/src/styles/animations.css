@@ -36,3 +36,23 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+@keyframes asteroid-drift {
+  0%, 100% { transform: translate(0, 0); }
+  33%      { transform: translate(1.5px, -0.6px); }
+  66%      { transform: translate(-0.5px, 0.4px); }
+}
+
+@keyframes asteroid-sparkle {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 0.9; }
+}
+
+.asteroid-sparkle {
+  opacity: 0;
+  animation: asteroid-sparkle 3s ease-in-out infinite;
+}
+
+.asteroid-glow {
+  animation: pulseGlow 6s ease-in-out infinite;
+}
