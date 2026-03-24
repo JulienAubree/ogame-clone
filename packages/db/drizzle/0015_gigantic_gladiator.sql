@@ -1,0 +1,1 @@
+ALTER TABLE "build_queue" ADD COLUMN "facility_id" varchar(64);

@@ -29,4 +29,5 @@ export const buildQueue = pgTable('build_queue', {
   startTime: timestamp('start_time', { withTimezone: true }).notNull(),
   endTime: timestamp('end_time', { withTimezone: true }).notNull(),
   status: buildQueueStatusEnum('status').notNull().default('active'),
+  facilityId: varchar('facility_id', { length: 64 }),
 });
