@@ -80,6 +80,22 @@ export function ShipyardIcon(props: IconProps) {
   );
 }
 
+export function CommandCenterIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v4" />
+      <path d="M12 18v4" />
+      <path d="M2 12h4" />
+      <path d="M18 12h4" />
+      <path d="m4.93 4.93 2.83 2.83" />
+      <path d="m16.24 16.24 2.83 2.83" />
+      <path d="m4.93 19.07 2.83-2.83" />
+      <path d="m16.24 7.76 2.83-2.83" />
+    </Icon>
+  );
+}
+
 export function DefenseIcon(props: IconProps) {
   return (
     <Icon {...props}>

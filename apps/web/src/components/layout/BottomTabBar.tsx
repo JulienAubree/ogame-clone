@@ -8,6 +8,7 @@ import {
   ResourcesIcon,
   ResearchIcon,
   ShipyardIcon,
+  CommandCenterIcon,
   DefenseIcon,
   FleetIcon,
   MovementsIcon,
@@ -26,7 +27,7 @@ import { BottomSheet } from './BottomSheet';
 
 const TAB_GROUPS = {
   accueil: ['/'],
-  base: ['/resources', '/buildings', '/research', '/shipyard', '/defense'],
+  base: ['/resources', '/buildings', '/research', '/shipyard', '/command-center', '/defense'],
   galaxie: ['/galaxy', '/fleet', '/missions', '/movements'],
   social: ['/profile', '/messages', '/reports', '/alliance', '/ranking', '/alliance-ranking'],
 };
@@ -39,6 +40,7 @@ const SHEET_ITEMS = {
     { label: 'Bâtiments', path: '/buildings', icon: BuildingsIcon },
     { label: 'Recherche', path: '/research', icon: ResearchIcon },
     { label: 'Chantier spatial', path: '/shipyard', icon: ShipyardIcon },
+    { label: 'Centre de commandement', path: '/command-center', icon: CommandCenterIcon },
     { label: 'Défense', path: '/defense', icon: DefenseIcon },
   ],
   galaxie: [

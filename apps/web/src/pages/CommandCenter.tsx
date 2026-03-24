@@ -17,7 +17,7 @@ import { getShipName } from '@/lib/entity-names';
 import { useGameConfig } from '@/hooks/useGameConfig';
 
 
-export default function Shipyard() {
+export default function CommandCenter() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -27,7 +27,7 @@ export default function Shipyard() {
   const { data: gameConfig } = useGameConfig();
 
   const shipCategories = (gameConfig?.categories ?? [])
-    .filter((c) => c.entityType === 'ship' && c.id !== 'ship_combat')
+    .filter((c) => c.entityType === 'ship' && c.id === 'ship_combat')
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const { data: ships, isLoading } = trpc.shipyard.ships.useQuery(
@@ -58,7 +58,7 @@ export default function Shipyard() {
   );
 
   const { data: queue } = trpc.shipyard.queue.useQuery(
-    { planetId: planetId!, facilityId: 'shipyard' },
+    { planetId: planetId!, facilityId: 'commandCenter' },
     { enabled: !!planetId },
   );
 
@@ -76,14 +76,14 @@ export default function Shipyard() {
   const buildMutation = trpc.shipyard.buildShip.useMutation({
     onSuccess: () => {
       utils.shipyard.ships.invalidate({ planetId: planetId! });
-      utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'shipyard' });
+      utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'commandCenter' });
       utils.resource.production.invalidate({ planetId: planetId! });
     },
   });
 
   const cancelMutation = trpc.shipyard.cancelBatch.useMutation({
     onSuccess: () => {
-      utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'shipyard' });
+      utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'commandCenter' });
       utils.shipyard.ships.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       setCancelConfirm(null);
@@ -95,7 +95,7 @@ export default function Shipyard() {
   if (isLoading || !ships) {
     return (
       <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-        <PageHeader title="Chantier spatial" />
+        <PageHeader title="Centre de commandement" />
         <CardGridSkeleton count={6} />
       </div>
     );
@@ -103,7 +103,7 @@ export default function Shipyard() {
 
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-      <PageHeader title="Chantier spatial" />
+      <PageHeader title="Centre de commandement" />
 
       {shipQueue.length > 0 && (
         <section className="glass-card p-4">
@@ -131,7 +131,7 @@ export default function Shipyard() {
                       endTime={new Date(item.endTime)}
                       totalDuration={Math.floor((new Date(item.endTime).getTime() - new Date(item.startTime).getTime()) / 1000)}
                       onComplete={() => {
-                        utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'shipyard' });
+                        utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'commandCenter' });
                         utils.shipyard.ships.invalidate({ planetId: planetId! });
                       }}
                     />

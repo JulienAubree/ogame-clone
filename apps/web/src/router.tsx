@@ -86,6 +86,11 @@ export const router = createBrowserRouter([
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
       },
       {
+        path: 'command-center',
+        lazy: lazyLoad(() => import('./pages/CommandCenter')),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
+      {
         path: 'defense',
         lazy: lazyLoad(() => import('./pages/Defense')),
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
