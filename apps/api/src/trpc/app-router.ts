@@ -38,6 +38,8 @@ import { createReportService } from '../modules/report/report.service.js';
 import { createReportRouter } from '../modules/report/report.router.js';
 import { createUserService } from '../modules/user/user.service.js';
 import { createUserRouter } from '../modules/user/user.router.js';
+import { createFriendService } from '../modules/friend/friend.service.js';
+import { createFriendRouter } from '../modules/friend/friend.router.js';
 import { env } from '../config/env.js';
 import type { Database } from '@ogame-clone/db';
 import type Redis from 'ioredis';
@@ -60,6 +62,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const pveService = createPveService(db, asteroidBeltService, pirateService, gameConfigService);
   const reportService = createReportService(db);
   const userService = createUserService(db, env.ASSETS_DIR);
+  const friendService = createFriendService(db);
   const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, pveService, asteroidBeltService, pirateService, reportService);
   const allianceService = createAllianceService(db, messageService);
   const playerAdminService = createPlayerAdminService(db);
@@ -84,6 +87,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const tutorialRouter = createTutorialRouter(tutorialService);
   const reportRouter = createReportRouter(reportService);
   const userRouter = createUserRouter(userService);
+  const friendRouter = createFriendRouter(friendService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -108,6 +112,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     tutorial: tutorialRouter,
     report: reportRouter,
     user: userRouter,
+    friend: friendRouter,
   });
 }
 
