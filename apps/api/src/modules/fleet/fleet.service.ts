@@ -99,6 +99,30 @@ export function createFleetService(
         });
       }
 
+      // Block self-targeting for hostile missions
+      if (input.mission === 'spy' || input.mission === 'attack') {
+        // Check if target belongs to the same user
+        const [targetPl] = await db
+          .select({ userId: planets.userId })
+          .from(planets)
+          .where(
+            and(
+              eq(planets.galaxy, input.targetGalaxy),
+              eq(planets.system, input.targetSystem),
+              eq(planets.position, input.targetPosition),
+            ),
+          )
+          .limit(1);
+        if (targetPl?.userId === userId) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: input.mission === 'spy'
+              ? 'Impossible d\'espionner votre propre planète'
+              : 'Impossible d\'attaquer votre propre planète',
+          });
+        }
+      }
+
       // Validate ships are available
       const planetShipRow = await this.getOrCreateShips(input.originPlanetId);
       for (const [shipId, count] of Object.entries(input.ships)) {
