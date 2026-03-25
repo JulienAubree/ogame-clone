@@ -118,7 +118,7 @@ export default function Fleet() {
       utils.shipyard.ships.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.fleet.slots.invalidate();
-      navigate('/movements');
+      navigate('/fleet/movements');
     },
   });
 

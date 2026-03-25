@@ -113,7 +113,7 @@ export function eventNavigationTarget(type: string, payload?: unknown): string {
     case 'research-done': return '/research';
     case 'shipyard-done': return '/shipyard';
     case 'fleet-arrived':
-    case 'fleet-returned': return '/movements';
+    case 'fleet-returned': return '/fleet/movements';
     case 'pve-mission-done': return '/missions';
     case 'tutorial-quest-done': return '/';
     case 'friend-request': return '/profile';

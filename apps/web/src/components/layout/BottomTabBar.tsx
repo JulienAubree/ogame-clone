@@ -11,7 +11,6 @@ import {
   CommandCenterIcon,
   DefenseIcon,
   FleetIcon,
-  MovementsIcon,
   MissionsIcon,
   MessagesIcon,
   ReportsIcon,
@@ -29,7 +28,7 @@ import { BottomSheet } from './BottomSheet';
 const TAB_GROUPS = {
   accueil: ['/'],
   base: ['/resources', '/buildings', '/research', '/shipyard', '/command-center', '/defense', '/market'],
-  galaxie: ['/galaxy', '/fleet', '/missions', '/movements'],
+  galaxie: ['/galaxy', '/fleet', '/missions'],
   social: ['/profile', '/messages', '/reports', '/alliance', '/ranking', '/alliance-ranking'],
 };
 
@@ -47,9 +46,8 @@ const SHEET_ITEMS = {
   ],
   galaxie: [
     { label: 'Vue galaxie', path: '/galaxy', icon: GalaxyIcon },
-    { label: 'Envoyer une flotte', path: '/fleet', icon: FleetIcon },
+    { label: 'Flotte', path: '/fleet', icon: FleetIcon },
     { label: 'Missions', path: '/missions', icon: MissionsIcon },
-    { label: 'Mouvements', path: '/movements', icon: MovementsIcon },
   ],
   social: [
     { label: 'Profil', path: '/profile', icon: ProfileIcon },

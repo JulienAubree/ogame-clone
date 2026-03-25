@@ -417,7 +417,7 @@ export default function Overview() {
                     <div
                       key={event.id}
                       className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-muted/50 transition-colors space-y-1.5"
-                      onClick={() => navigate('/movements')}
+                      onClick={() => navigate('/fleet/movements')}
                     >
                       {/* Line 1: Mission + Phase + Timer */}
                       <div className="flex items-center gap-2">
@@ -473,7 +473,7 @@ export default function Overview() {
                 <section
                   className="relative overflow-hidden rounded-xl border border-red-500/40 cursor-pointer hover:border-red-500/60 transition-colors"
                   style={{ background: 'linear-gradient(135deg, rgba(127,29,29,0.5) 0%, rgba(69,10,10,0.6) 50%, rgba(127,29,29,0.4) 100%)' }}
-                  onClick={() => navigate('/movements')}
+                  onClick={() => navigate('/fleet/movements')}
                 >
                   {/* Animated scan line */}
                   <div
@@ -595,7 +595,7 @@ export default function Overview() {
                         <div
                           key={event.id}
                           className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-yellow-500/5 transition-colors space-y-1.5"
-                          onClick={() => navigate('/movements')}
+                          onClick={() => navigate('/fleet/movements')}
                         >
                           <div className="flex items-center gap-2">
                             <div

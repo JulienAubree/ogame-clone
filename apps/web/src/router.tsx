@@ -102,7 +102,22 @@ export const router = createBrowserRouter([
       },
       {
         path: 'fleet',
+        lazy: lazyLoad(() => import('./pages/FleetDashboard')),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
+      {
+        path: 'fleet/send',
         lazy: lazyLoad(() => import('./pages/Fleet')),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
+      {
+        path: 'fleet/stationed',
+        lazy: lazyLoad(() => import('./pages/StationedFleet')),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
+      {
+        path: 'fleet/movements',
+        lazy: lazyLoad(() => import('./pages/Movements')),
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
       },
       {
@@ -112,8 +127,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'movements',
-        lazy: lazyLoad(() => import('./pages/Movements')),
-        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+        element: <Navigate to="/fleet/movements" replace />,
       },
       {
         path: 'market',
