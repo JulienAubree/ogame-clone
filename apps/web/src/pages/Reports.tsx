@@ -124,7 +124,14 @@ export default function Reports() {
 
   const reportList = (
     <section className="glass-card p-4">
-      <h2 className="text-sm font-semibold text-foreground mb-3">Rapports</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-foreground">Rapports</h2>
+        {allReports.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {allReports.length}{hasMore ? '+' : ''} rapport{allReports.length > 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
       <div className="space-y-1">
         {isFetching && allReports.length === 0 && (
           <p className="text-sm text-muted-foreground">Chargement...</p>
@@ -152,8 +159,17 @@ export default function Reports() {
           </button>
         ))}
         {hasMore && (
-          <div ref={loaderRef} className="flex justify-center py-2">
-            {isFetching && <span className="text-xs text-muted-foreground">Chargement...</span>}
+          <div ref={loaderRef} className="flex flex-col items-center gap-2 py-3">
+            {isFetching ? (
+              <span className="text-xs text-muted-foreground">Chargement...</span>
+            ) : (
+              <button
+                onClick={handleLoadMore}
+                className="text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                Charger plus
+              </button>
+            )}
           </div>
         )}
       </div>
