@@ -160,18 +160,6 @@ export function createFleetService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Capacité de fret dépassée' });
       }
 
-      // Verify trade offer ownership before any side effects
-      if (input.tradeId) {
-        const [tradeOffer] = await db
-          .select({ reservedBy: marketOffers.reservedBy })
-          .from(marketOffers)
-          .where(and(eq(marketOffers.id, input.tradeId), eq(marketOffers.status, 'reserved')))
-          .limit(1);
-        if (!tradeOffer || tradeOffer.reservedBy !== userId) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cette offre n\'est pas réservée par vous' });
-        }
-      }
-
       // Handler-based validation
       const sendHandler = handlers[input.mission];
       if (sendHandler) {
