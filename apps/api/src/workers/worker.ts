@@ -13,9 +13,11 @@ import { createAsteroidBeltService } from '../modules/pve/asteroid-belt.service.
 import { createPirateService } from '../modules/pve/pirate.service.js';
 import { createPveService } from '../modules/pve/pve.service.js';
 import { createReportService } from '../modules/report/report.service.js';
-import { buildCompletionQueue, fleetQueue } from '../queues/queues.js';
+import { buildCompletionQueue, fleetQueue, marketQueue } from '../queues/queues.js';
 import { startBuildCompletionWorker } from './build-completion.worker.js';
 import { startFleetWorker } from './fleet.worker.js';
+import { createMarketService } from '../modules/market/market.service.js';
+import { startMarketWorker } from './market.worker.js';
 import { eventCatchup } from '../cron/event-catchup.js';
 import { resourceTick } from '../cron/resource-tick.js';
 import { rankingUpdate } from '../cron/ranking-update.js';
@@ -41,6 +43,9 @@ const shipyardService = createShipyardService(db, resourceService, buildCompleti
 // Fleet service (receives the unified fleet queue)
 const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, redis, pveService, asteroidBeltService, pirateService, reportService);
 
+// Market service
+const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis);
+
 console.log('[worker] Starting workers...');
 
 startBuildCompletionWorker(db, redis, { buildingService, researchService, shipyardService, tutorialService });
@@ -48,6 +53,9 @@ console.log('[worker] Build completion worker started');
 
 startFleetWorker(db, redis, { fleetService, tutorialService });
 console.log('[worker] Fleet worker started');
+
+startMarketWorker(marketService);
+console.log('[worker] Market worker started');
 
 // Crons (unchanged)
 setInterval(async () => {

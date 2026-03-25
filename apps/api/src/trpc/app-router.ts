@@ -11,7 +11,7 @@ import { createResearchService } from '../modules/research/research.service.js';
 import { createResearchRouter } from '../modules/research/research.router.js';
 import { createShipyardService } from '../modules/shipyard/shipyard.service.js';
 import { createShipyardRouter } from '../modules/shipyard/shipyard.router.js';
-import { buildCompletionQueue, fleetQueue } from '../queues/queues.js';
+import { buildCompletionQueue, fleetQueue, marketQueue } from '../queues/queues.js';
 import { createGalaxyService } from '../modules/galaxy/galaxy.service.js';
 import { createGalaxyRouter } from '../modules/galaxy/galaxy.router.js';
 import { createFleetService } from '../modules/fleet/fleet.service.js';
@@ -40,6 +40,8 @@ import { createUserService } from '../modules/user/user.service.js';
 import { createUserRouter } from '../modules/user/user.router.js';
 import { createFriendService } from '../modules/friend/friend.service.js';
 import { createFriendRouter } from '../modules/friend/friend.router.js';
+import { createMarketService } from '../modules/market/market.service.js';
+import { createMarketRouter } from '../modules/market/market.router.js';
 import { env } from '../config/env.js';
 import type { Database } from '@ogame-clone/db';
 import type Redis from 'ioredis';
@@ -68,6 +70,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const allianceService = createAllianceService(db, messageService);
   const playerAdminService = createPlayerAdminService(db);
   const tutorialService = createTutorialService(db, pveService);
+  const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -88,6 +91,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const reportRouter = createReportRouter(reportService);
   const userRouter = createUserRouter(userService);
   const friendRouter = createFriendRouter(friendService);
+  const marketRouter = createMarketRouter(marketService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -113,6 +117,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     report: reportRouter,
     user: userRouter,
     friend: friendRouter,
+    market: marketRouter,
   });
 }
 
