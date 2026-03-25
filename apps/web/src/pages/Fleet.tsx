@@ -8,6 +8,7 @@ import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { trpc } from '@/trpc';
 import { useToastStore } from '@/stores/toast.store';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { Breadcrumb } from '@/components/common/Breadcrumb';
 import { MissionSelector } from '@/components/fleet/MissionSelector';
 import { PveMissionBanner } from '@/components/fleet/PveMissionBanner';
 import { FleetComposition } from '@/components/fleet/FleetComposition';
@@ -84,6 +85,21 @@ export default function Fleet() {
     setMission(data.mission);
     setSearchParams({}, { replace: true });
   }, []);
+
+  // Pre-fill ships from stationed fleet page (ship_xxx params)
+  useEffect(() => {
+    const shipParams: Record<string, number> = {};
+    for (const [key, value] of searchParams.entries()) {
+      if (key.startsWith('ship_')) {
+        const shipId = key.replace('ship_', '');
+        const count = Number(value);
+        if (count > 0) shipParams[shipId] = count;
+      }
+    }
+    if (Object.keys(shipParams).length > 0) {
+      setSelectedShips(shipParams);
+    }
+  }, []); // Run once on mount
 
   // Default target to current planet coordinates (when no PvE params)
   useEffect(() => {
@@ -248,6 +264,10 @@ export default function Fleet() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-3 pb-4">
+      <Breadcrumb segments={[
+        { label: 'Flotte', path: '/fleet' },
+        { label: 'Envoyer une flotte', path: '/fleet/send' },
+      ]} />
       <div className="flex items-center justify-between">
         <PageHeader title="Flotte" />
         {fleetSlots && (

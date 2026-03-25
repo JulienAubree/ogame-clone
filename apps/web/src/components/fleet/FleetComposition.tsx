@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { categorizeShip, type Mission, type ShipCategory } from '@/config/mission-config';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { GameImage } from '@/components/common/GameImage';
 
 const COLLAPSED_COUNT = 3;
 
@@ -27,7 +28,10 @@ function ShipRow({ ship, value, onChange, disabled }: {
 }) {
   return (
     <div className="flex items-center justify-between rounded bg-background/50 px-3 py-1.5">
-      <span className={`text-sm ${disabled ? 'text-muted-foreground/40' : ''}`}>{ship.name}</span>
+      <div className="flex items-center gap-2">
+        <GameImage category="ships" id={ship.id} size="icon" alt={ship.name} className="h-6 w-6 rounded flex-shrink-0" />
+        <span className={`text-sm ${disabled ? 'text-muted-foreground/40' : ''}`}>{ship.name}</span>
+      </div>
       <div className="flex items-center gap-2">
         {!disabled && ship.count > 0 && (
           <button

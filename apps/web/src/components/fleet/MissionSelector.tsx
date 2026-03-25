@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { type Mission } from '@/config/mission-config';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { MissionIcon } from './MissionIcon';
 
 interface MissionSelectorProps {
   selected: Mission | null;
@@ -44,6 +45,7 @@ export function MissionSelector({ selected, onChange, locked }: MissionSelectorP
                     : 'bg-muted text-muted-foreground hover:bg-muted/80 cursor-pointer',
               )}
             >
+              <MissionIcon mission={m} size={14} className="inline-block mr-1" />
               {isSelected && '✓ '}{config?.label ?? m}
             </button>
           );
