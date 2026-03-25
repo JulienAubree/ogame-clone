@@ -84,9 +84,17 @@ The market is a global order book: sellers post offers visible to all players, b
 |-------|-------|
 | `id` | `trade` |
 | `label` | Commerce |
+| `hint` | Envoyez une flotte chercher des marchandises achetees sur le marche |
+| `buttonLabel` | Commercer |
+| `color` | `#a78bfa` (violet) |
+| `sortOrder` | 9 |
 | `dangerous` | false |
-| `requiredShipRoles` | `["cargo"]` |
+| `requiredShipRoles` | `null` (cargo capacity validation in sendFleet is sufficient) |
+| `recommendedShipRoles` | `["smallCargo", "largeCargo"]` |
 | `exclusive` | false |
+| `requiresPveMission` | false |
+
+Note: No new ship role needed. The existing cargo capacity check in `sendFleet` naturally enforces that the fleet has enough cargo ships to carry the payment. Standard fuel consumption applies (same as any fleet mission).
 
 ### 2.4 Formulas (game-engine)
 
@@ -116,12 +124,20 @@ The market is a global order book: sellers post offers visible to all players, b
 
 ### 3.3 Reserve offer (buy)
 
-1. Validate: offer status is `active`
-2. Validate: buyer is not the seller
-3. Set `status: reserved`, `reserved_by: buyerId`, `reserved_at: now()`
-4. Schedule BullMQ job `market-reservation-expire` with delay = reservation timeout
-5. Notify seller via SSE: `market-offer-reserved`
-6. Return offer details + seller planet coordinates for fleet dispatch
+1. Validate: buyer has `galacticMarket` building level >= 1 on current planet
+2. Validate: offer status is `active`
+3. Validate: buyer is not the seller
+4. Set `status: reserved`, `reserved_by: buyerId`, `reserved_at: now()`
+5. Schedule BullMQ job `market-reservation-expire` with delay = reservation timeout
+6. Notify seller via SSE: `market-offer-reserved`
+7. Return offer details + seller planet coordinates for fleet dispatch
+
+### 3.3b Cancel reservation
+
+1. Validate: offer is `reserved` by this buyer, and no `fleet_event_id` (fleet not yet sent)
+2. Clear `reserved_by`, `reserved_at`
+3. Set offer back to `active`
+4. Cancel the `market-reservation-expire` job
 
 ### 3.4 Send trade fleet
 
@@ -188,7 +204,7 @@ This prevents players from hiding resources in the market to avoid pillage.
 
 ### 5.1 Queries
 
-- `market.list` — List active offers (paginated, cursor-based). Filters: `resourceType`, sort by price. Excludes own offers. Returns coordinates (no seller name).
+- `market.list` — List `active` offers only (paginated, cursor-based). Reserved/sold/expired offers are excluded. Filters: `resourceType`, sort by price. Excludes own offers. Returns coordinates (no seller name).
 - `market.myOffers` — List own offers (all statuses). Shows status, remaining time, buyer info for reserved ones.
 - `market.offerDetail` — Single offer details (for fleet dispatch page).
 
