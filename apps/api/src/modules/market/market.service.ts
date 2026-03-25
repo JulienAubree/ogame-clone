@@ -233,7 +233,7 @@ export function createMarketService(
       const offers = await db
         .select()
         .from(marketOffers)
-        .where(eq(marketOffers.sellerId, userId))
+        .where(and(eq(marketOffers.sellerId, userId), ne(marketOffers.status, 'cancelled')))
         .orderBy(desc(marketOffers.createdAt));
 
       return offers.map((o) => ({
