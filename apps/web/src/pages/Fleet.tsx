@@ -34,6 +34,10 @@ export default function Fleet() {
   // PvE mode
   const [pveMissionId, setPveMissionId] = useState<string | null>(null);
   const [pveMode, setPveMode] = useState(false);
+
+  // Trade mode
+  const [tradeId, setTradeId] = useState<string | null>(null);
+  const [tradeMode, setTradeMode] = useState(false);
   const prefillRef = useRef<{ mission: Mission; galaxy: number; system: number; position: number } | null>(null);
 
   // Data queries
@@ -65,6 +69,16 @@ export default function Fleet() {
       setPveMode(true);
     }
 
+    const paramTradeId = searchParams.get('tradeId');
+    if (paramTradeId) {
+      setTradeId(paramTradeId);
+      setTradeMode(true);
+      const cargoMi = Number(searchParams.get('cargoMi')) || 0;
+      const cargoSi = Number(searchParams.get('cargoSi')) || 0;
+      const cargoH2 = Number(searchParams.get('cargoH2')) || 0;
+      setCargo({ minerai: cargoMi, silicium: cargoSi, hydrogene: cargoH2 });
+    }
+
     prefillRef.current = data;
     setTarget({ galaxy: data.galaxy, system: data.system, position: data.position });
     setMission(data.mission);
@@ -73,7 +87,7 @@ export default function Fleet() {
 
   // Default target to current planet coordinates (when no PvE params)
   useEffect(() => {
-    if (pveMode || prefillRef.current) return;
+    if (pveMode || tradeMode || prefillRef.current) return;
     if (planet) {
       setTarget({ galaxy: planet.galaxy, system: planet.system, position: planet.position });
     }
@@ -121,6 +135,7 @@ export default function Fleet() {
       siliciumCargo: cargo.silicium,
       hydrogeneCargo: cargo.hydrogene,
       ...(pveMissionId ? { pveMissionId } : {}),
+      ...(tradeId ? { tradeId } : {}),
     });
   };
 
@@ -254,7 +269,7 @@ export default function Fleet() {
       <MissionSelector
         selected={mission}
         onChange={handleMissionChange}
-        locked={pveMode}
+        locked={pveMode || tradeMode}
       />
 
       {/* Destination */}
@@ -265,7 +280,7 @@ export default function Fleet() {
           system={target.system}
           position={target.position}
           onChange={setTarget}
-          disabled={pveMode}
+          disabled={pveMode || tradeMode}
         />
       </div>
 
@@ -302,6 +317,7 @@ export default function Fleet() {
                 value={cargo[res]}
                 onChange={(e) => setCargo((c) => ({ ...c, [res]: Math.max(0, Number(e.target.value) || 0) }))}
                 className="h-7 text-center text-sm"
+                readOnly={tradeMode}
               />
             </div>
           ))}
