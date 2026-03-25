@@ -15,6 +15,10 @@ export default function Galaxy() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const { data: planets } = trpc.planet.list.useQuery();
   const activePlanet = planets?.find((p) => p.id === planetId);
+  const { data: ships } = trpc.shipyard.ships.useQuery(
+    { planetId: planetId! },
+    { enabled: !!planetId },
+  );
 
   const [galaxy, setGalaxy] = useState(activePlanet?.galaxy ?? 1);
   const [system, setSystem] = useState(activePlanet?.system ?? 1);
@@ -37,6 +41,13 @@ export default function Galaxy() {
   const { data: gameConfig } = useGameConfig();
   const { data: myAlliance } = trpc.alliance.myAlliance.useQuery();
   const { data: pveData } = trpc.pve.getMissions.useQuery();
+
+  const colonizerShipId = useMemo(() => {
+    if (!gameConfig?.ships) return null;
+    const entry = Object.entries(gameConfig.ships).find(([, s]) => (s as any).role === 'colonizer');
+    return entry?.[0] ?? null;
+  }, [gameConfig?.ships]);
+  const hasColonizer = !!(colonizerShipId && ships?.find((s) => s.id === colonizerShipId && s.count > 0));
 
   // Map position → mission for current galaxy:system
   const missionByPosition = useMemo(() => {
@@ -200,7 +211,17 @@ export default function Galaxy() {
                     ) : (
                       <>
                         <div className="h-5 w-5 rounded-full bg-muted/30" />
-                        <span className="text-sm text-muted-foreground">Vide</span>
+                        <span className="flex-1 text-sm text-muted-foreground">Vide</span>
+                        {hasColonizer && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs h-6 px-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20"
+                            onClick={() => navigate(`/fleet?mission=colonize&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                          >
+                            Coloniser
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>
@@ -327,7 +348,19 @@ export default function Galaxy() {
                             <td className="px-2 py-1 text-muted-foreground">-</td>
                             <td className="px-2 py-1 text-muted-foreground">-</td>
                             <td className="px-2 py-1 text-muted-foreground">-</td>
-                            <td className="px-2 py-1">-</td>
+                            <td className="px-2 py-1">
+                              {hasColonizer && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-xs h-6 px-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20"
+                                  onClick={() => navigate(`/fleet?mission=colonize&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                                  title="Coloniser"
+                                >
+                                  Coloniser
+                                </Button>
+                              )}
+                            </td>
                           </>
                         )}
                       </tr>
