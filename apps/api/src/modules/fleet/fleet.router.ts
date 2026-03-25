@@ -23,6 +23,7 @@ export function createFleetRouter(fleetService: ReturnType<typeof createFleetSer
         siliciumCargo: z.number().min(0).default(0),
         hydrogeneCargo: z.number().min(0).default(0),
         pveMissionId: z.string().uuid().optional(),
+        tradeId: z.string().uuid().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         return fleetService.sendFleet(ctx.userId!, input);

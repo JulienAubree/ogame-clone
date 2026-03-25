@@ -1,6 +1,6 @@
 import { eq, and, inArray, count as dbCount, sql, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, fleetEvents, userResearch, pveMissions, users, allianceMembers, alliances } from '@ogame-clone/db';
+import { planets, planetShips, fleetEvents, userResearch, pveMissions, users, allianceMembers, alliances, marketOffers } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { fleetSpeed, travelTime, distance, fuelConsumption, totalCargoCapacity, resolveBonus, calculateAttackDetection, detectionDelay } from '@ogame-clone/game-engine';
 import type { BonusDefinition, ShipStats, FleetConfig } from '@ogame-clone/game-engine';
@@ -22,6 +22,7 @@ import { ColonizeHandler } from './handlers/colonize.handler.js';
 import { AttackHandler } from './handlers/attack.handler.js';
 import { PirateHandler } from './handlers/pirate.handler.js';
 import { MineHandler } from './handlers/mine.handler.js';
+import { TradeHandler } from './handlers/trade.handler.js';
 import { buildShipStatsMap } from './fleet.types.js';
 import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
@@ -48,6 +49,7 @@ export function createFleetService(
     attack: new AttackHandler(),
     pirate: new PirateHandler(),
     mine: new MineHandler(),
+    trade: new TradeHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
@@ -181,6 +183,18 @@ export function createFleetService(
       const now = new Date();
       const arrivalTime = new Date(now.getTime() + duration * 1000);
 
+      // Verify trade offer ownership before creating fleet event
+      if (input.tradeId) {
+        const [tradeOffer] = await db
+          .select({ reservedBy: marketOffers.reservedBy })
+          .from(marketOffers)
+          .where(and(eq(marketOffers.id, input.tradeId), eq(marketOffers.status, 'reserved')))
+          .limit(1);
+        if (!tradeOffer || tradeOffer.reservedBy !== userId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cette offre n\'est pas réservée par vous' });
+        }
+      }
+
       const [event] = await db
         .insert(fleetEvents)
         .values({
@@ -200,6 +214,7 @@ export function createFleetService(
           hydrogeneCargo: String(hydrogeneCargo),
           ships: input.ships,
           pveMissionId: input.pveMissionId ?? null,
+          tradeId: input.tradeId ?? null,
         })
         .returning();
 
@@ -218,6 +233,14 @@ export function createFleetService(
         if (pveMission.missionType !== 'mine') {
           await pveService.startMission(input.pveMissionId);
         }
+      }
+
+      // Link trade fleet to offer and cancel reservation expiration
+      if (input.tradeId) {
+        await db
+          .update(marketOffers)
+          .set({ fleetEventId: event.id })
+          .where(eq(marketOffers.id, input.tradeId));
       }
 
       // Schedule arrival job
@@ -325,6 +348,19 @@ export function createFleetService(
       // Release PvE mission back to available if recalling
       if (event.pveMissionId && pveService) {
         await pveService.releaseMission(event.pveMissionId);
+      }
+
+      // Release trade offer back to active if recalling
+      if (event.tradeId) {
+        await db
+          .update(marketOffers)
+          .set({
+            status: 'active',
+            reservedBy: null,
+            reservedAt: null,
+            fleetEventId: null,
+          })
+          .where(eq(marketOffers.id, event.tradeId));
       }
 
       await db
@@ -619,6 +655,7 @@ export function createFleetService(
           ships,
           metadata: event.metadata,
           pveMissionId: event.pveMissionId,
+          tradeId: event.tradeId,
         };
         const result = await handler.processArrival(handlerEvent, handlerCtx);
 
@@ -787,6 +824,7 @@ export function createFleetService(
         ships,
         metadata: event.metadata,
         pveMissionId: event.pveMissionId,
+        tradeId: event.tradeId,
       };
 
       const result = await (handler as PhasedMissionHandler).processPhase(phaseName, handlerEvent, handlerCtx);

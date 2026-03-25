@@ -25,6 +25,7 @@ export interface SendFleetInput {
   siliciumCargo?: number;
   hydrogeneCargo?: number;
   pveMissionId?: string;
+  tradeId?: string;
 }
 
 export interface ResourceCargo {
@@ -54,6 +55,7 @@ export type FleetEvent = {
   ships: Record<string, number>;
   metadata: unknown;
   pveMissionId: string | null;
+  tradeId: string | null;
 };
 
 // ── Handler context ──
