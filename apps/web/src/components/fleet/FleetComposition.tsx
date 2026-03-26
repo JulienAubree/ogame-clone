@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { categorizeShip, type Mission, type ShipCategory } from '@/config/mission-config';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
+import { cn } from '@/lib/utils';
 
-const COLLAPSED_COUNT = 3;
+const COLLAPSED_COUNT = 4;
 
 interface Ship {
   id: string;
@@ -20,50 +20,59 @@ interface FleetCompositionProps {
   onChange: (shipId: string, count: number) => void;
 }
 
-function ShipRow({ ship, value, onChange, disabled }: {
+function ShipCard({ ship, value, onChange, disabled }: {
   ship: Ship;
   value: number;
   onChange: (count: number) => void;
   disabled: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between rounded bg-background/50 px-3 py-1.5">
-      <div className="flex items-center gap-2">
-        <GameImage category="ships" id={ship.id} size="icon" alt={ship.name} className="h-6 w-6 rounded flex-shrink-0" />
-        <span className={`text-sm ${disabled ? 'text-muted-foreground/40' : ''}`}>{ship.name}</span>
+    <div className={cn(
+      'retro-card overflow-hidden flex flex-col',
+      disabled && 'opacity-40',
+    )}>
+      <div className="relative h-[130px] overflow-hidden">
+        <GameImage
+          category="ships"
+          id={ship.id}
+          size="full"
+          alt={ship.name}
+          className="w-full h-full object-cover"
+        />
+        <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">
+          x{ship.count.toLocaleString()}
+        </span>
       </div>
-      <div className="flex items-center gap-2">
-        {!disabled && ship.count > 0 && (
-          <button
-            onClick={() => onChange(ship.count)}
-            className="text-xs text-emerald-400 hover:text-emerald-300"
-          >
-            MAX
-          </button>
-        )}
+      <div className="p-2.5 flex flex-col gap-1.5">
+        <span className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2">
+          {ship.name}
+        </span>
         {disabled ? (
-          <span className="text-xs text-muted-foreground/40">
-            {ship.count === 0 ? '0 dispo' : 'non disponible'}
-          </span>
+          <span className="text-[10px] text-muted-foreground/60">non disponible</span>
         ) : (
-          <>
-            <Input
+          <div className="flex items-center gap-1.5 w-full">
+            <button
+              onClick={() => onChange(ship.count)}
+              className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 shrink-0"
+            >
+              MAX
+            </button>
+            <input
               type="number"
               min={0}
               max={ship.count}
               value={value}
               onChange={(e) => onChange(Math.min(Number(e.target.value) || 0, ship.count))}
-              className="h-7 w-20 text-center text-sm"
+              className="flex-1 min-w-0 rounded border border-border bg-background px-1 py-0.5 text-center text-xs font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
-            <span className="text-xs text-muted-foreground">/{ship.count}</span>
-          </>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function CollapsibleShipList({ ships, selectedShips, onChange, disabled }: {
+function CollapsibleCardGrid({ ships, selectedShips, onChange, disabled }: {
   ships: Ship[];
   selectedShips: Record<string, number>;
   onChange: (shipId: string, count: number) => void;
@@ -75,9 +84,9 @@ function CollapsibleShipList({ ships, selectedShips, onChange, disabled }: {
 
   return (
     <>
-      <div className="space-y-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
         {visible.map((ship) => (
-          <ShipRow
+          <ShipCard
             key={ship.id}
             ship={ship}
             value={disabled ? 0 : (selectedShips[ship.id] ?? 0)}
@@ -90,7 +99,7 @@ function CollapsibleShipList({ ships, selectedShips, onChange, disabled }: {
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
-          className="mt-1 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           {expanded ? '▲ Réduire' : `▼ Voir ${hiddenCount} de plus`}
         </button>
@@ -123,14 +132,14 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
   const showRequired = categorized.required.length > 0;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {/* Required / Recommended */}
       {showRequired && (
-        <div className="rounded-lg border border-emerald-900/60 bg-emerald-950/20 p-3">
-          <div className="mb-2 text-xs font-medium uppercase text-emerald-400">{sectionLabel}</div>
-          <div className="space-y-1">
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-400">{sectionLabel}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
             {categorized.required.map((ship) => (
-              <ShipRow
+              <ShipCard
                 key={ship.id}
                 ship={ship}
                 value={selectedShips[ship.id] ?? 0}
@@ -144,9 +153,9 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
 
       {/* Optional */}
       {categorized.optional.length > 0 && (
-        <div className="rounded-lg border border-border bg-card p-3">
-          <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Optionnels</div>
-          <CollapsibleShipList
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Optionnels</div>
+          <CollapsibleCardGrid
             ships={categorized.optional}
             selectedShips={selectedShips}
             onChange={onChange}
@@ -157,9 +166,9 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
 
       {/* Disabled */}
       {categorized.disabled.length > 0 && (
-        <div className="rounded-lg border border-border/50 bg-card/50 p-3 opacity-50">
-          <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Non disponibles</div>
-          <CollapsibleShipList
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Non disponibles</div>
+          <CollapsibleCardGrid
             ships={categorized.disabled}
             selectedShips={selectedShips}
             onChange={onChange}
