@@ -228,6 +228,7 @@ export function createFleetService(
           siliciumCargo: String(siliciumCargo),
           hydrogeneCargo: String(hydrogeneCargo),
           ships: input.ships,
+          targetPriority: input.targetPriority ?? null,
           pveMissionId: input.pveMissionId ?? null,
           tradeId: input.tradeId ?? null,
         })
@@ -670,6 +671,7 @@ export function createFleetService(
           hydrogeneCargo: event.hydrogeneCargo,
           ships,
           metadata: event.metadata,
+          targetPriority: event.targetPriority,
           pveMissionId: event.pveMissionId,
           tradeId: event.tradeId,
         };
@@ -839,6 +841,7 @@ export function createFleetService(
         hydrogeneCargo: event.hydrogeneCargo,
         ships,
         metadata: event.metadata,
+        targetPriority: event.targetPriority,
         pveMissionId: event.pveMissionId,
         tradeId: event.tradeId,
       };

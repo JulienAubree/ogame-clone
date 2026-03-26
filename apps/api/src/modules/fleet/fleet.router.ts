@@ -28,6 +28,7 @@ export function createFleetRouter(
         hydrogeneCargo: z.number().min(0).default(0),
         pveMissionId: z.string().uuid().optional(),
         tradeId: z.string().uuid().optional(),
+        targetPriority: z.string().max(64).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         return fleetService.sendFleet(ctx.userId!, input);
