@@ -26,10 +26,12 @@ function ShipCard({ ship, value, onChange, disabled }: {
   onChange: (count: number) => void;
   disabled: boolean;
 }) {
+  const isSelected = !disabled && value > 0;
   return (
     <div className={cn(
       'retro-card overflow-hidden flex flex-col',
       disabled && 'opacity-40',
+      isSelected && 'border-primary',
     )}>
       <div className="relative h-24 overflow-hidden">
         <GameImage
@@ -42,6 +44,13 @@ function ShipCard({ ship, value, onChange, disabled }: {
         <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">
           x{ship.count.toLocaleString()}
         </span>
+        {isSelected && (
+          <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+            <svg className="h-3 w-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        )}
       </div>
       <div className="p-2.5 flex flex-col gap-1.5">
         <span className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2">
