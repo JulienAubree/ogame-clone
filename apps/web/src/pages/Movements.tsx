@@ -312,6 +312,7 @@ export default function Movements() {
   const { data: gameConfig } = useGameConfig();
   const { data: movements, isLoading } = trpc.fleet.movements.useQuery();
   const { data: inboundFleets } = trpc.fleet.inbound.useQuery();
+  const { data: fleetSlots } = trpc.fleet.slots.useQuery();
   const { data: planets } = trpc.planet.list.useQuery();
   const firstPlanetId = planets?.[0]?.id;
   const { data: researchList } = trpc.research.list.useQuery(
@@ -351,6 +352,13 @@ export default function Movements() {
     ? [...inboundFleets].sort((a, b) => new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime())
     : [];
 
+  const hostileInboundCount = sortedInbound.filter((e) => (e as unknown as InboundEvent).hostile).length;
+  const peacefulInboundCount = sortedInbound.length - hostileInboundCount;
+
+  // Fleet stats for summary card
+  const outboundCount = sorted.filter((m) => m.phase === 'outbound').length;
+  const returnCount = sorted.filter((m) => m.phase === 'return').length;
+
   const recallingEvent = recallConfirm ? sorted.find((m) => m.id === recallConfirm) : null;
   const recallingLabel = recallingEvent
     ? (gameConfig?.missions[recallingEvent.mission]?.label ?? recallingEvent.mission)
@@ -366,6 +374,73 @@ export default function Movements() {
         { label: 'Mouvements', path: '/fleet/movements' },
       ]} />
       <PageHeader title="Mouvements" />
+
+      {/* Fleet status summary */}
+      {fleetSlots && (
+        <div className="lg:max-w-4xl lg:mx-auto">
+          <div className="glass-card p-4 space-y-3">
+            {/* Slots gauge */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold">Emplacements de flotte</div>
+                  <div className="text-sm font-bold tabular-nums">
+                    {fleetSlots.current}
+                    <span className="text-muted-foreground font-normal"> / {fleetSlots.max}</span>
+                    {fleetSlots.current >= fleetSlots.max && (
+                      <span className="text-amber-400 text-[10px] font-semibold ml-2">COMPLET</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Breakdown pills */}
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {outboundCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    <span className="w-1 h-1 rounded-full bg-blue-400" />
+                    {outboundCount} en route
+                  </span>
+                )}
+                {returnCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                    {returnCount} en retour
+                  </span>
+                )}
+                {peacefulInboundCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                    <span className="w-1 h-1 rounded-full bg-yellow-400" />
+                    {peacefulInboundCount} entrante{peacefulInboundCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                {hostileInboundCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    {hostileInboundCount} hostile{hostileInboundCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Slots progress bar */}
+            <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-[width] duration-500',
+                  fleetSlots.current >= fleetSlots.max ? 'bg-amber-400' : 'bg-primary',
+                )}
+                style={{ width: `${fleetSlots.max > 0 ? Math.min(100, (fleetSlots.current / fleetSlots.max) * 100) : 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hostile alert banner */}
       {(() => {
