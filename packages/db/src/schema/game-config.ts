@@ -88,7 +88,10 @@ export const shipDefinitions = pgTable('ship_definitions', {
   driveType: varchar('drive_type', { length: 32 }).notNull().default('combustion'),
   weapons: integer('weapons').notNull().default(0),
   shield: integer('shield').notNull().default(0),
-  armor: integer('armor').notNull().default(0),
+  hull: integer('hull').notNull().default(0),
+  baseArmor: integer('base_armor').notNull().default(0),
+  shotCount: integer('shot_count').notNull().default(1),
+  combatCategoryId: varchar('combat_category_id', { length: 64 }),
   miningExtraction: integer('mining_extraction').notNull().default(0),
   isStationary: boolean('is_stationary').notNull().default(false),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
@@ -117,7 +120,10 @@ export const defenseDefinitions = pgTable('defense_definitions', {
   countColumn: varchar('count_column', { length: 64 }).notNull(),
   weapons: integer('weapons').notNull().default(0),
   shield: integer('shield').notNull().default(0),
-  armor: integer('armor').notNull().default(0),
+  hull: integer('hull').notNull().default(0),
+  baseArmor: integer('base_armor').notNull().default(0),
+  shotCount: integer('shot_count').notNull().default(1),
+  combatCategoryId: varchar('combat_category_id', { length: 64 }),
   maxPerPlanet: integer('max_per_planet'),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
@@ -131,16 +137,6 @@ export const defensePrerequisites = pgTable('defense_prerequisites', {
   requiredResearchId: varchar('required_research_id', { length: 64 }).references(() => researchDefinitions.id, { onDelete: 'cascade' }),
   requiredLevel: integer('required_level').notNull(),
 });
-
-// ── Rapid Fire ──
-
-export const rapidFire = pgTable('rapid_fire', {
-  attackerId: varchar('attacker_id', { length: 64 }).notNull(),
-  targetId: varchar('target_id', { length: 64 }).notNull(),
-  value: integer('value').notNull(),
-}, (t) => [
-  primaryKey({ columns: [t.attackerId, t.targetId] }),
-]);
 
 // ── Production Config ──
 
