@@ -197,10 +197,10 @@ export default function FleetDashboard() {
         </Link>
       </div>
 
-      {/* Two-column layout */}
+      {/* Two-column layout — on mobile, movements come first */}
       <div className="grid gap-4 lg:grid-cols-[1fr_1.3fr] lg:gap-6">
-        {/* Left: Stationed fleet */}
-        <div className="space-y-3">
+        {/* Left on desktop, second on mobile: Stationed fleet */}
+        <div className="order-2 lg:order-1 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Flotte stationnee
@@ -269,8 +269,8 @@ export default function FleetDashboard() {
           )}
         </div>
 
-        {/* Right: Active movements */}
-        <div className="space-y-3">
+        {/* Right on desktop, first on mobile: Active movements */}
+        <div className="order-1 lg:order-2 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Mouvements actifs ({totalMovements})
