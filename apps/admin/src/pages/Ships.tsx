@@ -16,7 +16,7 @@ const FIELDS = [
   { key: 'costHydrogene', label: 'Coût Hydrogène', type: 'number' as const },
   { key: 'weapons', label: 'Armes', type: 'number' as const },
   { key: 'shield', label: 'Bouclier', type: 'number' as const },
-  { key: 'armor', label: 'Coque', type: 'number' as const },
+  { key: 'hull', label: 'Coque', type: 'number' as const },
   { key: 'baseSpeed', label: 'Vitesse', type: 'number' as const },
   { key: 'fuelConsumption', label: 'Carburant', type: 'number' as const },
   { key: 'cargoCapacity', label: 'Cargo', type: 'number' as const },
@@ -129,7 +129,7 @@ export default function Ships() {
                 <td className="font-mono text-sm">{s.cost.hydrogene}</td>
                 <td className="font-mono text-sm text-red-400">{s.weapons}</td>
                 <td className="font-mono text-sm text-blue-400">{s.shield}</td>
-                <td className="font-mono text-sm text-yellow-400">{s.armor}</td>
+                <td className="font-mono text-sm text-yellow-400">{s.hull}</td>
                 <td className="font-mono text-sm">{s.baseSpeed}</td>
                 <td className="font-mono text-sm">{s.cargoCapacity}</td>
                 <td className="text-xs text-gray-500">{s.driveType}</td>
@@ -180,7 +180,7 @@ export default function Ships() {
             costHydrogene: editingShip.cost.hydrogene,
             weapons: editingShip.weapons,
             shield: editingShip.shield,
-            armor: editingShip.armor,
+            hull: editingShip.hull,
             baseSpeed: editingShip.baseSpeed,
             fuelConsumption: editingShip.fuelConsumption,
             cargoCapacity: editingShip.cargoCapacity,
@@ -198,7 +198,7 @@ export default function Ships() {
                 costHydrogene: values.costHydrogene as number,
                 weapons: values.weapons as number,
                 shield: values.shield as number,
-                armor: values.armor as number,
+                hull: values.hull as number,
                 baseSpeed: values.baseSpeed as number,
                 fuelConsumption: values.fuelConsumption as number,
                 cargoCapacity: values.cargoCapacity as number,
@@ -228,7 +228,7 @@ export default function Ships() {
             costHydrogene: 0,
             weapons: 0,
             shield: 0,
-            armor: 0,
+            hull: 0,
             baseSpeed: 0,
             fuelConsumption: 0,
             cargoCapacity: 0,
@@ -247,7 +247,7 @@ export default function Ships() {
               driveType: values.driveType as string,
               weapons: values.weapons as number,
               shield: values.shield as number,
-              armor: values.armor as number,
+              hull: values.hull as number,
               baseSpeed: values.baseSpeed as number,
               fuelConsumption: values.fuelConsumption as number,
               cargoCapacity: values.cargoCapacity as number,

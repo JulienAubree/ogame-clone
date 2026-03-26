@@ -16,7 +16,7 @@ const FIELDS = [
   { key: 'costHydrogene', label: 'Coût Hydrogène', type: 'number' as const },
   { key: 'weapons', label: 'Armes', type: 'number' as const },
   { key: 'shield', label: 'Bouclier', type: 'number' as const },
-  { key: 'armor', label: 'Coque', type: 'number' as const },
+  { key: 'hull', label: 'Coque', type: 'number' as const },
   { key: 'maxPerPlanet', label: 'Max par planete (0 = illimite)', type: 'number' as const },
   { key: 'flavorText', label: "Texte d'ambiance", type: 'textarea' as const },
   { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
@@ -122,7 +122,7 @@ export default function Defenses() {
                 <td className="font-mono text-sm">{d.cost.hydrogene}</td>
                 <td className="font-mono text-sm text-red-400">{d.weapons}</td>
                 <td className="font-mono text-sm text-blue-400">{d.shield}</td>
-                <td className="font-mono text-sm text-yellow-400">{d.armor}</td>
+                <td className="font-mono text-sm text-yellow-400">{d.hull}</td>
                 <td className="font-mono text-sm">{d.maxPerPlanet ?? '-'}</td>
                 <td className="text-xs text-gray-500">
                   <button
@@ -170,7 +170,7 @@ export default function Defenses() {
             costHydrogene: editingDef.cost.hydrogene,
             weapons: editingDef.weapons,
             shield: editingDef.shield,
-            armor: editingDef.armor,
+            hull: editingDef.hull,
             maxPerPlanet: editingDef.maxPerPlanet ?? 0,
             sortOrder: editingDef.sortOrder,
           }}
@@ -185,7 +185,7 @@ export default function Defenses() {
                 costHydrogene: values.costHydrogene as number,
                 weapons: values.weapons as number,
                 shield: values.shield as number,
-                armor: values.armor as number,
+                hull: values.hull as number,
                 maxPerPlanet: (values.maxPerPlanet as number) || null,
                 sortOrder: values.sortOrder as number,
               },
@@ -211,7 +211,7 @@ export default function Defenses() {
             costHydrogene: 0,
             weapons: 0,
             shield: 0,
-            armor: 0,
+            hull: 0,
             maxPerPlanet: 0,
             sortOrder: 0,
           }}
@@ -226,7 +226,7 @@ export default function Defenses() {
               countColumn: values.countColumn as string,
               weapons: values.weapons as number,
               shield: values.shield as number,
-              armor: values.armor as number,
+              hull: values.hull as number,
               maxPerPlanet: (values.maxPerPlanet as number) || null,
               sortOrder: values.sortOrder as number,
             });
