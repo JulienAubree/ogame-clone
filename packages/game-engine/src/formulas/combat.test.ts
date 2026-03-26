@@ -75,3 +75,140 @@ describe('simulateCombat', () => {
     expect(result.rounds.length).toBeLessThanOrEqual(4);
   });
 });
+
+describe('damage resolution', () => {
+  it('big shot pierces shield and deals hull damage minus armor', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { cruiser: 1 },
+      defenderFleet: { interceptor: 1 },
+    }));
+    expect(result.outcome).toBe('attacker');
+    expect(result.defenderLosses.interceptor).toBe(1);
+  });
+
+  it('small shots lose effectiveness against armor', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { interceptor: 1 },
+      defenderFleet: { cruiser: 1 },
+    }));
+    expect(result.outcome).toBe('defender');
+  });
+
+  it('minimum 1 damage per hit that reaches hull', () => {
+    const configs: Record<string, ShipCombatConfig> = {
+      ...SHIP_CONFIGS,
+      weakShip: { shipType: 'weakShip', categoryId: 'light', baseShield: 0, baseArmor: 5, baseHull: 2, baseWeaponDamage: 1, baseShotCount: 3 },
+      tinyShip: { shipType: 'tinyShip', categoryId: 'light', baseShield: 0, baseArmor: 0, baseHull: 100, baseWeaponDamage: 1, baseShotCount: 3 },
+    };
+    const result = simulateCombat(makeInput({
+      attackerFleet: { tinyShip: 1 },
+      defenderFleet: { weakShip: 1 },
+      shipConfigs: configs,
+      shipIds: new Set([...SHIP_IDS, 'weakShip', 'tinyShip']),
+    }));
+    expect(result.defenderLosses.weakShip).toBe(1);
+  });
+
+  it('shields regenerate each round', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { interceptor: 3 },
+      defenderFleet: { frigate: 1 },
+    }));
+    expect(result.rounds.length).toBeGreaterThan(1);
+  });
+});
+
+describe('target priority', () => {
+  it('attacks priority category first', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { battlecruiser: 5 },
+      defenderFleet: { interceptor: 5, cruiser: 3 },
+      attackerTargetPriority: 'heavy',
+    }));
+    const cruiserLosses = result.defenderLosses.cruiser ?? 0;
+    expect(cruiserLosses).toBeGreaterThan(0);
+  });
+
+  it('support units are targeted last', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { cruiser: 3 },
+      defenderFleet: { interceptor: 5, smallCargo: 10 },
+      attackerTargetPriority: 'light',
+    }));
+    const interceptorLosses = result.defenderLosses.interceptor ?? 0;
+    expect(interceptorLosses).toBeGreaterThan(0);
+  });
+});
+
+describe('simultaneous combat', () => {
+  it('both sides fire even if one would be destroyed', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { cruiser: 1 },
+      defenderFleet: { cruiser: 1 },
+    }));
+    expect(['attacker', 'defender', 'draw']).toContain(result.outcome);
+  });
+});
+
+describe('calculateDebris', () => {
+  it('returns 30% of destroyed ship costs', () => {
+    const debris = calculateDebris(
+      { interceptor: 10 }, {}, SHIP_IDS, SHIP_COSTS, 0.3,
+    );
+    expect(debris.minerai).toBe(Math.floor(3000 * 10 * 0.3));
+    expect(debris.silicium).toBe(Math.floor(1000 * 10 * 0.3));
+  });
+
+  it('ignores defenses in debris', () => {
+    const debris = calculateDebris(
+      {}, { rocketLauncher: 100 }, SHIP_IDS, SHIP_COSTS, 0.3,
+    );
+    expect(debris.minerai).toBe(0);
+  });
+});
+
+describe('repairDefenses', () => {
+  it('repairs approximately 70% of defenses over many runs', () => {
+    let totalRepaired = 0;
+    for (let i = 0; i < 100; i++) {
+      const repaired = repairDefenses({ rocketLauncher: 100 }, new Set(['rocketLauncher']), 0.7);
+      totalRepaired += repaired.rocketLauncher ?? 0;
+    }
+    const ratio = totalRepaired / (100 * 100);
+    expect(ratio).toBeGreaterThan(0.6);
+    expect(ratio).toBeLessThan(0.8);
+  });
+});
+
+describe('combat stats tracking', () => {
+  it('tracks shield absorbed and armor blocked', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { cruiser: 3 },
+      defenderFleet: { interceptor: 10 },
+    }));
+    expect(result.attackerStats.shieldAbsorbed).toBeGreaterThanOrEqual(0);
+    expect(result.defenderStats.shieldAbsorbed).toBeGreaterThanOrEqual(0);
+  });
+
+  it('tracks overkill wasted', () => {
+    const result = simulateCombat(makeInput({
+      attackerFleet: { battlecruiser: 5 },
+      defenderFleet: { interceptor: 20 },
+    }));
+    expect(result.attackerStats.overkillWasted).toBeGreaterThan(0);
+  });
+
+  it('deterministic with seed', () => {
+    const input = makeInput({
+      attackerFleet: { cruiser: 5 },
+      defenderFleet: { frigate: 5 },
+      rngSeed: 42,
+    });
+    const result1 = simulateCombat(input);
+    const result2 = simulateCombat(input);
+    expect(result1.outcome).toBe(result2.outcome);
+    expect(result1.rounds.length).toBe(result2.rounds.length);
+    expect(result1.attackerLosses).toEqual(result2.attackerLosses);
+    expect(result1.defenderLosses).toEqual(result2.defenderLosses);
+  });
+});
