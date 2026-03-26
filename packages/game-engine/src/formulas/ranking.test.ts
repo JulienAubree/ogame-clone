@@ -38,10 +38,10 @@ const RESEARCH_DEFS: Record<string, ResearchDef> = {
 const SHIP_DEFS: Record<string, UnitDef> = {
   smallCargo:     { countColumn: 'smallCargo',     cost: { minerai: 2000,  silicium: 2000,  hydrogene: 0 } },
   largeCargo:     { countColumn: 'largeCargo',     cost: { minerai: 6000,  silicium: 6000,  hydrogene: 0 } },
-  lightFighter:   { countColumn: 'lightFighter',   cost: { minerai: 3000,  silicium: 1000,  hydrogene: 0 } },
-  heavyFighter:   { countColumn: 'heavyFighter',   cost: { minerai: 6000,  silicium: 4000,  hydrogene: 0 } },
+  interceptor:    { countColumn: 'interceptor',    cost: { minerai: 3000,  silicium: 1000,  hydrogene: 0 } },
+  frigate:        { countColumn: 'frigate',        cost: { minerai: 6000,  silicium: 4000,  hydrogene: 0 } },
   cruiser:        { countColumn: 'cruiser',        cost: { minerai: 20000, silicium: 7000,  hydrogene: 2000 } },
-  battleship:     { countColumn: 'battleship',     cost: { minerai: 45000, silicium: 15000, hydrogene: 0 } },
+  battlecruiser:  { countColumn: 'battlecruiser',  cost: { minerai: 45000, silicium: 15000, hydrogene: 0 } },
   espionageProbe: { countColumn: 'espionageProbe', cost: { minerai: 0,     silicium: 1000,  hydrogene: 0 } },
   colonyShip:     { countColumn: 'colonyShip',     cost: { minerai: 10000, silicium: 20000, hydrogene: 10000 } },
   recycler:       { countColumn: 'recycler',       cost: { minerai: 10000, silicium: 6000,  hydrogene: 2000 } },
@@ -53,7 +53,7 @@ const DEFENSE_DEFS: Record<string, UnitDef> = {
   rocketLauncher: { countColumn: 'rocketLauncher', cost: { minerai: 2000,  silicium: 0,     hydrogene: 0 } },
   lightLaser:     { countColumn: 'lightLaser',     cost: { minerai: 1500,  silicium: 500,   hydrogene: 0 } },
   heavyLaser:     { countColumn: 'heavyLaser',     cost: { minerai: 6000,  silicium: 2000,  hydrogene: 0 } },
-  gaussCannon:    { countColumn: 'gaussCannon',    cost: { minerai: 20000, silicium: 15000, hydrogene: 2000 } },
+  electromagneticCannon: { countColumn: 'electromagneticCannon', cost: { minerai: 20000, silicium: 15000, hydrogene: 2000 } },
   plasmaTurret:   { countColumn: 'plasmaTurret',   cost: { minerai: 50000, silicium: 50000, hydrogene: 30000 } },
   smallShield:    { countColumn: 'smallShield',    cost: { minerai: 10000, silicium: 10000, hydrogene: 0 } },
   largeShield:    { countColumn: 'largeShield',    cost: { minerai: 50000, silicium: 50000, hydrogene: 0 } },
@@ -114,16 +114,16 @@ describe('calculateResearchPoints', () => {
 describe('calculateFleetPoints', () => {
   it('no ships = 0', () => {
     expect(calculateFleetPoints({
-      smallCargo: 0, largeCargo: 0, lightFighter: 0, heavyFighter: 0,
-      cruiser: 0, battleship: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
+      smallCargo: 0, largeCargo: 0, interceptor: 0, frigate: 0,
+      cruiser: 0, battlecruiser: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
       prospector: 0, explorer: 0,
     }, SHIP_DEFS)).toBe(0);
   });
 
   it('10 small cargos = 40 points', () => {
     expect(calculateFleetPoints({
-      smallCargo: 10, largeCargo: 0, lightFighter: 0, heavyFighter: 0,
-      cruiser: 0, battleship: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
+      smallCargo: 10, largeCargo: 0, interceptor: 0, frigate: 0,
+      cruiser: 0, battlecruiser: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
       prospector: 0, explorer: 0,
     }, SHIP_DEFS)).toBe(40);
   });
@@ -133,14 +133,14 @@ describe('calculateDefensePoints', () => {
   it('no defenses = 0', () => {
     expect(calculateDefensePoints({
       rocketLauncher: 0, lightLaser: 0, heavyLaser: 0,
-      gaussCannon: 0, plasmaTurret: 0, smallShield: 0, largeShield: 0,
+      electromagneticCannon: 0, plasmaTurret: 0, smallShield: 0, largeShield: 0,
     }, DEFENSE_DEFS)).toBe(0);
   });
 
   it('5 rocket launchers = 10 points', () => {
     expect(calculateDefensePoints({
       rocketLauncher: 5, lightLaser: 0, heavyLaser: 0,
-      gaussCannon: 0, plasmaTurret: 0, smallShield: 0, largeShield: 0,
+      electromagneticCannon: 0, plasmaTurret: 0, smallShield: 0, largeShield: 0,
     }, DEFENSE_DEFS)).toBe(10);
   });
 });

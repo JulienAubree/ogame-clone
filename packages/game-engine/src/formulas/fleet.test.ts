@@ -5,9 +5,9 @@ import type { ShipStats, FleetConfig } from './fleet.js';
 const SHIP_STATS_MAP: Record<string, ShipStats> = {
   smallCargo: { baseSpeed: 5000, fuelConsumption: 10, cargoCapacity: 5000, driveType: 'combustion', miningExtraction: 0 },
   largeCargo: { baseSpeed: 7500, fuelConsumption: 50, cargoCapacity: 25000, driveType: 'combustion', miningExtraction: 0 },
-  lightFighter: { baseSpeed: 12500, fuelConsumption: 20, cargoCapacity: 50, driveType: 'combustion', miningExtraction: 0 },
+  interceptor: { baseSpeed: 12500, fuelConsumption: 20, cargoCapacity: 50, driveType: 'combustion', miningExtraction: 0 },
   cruiser: { baseSpeed: 15000, fuelConsumption: 300, cargoCapacity: 800, driveType: 'impulse', miningExtraction: 0 },
-  battleship: { baseSpeed: 10000, fuelConsumption: 500, cargoCapacity: 1500, driveType: 'hyperspaceDrive', miningExtraction: 0 },
+  battlecruiser: { baseSpeed: 10000, fuelConsumption: 500, cargoCapacity: 1500, driveType: 'hyperspaceDrive', miningExtraction: 0 },
 };
 
 describe('shipSpeed', () => {
@@ -20,8 +20,8 @@ describe('shipSpeed', () => {
   it('cruiser with multiplier 1.8 = 27000', () => {
     expect(shipSpeed(SHIP_STATS_MAP.cruiser, 1.8)).toBe(27000);
   });
-  it('battleship with multiplier 1.9 = 19000', () => {
-    expect(shipSpeed(SHIP_STATS_MAP.battleship, 1.9)).toBe(19000);
+  it('battlecruiser with multiplier 1.9 = 19000', () => {
+    expect(shipSpeed(SHIP_STATS_MAP.battlecruiser, 1.9)).toBe(19000);
   });
 });
 
@@ -32,8 +32,8 @@ describe('fleetSpeed', () => {
     expect(fleetSpeed(ships, SHIP_STATS_MAP, multipliers)).toBe(7500);
   });
   it('single ship fleet', () => {
-    const ships = { lightFighter: 10 } as Record<string, number>;
-    const multipliers = { lightFighter: 1.3 };
+    const ships = { interceptor: 10 } as Record<string, number>;
+    const multipliers = { interceptor: 1.3 };
     expect(fleetSpeed(ships, SHIP_STATS_MAP, multipliers)).toBe(16250);
   });
 });

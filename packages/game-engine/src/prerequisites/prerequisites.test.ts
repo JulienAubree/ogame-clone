@@ -12,7 +12,7 @@ const RESEARCH_PREREQS: Record<string, PrerequisiteDef> = {
 };
 
 const SHIP_PREREQS: Record<string, PrerequisiteDef> = {
-  lightFighter: {
+  interceptor: {
     buildings: [{ buildingId: 'commandCenter', level: 1 }],
     research: [{ researchId: 'combustion', level: 1 }],
   },
@@ -64,12 +64,12 @@ describe('checkResearchPrerequisites', () => {
 
 describe('checkShipPrerequisites', () => {
   it('light fighter requires commandCenter 1 + combustion 1', () => {
-    const result = checkShipPrerequisites(SHIP_PREREQS.lightFighter, { commandCenter: 0 }, {});
+    const result = checkShipPrerequisites(SHIP_PREREQS.interceptor, { commandCenter: 0 }, {});
     expect(result.met).toBe(false);
   });
 
   it('light fighter passes', () => {
-    const result = checkShipPrerequisites(SHIP_PREREQS.lightFighter, { commandCenter: 1 }, { combustion: 1 });
+    const result = checkShipPrerequisites(SHIP_PREREQS.interceptor, { commandCenter: 1 }, { combustion: 1 });
     expect(result.met).toBe(true);
   });
 

@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { shipCost, shipTime, defenseCost, defenseTime } from './shipyard-cost.js';
 
-const lightFighterDef = { cost: { minerai: 3000, silicium: 1000, hydrogene: 0 } };
+const interceptorDef = { cost: { minerai: 3000, silicium: 1000, hydrogene: 0 } };
 const cruiserDef = { cost: { minerai: 20000, silicium: 7000, hydrogene: 2000 } };
 const espionageProbeDef = { cost: { minerai: 0, silicium: 1000, hydrogene: 0 } };
 const rocketLauncherDef = { cost: { minerai: 2000, silicium: 0, hydrogene: 0 } };
-const gaussCannonDef = { cost: { minerai: 20000, silicium: 15000, hydrogene: 2000 } };
+const electromagneticCannonDef = { cost: { minerai: 20000, silicium: 15000, hydrogene: 2000 } };
 
 describe('shipCost', () => {
-  it('light fighter costs 3000/1000/0', () => {
-    expect(shipCost(lightFighterDef)).toEqual({ minerai: 3000, silicium: 1000, hydrogene: 0 });
+  it('interceptor costs 3000/1000/0', () => {
+    expect(shipCost(interceptorDef)).toEqual({ minerai: 3000, silicium: 1000, hydrogene: 0 });
   });
 
   it('cruiser costs 20000/7000/2000', () => {
@@ -18,14 +18,14 @@ describe('shipCost', () => {
 });
 
 describe('shipTime', () => {
-  it('light fighter, no bonus (multiplier=1)', () => {
+  it('interceptor, no bonus (multiplier=1)', () => {
     // (3000 + 1000) / 2500 * 3600 * 1 = 5760
-    expect(shipTime(lightFighterDef, 1)).toBe(5760);
+    expect(shipTime(interceptorDef, 1)).toBe(5760);
   });
 
-  it('light fighter, 0.5 multiplier', () => {
+  it('interceptor, 0.5 multiplier', () => {
     // (3000 + 1000) / 2500 * 3600 * 0.5 = 2880
-    expect(shipTime(lightFighterDef, 0.5)).toBe(2880);
+    expect(shipTime(interceptorDef, 0.5)).toBe(2880);
   });
 
   it('cruiser, 0.5 multiplier', () => {
@@ -43,8 +43,8 @@ describe('defenseCost', () => {
     expect(defenseCost(rocketLauncherDef)).toEqual({ minerai: 2000, silicium: 0, hydrogene: 0 });
   });
 
-  it('gauss cannon costs 20000/15000/2000', () => {
-    expect(defenseCost(gaussCannonDef)).toEqual({ minerai: 20000, silicium: 15000, hydrogene: 2000 });
+  it('electromagnetic cannon costs 20000/15000/2000', () => {
+    expect(defenseCost(electromagneticCannonDef)).toEqual({ minerai: 20000, silicium: 15000, hydrogene: 2000 });
   });
 });
 
@@ -54,8 +54,8 @@ describe('defenseTime', () => {
     expect(defenseTime(rocketLauncherDef, 1)).toBe(2880);
   });
 
-  it('gauss cannon, 0.5 multiplier', () => {
+  it('electromagnetic cannon, 0.5 multiplier', () => {
     // (20000 + 15000) / 2500 * 3600 * 0.5 = 25200
-    expect(defenseTime(gaussCannonDef, 0.5)).toBe(25200);
+    expect(defenseTime(electromagneticCannonDef, 0.5)).toBe(25200);
   });
 });
