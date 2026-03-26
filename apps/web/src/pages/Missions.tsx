@@ -96,6 +96,7 @@ export default function Missions() {
           <li>Jusqu&apos;à <span className="text-foreground">3 gisements</span> et <span className="text-foreground">2 repaires pirates</span> peuvent être découverts simultanément.</li>
           <li>Un gisement reste exploitable <span className="text-foreground">tant qu&apos;il contient des ressources</span> — envoyez plusieurs flottes pour le vider.</li>
           <li>Un repaire pirate est une <span className="text-foreground">mission de combat unique</span> — détruisez les pirates pour récupérer leur butin et potentiellement des vaisseaux bonus.</li>
+          <li><span className="text-foreground">Pensez à envoyer des cargos</span> avec vos flottes ! Les ressources extraites ou pillées sont <span className="text-foreground">limitées par la capacité de soute</span> de votre flotte — sans cargos, vos vaisseaux ne pourront rien ramener.</li>
           <li>Vous pouvez <span className="text-foreground">annuler</span> un gisement pour libérer un emplacement (cooldown 24h).</li>
         </ul>
       </div>
