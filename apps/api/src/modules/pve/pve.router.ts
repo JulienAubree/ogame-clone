@@ -2,10 +2,12 @@ import { z } from 'zod';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createPveService } from './pve.service.js';
 import type { createAsteroidBeltService } from './asteroid-belt.service.js';
+import type { GameConfigService } from '../admin/game-config.service.js';
 
 export function createPveRouter(
   pveService: ReturnType<typeof createPveService>,
   asteroidBeltService: ReturnType<typeof createAsteroidBeltService>,
+  gameConfigService: GameConfigService,
 ) {
   return router({
     getMissions: protectedProcedure.query(async ({ ctx }) => {
@@ -15,8 +17,22 @@ export function createPveRouter(
       }
       const missions = await pveService.getMissions(ctx.userId!);
       const discoveryState = await pveService.getDiscoveryState(ctx.userId!);
+      const config = await gameConfigService.getFullConfig();
+
+      // Build template lookup for pirate missions
+      const templateMap = new Map(config.pirateTemplates.map(t => [t.id, t]));
+
+      const enrichedMissions = missions.map(m => {
+        if (m.missionType === 'pirate') {
+          const params = m.parameters as { templateId?: string };
+          const template = params.templateId ? templateMap.get(params.templateId) : undefined;
+          return { ...m, enemyShips: template?.ships ?? null };
+        }
+        return { ...m, enemyShips: null };
+      });
+
       return {
-        missions,
+        missions: enrichedMissions,
         centerLevel,
         nextDiscoveryAt: discoveryState?.nextDiscoveryAt?.toISOString() ?? null,
       };

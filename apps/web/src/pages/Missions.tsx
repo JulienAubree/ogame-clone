@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/common/PageHeader';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { Timer } from '@/components/common/Timer';
+import { GameImage } from '@/components/common/GameImage';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { getShipName } from '@/lib/entity-names';
 
 const fmt = (n: number) => Number(n).toLocaleString('fr-FR');
 
@@ -210,6 +212,25 @@ export default function Missions() {
                   <div className="text-xs text-muted-foreground">
                     Coordonnées : [{params.galaxy}:{params.system}:{params.position}]
                   </div>
+                  {/* Enemy fleet composition */}
+                  {mission.enemyShips && Object.keys(mission.enemyShips).length > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">Flotte ennemie :</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(mission.enemyShips as Record<string, number>).filter(([, c]) => c > 0).map(([id, count]) => (
+                          <span
+                            key={id}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[11px]"
+                          >
+                            <GameImage category="ships" id={id} size="icon" alt={getShipName(id, gameConfig)} className="h-4 w-4 rounded-sm" />
+                            <span className="text-rose-300 font-semibold">{count}&times;</span>
+                            <span className="text-muted-foreground">{getShipName(id, gameConfig)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Butin potentiel :</div>
                     <div className="flex flex-wrap gap-2 text-xs">
