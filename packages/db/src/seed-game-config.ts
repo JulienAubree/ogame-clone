@@ -504,7 +504,14 @@ async function seed() {
   }
   console.log(`  ✓ ${rPrereqs.length} research prerequisites`);
 
-  // 5. Ship definitions
+  // 5. Ship definitions — cleanup old renamed IDs
+  const OLD_SHIP_IDS = ['lightFighter', 'heavyFighter', 'battleship'];
+  const OLD_DEFENSE_IDS = ['gaussCannon'];
+  await db.delete(shipPrerequisites).where(sql`ship_id IN (${sql.join(OLD_SHIP_IDS.map(id => sql`${id}`), sql`, `)})`);
+  await db.delete(shipDefinitions).where(sql`id IN (${sql.join(OLD_SHIP_IDS.map(id => sql`${id}`), sql`, `)})`);
+  await db.delete(defensePrerequisites).where(sql`defense_id IN (${sql.join(OLD_DEFENSE_IDS.map(id => sql`${id}`), sql`, `)})`);
+  await db.delete(defenseDefinitions).where(sql`id IN (${sql.join(OLD_DEFENSE_IDS.map(id => sql`${id}`), sql`, `)})`);
+
   for (const s of SHIPS) {
     const { prerequisites: _prereqs, ...row } = s;
     const values = { isStationary: false, ...row };
