@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
+import { cn } from '@/lib/utils';
 
 export interface ShipData {
   id: string;
@@ -19,6 +20,8 @@ interface ShipCategoryGridProps {
   renderActions?: (ship: ShipData) => React.ReactNode;
   /** Click handler for a ship card */
   onShipClick?: (shipId: string) => void;
+  /** Set of ship IDs that are currently selected (adds visual styling) */
+  selectedIds?: Set<string>;
 }
 
 const CATEGORY_STYLES: Record<string, { color: string; icon: React.ReactNode }> = {
@@ -60,6 +63,7 @@ export function ShipCategoryGrid({
   hideEmpty = false,
   renderActions,
   onShipClick,
+  selectedIds,
 }: ShipCategoryGridProps) {
   const { data: gameConfig } = useGameConfig();
 
@@ -97,6 +101,7 @@ export function ShipCategoryGrid({
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2">
               {visibleShips.map((ship) => {
                 const isClickable = !!onShipClick;
+                const isSelected = selectedIds?.has(ship.id) ?? false;
                 const Tag = isClickable ? 'button' : 'div';
 
                 return (
@@ -105,12 +110,21 @@ export function ShipCategoryGrid({
                     {...(isClickable
                       ? { onClick: () => onShipClick(ship.id), type: 'button' }
                       : {})}
-                    className={`flex flex-col items-center gap-1 rounded-lg p-2 text-center ${
-                      isClickable
-                        ? 'hover:bg-accent/50 transition-colors cursor-pointer'
-                        : ''
-                    }`}
+                    className={cn(
+                      'relative flex flex-col items-center gap-1 rounded-lg p-2 text-center border-2 transition-colors',
+                      isSelected
+                        ? 'border-primary bg-primary/5'
+                        : 'border-transparent',
+                      isClickable && 'hover:bg-accent/50 cursor-pointer',
+                    )}
                   >
+                    {isSelected && (
+                      <div className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+                        <svg className="h-3 w-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </div>
+                    )}
                     <GameImage
                       category="ships"
                       id={ship.id}

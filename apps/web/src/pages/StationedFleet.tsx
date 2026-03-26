@@ -57,7 +57,8 @@ export default function StationedFleet() {
     setSelectedShips((prev) => ({ ...prev, [shipId]: value }));
   }
 
-  const selectedCount = Object.keys(selectedShips).length;
+  const selectedIds = useMemo(() => new Set(Object.keys(selectedShips)), [selectedShips]);
+  const selectedCount = selectedIds.size;
 
   function handleSend() {
     const params = new URLSearchParams();
@@ -107,36 +108,42 @@ export default function StationedFleet() {
         ships={availableShips}
         imageSize="h-16 w-16"
         hideEmpty
-        onShipClick={(shipId) => setOverlayShipId(shipId)}
+        selectedIds={selectedIds}
+        onShipClick={(shipId) => {
+          const ship = availableShips.find((s) => s.id === shipId);
+          if (ship) toggleShip(ship);
+        }}
         renderActions={(ship) => {
-          const isChecked = selectedShips[ship.id] !== undefined;
+          const isSelected = selectedShips[ship.id] !== undefined;
           return (
-            <div
-              className="mt-1 flex flex-col items-center gap-1 w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => toggleShip(ship)}
-                  className="h-3.5 w-3.5 rounded accent-primary"
-                />
-                <span className="text-[10px] text-muted-foreground">Selectionner</span>
-              </label>
-              {isChecked && (
-                <input
-                  type="number"
-                  min={1}
-                  max={ship.count}
-                  value={selectedShips[ship.id]}
-                  onChange={(e) => {
-                    const v = Math.min(ship.count, Math.max(1, Number(e.target.value)));
-                    setQuantity(ship.id, v);
-                  }}
-                  className="w-full rounded border border-border bg-background px-1.5 py-0.5 text-center text-xs font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
-                />
+            <div className="mt-1 flex flex-col items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
+              {isSelected && (
+                <div className="flex items-center gap-1.5 w-full">
+                  <button
+                    onClick={() => setQuantity(ship.id, ship.count)}
+                    className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 shrink-0"
+                  >
+                    MAX
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={ship.count}
+                    value={selectedShips[ship.id]}
+                    onChange={(e) => {
+                      const v = Math.min(ship.count, Math.max(1, Number(e.target.value)));
+                      setQuantity(ship.id, v);
+                    }}
+                    className="flex-1 min-w-0 rounded border border-border bg-background px-1 py-0.5 text-center text-xs font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
               )}
+              <button
+                onClick={() => setOverlayShipId(ship.id)}
+                className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              >
+                Détails
+              </button>
             </div>
           );
         }}

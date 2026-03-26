@@ -162,8 +162,6 @@ export default function Fleet() {
 
   const handleMissionChange = (m: Mission) => {
     setMission(m);
-    // Reset ships when mission changes (categories shift)
-    setSelectedShips({});
   };
 
   // Validation
