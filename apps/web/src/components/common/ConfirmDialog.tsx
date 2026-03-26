@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface ConfirmDialogProps {
@@ -7,6 +7,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   title: string;
   description?: string;
+  children?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'default' | 'destructive';
@@ -18,6 +19,7 @@ export function ConfirmDialog({
   onCancel,
   title,
   description,
+  children,
   confirmLabel = 'Confirmer',
   cancelLabel = 'Annuler',
   variant = 'default',
@@ -46,6 +48,7 @@ export function ConfirmDialog({
         {description && (
           <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         )}
+        {children && <div className="mt-3">{children}</div>}
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="outline" onClick={onCancel}>
             {cancelLabel}

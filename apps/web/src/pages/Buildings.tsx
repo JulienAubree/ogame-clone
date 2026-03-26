@@ -112,6 +112,23 @@ function getResourceGlowClass(buildingId: string): string {
   }
 }
 
+function estimateRefund(
+  cost: { minerai: number; silicium: number; hydrogene: number },
+  endTime: string,
+  totalDurationSec: number,
+  maxRatio = 0.7,
+) {
+  const totalMs = totalDurationSec * 1000;
+  const timeLeft = Math.max(0, new Date(endTime).getTime() - Date.now());
+  const ratio = Math.min(maxRatio, totalMs > 0 ? timeLeft / totalMs : 0);
+  return {
+    minerai: Math.floor(cost.minerai * ratio),
+    silicium: Math.floor(cost.silicium * ratio),
+    hydrogene: Math.floor(cost.hydrogene * ratio),
+    ratio: Math.round(ratio * 100),
+  };
+}
+
 export default function Buildings() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const utils = trpc.useUtils();
@@ -271,7 +288,19 @@ export default function Buildings() {
                             </div>
                           )}
                         </div>
-                        {!building.isUpgrading && (
+                        {building.isUpgrading ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 text-destructive border-destructive/30 hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCancelConfirm(true);
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        ) : (
                           <Button
                             variant="retro"
                             size="sm"
@@ -364,14 +393,27 @@ export default function Buildings() {
                           <div className="flex-1" />
 
                           {building.isUpgrading && building.upgradeEndTime ? (
-                            <Timer
-                              endTime={new Date(building.upgradeEndTime)}
-                              totalDuration={building.nextLevelTime}
-                              onComplete={() => {
-                                utils.building.list.invalidate({ planetId: planetId! });
-                                utils.resource.production.invalidate({ planetId: planetId! });
-                              }}
-                            />
+                            <div className="space-y-1.5">
+                              <Timer
+                                endTime={new Date(building.upgradeEndTime)}
+                                totalDuration={building.nextLevelTime}
+                                onComplete={() => {
+                                  utils.building.list.invalidate({ planetId: planetId! });
+                                  utils.resource.production.invalidate({ planetId: planetId! });
+                                }}
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs h-7"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCancelConfirm(true);
+                                }}
+                              >
+                                Annuler
+                              </Button>
+                            </div>
                           ) : (
                             <>
                               <ResourceCost
@@ -456,7 +498,35 @@ export default function Buildings() {
         description="Le remboursement est proportionnel au temps restant, plafonné à 70% des ressources investies."
         variant="destructive"
         confirmLabel="Annuler la construction"
-      />
+      >
+        {(() => {
+          const upgrading = buildings?.find((b) => b.isUpgrading && b.upgradeEndTime);
+          if (!upgrading || !upgrading.upgradeEndTime) return null;
+          const refund = estimateRefund(
+            upgrading.nextLevelCost,
+            upgrading.upgradeEndTime,
+            upgrading.nextLevelTime,
+          );
+          return (
+            <div className="rounded-md border border-border bg-card/50 p-3 space-y-1.5">
+              <div className="text-[11px] text-muted-foreground/60 uppercase tracking-wider font-semibold">
+                Remboursement estimé ({refund.ratio}%)
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs">
+                {refund.minerai > 0 && (
+                  <span className="text-minerai font-semibold">+{refund.minerai.toLocaleString('fr-FR')} M</span>
+                )}
+                {refund.silicium > 0 && (
+                  <span className="text-silicium font-semibold">+{refund.silicium.toLocaleString('fr-FR')} S</span>
+                )}
+                {refund.hydrogene > 0 && (
+                  <span className="text-hydrogene font-semibold">+{refund.hydrogene.toLocaleString('fr-FR')} H</span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </ConfirmDialog>
     </div>
   );
 }

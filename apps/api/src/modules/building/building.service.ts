@@ -211,7 +211,7 @@ export function createBuildingService(
       // Delete queue entry
       await db.delete(buildQueue).where(eq(buildQueue.id, activeBuild.id));
 
-      return { cancelled: true };
+      return { cancelled: true, refund };
     },
 
     async completeUpgrade(buildQueueId: string): Promise<BuildCompletionResult> {
