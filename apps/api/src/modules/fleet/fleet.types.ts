@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { userResearch } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import { resolveBonus } from '@ogame-clone/game-engine';
-import type { BonusDefinition, CombatMultipliers, ShipStats } from '@ogame-clone/game-engine';
+import type { BonusDefinition, CombatMultipliers, ShipStats, ShipCombatConfig } from '@ogame-clone/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { createMessageService } from '../message/message.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -28,6 +28,7 @@ export interface SendFleetInput {
   hydrogeneCargo?: number;
   pveMissionId?: string;
   tradeId?: string;
+  targetPriority?: string;  // combat category ID for target priority
 }
 
 export interface ResourceCargo {
@@ -58,6 +59,7 @@ export type FleetEvent = {
   metadata: unknown;
   pveMissionId: string | null;
   tradeId: string | null;
+  targetPriority: string | null;
 };
 
 // ── Handler context ──
@@ -146,15 +148,43 @@ export function buildShipStatsMap(config: GameConfig): Record<string, ShipStats>
   return map;
 }
 
+/** @deprecated Use buildShipCombatConfigs instead — kept for backward compatibility with handlers not yet migrated. */
 export function buildCombatStats(config: GameConfig) {
-  const stats: Record<string, { weapons: number; shield: number; armor: number }> = {};
+  const stats: Record<string, { weapons: number; shield: number; hull: number }> = {};
   for (const [id, ship] of Object.entries(config.ships)) {
-    stats[id] = { weapons: ship.weapons, shield: ship.shield, armor: ship.armor };
+    stats[id] = { weapons: ship.weapons, shield: ship.shield, hull: ship.hull };
   }
   for (const [id, def] of Object.entries(config.defenses)) {
-    stats[id] = { weapons: def.weapons, shield: def.shield, armor: def.armor };
+    stats[id] = { weapons: def.weapons, shield: def.shield, hull: def.hull };
   }
   return stats;
+}
+
+export function buildShipCombatConfigs(config: GameConfig): Record<string, ShipCombatConfig> {
+  const configs: Record<string, ShipCombatConfig> = {};
+  for (const [id, ship] of Object.entries(config.ships)) {
+    configs[id] = {
+      shipType: id,
+      categoryId: ship.combatCategoryId ?? 'support',
+      baseShield: ship.shield,
+      baseArmor: ship.baseArmor ?? 0,
+      baseHull: ship.hull,
+      baseWeaponDamage: ship.weapons,
+      baseShotCount: ship.shotCount ?? 1,
+    };
+  }
+  for (const [id, def] of Object.entries(config.defenses)) {
+    configs[id] = {
+      shipType: id,
+      categoryId: def.combatCategoryId ?? 'heavy',
+      baseShield: def.shield,
+      baseArmor: def.baseArmor ?? 0,
+      baseHull: def.hull,
+      baseWeaponDamage: def.weapons,
+      baseShotCount: def.shotCount ?? 1,
+    };
+  }
+  return configs;
 }
 
 export function buildShipCosts(config: GameConfig) {

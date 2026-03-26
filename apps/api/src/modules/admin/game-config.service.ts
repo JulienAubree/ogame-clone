@@ -1,4 +1,4 @@
-import { eq, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import {
   entityCategories,
   buildingDefinitions,
@@ -10,7 +10,6 @@ import {
   shipPrerequisites,
   defenseDefinitions,
   defensePrerequisites,
-  rapidFire,
   productionConfig,
   universeConfig,
   planetTypes,
@@ -60,7 +59,6 @@ export interface GameConfig {
   research: Record<string, ResearchConfig>;
   ships: Record<string, ShipConfig>;
   defenses: Record<string, DefenseConfig>;
-  rapidFire: Record<string, Record<string, number>>;
   production: Record<string, ProductionConfigEntry>;
   universe: Record<string, unknown>;
   planetTypes: PlanetTypeConfig[];
@@ -116,7 +114,10 @@ export interface ShipConfig {
   miningExtraction: number;
   weapons: number;
   shield: number;
-  armor: number;
+  hull: number;
+  baseArmor: number;
+  shotCount: number;
+  combatCategoryId: string | null;
   flavorText: string | null;
   categoryId: string | null;
   sortOrder: number;
@@ -136,7 +137,10 @@ export interface DefenseConfig {
   countColumn: string;
   weapons: number;
   shield: number;
-  armor: number;
+  hull: number;
+  baseArmor: number;
+  shotCount: number;
+  combatCategoryId: string | null;
   maxPerPlanet: number | null;
   flavorText: string | null;
   categoryId: string | null;
@@ -218,7 +222,6 @@ export function createGameConfigService(db: Database) {
       shipPrereqRows,
       defenseRows,
       defensePrereqRows,
-      rapidFireRows,
       productionRows,
       universeRows,
       planetTypeRows,
@@ -237,7 +240,6 @@ export function createGameConfigService(db: Database) {
       db.select().from(shipPrerequisites),
       db.select().from(defenseDefinitions),
       db.select().from(defensePrerequisites),
-      db.select().from(rapidFire),
       db.select().from(productionConfig),
       db.select().from(universeConfig),
       db.select().from(planetTypes),
@@ -316,7 +318,10 @@ export function createGameConfigService(db: Database) {
         miningExtraction: s.miningExtraction,
         weapons: s.weapons,
         shield: s.shield,
-        armor: s.armor,
+        hull: s.hull,
+        baseArmor: s.baseArmor,
+        shotCount: s.shotCount,
+        combatCategoryId: s.combatCategoryId ?? null,
         flavorText: s.flavorText ?? null,
         categoryId: s.categoryId,
         sortOrder: s.sortOrder,
@@ -341,7 +346,10 @@ export function createGameConfigService(db: Database) {
         countColumn: d.countColumn,
         weapons: d.weapons,
         shield: d.shield,
-        armor: d.armor,
+        hull: d.hull,
+        baseArmor: d.baseArmor,
+        shotCount: d.shotCount,
+        combatCategoryId: d.combatCategoryId ?? null,
         maxPerPlanet: d.maxPerPlanet,
         flavorText: d.flavorText ?? null,
         categoryId: d.categoryId,
@@ -351,13 +359,6 @@ export function createGameConfigService(db: Database) {
           research: prereqs.filter(p => p.requiredResearchId).map(p => ({ researchId: p.requiredResearchId!, level: p.requiredLevel })),
         },
       };
-    }
-
-    // Rapid fire
-    const rf: Record<string, Record<string, number>> = {};
-    for (const r of rapidFireRows) {
-      if (!rf[r.attackerId]) rf[r.attackerId] = {};
-      rf[r.attackerId][r.targetId] = r.value;
     }
 
     // Production
@@ -458,7 +459,7 @@ export function createGameConfigService(db: Database) {
       labels[l.key] = l.label;
     }
 
-    cache = { categories, buildings, research, ships, defenses, rapidFire: rf, production, universe, planetTypes: ptConfigs, pirateTemplates: ptTemplates, tutorialQuests: tqConfigs, bonuses, missions, labels };
+    cache = { categories, buildings, research, ships, defenses, production, universe, planetTypes: ptConfigs, pirateTemplates: ptTemplates, tutorialQuests: tqConfigs, bonuses, missions, labels };
     return cache;
   }
 
@@ -692,7 +693,10 @@ export function createGameConfigService(db: Database) {
       miningExtraction?: number;
       weapons?: number;
       shield?: number;
-      armor?: number;
+      hull?: number;
+      baseArmor?: number;
+      shotCount?: number;
+      combatCategoryId?: string | null;
       flavorText?: string | null;
       categoryId?: string | null;
       sortOrder?: number;
@@ -713,7 +717,10 @@ export function createGameConfigService(db: Database) {
         miningExtraction: data.miningExtraction ?? 0,
         weapons: data.weapons ?? 0,
         shield: data.shield ?? 0,
-        armor: data.armor ?? 0,
+        hull: data.hull ?? 0,
+        baseArmor: data.baseArmor ?? 0,
+        shotCount: data.shotCount ?? 1,
+        combatCategoryId: data.combatCategoryId ?? null,
         flavorText: data.flavorText ?? null,
         categoryId: data.categoryId ?? null,
         sortOrder: data.sortOrder ?? 0,
@@ -723,15 +730,6 @@ export function createGameConfigService(db: Database) {
     },
 
     async deleteShip(id: string) {
-      // Check if referenced in rapid fire
-      const rapidFireRefs = await db.select().from(rapidFire)
-        .where(or(eq(rapidFire.attackerId, id), eq(rapidFire.targetId, id)));
-      if (rapidFireRefs.length > 0) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: `Ce vaisseau est référencé dans la matrice de tir rapide. Supprimez d'abord ces entrées.`,
-        });
-      }
       await db.delete(shipDefinitions).where(eq(shipDefinitions.id, id));
       invalidateCache();
     },
@@ -749,7 +747,10 @@ export function createGameConfigService(db: Database) {
       miningExtraction: number;
       weapons: number;
       shield: number;
-      armor: number;
+      hull: number;
+      baseArmor: number;
+      shotCount: number;
+      combatCategoryId: string | null;
       flavorText: string | null;
       categoryId: string | null;
       sortOrder: number;
@@ -782,7 +783,10 @@ export function createGameConfigService(db: Database) {
       countColumn: string;
       weapons?: number;
       shield?: number;
-      armor?: number;
+      hull?: number;
+      baseArmor?: number;
+      shotCount?: number;
+      combatCategoryId?: string | null;
       maxPerPlanet?: number | null;
       flavorText?: string | null;
       categoryId?: string | null;
@@ -798,7 +802,10 @@ export function createGameConfigService(db: Database) {
         countColumn: data.countColumn,
         weapons: data.weapons ?? 0,
         shield: data.shield ?? 0,
-        armor: data.armor ?? 0,
+        hull: data.hull ?? 0,
+        baseArmor: data.baseArmor ?? 0,
+        shotCount: data.shotCount ?? 1,
+        combatCategoryId: data.combatCategoryId ?? null,
         maxPerPlanet: data.maxPerPlanet ?? null,
         flavorText: data.flavorText ?? null,
         categoryId: data.categoryId ?? null,
@@ -808,15 +815,6 @@ export function createGameConfigService(db: Database) {
     },
 
     async deleteDefense(id: string) {
-      // Check if referenced in rapid fire
-      const rapidFireRefs = await db.select().from(rapidFire)
-        .where(or(eq(rapidFire.attackerId, id), eq(rapidFire.targetId, id)));
-      if (rapidFireRefs.length > 0) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: `Cette défense est référencée dans la matrice de tir rapide. Supprimez d'abord ces entrées.`,
-        });
-      }
       await db.delete(defenseDefinitions).where(eq(defenseDefinitions.id, id));
       invalidateCache();
     },
@@ -829,7 +827,10 @@ export function createGameConfigService(db: Database) {
       costHydrogene: number;
       weapons: number;
       shield: number;
-      armor: number;
+      hull: number;
+      baseArmor: number;
+      shotCount: number;
+      combatCategoryId: string | null;
       maxPerPlanet: number | null;
       flavorText: string | null;
       categoryId: string | null;
@@ -849,22 +850,6 @@ export function createGameConfigService(db: Database) {
           requiredLevel: p.requiredLevel,
         })));
       }
-      invalidateCache();
-    },
-
-    async updateRapidFire(attackerId: string, targetId: string, value: number) {
-      await db.insert(rapidFire).values({ attackerId, targetId, value })
-        .onConflictDoUpdate({
-          target: [rapidFire.attackerId, rapidFire.targetId],
-          set: { value },
-        });
-      invalidateCache();
-    },
-
-    async deleteRapidFire(attackerId: string, _targetId: string) {
-      await db.delete(rapidFire)
-        .where(eq(rapidFire.attackerId, attackerId));
-      // More precise: delete where both match
       invalidateCache();
     },
 
