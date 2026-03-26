@@ -5,16 +5,21 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { HostileAlertBanner } from '@/components/fleet/HostileAlertBanner';
 import { ShipCategoryGrid, type ShipData } from '@/components/fleet/ShipCategoryGrid';
-import { MovementCardCompact } from '@/components/fleet/MovementCardCompact';
+import { MovementCard, type MovementEvent } from '@/components/fleet/MovementCard';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent';
+import { useGameConfig } from '@/hooks/useGameConfig';
 
 export default function FleetDashboard() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const navigate = useNavigate();
+  const utils = trpc.useUtils();
+  const { data: gameConfig } = useGameConfig();
 
   const [selectedShips, setSelectedShips] = useState<Record<string, number>>({});
   const [overlayShipId, setOverlayShipId] = useState<string | null>(null);
+  const [recallConfirm, setRecallConfirm] = useState<string | null>(null);
 
   const { data: ships, isLoading: shipsLoading } = trpc.shipyard.ships.useQuery(
     { planetId: planetId! },
@@ -34,11 +39,12 @@ export default function FleetDashboard() {
 
   const isLoading = shipsLoading || movementsLoading;
 
-  // Build shipNames record for MovementCardCompact
-  const shipNames = useMemo<Record<string, string>>(() => {
-    if (!ships) return {};
-    return Object.fromEntries(ships.map((s) => [s.id, s.name]));
-  }, [ships]);
+  const recallMutation = trpc.fleet.recall.useMutation({
+    onSuccess: () => {
+      utils.fleet.movements.invalidate();
+      setRecallConfirm(null);
+    },
+  });
 
   const researchLevels = useMemo(() => {
     if (!researchList) return {};
@@ -104,6 +110,15 @@ export default function FleetDashboard() {
 
   const totalMovements = movements?.length ?? 0;
   const overlayShip = overlayShipId ? availableShips.find((s) => s.id === overlayShipId) : null;
+
+  // Recall dialog labels
+  const recallingEvent = recallConfirm ? recentMovements.find((m) => m.id === recallConfirm) : null;
+  const recallingLabel = recallingEvent
+    ? (gameConfig?.missions[recallingEvent.mission]?.label ?? recallingEvent.mission)
+    : '';
+  const recallingCoords = recallingEvent
+    ? `[${recallingEvent.targetGalaxy}:${recallingEvent.targetSystem}:${recallingEvent.targetPosition}]`
+    : '';
 
   return (
     <div className="space-y-4 p-4 pb-28 lg:space-y-6 lg:p-6 lg:pb-6">
@@ -291,13 +306,20 @@ export default function FleetDashboard() {
             </div>
           ) : (
             <div className="space-y-2">
-              {recentMovements.map((movement) => (
-                <MovementCardCompact
-                  key={movement.id}
-                  movement={{ ...movement, ships: movement.ships as Record<string, number> }}
-                  shipNames={shipNames}
-                />
-              ))}
+              {recentMovements.map((movement) => {
+                const origin = planets?.find((p) => p.id === movement.originPlanetId);
+                return (
+                  <MovementCard
+                    key={movement.id}
+                    event={movement as unknown as MovementEvent}
+                    originPlanet={origin ? { name: origin.name, galaxy: origin.galaxy, system: origin.system, position: origin.position } : undefined}
+                    researchLevels={researchLevels}
+                    onRecall={setRecallConfirm}
+                    recallingId={recallConfirm}
+                    onTimerComplete={() => utils.fleet.movements.invalidate()}
+                  />
+                );
+              })}
               {totalMovements > 5 && (
                 <p className="text-center text-xs text-muted-foreground">
                   +{totalMovements - 5} autres —{' '}
@@ -342,6 +364,19 @@ export default function FleetDashboard() {
           />
         )}
       </EntityDetailOverlay>
+
+      {/* Recall confirm dialog */}
+      <ConfirmDialog
+        open={!!recallConfirm}
+        onConfirm={() => {
+          if (recallConfirm) recallMutation.mutate({ fleetEventId: recallConfirm });
+        }}
+        onCancel={() => setRecallConfirm(null)}
+        title="Rappeler la flotte ?"
+        description={`Votre flotte en mission ${recallingLabel} vers ${recallingCoords} fera demi-tour et retournera sur sa planete d'origine.`}
+        variant="destructive"
+        confirmLabel="Rappeler"
+      />
     </div>
   );
 }
