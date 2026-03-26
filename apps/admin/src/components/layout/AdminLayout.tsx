@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   Building2, FlaskConical, Rocket, Shield, Zap,
-  Factory, Globe, Users, LogOut, Crosshair, LayoutGrid, Orbit,
+  Factory, Globe, Users, LogOut, LayoutGrid, Orbit,
   Skull, GraduationCap, Compass, Tag,
 } from 'lucide-react';
 
@@ -15,7 +15,6 @@ const NAV_SECTIONS = [
       { to: '/research', label: 'Recherches', icon: FlaskConical },
       { to: '/ships', label: 'Vaisseaux', icon: Rocket },
       { to: '/defenses', label: 'Defenses', icon: Shield },
-      { to: '/rapid-fire', label: 'Rapid Fire', icon: Crosshair },
       { to: '/production', label: 'Production', icon: Factory },
       { to: '/universe', label: 'Univers', icon: Globe },
       { to: '/planet-types', label: 'Types de planetes', icon: Orbit },

@@ -9,9 +9,8 @@ import { buildProductionConfig } from './production-config';
 interface GameConfigData {
   buildings: Record<string, { id: string; name: string; description: string; flavorText?: string | null; baseCost: { minerai: number; silicium: number; hydrogene: number }; costFactor: number; prerequisites: { buildingId: string; level: number }[] }>;
   research: Record<string, { id: string; name: string; description: string; flavorText?: string | null; effectDescription?: string | null; baseCost: { minerai: number; silicium: number; hydrogene: number }; costFactor: number; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
-  ships: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; baseSpeed: number; fuelConsumption: number; cargoCapacity: number; driveType: string; miningExtraction: number; weapons: number; shield: number; armor: number; isStationary: boolean; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
-  defenses: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; weapons: number; shield: number; armor: number; maxPerPlanet: number | null; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
-  rapidFire: Record<string, Record<string, number>>;
+  ships: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; baseSpeed: number; fuelConsumption: number; cargoCapacity: number; driveType: string; miningExtraction: number; weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; combatCategoryId: string | null; isStationary: boolean; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
+  defenses: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; combatCategoryId: string | null; maxPerPlanet: number | null; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -46,10 +45,12 @@ export interface ResearchDetails {
   prerequisites: { buildings?: { buildingId: string; level: number }[]; research?: { researchId: string; level: number }[] };
 }
 
-export interface RapidFireEntry {
-  unitId: string;
-  unitName: string;
-  value: number;
+export interface CombatStats {
+  shield: number;
+  baseArmor: number;
+  hull: number;
+  weapons: number;
+  shotCount: number;
 }
 
 export interface ShipDetails {
@@ -60,11 +61,9 @@ export interface ShipDetails {
   flavorText: string;
   cost: { minerai: number; silicium: number; hydrogene: number };
   prerequisites: { buildings?: { buildingId: string; level: number }[]; research?: { researchId: string; level: number }[] };
-  combat: { weapons: number; shield: number; armor: number };
+  combat: CombatStats;
   stats: { baseSpeed: number; fuelConsumption: number; cargoCapacity: number; driveType: string; miningExtraction: number };
   isStationary: boolean;
-  rapidFireAgainst: RapidFireEntry[];
-  rapidFireFrom: RapidFireEntry[];
 }
 
 export interface DefenseDetails {
@@ -75,8 +74,7 @@ export interface DefenseDetails {
   flavorText: string;
   cost: { minerai: number; silicium: number; hydrogene: number };
   prerequisites: { buildings?: { buildingId: string; level: number }[]; research?: { researchId: string; level: number }[] };
-  combat: { weapons: number; shield: number; armor: number };
-  rapidFireFrom: RapidFireEntry[];
+  combat: CombatStats;
   maxPerPlanet?: number;
 }
 
@@ -96,10 +94,6 @@ export function resolveResearchName(id: string, config?: GameConfigData): string
   return config?.research[id]?.name ?? humanize(id);
 }
 
-function resolveUnitName(id: string, config?: GameConfigData): string {
-  return config?.ships[id]?.name ?? config?.defenses[id]?.name ?? humanize(id);
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -109,34 +103,6 @@ function buildTable(fn: (level: number) => number, levels = 15): { level: number
     level: i + 1,
     value: fn(i + 1),
   }));
-}
-
-function getRapidFireAgainst(unitId: string, config?: GameConfigData): RapidFireEntry[] {
-  const rf = config?.rapidFire;
-  if (!rf) return [];
-  const targets = rf[unitId];
-  if (!targets) return [];
-  return Object.entries(targets).map(([targetId, value]) => ({
-    unitId: targetId,
-    unitName: resolveUnitName(targetId, config),
-    value,
-  }));
-}
-
-function getRapidFireFrom(unitId: string, config?: GameConfigData): RapidFireEntry[] {
-  const rf = config?.rapidFire;
-  if (!rf) return [];
-  const entries: RapidFireEntry[] = [];
-  for (const [attackerId, targets] of Object.entries(rf)) {
-    if (targets[unitId]) {
-      entries.push({
-        unitId: attackerId,
-        unitName: resolveUnitName(attackerId, config),
-        value: targets[unitId],
-      });
-    }
-  }
-  return entries;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,9 +180,9 @@ export function getResearchDetails(id: string, config?: GameConfigData): Researc
 
 export function getShipDetails(id: string, config?: GameConfigData): ShipDetails {
   const cfgDef = config?.ships[id];
-  const combat = cfgDef
-    ? { weapons: cfgDef.weapons, shield: cfgDef.shield, armor: cfgDef.armor }
-    : { weapons: 0, shield: 0, armor: 0 };
+  const combat: CombatStats = cfgDef
+    ? { shield: cfgDef.shield, baseArmor: cfgDef.baseArmor, hull: cfgDef.hull, weapons: cfgDef.weapons, shotCount: cfgDef.shotCount }
+    : { shield: 0, baseArmor: 0, hull: 0, weapons: 0, shotCount: 1 };
   const stats = cfgDef
     ? { baseSpeed: cfgDef.baseSpeed, fuelConsumption: cfgDef.fuelConsumption, cargoCapacity: cfgDef.cargoCapacity, driveType: cfgDef.driveType, miningExtraction: cfgDef.miningExtraction ?? 0 }
     : { baseSpeed: 0, fuelConsumption: 0, cargoCapacity: 0, driveType: 'combustion' as string, miningExtraction: 0 };
@@ -231,16 +197,14 @@ export function getShipDetails(id: string, config?: GameConfigData): ShipDetails
     combat,
     stats,
     isStationary: cfgDef?.isStationary ?? false,
-    rapidFireAgainst: getRapidFireAgainst(id, config),
-    rapidFireFrom: getRapidFireFrom(id, config),
   };
 }
 
 export function getDefenseDetails(id: string, config?: GameConfigData): DefenseDetails {
   const cfgDef = config?.defenses[id];
-  const combat = cfgDef
-    ? { weapons: cfgDef.weapons, shield: cfgDef.shield, armor: cfgDef.armor }
-    : { weapons: 0, shield: 0, armor: 0 };
+  const combat: CombatStats = cfgDef
+    ? { shield: cfgDef.shield, baseArmor: cfgDef.baseArmor, hull: cfgDef.hull, weapons: cfgDef.weapons, shotCount: cfgDef.shotCount }
+    : { shield: 0, baseArmor: 0, hull: 0, weapons: 0, shotCount: 1 };
   return {
     type: 'defense',
     id,
@@ -250,7 +214,6 @@ export function getDefenseDetails(id: string, config?: GameConfigData): DefenseD
     cost: cfgDef?.cost ?? { minerai: 0, silicium: 0, hydrogene: 0 },
     prerequisites: cfgDef?.prerequisites ?? {},
     combat,
-    rapidFireFrom: getRapidFireFrom(id, config),
     maxPerPlanet: cfgDef?.maxPerPlanet ?? undefined,
   };
 }

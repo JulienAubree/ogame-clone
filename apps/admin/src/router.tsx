@@ -28,7 +28,6 @@ export const router = createBrowserRouter([
       { path: 'research', lazy: () => import('./pages/Research').then((m) => ({ Component: m.default })) },
       { path: 'ships', lazy: () => import('./pages/Ships').then((m) => ({ Component: m.default })) },
       { path: 'defenses', lazy: () => import('./pages/Defenses').then((m) => ({ Component: m.default })) },
-      { path: 'rapid-fire', lazy: () => import('./pages/RapidFire').then((m) => ({ Component: m.default })) },
       { path: 'production', lazy: () => import('./pages/Production').then((m) => ({ Component: m.default })) },
       { path: 'universe', lazy: () => import('./pages/Universe').then((m) => ({ Component: m.default })) },
       { path: 'planet-types', lazy: () => import('./pages/PlanetTypes').then((m) => ({ Component: m.default })) },

@@ -9,7 +9,6 @@ function makeConfig(overrides: Partial<GameConfig> = {}): GameConfig {
     research: {},
     ships: {},
     defenses: {},
-    rapidFire: {},
     production: {},
     universe: {},
     planetTypes: [],

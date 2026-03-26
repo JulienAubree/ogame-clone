@@ -24,6 +24,15 @@ function EffectiveStatRow({ label, base, effective, multiplier }: { label: strin
   );
 }
 
+function StatRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between text-[11px]">
+      <span className="text-slate-400">{label}</span>
+      <span className="text-slate-200 font-mono font-semibold">{fmt(value)}</span>
+    </div>
+  );
+}
+
 interface Props {
   defenseId: string;
   researchLevels: Record<string, number>;
@@ -43,8 +52,8 @@ export function DefenseDetailContent({ defenseId, researchLevels }: Props) {
       weaponsMult,
       shield: Math.floor(details.combat.shield * shieldMult),
       shieldMult,
-      armor: Math.floor(details.combat.armor * armorMult),
-      armorMult,
+      hull: Math.floor(details.combat.hull * armorMult),
+      hullMult: armorMult,
     };
   }, [researchLevels, details, gameConfig?.bonuses]);
 
@@ -77,9 +86,11 @@ export function DefenseDetailContent({ defenseId, researchLevels }: Props) {
         <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider">
           Stats de combat
         </div>
-        <EffectiveStatRow label="Armes" base={details.combat.weapons} effective={effective.weapons} multiplier={effective.weaponsMult} />
         <EffectiveStatRow label="Bouclier" base={details.combat.shield} effective={effective.shield} multiplier={effective.shieldMult} />
-        <EffectiveStatRow label="Coque" base={details.combat.armor} effective={effective.armor} multiplier={effective.armorMult} />
+        <StatRow label="Blindage" value={details.combat.baseArmor} />
+        <EffectiveStatRow label="Coque" base={details.combat.hull} effective={effective.hull} multiplier={effective.hullMult} />
+        <EffectiveStatRow label="Armement" base={details.combat.weapons} effective={effective.weapons} multiplier={effective.weaponsMult} />
+        <StatRow label="Tirs" value={details.combat.shotCount} />
       </div>
 
       {/* Unit cost */}
@@ -105,32 +116,6 @@ export function DefenseDetailContent({ defenseId, researchLevels }: Props) {
         <p className="text-xs text-slate-400">
           Maximum {details.maxPerPlanet} par planète
         </p>
-      )}
-
-      {/* Rapid fire from */}
-      {details.rapidFireFrom.length > 0 && (
-        <div>
-          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider mb-2">
-            Tir rapide subi
-          </div>
-          <div className="space-y-1.5">
-            {details.rapidFireFrom.map((rf) => (
-              <div key={rf.unitId} className="flex items-center justify-between text-[11px]">
-                <div className="flex items-center gap-2">
-                  <GameImage
-                    category={gameConfig?.ships[rf.unitId] ? 'ships' : 'defenses'}
-                    id={rf.unitId}
-                    size="thumb"
-                    alt={rf.unitName}
-                    className="h-6 w-6 rounded object-cover"
-                  />
-                  <span className="text-slate-300">{rf.unitName}</span>
-                </div>
-                <span className="font-mono font-semibold text-red-400">x{rf.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
       {/* Prerequisites */}

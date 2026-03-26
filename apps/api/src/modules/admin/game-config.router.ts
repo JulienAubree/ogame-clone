@@ -303,17 +303,6 @@ export function createGameConfigRouter(
         return { success: true };
       }),
 
-    updateRapidFire: adminProcedure
-      .input(z.object({
-        attackerId: z.string(),
-        targetId: z.string(),
-        value: z.number().int(),
-      }))
-      .mutation(async ({ input }) => {
-        await gameConfigService.updateRapidFire(input.attackerId, input.targetId, input.value);
-        return { success: true };
-      }),
-
     updateProductionConfig: adminProcedure
       .input(z.object({
         id: z.string(),
