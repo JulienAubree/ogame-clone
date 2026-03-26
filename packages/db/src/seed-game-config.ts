@@ -12,7 +12,6 @@ import {
   shipPrerequisites,
   defenseDefinitions,
   defensePrerequisites,
-  rapidFire,
   productionConfig,
   universeConfig,
   planetTypes,
@@ -108,71 +107,31 @@ const RESEARCH = [
 
 const SHIPS = [
   // Industrial ships → shipyard
-  { id: 'prospector', name: 'Prospecteur', description: "Vaisseau minier pour l'extraction de ressources.", costMinerai: 3000, costSilicium: 1000, costHydrogene: 500, countColumn: 'prospector', baseSpeed: 3000, fuelConsumption: 50, cargoCapacity: 750, driveType: 'combustion', weapons: 5, shield: 10, armor: 5000, miningExtraction: 3000, categoryId: 'ship_utilitaire', sortOrder: 0, role: 'prospector', flavorText: "Le prospecteur est un vaisseau minier leger concu pour l'extraction de ressources sur les asteroides et planetes voisines.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 2 }], research: [] } },
-  { id: 'explorer', name: 'Explorateur', description: "Sonde d'exploration spatiale pour missions lointaines.", costMinerai: 1000, costSilicium: 250, costHydrogene: 0, countColumn: 'explorer', baseSpeed: 80000, fuelConsumption: 1, cargoCapacity: 100, driveType: 'combustion', weapons: 0, shield: 0, armor: 1000, categoryId: 'ship_utilitaire', sortOrder: 1, role: null, flavorText: "L'explorateur est un vaisseau rapide equipe de scanners avances pour cartographier les systemes stellaires inconnus.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 1 }], research: [] } },
-  { id: 'smallCargo', name: 'Petit transporteur', description: 'Transport léger de ressources.', costMinerai: 2000, costSilicium: 2000, costHydrogene: 0, countColumn: 'smallCargo', baseSpeed: 5000, fuelConsumption: 10, cargoCapacity: 5000, driveType: 'combustion', weapons: 5, shield: 10, armor: 4000, categoryId: 'ship_transport', sortOrder: 2, role: null, flavorText: "Rapide et maniable, le petit transporteur est le cheval de trait de toute flotte commerciale.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 2 }], research: [{ researchId: 'combustion', level: 2 }] } },
-  { id: 'largeCargo', name: 'Grand transporteur', description: 'Transport lourd de ressources.', costMinerai: 6000, costSilicium: 6000, costHydrogene: 0, countColumn: 'largeCargo', baseSpeed: 7500, fuelConsumption: 50, cargoCapacity: 25000, driveType: 'combustion', weapons: 5, shield: 25, armor: 12000, categoryId: 'ship_transport', sortOrder: 3, role: null, flavorText: "Avec sa soute massive, le grand transporteur peut deplacer d'enormes quantites de ressources en un seul voyage.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 4 }], research: [{ researchId: 'combustion', level: 6 }] } },
-  { id: 'espionageProbe', name: "Sonde d'espionnage", description: 'Sonde rapide pour espionner.', costMinerai: 0, costSilicium: 1000, costHydrogene: 0, countColumn: 'espionageProbe', baseSpeed: 100000000, fuelConsumption: 1, cargoCapacity: 0, driveType: 'combustion', weapons: 0, shield: 0, armor: 1000, categoryId: 'ship_utilitaire', sortOrder: 4, role: 'probe', flavorText: "Quasiment indetectable, la sonde d'espionnage collecte des renseignements precieux sur les planetes adverses.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 3 }], research: [{ researchId: 'combustion', level: 3 }, { researchId: 'espionageTech', level: 2 }] } },
-  { id: 'colonyShip', name: 'Vaisseau de colonisation', description: 'Colonise de nouvelles planètes.', costMinerai: 10000, costSilicium: 20000, costHydrogene: 10000, countColumn: 'colonyShip', baseSpeed: 2500, fuelConsumption: 1000, cargoCapacity: 7500, driveType: 'impulse', weapons: 50, shield: 100, armor: 30000, categoryId: 'ship_utilitaire', sortOrder: 5, role: 'colonizer', flavorText: "Ce vaisseau transporte tout le necessaire pour etablir une nouvelle colonie sur une planete inhabitee.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 4 }], research: [{ researchId: 'impulse', level: 3 }] } },
-  { id: 'recycler', name: 'Recycleur', description: 'Collecte les champs de débris.', costMinerai: 10000, costSilicium: 6000, costHydrogene: 2000, countColumn: 'recycler', baseSpeed: 2000, fuelConsumption: 300, cargoCapacity: 20000, driveType: 'combustion', weapons: 1, shield: 10, armor: 16000, categoryId: 'ship_utilitaire', sortOrder: 6, role: 'recycler', flavorText: "Equipe de puissants aimants et de bras mecaniques, le recycleur collecte les debris des batailles spatiales.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 4 }], research: [{ researchId: 'combustion', level: 6 }, { researchId: 'shielding', level: 2 }] } },
-  { id: 'solarSatellite', name: 'Satellite solaire', description: "Produit de l'énergie en orbite. Ne peut pas être envoyé en mission.", costMinerai: 0, costSilicium: 2000, costHydrogene: 500, countColumn: 'solarSatellite', baseSpeed: 0, fuelConsumption: 0, cargoCapacity: 0, driveType: 'combustion', weapons: 1, shield: 1, armor: 2000, categoryId: 'ship_utilitaire', sortOrder: 7, role: 'stationary', flavorText: "En orbite stationnaire, les satellites solaires captent l'énergie stellaire et la transmettent aux installations planétaires. Plus la planète est proche de son étoile, plus ils sont efficaces.", isStationary: true, prerequisites: { buildings: [{ buildingId: 'shipyard', level: 1 }], research: [] } },
+  { id: 'prospector', name: 'Prospecteur', description: "Vaisseau minier pour l'extraction de ressources.", costMinerai: 3000, costSilicium: 1000, costHydrogene: 500, countColumn: 'prospector', baseSpeed: 3000, fuelConsumption: 50, cargoCapacity: 750, driveType: 'combustion', weapons: 5, shield: 10, hull: 5000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', miningExtraction: 3000, categoryId: 'ship_utilitaire', sortOrder: 0, role: 'prospector', flavorText: "Le prospecteur est un vaisseau minier leger concu pour l'extraction de ressources sur les asteroides et planetes voisines.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 2 }], research: [] } },
+  { id: 'explorer', name: 'Explorateur', description: "Sonde d'exploration spatiale pour missions lointaines.", costMinerai: 1000, costSilicium: 250, costHydrogene: 0, countColumn: 'explorer', baseSpeed: 80000, fuelConsumption: 1, cargoCapacity: 100, driveType: 'combustion', weapons: 0, shield: 0, hull: 1000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', categoryId: 'ship_utilitaire', sortOrder: 1, role: null, flavorText: "L'explorateur est un vaisseau rapide equipe de scanners avances pour cartographier les systemes stellaires inconnus.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 1 }], research: [] } },
+  { id: 'smallCargo', name: 'Petit transporteur', description: 'Transport léger de ressources.', costMinerai: 2000, costSilicium: 2000, costHydrogene: 0, countColumn: 'smallCargo', baseSpeed: 5000, fuelConsumption: 10, cargoCapacity: 5000, driveType: 'combustion', weapons: 5, shield: 10, hull: 4000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', categoryId: 'ship_transport', sortOrder: 2, role: null, flavorText: "Rapide et maniable, le petit transporteur est le cheval de trait de toute flotte commerciale.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 2 }], research: [{ researchId: 'combustion', level: 2 }] } },
+  { id: 'largeCargo', name: 'Grand transporteur', description: 'Transport lourd de ressources.', costMinerai: 6000, costSilicium: 6000, costHydrogene: 0, countColumn: 'largeCargo', baseSpeed: 7500, fuelConsumption: 50, cargoCapacity: 25000, driveType: 'combustion', weapons: 5, shield: 25, hull: 12000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', categoryId: 'ship_transport', sortOrder: 3, role: null, flavorText: "Avec sa soute massive, le grand transporteur peut deplacer d'enormes quantites de ressources en un seul voyage.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 4 }], research: [{ researchId: 'combustion', level: 6 }] } },
+  { id: 'espionageProbe', name: "Sonde d'espionnage", description: 'Sonde rapide pour espionner.', costMinerai: 0, costSilicium: 1000, costHydrogene: 0, countColumn: 'espionageProbe', baseSpeed: 100000000, fuelConsumption: 1, cargoCapacity: 0, driveType: 'combustion', weapons: 0, shield: 0, hull: 1000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', categoryId: 'ship_utilitaire', sortOrder: 4, role: 'probe', flavorText: "Quasiment indetectable, la sonde d'espionnage collecte des renseignements precieux sur les planetes adverses.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 3 }], research: [{ researchId: 'combustion', level: 3 }, { researchId: 'espionageTech', level: 2 }] } },
+  { id: 'colonyShip', name: 'Vaisseau de colonisation', description: 'Colonise de nouvelles planètes.', costMinerai: 10000, costSilicium: 20000, costHydrogene: 10000, countColumn: 'colonyShip', baseSpeed: 2500, fuelConsumption: 1000, cargoCapacity: 7500, driveType: 'impulse', weapons: 50, shield: 100, hull: 30000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', categoryId: 'ship_utilitaire', sortOrder: 5, role: 'colonizer', flavorText: "Ce vaisseau transporte tout le necessaire pour etablir une nouvelle colonie sur une planete inhabitee.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 4 }], research: [{ researchId: 'impulse', level: 3 }] } },
+  { id: 'recycler', name: 'Recycleur', description: 'Collecte les champs de débris.', costMinerai: 10000, costSilicium: 6000, costHydrogene: 2000, countColumn: 'recycler', baseSpeed: 2000, fuelConsumption: 300, cargoCapacity: 20000, driveType: 'combustion', weapons: 1, shield: 10, hull: 16000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', categoryId: 'ship_utilitaire', sortOrder: 6, role: 'recycler', flavorText: "Equipe de puissants aimants et de bras mecaniques, le recycleur collecte les debris des batailles spatiales.", prerequisites: { buildings: [{ buildingId: 'shipyard', level: 4 }], research: [{ researchId: 'combustion', level: 6 }, { researchId: 'shielding', level: 2 }] } },
+  { id: 'solarSatellite', name: 'Satellite solaire', description: "Produit de l'énergie en orbite. Ne peut pas être envoyé en mission.", costMinerai: 0, costSilicium: 2000, costHydrogene: 500, countColumn: 'solarSatellite', baseSpeed: 0, fuelConsumption: 0, cargoCapacity: 0, driveType: 'combustion', weapons: 1, shield: 1, hull: 2000, baseArmor: 0, shotCount: 1, combatCategoryId: 'support', categoryId: 'ship_utilitaire', sortOrder: 7, role: 'stationary', flavorText: "En orbite stationnaire, les satellites solaires captent l'énergie stellaire et la transmettent aux installations planétaires. Plus la planète est proche de son étoile, plus ils sont efficaces.", isStationary: true, prerequisites: { buildings: [{ buildingId: 'shipyard', level: 1 }], research: [] } },
   // Military ships → commandCenter
-  { id: 'lightFighter', name: 'Chasseur léger', description: 'Vaisseau de combat de base.', costMinerai: 3000, costSilicium: 1000, costHydrogene: 0, countColumn: 'lightFighter', baseSpeed: 12500, fuelConsumption: 20, cargoCapacity: 50, driveType: 'combustion', weapons: 50, shield: 10, armor: 4000, categoryId: 'ship_combat', sortOrder: 8, role: null, flavorText: "Le chasseur leger, pilier des premieres flottes, compense sa fragilite par son faible cout de production.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 1 }], research: [{ researchId: 'combustion', level: 1 }] } },
-  { id: 'heavyFighter', name: 'Chasseur lourd', description: 'Vaisseau de combat amélioré.', costMinerai: 6000, costSilicium: 4000, costHydrogene: 0, countColumn: 'heavyFighter', baseSpeed: 10000, fuelConsumption: 75, cargoCapacity: 100, driveType: 'impulse', weapons: 150, shield: 25, armor: 10000, categoryId: 'ship_combat', sortOrder: 9, role: null, flavorText: "Blindage renforce et armement superieur font du chasseur lourd un adversaire redoutable en combat rapproche.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 3 }], research: [{ researchId: 'armor', level: 2 }, { researchId: 'impulse', level: 2 }] } },
-  { id: 'cruiser', name: 'Croiseur', description: 'Vaisseau de guerre polyvalent.', costMinerai: 20000, costSilicium: 7000, costHydrogene: 2000, countColumn: 'cruiser', baseSpeed: 15000, fuelConsumption: 300, cargoCapacity: 800, driveType: 'impulse', weapons: 400, shield: 50, armor: 27000, categoryId: 'ship_combat', sortOrder: 10, role: null, flavorText: "Polyvalent et puissamment arme, le croiseur domine les escarmouches grace a son tir rapide devastateur.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 5 }], research: [{ researchId: 'impulse', level: 4 }, { researchId: 'weapons', level: 3 }] } },
-  { id: 'battleship', name: 'Vaisseau de bataille', description: 'Puissant navire de guerre.', costMinerai: 45000, costSilicium: 15000, costHydrogene: 0, countColumn: 'battleship', baseSpeed: 10000, fuelConsumption: 500, cargoCapacity: 1500, driveType: 'hyperspaceDrive', weapons: 1000, shield: 200, armor: 60000, categoryId: 'ship_combat', sortOrder: 11, role: null, flavorText: "Le vaisseau de bataille, colosse d'acier et de feu, est la piece maitresse de toute flotte d'invasion.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 7 }], research: [{ researchId: 'hyperspaceDrive', level: 4 }] } },
+  { id: 'interceptor', name: 'Intercepteur', description: 'Vaisseau de combat de base.', costMinerai: 3000, costSilicium: 1000, costHydrogene: 0, countColumn: 'interceptor', baseSpeed: 12500, fuelConsumption: 20, cargoCapacity: 50, driveType: 'combustion', weapons: 4, shield: 8, hull: 12, baseArmor: 1, shotCount: 3, combatCategoryId: 'light', categoryId: 'ship_combat', sortOrder: 8, role: null, flavorText: "Le chasseur leger, pilier des premieres flottes, compense sa fragilite par son faible cout de production.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 1 }], research: [{ researchId: 'combustion', level: 1 }] } },
+  { id: 'frigate', name: 'Frégate', description: 'Vaisseau de combat amélioré.', costMinerai: 6000, costSilicium: 4000, costHydrogene: 0, countColumn: 'frigate', baseSpeed: 10000, fuelConsumption: 75, cargoCapacity: 100, driveType: 'impulse', weapons: 12, shield: 16, hull: 30, baseArmor: 2, shotCount: 2, combatCategoryId: 'medium', categoryId: 'ship_combat', sortOrder: 9, role: null, flavorText: "Blindage renforce et armement superieur font du chasseur lourd un adversaire redoutable en combat rapproche.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 3 }], research: [{ researchId: 'armor', level: 2 }, { researchId: 'impulse', level: 2 }] } },
+  { id: 'cruiser', name: 'Croiseur', description: 'Vaisseau de guerre polyvalent.', costMinerai: 20000, costSilicium: 7000, costHydrogene: 2000, countColumn: 'cruiser', baseSpeed: 15000, fuelConsumption: 300, cargoCapacity: 800, driveType: 'impulse', weapons: 45, shield: 28, hull: 55, baseArmor: 4, shotCount: 1, combatCategoryId: 'heavy', categoryId: 'ship_combat', sortOrder: 10, role: null, flavorText: "Polyvalent et puissamment arme, le croiseur domine les escarmouches grace a son tir rapide devastateur.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 5 }], research: [{ researchId: 'impulse', level: 4 }, { researchId: 'weapons', level: 3 }] } },
+  { id: 'battlecruiser', name: 'Cuirassé', description: 'Puissant navire de guerre.', costMinerai: 45000, costSilicium: 15000, costHydrogene: 0, countColumn: 'battlecruiser', baseSpeed: 10000, fuelConsumption: 500, cargoCapacity: 1500, driveType: 'hyperspaceDrive', weapons: 70, shield: 40, hull: 100, baseArmor: 6, shotCount: 1, combatCategoryId: 'heavy', categoryId: 'ship_combat', sortOrder: 11, role: null, flavorText: "Le vaisseau de bataille, colosse d'acier et de feu, est la piece maitresse de toute flotte d'invasion.", prerequisites: { buildings: [{ buildingId: 'commandCenter', level: 7 }], research: [{ researchId: 'hyperspaceDrive', level: 4 }] } },
 ];
 
 // ── Defense data (merged: defenses + combat-stats) ──
 
 const DEFENSES = [
-  { id: 'rocketLauncher', name: 'Lanceur de missiles', description: 'Défense de base, peu coûteuse.', costMinerai: 2000, costSilicium: 0, costHydrogene: 0, countColumn: 'rocketLauncher', weapons: 80, shield: 20, armor: 2000, maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 0, flavorText: "Simple mais efficace, le lanceur de missiles constitue la premiere ligne de defense de toute planete.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 1 }], research: [] as { researchId: string; level: number }[] } },
-  { id: 'lightLaser', name: 'Artillerie laser légère', description: 'Défense laser de base.', costMinerai: 1500, costSilicium: 500, costHydrogene: 0, countColumn: 'lightLaser', weapons: 100, shield: 25, armor: 2000, maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 1, flavorText: "Le laser leger offre un excellent rapport cout-efficacite pour les defenses planetaires de base.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 2 }], research: [{ researchId: 'energyTech', level: 1 }] } },
-  { id: 'heavyLaser', name: 'Artillerie laser lourde', description: 'Défense laser puissante.', costMinerai: 6000, costSilicium: 2000, costHydrogene: 0, countColumn: 'heavyLaser', weapons: 250, shield: 100, armor: 8000, maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 2, flavorText: "Concentrant une energie devastatrice, le laser lourd peut percer le blindage des vaisseaux moyens.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 4 }], research: [{ researchId: 'energyTech', level: 3 }, { researchId: 'shielding', level: 1 }] } },
-  { id: 'gaussCannon', name: 'Canon de Gauss', description: 'Défense balistique puissante.', costMinerai: 20000, costSilicium: 15000, costHydrogene: 2000, countColumn: 'gaussCannon', weapons: 1100, shield: 200, armor: 35000, maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 3, flavorText: "Propulsant des projectiles a une fraction de la vitesse de la lumiere, le canon de Gauss inflige des degats considerables.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 6 }], research: [{ researchId: 'energyTech', level: 6 }, { researchId: 'weapons', level: 3 }, { researchId: 'shielding', level: 1 }] } },
-  { id: 'plasmaTurret', name: 'Artillerie à ions', description: 'Défense plasma dévastatrice.', costMinerai: 50000, costSilicium: 50000, costHydrogene: 30000, countColumn: 'plasmaTurret', weapons: 3000, shield: 300, armor: 100000, maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 4, flavorText: "La tourelle a plasma genere un flux de particules ionisees capable de vaporiser les blindages les plus epais.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 8 }], research: [{ researchId: 'energyTech', level: 8 }, { researchId: 'weapons', level: 7 }] } },
-  { id: 'smallShield', name: 'Petit bouclier', description: 'Bouclier planétaire de base.', costMinerai: 10000, costSilicium: 10000, costHydrogene: 0, countColumn: 'smallShield', weapons: 1, shield: 2000, armor: 2000, maxPerPlanet: 1, categoryId: 'defense_boucliers', sortOrder: 5, flavorText: "Un dome energetique enveloppe la planete, absorbant une partie des degats lors des attaques ennemies.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 1 }], research: [{ researchId: 'shielding', level: 2 }] } },
-  { id: 'largeShield', name: 'Grand bouclier', description: 'Bouclier planétaire avancé.', costMinerai: 50000, costSilicium: 50000, costHydrogene: 0, countColumn: 'largeShield', weapons: 1, shield: 10000, armor: 10000, maxPerPlanet: 1, categoryId: 'defense_boucliers', sortOrder: 6, flavorText: "Le grand bouclier genere un champ de force puissant qui protege l'ensemble des installations planetaires.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 4 }], research: [{ researchId: 'shielding', level: 6 }] } },
-];
-
-// ── Rapid fire data ──
-
-const RAPID_FIRE_DATA = [
-  { attackerId: 'smallCargo', targetId: 'espionageProbe', value: 5 },
-  { attackerId: 'smallCargo', targetId: 'prospector', value: 5 },
-  { attackerId: 'smallCargo', targetId: 'explorer', value: 5 },
-  { attackerId: 'largeCargo', targetId: 'espionageProbe', value: 5 },
-  { attackerId: 'largeCargo', targetId: 'prospector', value: 5 },
-  { attackerId: 'largeCargo', targetId: 'explorer', value: 5 },
-  { attackerId: 'lightFighter', targetId: 'espionageProbe', value: 5 },
-  { attackerId: 'lightFighter', targetId: 'prospector', value: 5 },
-  { attackerId: 'lightFighter', targetId: 'explorer', value: 5 },
-  { attackerId: 'heavyFighter', targetId: 'espionageProbe', value: 5 },
-  { attackerId: 'heavyFighter', targetId: 'prospector', value: 5 },
-  { attackerId: 'heavyFighter', targetId: 'explorer', value: 5 },
-  { attackerId: 'heavyFighter', targetId: 'smallCargo', value: 3 },
-  { attackerId: 'cruiser', targetId: 'espionageProbe', value: 5 },
-  { attackerId: 'cruiser', targetId: 'prospector', value: 5 },
-  { attackerId: 'cruiser', targetId: 'explorer', value: 5 },
-  { attackerId: 'cruiser', targetId: 'lightFighter', value: 6 },
-  { attackerId: 'cruiser', targetId: 'smallCargo', value: 3 },
-  { attackerId: 'cruiser', targetId: 'rocketLauncher', value: 10 },
-  { attackerId: 'battleship', targetId: 'espionageProbe', value: 5 },
-  { attackerId: 'battleship', targetId: 'prospector', value: 5 },
-  { attackerId: 'battleship', targetId: 'explorer', value: 5 },
-  { attackerId: 'battleship', targetId: 'lightFighter', value: 4 },
-  { attackerId: 'battleship', targetId: 'smallCargo', value: 4 },
-  { attackerId: 'battleship', targetId: 'largeCargo', value: 4 },
-  { attackerId: 'colonyShip', targetId: 'espionageProbe', value: 5 },
-  { attackerId: 'colonyShip', targetId: 'prospector', value: 5 },
-  { attackerId: 'colonyShip', targetId: 'explorer', value: 5 },
-  { attackerId: 'smallCargo', targetId: 'solarSatellite', value: 5 },
-  { attackerId: 'largeCargo', targetId: 'solarSatellite', value: 5 },
-  { attackerId: 'lightFighter', targetId: 'solarSatellite', value: 5 },
-  { attackerId: 'heavyFighter', targetId: 'solarSatellite', value: 5 },
-  { attackerId: 'cruiser', targetId: 'solarSatellite', value: 5 },
-  { attackerId: 'battleship', targetId: 'solarSatellite', value: 5 },
-  { attackerId: 'colonyShip', targetId: 'solarSatellite', value: 5 },
+  { id: 'rocketLauncher', name: 'Lanceur de missiles', description: 'Défense de base, peu coûteuse.', costMinerai: 2000, costSilicium: 0, costHydrogene: 0, countColumn: 'rocketLauncher', weapons: 5, shield: 6, hull: 10, baseArmor: 1, shotCount: 2, combatCategoryId: 'light', maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 0, flavorText: "Simple mais efficace, le lanceur de missiles constitue la premiere ligne de defense de toute planete.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 1 }], research: [] as { researchId: string; level: number }[] } },
+  { id: 'lightLaser', name: 'Artillerie laser légère', description: 'Défense laser de base.', costMinerai: 1500, costSilicium: 500, costHydrogene: 0, countColumn: 'lightLaser', weapons: 7, shield: 8, hull: 12, baseArmor: 1, shotCount: 3, combatCategoryId: 'light', maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 1, flavorText: "Le laser leger offre un excellent rapport cout-efficacite pour les defenses planetaires de base.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 2 }], research: [{ researchId: 'energyTech', level: 1 }] } },
+  { id: 'heavyLaser', name: 'Artillerie laser lourde', description: 'Défense laser puissante.', costMinerai: 6000, costSilicium: 2000, costHydrogene: 0, countColumn: 'heavyLaser', weapons: 15, shield: 18, hull: 35, baseArmor: 3, shotCount: 2, combatCategoryId: 'medium', maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 2, flavorText: "Concentrant une energie devastatrice, le laser lourd peut percer le blindage des vaisseaux moyens.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 4 }], research: [{ researchId: 'energyTech', level: 3 }, { researchId: 'shielding', level: 1 }] } },
+  { id: 'electromagneticCannon', name: 'Canon électromagnétique', description: 'Défense balistique puissante.', costMinerai: 20000, costSilicium: 15000, costHydrogene: 2000, countColumn: 'electromagneticCannon', weapons: 50, shield: 30, hull: 60, baseArmor: 5, shotCount: 1, combatCategoryId: 'heavy', maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 3, flavorText: "Propulsant des projectiles a une fraction de la vitesse de la lumiere, le canon de Gauss inflige des degats considerables.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 6 }], research: [{ researchId: 'energyTech', level: 6 }, { researchId: 'weapons', level: 3 }, { researchId: 'shielding', level: 1 }] } },
+  { id: 'plasmaTurret', name: 'Artillerie à ions', description: 'Défense plasma dévastatrice.', costMinerai: 50000, costSilicium: 50000, costHydrogene: 30000, countColumn: 'plasmaTurret', weapons: 80, shield: 50, hull: 120, baseArmor: 7, shotCount: 1, combatCategoryId: 'heavy', maxPerPlanet: null, categoryId: 'defense_tourelles', sortOrder: 4, flavorText: "La tourelle a plasma genere un flux de particules ionisees capable de vaporiser les blindages les plus epais.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 8 }], research: [{ researchId: 'energyTech', level: 8 }, { researchId: 'weapons', level: 7 }] } },
+  { id: 'smallShield', name: 'Petit bouclier', description: 'Bouclier planétaire de base.', costMinerai: 10000, costSilicium: 10000, costHydrogene: 0, countColumn: 'smallShield', weapons: 1, shield: 60, hull: 40, baseArmor: 2, shotCount: 1, combatCategoryId: 'heavy', maxPerPlanet: 1, categoryId: 'defense_boucliers', sortOrder: 5, flavorText: "Un dome energetique enveloppe la planete, absorbant une partie des degats lors des attaques ennemies.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 1 }], research: [{ researchId: 'shielding', level: 2 }] } },
+  { id: 'largeShield', name: 'Grand bouclier', description: 'Bouclier planétaire avancé.', costMinerai: 50000, costSilicium: 50000, costHydrogene: 0, countColumn: 'largeShield', weapons: 1, shield: 150, hull: 80, baseArmor: 4, shotCount: 1, combatCategoryId: 'heavy', maxPerPlanet: 1, categoryId: 'defense_boucliers', sortOrder: 6, flavorText: "Le grand bouclier genere un champ de force puissant qui protege l'ensemble des installations planetaires.", prerequisites: { buildings: [{ buildingId: 'arsenal', level: 4 }], research: [{ researchId: 'shielding', level: 6 }] } },
 ];
 
 // ── Production config data ──
@@ -204,7 +163,7 @@ const PIRATE_TEMPLATES = [
     id: 'scout_patrol_easy',
     name: 'Patrouille pirate',
     tier: 'easy',
-    ships: { lightFighter: 5 },
+    ships: { interceptor: 5 },
     techs: { weapons: 0, shielding: 0, armor: 0 },
     rewards: { minerai: 3000, silicium: 1500, hydrogene: 500, bonusShips: [] },
     centerLevelMin: 3, centerLevelMax: 4,
@@ -213,7 +172,7 @@ const PIRATE_TEMPLATES = [
     id: 'raider_squad_easy',
     name: 'Escouade de pillards',
     tier: 'easy',
-    ships: { lightFighter: 8, heavyFighter: 2 },
+    ships: { interceptor: 8, frigate: 2 },
     techs: { weapons: 1, shielding: 0, armor: 1 },
     rewards: { minerai: 5000, silicium: 2500, hydrogene: 1000, bonusShips: [] },
     centerLevelMin: 4, centerLevelMax: 6,
@@ -222,7 +181,7 @@ const PIRATE_TEMPLATES = [
     id: 'smuggler_convoy_easy',
     name: 'Convoi de contrebandiers',
     tier: 'easy',
-    ships: { lightFighter: 3, smallCargo: 5 },
+    ships: { interceptor: 3, smallCargo: 5 },
     techs: { weapons: 1, shielding: 1, armor: 0 },
     rewards: { minerai: 6000, silicium: 4000, hydrogene: 1500, bonusShips: [] },
     centerLevelMin: 5, centerLevelMax: 10,
@@ -232,11 +191,11 @@ const PIRATE_TEMPLATES = [
     id: 'war_party_medium',
     name: 'Bande de guerre pirate',
     tier: 'medium',
-    ships: { lightFighter: 15, heavyFighter: 5, cruiser: 2 },
+    ships: { interceptor: 15, frigate: 5, cruiser: 2 },
     techs: { weapons: 2, shielding: 1, armor: 2 },
     rewards: {
       minerai: 15000, silicium: 8000, hydrogene: 3000,
-      bonusShips: [{ shipId: 'lightFighter', count: 2, chance: 0.3 }],
+      bonusShips: [{ shipId: 'interceptor', count: 2, chance: 0.3 }],
     },
     centerLevelMin: 4, centerLevelMax: 6,
   },
@@ -244,11 +203,11 @@ const PIRATE_TEMPLATES = [
     id: 'shield_wall_medium',
     name: 'Mur de boucliers pirate',
     tier: 'medium',
-    ships: { heavyFighter: 12, cruiser: 3 },
+    ships: { frigate: 12, cruiser: 3 },
     techs: { weapons: 1, shielding: 3, armor: 2 },
     rewards: {
       minerai: 18000, silicium: 10000, hydrogene: 4000,
-      bonusShips: [{ shipId: 'lightFighter', count: 3, chance: 0.3 }],
+      bonusShips: [{ shipId: 'interceptor', count: 3, chance: 0.3 }],
     },
     centerLevelMin: 5, centerLevelMax: 8,
   },
@@ -256,11 +215,11 @@ const PIRATE_TEMPLATES = [
     id: 'swarm_medium',
     name: 'Essaim pirate',
     tier: 'medium',
-    ships: { lightFighter: 30, heavyFighter: 8 },
+    ships: { interceptor: 30, frigate: 8 },
     techs: { weapons: 2, shielding: 1, armor: 1 },
     rewards: {
       minerai: 20000, silicium: 12000, hydrogene: 5000,
-      bonusShips: [{ shipId: 'lightFighter', count: 3, chance: 0.3 }],
+      bonusShips: [{ shipId: 'interceptor', count: 3, chance: 0.3 }],
     },
     centerLevelMin: 6, centerLevelMax: 10,
   },
@@ -269,7 +228,7 @@ const PIRATE_TEMPLATES = [
     id: 'battlegroup_hard',
     name: 'Groupe de combat pirate',
     tier: 'hard',
-    ships: { heavyFighter: 15, cruiser: 8, battleship: 3 },
+    ships: { frigate: 15, cruiser: 8, battlecruiser: 3 },
     techs: { weapons: 3, shielding: 2, armor: 3 },
     rewards: {
       minerai: 50000, silicium: 30000, hydrogene: 15000,
@@ -281,7 +240,7 @@ const PIRATE_TEMPLATES = [
     id: 'heavy_assault_hard',
     name: 'Assaut lourd pirate',
     tier: 'hard',
-    ships: { cruiser: 12, battleship: 5 },
+    ships: { cruiser: 12, battlecruiser: 5 },
     techs: { weapons: 4, shielding: 3, armor: 4 },
     rewards: {
       minerai: 70000, silicium: 40000, hydrogene: 20000,
@@ -293,11 +252,11 @@ const PIRATE_TEMPLATES = [
     id: 'pirate_armada_hard',
     name: 'Armada pirate',
     tier: 'hard',
-    ships: { heavyFighter: 20, cruiser: 15, battleship: 8 },
+    ships: { frigate: 20, cruiser: 15, battlecruiser: 8 },
     techs: { weapons: 5, shielding: 4, armor: 5 },
     rewards: {
       minerai: 100000, silicium: 60000, hydrogene: 30000,
-      bonusShips: [{ shipId: 'battleship', count: 1, chance: 0.2 }],
+      bonusShips: [{ shipId: 'battlecruiser', count: 1, chance: 0.2 }],
     },
     centerLevelMin: 8, centerLevelMax: 10,
   },
@@ -349,11 +308,11 @@ const MISSION_DEFINITIONS = [
   { id: 'transport', label: 'Transport', hint: 'Envoyez des ressources vers une planète alliée', buttonLabel: 'Envoyer', color: '#3b82f6', sortOrder: 1, dangerous: false, requiredShipRoles: null, exclusive: false, recommendedShipRoles: ['smallCargo', 'largeCargo'], requiresPveMission: false },
   { id: 'station', label: 'Stationner', hint: 'Stationnez votre flotte sur une planète alliée', buttonLabel: 'Envoyer', color: '#10b981', sortOrder: 2, dangerous: false, requiredShipRoles: null, exclusive: false, recommendedShipRoles: null, requiresPveMission: false },
   { id: 'spy', label: 'Espionner', hint: "Envoyez des sondes d'espionnage", buttonLabel: 'Espionner', color: '#8b5cf6', sortOrder: 3, dangerous: false, requiredShipRoles: ['espionageProbe'], exclusive: true, recommendedShipRoles: null, requiresPveMission: false },
-  { id: 'attack', label: 'Attaque', hint: 'Attaquez une planète ennemie', buttonLabel: 'Attaquer', color: '#ef4444', sortOrder: 4, dangerous: true, requiredShipRoles: ['lightFighter', 'heavyFighter', 'cruiser', 'battleship'], exclusive: false, recommendedShipRoles: null, requiresPveMission: false },
+  { id: 'attack', label: 'Attaque', hint: 'Attaquez une planète ennemie', buttonLabel: 'Attaquer', color: '#ef4444', sortOrder: 4, dangerous: true, requiredShipRoles: ['interceptor', 'frigate', 'cruiser', 'battlecruiser'], exclusive: false, recommendedShipRoles: null, requiresPveMission: false },
   { id: 'colonize', label: 'Coloniser', hint: 'Colonisez une position vide', buttonLabel: 'Coloniser', color: '#f97316', sortOrder: 5, dangerous: true, requiredShipRoles: ['colonyShip'], exclusive: true, recommendedShipRoles: null, requiresPveMission: false },
   { id: 'recycle', label: 'Recycler', hint: 'Récupérez les débris en orbite', buttonLabel: 'Recycler', color: '#06b6d4', sortOrder: 6, dangerous: false, requiredShipRoles: ['recycler'], exclusive: true, recommendedShipRoles: null, requiresPveMission: false },
   { id: 'mine', label: 'Miner', hint: "Envoyez des prospecteurs sur une ceinture d'astéroïdes", buttonLabel: 'Envoyer', color: '#f59e0b', sortOrder: 7, dangerous: false, requiredShipRoles: ['prospector'], exclusive: false, recommendedShipRoles: null, requiresPveMission: true },
-  { id: 'pirate', label: 'Pirate', hint: 'Attaquez un repaire pirate', buttonLabel: 'Attaquer', color: '#e11d48', sortOrder: 8, dangerous: true, requiredShipRoles: ['lightFighter', 'heavyFighter', 'cruiser', 'battleship'], exclusive: false, recommendedShipRoles: null, requiresPveMission: true },
+  { id: 'pirate', label: 'Pirate', hint: 'Attaquez un repaire pirate', buttonLabel: 'Attaquer', color: '#e11d48', sortOrder: 8, dangerous: true, requiredShipRoles: ['interceptor', 'frigate', 'cruiser', 'battlecruiser'], exclusive: false, recommendedShipRoles: null, requiresPveMission: true },
   {
     id: 'trade',
     label: 'Commerce',
@@ -432,10 +391,12 @@ const UNIVERSE_CONFIG = [
   { key: 'home_planet_position_max', value: 12 },
 
   // ── Combat ──
-  { key: 'combat_max_rounds', value: 6 },
-  { key: 'combat_defense_repair_probability', value: 0.7 },
-  { key: 'combat_bounce_threshold', value: 0.01 },
-  { key: 'combat_rapid_destruction_threshold', value: 0.3 },
+  { key: 'combat_max_rounds', value: 4 },
+  { key: 'combat_debris_ratio', value: 0.3 },
+  { key: 'combat_defense_repair_rate', value: 0.7 },
+  { key: 'combat_pillage_ratio', value: 0.33 },
+  { key: 'combat_min_damage_per_hit', value: 1 },
+  { key: 'combat_research_bonus_per_level', value: 0.1 },
 
   // ── PvE ──
   { key: 'pve_max_concurrent_missions', value: 3 },
@@ -592,14 +553,7 @@ async function seed() {
   }
   console.log(`  ✓ ${dPrereqs.length} defense prerequisites`);
 
-  // 9. Rapid fire
-  await db.delete(rapidFire);
-  if (RAPID_FIRE_DATA.length > 0) {
-    await db.insert(rapidFire).values(RAPID_FIRE_DATA);
-  }
-  console.log(`  ✓ ${RAPID_FIRE_DATA.length} rapid fire entries`);
-
-  // 10. Production config
+  // 9. Production config
   for (const p of PRODUCTION_CONFIG) {
     await db.insert(productionConfig).values(p)
       .onConflictDoUpdate({ target: productionConfig.id, set: { ...p } });
