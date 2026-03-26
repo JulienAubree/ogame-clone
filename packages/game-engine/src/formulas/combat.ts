@@ -128,16 +128,26 @@ function createUnits(
 function selectTarget(
   units: CombatUnit[],
   priorityCategoryId: string,
-  categories: ShipCategory[],
+  sortedCategories: ShipCategory[],
   rng: () => number,
 ): CombatUnit | null {
-  const sortedCategories = [...categories].sort((a, b) => a.targetOrder - b.targetOrder);
+  // Priority category first (only if targetable or used as explicit priority)
   const priorityTargets = units.filter(u => !u.destroyed && u.category === priorityCategoryId);
   if (priorityTargets.length > 0) {
     return priorityTargets[Math.floor(rng() * priorityTargets.length)];
   }
+  // Fallback: iterate by targetOrder, skip non-targetable categories
   for (const cat of sortedCategories) {
     if (cat.id === priorityCategoryId) continue;
+    if (!cat.targetable) continue;
+    const targets = units.filter(u => !u.destroyed && u.category === cat.id);
+    if (targets.length > 0) {
+      return targets[Math.floor(rng() * targets.length)];
+    }
+  }
+  // Last resort: non-targetable categories (support)
+  for (const cat of sortedCategories) {
+    if (cat.id === priorityCategoryId || cat.targetable) continue;
     const targets = units.filter(u => !u.destroyed && u.category === cat.id);
     if (targets.length > 0) {
       return targets[Math.floor(rng() * targets.length)];
@@ -193,7 +203,7 @@ function fireShot(
 
   // Armor reduces surplus, minimum 1 damage if shot reaches hull
   const hullDamage = Math.max(surplus - target.armor, minDamage);
-  defenderStats.armorBlocked += Math.min(target.armor, surplus);
+  defenderStats.armorBlocked += surplus - hullDamage;
 
   target.hull -= hullDamage;
 
@@ -283,6 +293,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
   } = input;
 
   const rng = createRng(rngSeed);
+  const sortedCategories = [...combatConfig.categories].sort((a, b) => a.targetOrder - b.targetOrder);
 
   const attackers = createUnits(attackerFleet, attackerMultipliers, shipConfigs, 0);
   const defenderShipUnits = createUnits(defenderFleet, defenderMultipliers, shipConfigs, attackers.length);
@@ -309,13 +320,13 @@ export function simulateCombat(input: CombatInput): CombatResult {
     // Attackers fire at defender clones
     for (const attacker of aliveAttackers) {
       fireSalvo(attacker, defendersForAttackerFire, attackerTargetPriority,
-        combatConfig.categories, combatConfig.minDamagePerHit, roundAttackerStats, roundDefenderStats, rng);
+        sortedCategories, combatConfig.minDamagePerHit, roundAttackerStats, roundDefenderStats, rng);
     }
 
     // Defenders fire at attacker clones
     for (const defender of aliveDefenders) {
       fireSalvo(defender, attackersForDefenderFire, defenderTargetPriority,
-        combatConfig.categories, combatConfig.minDamagePerHit, roundDefenderStats, roundAttackerStats, rng);
+        sortedCategories, combatConfig.minDamagePerHit, roundDefenderStats, roundAttackerStats, rng);
     }
 
     // Apply damage from both phases back to real units
