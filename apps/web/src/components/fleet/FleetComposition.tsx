@@ -1,10 +1,7 @@
-import { useState } from 'react';
 import { categorizeShip, type Mission, type ShipCategory } from '@/config/mission-config';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
 import { cn } from '@/lib/utils';
-
-const COLLAPSED_COUNT = 4;
 
 interface Ship {
   id: string;
@@ -101,41 +98,26 @@ function ShipCard({ ship, value, onChange, onToggle, disabled }: {
   );
 }
 
-function CollapsibleCardGrid({ ships, selectedShips, onChange, onToggle, disabled }: {
+function ShipCardGrid({ ships, selectedShips, onChange, onToggle, disabled }: {
   ships: Ship[];
   selectedShips: Record<string, number>;
   onChange: (shipId: string, count: number) => void;
   onToggle: (shipId: string) => void;
   disabled: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? ships : ships.slice(0, COLLAPSED_COUNT);
-  const hiddenCount = ships.length - COLLAPSED_COUNT;
-
   return (
-    <>
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
-        {visible.map((ship) => (
-          <ShipCard
-            key={ship.id}
-            ship={ship}
-            value={selectedShips[ship.id] ?? 0}
-            onChange={disabled ? () => {} : (count) => onChange(ship.id, count)}
-            onToggle={() => onToggle(ship.id)}
-            disabled={disabled}
-          />
-        ))}
-      </div>
-      {hiddenCount > 0 && (
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {expanded ? '▲ Réduire' : `▼ Voir ${hiddenCount} de plus`}
-        </button>
-      )}
-    </>
+    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
+      {ships.map((ship) => (
+        <ShipCard
+          key={ship.id}
+          ship={ship}
+          value={selectedShips[ship.id] ?? 0}
+          onChange={disabled ? () => {} : (count) => onChange(ship.id, count)}
+          onToggle={() => onToggle(ship.id)}
+          disabled={disabled}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -187,7 +169,7 @@ export function FleetComposition({ ships, mission, selectedShips, onChange, onTo
       {categorized.optional.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Optionnels</div>
-          <CollapsibleCardGrid
+          <ShipCardGrid
             ships={categorized.optional}
             selectedShips={selectedShips}
             onChange={onChange}
@@ -201,7 +183,7 @@ export function FleetComposition({ ships, mission, selectedShips, onChange, onTo
       {categorized.disabled.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Non disponibles</div>
-          <CollapsibleCardGrid
+          <ShipCardGrid
             ships={categorized.disabled}
             selectedShips={selectedShips}
             onChange={onChange}
