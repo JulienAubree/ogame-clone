@@ -319,6 +319,17 @@ export default function Fleet() {
         mission={mission}
         selectedShips={selectedShips}
         onChange={handleShipChange}
+        onToggle={(shipId) => {
+          setSelectedShips((prev) => {
+            if ((prev[shipId] ?? 0) > 0) {
+              const next = { ...prev };
+              delete next[shipId];
+              return next;
+            }
+            const ship = ships?.find((s) => s.id === shipId);
+            return ship ? { ...prev, [shipId]: ship.count } : prev;
+          });
+        }}
       />
 
       {/* Cargo */}

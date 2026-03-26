@@ -18,21 +18,28 @@ interface FleetCompositionProps {
   mission: Mission | null;
   selectedShips: Record<string, number>;
   onChange: (shipId: string, count: number) => void;
+  onToggle: (shipId: string) => void;
 }
 
-function ShipCard({ ship, value, onChange, disabled }: {
+function ShipCard({ ship, value, onChange, onToggle, disabled }: {
   ship: Ship;
   value: number;
   onChange: (count: number) => void;
+  onToggle: () => void;
   disabled: boolean;
 }) {
   const isSelected = !disabled && value > 0;
   return (
-    <div className={cn(
-      'retro-card overflow-hidden flex flex-col',
-      disabled && 'opacity-40',
-      isSelected && 'border-primary',
-    )}>
+    <div
+      role={disabled ? undefined : 'button'}
+      onClick={disabled ? undefined : onToggle}
+      className={cn(
+        'retro-card overflow-hidden flex flex-col',
+        disabled && 'opacity-40',
+        !disabled && 'cursor-pointer',
+        isSelected && 'border-primary',
+      )}
+    >
       <div className="relative h-24 overflow-hidden">
         <GameImage
           category="ships"
@@ -52,13 +59,13 @@ function ShipCard({ ship, value, onChange, disabled }: {
           </div>
         )}
       </div>
-      <div className="p-2.5 flex flex-col gap-1.5">
+      <div className="p-2.5 flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
         <span className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2">
           {ship.name}
         </span>
         {disabled ? (
           <span className="text-[10px] text-muted-foreground/60">non disponible</span>
-        ) : (
+        ) : isSelected ? (
           <div className="flex items-center gap-1.5 w-full">
             <button
               onClick={() => onChange(ship.count)}
@@ -68,23 +75,24 @@ function ShipCard({ ship, value, onChange, disabled }: {
             </button>
             <input
               type="number"
-              min={0}
+              min={1}
               max={ship.count}
               value={value}
-              onChange={(e) => onChange(Math.min(Number(e.target.value) || 0, ship.count))}
+              onChange={(e) => onChange(Math.min(Number(e.target.value) || 1, ship.count))}
               className="flex-1 min-w-0 rounded border border-border bg-background px-1 py-0.5 text-center text-xs font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
 }
 
-function CollapsibleCardGrid({ ships, selectedShips, onChange, disabled }: {
+function CollapsibleCardGrid({ ships, selectedShips, onChange, onToggle, disabled }: {
   ships: Ship[];
   selectedShips: Record<string, number>;
   onChange: (shipId: string, count: number) => void;
+  onToggle: (shipId: string) => void;
   disabled: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -100,6 +108,7 @@ function CollapsibleCardGrid({ ships, selectedShips, onChange, disabled }: {
             ship={ship}
             value={disabled ? 0 : (selectedShips[ship.id] ?? 0)}
             onChange={disabled ? () => {} : (count) => onChange(ship.id, count)}
+            onToggle={() => onToggle(ship.id)}
             disabled={disabled}
           />
         ))}
@@ -117,7 +126,7 @@ function CollapsibleCardGrid({ ships, selectedShips, onChange, disabled }: {
   );
 }
 
-export function FleetComposition({ ships, mission, selectedShips, onChange }: FleetCompositionProps) {
+export function FleetComposition({ ships, mission, selectedShips, onChange, onToggle }: FleetCompositionProps) {
   const { data: gameConfig } = useGameConfig();
 
   if (!mission) {
@@ -153,6 +162,7 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
                 ship={ship}
                 value={selectedShips[ship.id] ?? 0}
                 onChange={(count) => onChange(ship.id, count)}
+                onToggle={() => onToggle(ship.id)}
                 disabled={false}
               />
             ))}
@@ -168,6 +178,7 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
             ships={categorized.optional}
             selectedShips={selectedShips}
             onChange={onChange}
+            onToggle={onToggle}
             disabled={false}
           />
         </div>
@@ -181,6 +192,7 @@ export function FleetComposition({ ships, mission, selectedShips, onChange }: Fl
             ships={categorized.disabled}
             selectedShips={selectedShips}
             onChange={onChange}
+            onToggle={onToggle}
             disabled
           />
         </div>
