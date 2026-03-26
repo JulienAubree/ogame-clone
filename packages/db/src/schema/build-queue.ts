@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, integer, timestamp, pgEnum, index } from 'drizzle-orm/pg-core';
 import { planets } from './planets.js';
 import { users } from './users.js';
 
@@ -30,4 +30,6 @@ export const buildQueue = pgTable('build_queue', {
   endTime: timestamp('end_time', { withTimezone: true }).notNull(),
   status: buildQueueStatusEnum('status').notNull().default('active'),
   facilityId: varchar('facility_id', { length: 64 }),
-});
+}, (table) => [
+  index('build_queue_planet_type_status_idx').on(table.planetId, table.type, table.status),
+]);

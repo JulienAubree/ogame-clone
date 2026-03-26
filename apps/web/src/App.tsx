@@ -6,7 +6,14 @@ import { router } from './router';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export default function App() {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }));
   const [trpcClient] = useState(() => createTRPCClient());
 
   return (

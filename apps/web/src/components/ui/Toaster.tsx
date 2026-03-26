@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
 import { useToastStore, type ToastVariant } from '@/stores/toast.store';
 import { cn } from '@/lib/utils';
+
+const TOAST_DURATION_MS = 5000;
 
 const variantStyles: Record<ToastVariant, string> = {
   success: 'border-green-500/30 bg-green-950/50',
@@ -16,20 +17,8 @@ const variantIcons: Record<ToastVariant, string> = {
   warning: '⚠',
 };
 
-function ToastItem({ id, message, variant, createdAt }: { id: string; message: string; variant: ToastVariant; createdAt: number }) {
+function ToastItem({ id, message, variant }: { id: string; message: string; variant: ToastVariant; createdAt: number }) {
   const removeToast = useToastStore((s) => s.removeToast);
-  const [progress, setProgress] = useState(100);
-
-  useEffect(() => {
-    const duration = 5000;
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - createdAt;
-      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
-      setProgress(remaining);
-      if (remaining <= 0) clearInterval(interval);
-    }, 50);
-    return () => clearInterval(interval);
-  }, [createdAt]);
 
   return (
     <div
@@ -43,7 +32,13 @@ function ToastItem({ id, message, variant, createdAt }: { id: string; message: s
         <span className="text-xs">{variantIcons[variant]}</span>
         <span>{message}</span>
       </div>
-      <div className="absolute bottom-0 left-0 h-0.5 bg-foreground/20 transition-[width] duration-100 ease-linear" style={{ width: `${progress}%` }} />
+      <div
+        className="absolute bottom-0 left-0 h-0.5 bg-foreground/20"
+        style={{
+          width: '100%',
+          animation: `toast-progress ${TOAST_DURATION_MS}ms linear forwards`,
+        }}
+      />
     </div>
   );
 }
@@ -55,6 +50,12 @@ export function Toaster() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <style>{`
+        @keyframes toast-progress {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+      `}</style>
       {toasts.map((t) => (
         <ToastItem key={t.id} {...t} />
       ))}

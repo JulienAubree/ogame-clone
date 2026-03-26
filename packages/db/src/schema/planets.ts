@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, smallint, integer, numeric, timestamp, uniqueIndex, pgEnum, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, smallint, integer, numeric, timestamp, uniqueIndex, index, pgEnum, boolean } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { planetTypes } from './game-config.js';
 
@@ -34,4 +34,5 @@ export const planets = pgTable('planets', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex('unique_coordinates').on(table.galaxy, table.system, table.position, table.planetType),
+  index('planets_user_idx').on(table.userId),
 ]);

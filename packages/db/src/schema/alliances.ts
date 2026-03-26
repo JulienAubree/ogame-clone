@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
 export const allianceRoleEnum = pgEnum('alliance_role', ['founder', 'officer', 'member']);
@@ -19,7 +19,9 @@ export const allianceMembers = pgTable('alliance_members', {
   userId: uuid('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
   role: allianceRoleEnum('role').notNull().default('member'),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index('alliance_members_alliance_idx').on(table.allianceId),
+]);
 
 export const allianceInvitations = pgTable('alliance_invitations', {
   id: uuid('id').primaryKey().defaultRandom(),
