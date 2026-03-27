@@ -21,7 +21,7 @@ export function BottomSheet({ open, onClose, children }: BottomSheetProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bottom-14 z-50 lg:hidden" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-50 lg:hidden" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div
         ref={sheetRef}

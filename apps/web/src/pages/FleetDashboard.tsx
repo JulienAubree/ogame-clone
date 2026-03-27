@@ -337,7 +337,7 @@ export default function FleetDashboard() {
 
       {/* Sticky bottom bar */}
       {selectedCount > 0 && (
-        <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-lg px-4 py-3 lg:bottom-0">
+        <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-lg px-4 py-3 lg:bottom-0">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
             <span className="text-sm text-muted-foreground">
               {selectedCount} type{selectedCount > 1 ? 's' : ''} selectione{selectedCount > 1 ? 's' : ''}

@@ -53,7 +53,7 @@ function ChatFab() {
     <div className="relative mb-2">
       {/* Conversation panel */}
       {panelOpen && (
-        <div className="absolute bottom-14 right-0 w-[280px] max-h-[400px] flex flex-col rounded-xl border border-border/30 bg-card shadow-xl overflow-hidden">
+        <div className="absolute bottom-12 right-0 w-[280px] max-h-[400px] flex flex-col rounded-xl border border-border/30 bg-card shadow-xl overflow-hidden">
           {/* Panel header */}
           <div className="p-2.5 border-b border-border/30 flex items-center gap-2 flex-shrink-0">
             <input

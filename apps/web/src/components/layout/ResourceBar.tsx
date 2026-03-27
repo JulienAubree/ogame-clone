@@ -42,7 +42,7 @@ export function ResourceBar({ planetId }: ResourceBarProps) {
   return (
     <>
       <div
-        className="sticky top-12 z-30 flex h-11 cursor-pointer items-center justify-around border-b border-white/5 bg-card/80 backdrop-blur-md px-3 lg:hidden"
+        className="sticky top-[calc(3rem+env(safe-area-inset-top))] z-30 flex h-11 cursor-pointer items-center justify-around border-b border-white/5 bg-card/80 backdrop-blur-md px-3 lg:hidden"
         onClick={() => setDetailOpen(!detailOpen)}
       >
         <ResourceCounter icon={<MineraiIcon size={14} className="text-minerai" />} value={resources.minerai} colorClass="text-minerai" />
@@ -53,7 +53,7 @@ export function ResourceBar({ planetId }: ResourceBarProps) {
 
       {detailOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setDetailOpen(false)}>
-          <div className="absolute top-[88px] left-0 right-0 animate-slide-down-sheet border-b border-white/10 bg-card/95 backdrop-blur-lg p-4" style={{ maxHeight: '50vh' }} onClick={(e) => e.stopPropagation()}>
+          <div className="absolute top-[calc(5.75rem+env(safe-area-inset-top))] left-0 right-0 animate-slide-down-sheet border-b border-white/10 bg-card/95 backdrop-blur-lg p-4" style={{ maxHeight: '50vh' }} onClick={(e) => e.stopPropagation()}>
             <div className="space-y-3 text-sm">
               <DetailRow label="Minerai" value={resources.minerai} perHour={data?.rates.mineraiPerHour ?? 0} capacity={data?.rates.storageMineraiCapacity ?? 0} colorClass="text-minerai" />
               <DetailRow label="Silicium" value={resources.silicium} perHour={data?.rates.siliciumPerHour ?? 0} capacity={data?.rates.storageSiliciumCapacity ?? 0} colorClass="text-silicium" />
