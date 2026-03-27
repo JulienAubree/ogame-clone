@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar';
 import { BottomTabBar } from './BottomTabBar';
 import { Toaster } from '@/components/ui/Toaster';
 import { UpdatePrompt } from '@/components/pwa/UpdatePrompt';
+import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { ChatOverlay } from '@/components/chat/ChatOverlay';
 import { TutorialPanel } from '@/components/tutorial/TutorialPanel';
 import { trpc } from '@/trpc';
@@ -41,6 +42,7 @@ export function Layout() {
       {/* Main area */}
       <div className="flex flex-1 flex-col lg:ml-56">
         <TopBar planetId={resolvedPlanetId} planets={planets ?? []} />
+        <OfflineBanner />
         <ResourceBar planetId={resolvedPlanetId} />
 
         {/* Page content - pb-14 for bottom tab bar on mobile */}
