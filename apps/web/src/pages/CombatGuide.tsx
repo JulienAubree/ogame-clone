@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { PageHeader } from '@/components/common/PageHeader';
 import { CombatReplay } from '@/components/combat-guide/CombatReplay';
+import { computeUnitFP, type FPConfig, type UnitCombatStats } from '@ogame-clone/game-engine';
+import { useGameConfig } from '@/hooks/useGameConfig';
+import { getShipName, getDefenseName } from '@/lib/entity-names';
+import { CombatSimulator } from '@/components/combat-guide/CombatSimulator';
 
 const TABS = [
   { id: 'beginner', label: 'Comprendre le combat' },
@@ -190,9 +194,226 @@ function BeginnerTab() {
 }
 
 function ReferenceTab() {
+  const { data: gameConfig } = useGameConfig();
+
+  if (!gameConfig) return null;
+
+  const fpConfig: FPConfig = {
+    shotcountExponent: Number(gameConfig.universe?.fp_shotcount_exponent ?? 1.5),
+    divisor: Number(gameConfig.universe?.fp_divisor ?? 100),
+  };
+
+  const maxRounds = Number(gameConfig.universe?.combat_max_rounds ?? 4);
+  const debrisRatio = Number(gameConfig.universe?.combat_debris_ratio ?? 0.3);
+  const defenseRepairRate = Number(gameConfig.universe?.combat_defense_repair_rate ?? 0.7);
+  const minDamage = Number(gameConfig.universe?.combat_min_damage_per_hit ?? 1);
+
+  // Build ship rows sorted by FP desc
+  const shipRows = Object.entries(gameConfig.ships)
+    .filter(([, s]) => s.weapons > 0)
+    .map(([id, s]) => {
+      const stats: UnitCombatStats = { weapons: s.weapons, shotCount: s.shotCount, shield: s.shield, hull: s.hull };
+      return { ...s, id, name: getShipName(id, gameConfig), fp: computeUnitFP(stats, fpConfig), category: s.combatCategoryId ?? '—' };
+    })
+    .sort((a, b) => b.fp - a.fp);
+
+  // Build defense rows sorted by FP desc
+  const defenseRows = Object.entries(gameConfig.defenses)
+    .filter(([, d]) => d.weapons > 0)
+    .map(([id, d]) => {
+      const stats: UnitCombatStats = { weapons: d.weapons, shotCount: d.shotCount, shield: d.shield, hull: d.hull };
+      return { ...d, id, name: getDefenseName(id, gameConfig), fp: computeUnitFP(stats, fpConfig), category: d.combatCategoryId ?? '—' };
+    })
+    .sort((a, b) => b.fp - a.fp);
+
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">Référence technique — à venir.</p>
+      {/* Formule FP */}
+      <section className="glass-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-primary">Formule du Facteur de Puissance</h3>
+        <div className="text-xs text-muted-foreground space-y-2">
+          <code className="block rounded bg-muted/50 p-3 text-foreground">
+            FP = Math.round((armes × shotCount<sup>{fpConfig.shotcountExponent}</sup>) × (bouclier + coque) / {fpConfig.divisor})
+          </code>
+          <p>
+            FP d'une flotte = somme de (FP unitaire × quantité) pour chaque type de vaisseau.
+          </p>
+          <div className="flex gap-4">
+            <div>
+              <span className="text-muted-foreground">Exposant shotCount :</span>{' '}
+              <span className="text-foreground font-mono">{fpConfig.shotcountExponent}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Diviseur :</span>{' '}
+              <span className="text-foreground font-mono">{fpConfig.divisor}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Formules de combat */}
+      <section className="glass-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-primary">Formules de combat</h3>
+        <div className="text-xs text-muted-foreground space-y-3">
+          <div>
+            <p className="font-medium text-foreground mb-1">Stats effectives (avec recherche)</p>
+            <code className="block rounded bg-muted/50 p-2 text-foreground">
+              armes_eff = armes_base × multiplicateur_armes<br />
+              bouclier_eff = bouclier_base × multiplicateur_bouclier<br />
+              coque_eff = coque_base × multiplicateur_blindage
+            </code>
+            <p className="mt-1">L'armure n'est pas affectée par la recherche (réduction plate fixe).</p>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground mb-1">Dégâts par tir</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>Si <code className="text-foreground">bouclier ≥ dégâts</code> → le bouclier absorbe tout, 0 dégâts à la coque.</li>
+              <li>Sinon, <code className="text-foreground">surplus = dégâts − bouclier</code></li>
+              <li>Dégâts coque = <code className="text-foreground">max(surplus − armure, {minDamage})</code> — minimum {minDamage} dégât garanti si le bouclier est percé.</li>
+              <li>Destruction si <code className="text-foreground">coque ≤ 0</code>.</li>
+            </ol>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground mb-1">Paramètres de combat</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              <span>Rounds maximum :</span><span className="text-foreground font-mono">{maxRounds}</span>
+              <span>Ratio débris :</span><span className="text-foreground font-mono">{(debrisRatio * 100).toFixed(0)}%</span>
+              <span>Réparation défenses :</span><span className="text-foreground font-mono">{(defenseRepairRate * 100).toFixed(0)}%</span>
+              <span>Dégât minimum :</span><span className="text-foreground font-mono">{minDamage}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Targeting */}
+      <section className="glass-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-primary">Priorité de ciblage</h3>
+        <div className="text-xs text-muted-foreground space-y-2">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="py-1 pr-4 text-foreground">Catégorie</th>
+                  <th className="py-1 pr-4 text-foreground">Ordre</th>
+                  <th className="py-1 text-foreground">Ciblable</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border/50"><td className="py-1 pr-4">Léger</td><td className="py-1 pr-4">1 (priorité)</td><td className="py-1">Oui</td></tr>
+                <tr className="border-b border-border/50"><td className="py-1 pr-4">Moyen</td><td className="py-1 pr-4">2</td><td className="py-1">Oui</td></tr>
+                <tr className="border-b border-border/50"><td className="py-1 pr-4">Lourd</td><td className="py-1 pr-4">3</td><td className="py-1">Oui</td></tr>
+                <tr><td className="py-1 pr-4">Support</td><td className="py-1 pr-4">4 (dernier)</td><td className="py-1">Non (dernier recours)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            L'algorithme cible d'abord la catégorie prioritaire, puis les catégories ciblables par ordre croissant.
+            Les unités de support ne sont ciblées que s'il n'y a plus de combattants.
+          </p>
+        </div>
+      </section>
+
+      {/* Ship table */}
+      <section className="glass-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-primary">Table des vaisseaux</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground">
+                <th className="py-1.5 pr-3">Vaisseau</th>
+                <th className="py-1.5 pr-3 text-right">Armes</th>
+                <th className="py-1.5 pr-3 text-right">Tirs</th>
+                <th className="py-1.5 pr-3 text-right">Bouclier</th>
+                <th className="py-1.5 pr-3 text-right">Armure</th>
+                <th className="py-1.5 pr-3 text-right">Coque</th>
+                <th className="py-1.5 pr-3">Cat.</th>
+                <th className="py-1.5 text-right font-semibold text-foreground">FP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shipRows.map((row) => (
+                <tr key={row.id} className="border-b border-border/30">
+                  <td className="py-1.5 pr-3 text-foreground">{row.name}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.weapons}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.shotCount}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.shield}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.baseArmor}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.hull}</td>
+                  <td className="py-1.5 pr-3">{row.category}</td>
+                  <td className="py-1.5 text-right font-bold text-foreground">{row.fp}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Defense table */}
+      <section className="glass-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-primary">Table des défenses</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground">
+                <th className="py-1.5 pr-3">Défense</th>
+                <th className="py-1.5 pr-3 text-right">Armes</th>
+                <th className="py-1.5 pr-3 text-right">Tirs</th>
+                <th className="py-1.5 pr-3 text-right">Bouclier</th>
+                <th className="py-1.5 pr-3 text-right">Armure</th>
+                <th className="py-1.5 pr-3 text-right">Coque</th>
+                <th className="py-1.5 pr-3">Cat.</th>
+                <th className="py-1.5 text-right font-semibold text-foreground">FP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {defenseRows.map((row) => (
+                <tr key={row.id} className="border-b border-border/30">
+                  <td className="py-1.5 pr-3 text-foreground">{row.name}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.weapons}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.shotCount}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.shield}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.baseArmor}</td>
+                  <td className="py-1.5 pr-3 text-right">{row.hull}</td>
+                  <td className="py-1.5 pr-3">{row.category}</td>
+                  <td className="py-1.5 text-right font-bold text-foreground">{row.fp}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Debris & repair */}
+      <section className="glass-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-primary">Débris et réparation</h3>
+        <div className="text-xs text-muted-foreground space-y-2">
+          <div>
+            <p className="font-medium text-foreground mb-1">Champ de débris</p>
+            <code className="block rounded bg-muted/50 p-2 text-foreground">
+              débris_minerai = floor(coût_minerai_total × {debrisRatio})<br />
+              débris_silicium = floor(coût_silicium_total × {debrisRatio})
+            </code>
+            <p className="mt-1">
+              Seuls les <span className="text-foreground">vaisseaux détruits</span> (des deux camps) génèrent des débris.
+              Les défenses ne contribuent pas au champ de débris.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-foreground mb-1">Réparation des défenses</p>
+            <p>
+              Chaque défense détruite a <span className="text-foreground">{(defenseRepairRate * 100).toFixed(0)}%</span> de
+              chance d'être automatiquement restaurée après le combat. Les vaisseaux ne sont jamais réparés.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Simulator */}
+      <section>
+        <CombatSimulator />
+      </section>
     </div>
   );
 }
