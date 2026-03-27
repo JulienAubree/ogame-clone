@@ -35,7 +35,7 @@ export function Layout() {
   useDocumentTitle();
 
   return (
-    <div className="flex h-dvh flex-col bg-background bg-stars text-foreground">
+    <div className="flex h-dvh flex-col bg-background bg-stars text-foreground pt-safe-top">
       {/* Desktop sidebar */}
       <Sidebar />
 
