@@ -1,14 +1,17 @@
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { pirateTemplates } from '@ogame-clone/db';
 import type { Database } from '@ogame-clone/db';
 import {
   simulateCombat,
-  resolveBonus,
+  computeFleetFP,
+  scaleFleetToFP,
   type CombatMultipliers,
   type CombatConfig,
   type CombatInput,
   type ShipCategory,
   type ShipCombatConfig,
+  type UnitCombatStats,
+  type FPConfig,
 } from '@ogame-clone/game-engine';
 import type { GameConfigService } from '../admin/game-config.service.js';
 
@@ -22,44 +25,52 @@ interface PirateArrivalResult {
 
 export function createPirateService(db: Database, gameConfigService: GameConfigService) {
   return {
-    async pickTemplate(centerLevel: number, tier: 'easy' | 'medium' | 'hard') {
+    async pickTemplate(tier: 'easy' | 'medium' | 'hard') {
       const templates = await db.select().from(pirateTemplates)
-        .where(and(
-          eq(pirateTemplates.tier, tier),
-          lte(pirateTemplates.centerLevelMin, centerLevel),
-          gte(pirateTemplates.centerLevelMax, centerLevel),
-        ));
+        .where(eq(pirateTemplates.tier, tier));
 
       if (templates.length === 0) return null;
       return templates[Math.floor(Math.random() * templates.length)];
     },
 
+    buildScaledPirateFleet(
+      templateShips: Record<string, number>,
+      centerLevel: number,
+      playerFleetFP: number,
+      universeConfig: Record<string, unknown>,
+      shipStats: Record<string, UnitCombatStats>,
+      fpConfig: FPConfig,
+      tier: 'easy' | 'medium' | 'hard',
+    ): { fleet: Record<string, number>; fp: number } {
+      const fpMin = Number(universeConfig[`pirate_fp_${tier}_min`]) || 1;
+      const fpMax = Number(universeConfig[`pirate_fp_${tier}_max`]) || 5;
+      const capRatio = Number(universeConfig.pirate_fp_player_cap_ratio) || 0.8;
+
+      const fpRaw = (fpMin + Math.random() * (fpMax - fpMin)) * centerLevel;
+      const fpCapped = playerFleetFP > 0
+        ? Math.min(fpRaw, playerFleetFP * capRatio)
+        : fpRaw;
+      const targetFP = Math.max(1, Math.round(fpCapped));
+
+      const fleet = scaleFleetToFP(templateShips, targetFP, shipStats, fpConfig);
+      const actualFP = computeFleetFP(fleet, shipStats, fpConfig);
+
+      return { fleet, fp: actualFP };
+    },
+
     async processPirateArrival(
       playerShips: Record<string, number>,
       playerMultipliers: CombatMultipliers,
-      templateId: string,
+      pirateFleet: Record<string, number>,
       fleetCargoCapacity: number,
+      rewards: { minerai: number; silicium: number; hydrogene: number; bonusShips: { shipId: string; count: number; chance: number }[] },
     ): Promise<PirateArrivalResult> {
-      const [template] = await db.select().from(pirateTemplates)
-        .where(eq(pirateTemplates.id, templateId));
-
-      if (!template) {
-        throw new Error(`Pirate template ${templateId} not found`);
-      }
-
-      const pirateShips = template.ships as Record<string, number>;
-      const pirateTechLevels = template.techs as { weapons: number; shielding: number; armor: number };
+      const pirateShips = pirateFleet;
       const config = await gameConfigService.getFullConfig();
       const pirateMultipliers: CombatMultipliers = {
-        weapons: resolveBonus('weapons', null, { weapons: pirateTechLevels.weapons }, config.bonuses),
-        shielding: resolveBonus('shielding', null, { shielding: pirateTechLevels.shielding }, config.bonuses),
-        armor: resolveBonus('armor', null, { armor: pirateTechLevels.armor }, config.bonuses),
-      };
-      const rewards = template.rewards as {
-        minerai: number;
-        silicium: number;
-        hydrogene: number;
-        bonusShips: { shipId: string; count: number; chance: number }[];
+        weapons: 1,
+        shielding: 1,
+        armor: 1,
       };
 
       // Build ShipCombatConfig map from game config

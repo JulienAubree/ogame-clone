@@ -1,8 +1,8 @@
 import { eq, and, sql, asc } from 'drizzle-orm';
-import { pveMissions, planets, missionCenterState, fleetEvents } from '@ogame-clone/db';
+import { pveMissions, planets, missionCenterState, fleetEvents, planetShips } from '@ogame-clone/db';
 import { TRPCError } from '@trpc/server';
 import type { Database } from '@ogame-clone/db';
-import { discoveryCooldown, depositSize, depositComposition } from '@ogame-clone/game-engine';
+import { discoveryCooldown, depositSize, depositComposition, computeFleetFP, type UnitCombatStats, type FPConfig } from '@ogame-clone/game-engine';
 import type { createAsteroidBeltService } from './asteroid-belt.service.js';
 import type { createPirateService } from './pirate.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -291,6 +291,26 @@ export function createPveService(
         .where(eq(missionCenterState.userId, userId));
     },
 
+    async getPlayerFleetFP(
+      userId: string,
+      shipStats: Record<string, UnitCombatStats>,
+      fpConfig: FPConfig,
+    ): Promise<number> {
+      const playerPlanets = await db.select({ id: planets.id }).from(planets).where(eq(planets.userId, userId));
+      let totalFP = 0;
+      for (const planet of playerPlanets) {
+        const [ships] = await db.select().from(planetShips).where(eq(planetShips.planetId, planet.id)).limit(1);
+        if (!ships) continue;
+        const fleet: Record<string, number> = {};
+        for (const [key, value] of Object.entries(ships)) {
+          if (key === 'planetId') continue;
+          if (typeof value === 'number' && value > 0) fleet[key] = value;
+        }
+        totalFP += computeFleetFP(fleet, shipStats, fpConfig);
+      }
+      return totalFP;
+    },
+
     async generatePirateMission(userId: string, galaxy: number, system: number, centerLevel: number) {
       const config = await gameConfigService.getFullConfig();
       const tierMediumUnlock = Number(config.universe.pve_tier_medium_unlock) || 4;
@@ -300,7 +320,7 @@ export function createPveService(
       if (centerLevel >= tierHardUnlock) availableTiers.push('hard');
 
       const tier = availableTiers[Math.floor(Math.random() * availableTiers.length)];
-      const template = await pirateService.pickTemplate(centerLevel, tier);
+      const template = await pirateService.pickTemplate(tier);
       if (!template) return;
 
       // Random position in system (exclude belt positions)
@@ -312,9 +332,37 @@ export function createPveService(
         position = 1 + Math.floor(Math.random() * universePositions);
       } while (beltSet.has(position));
 
-      const rewards = template.rewards as {
+      // Build ship stats map for FP computation
+      const shipStats: Record<string, UnitCombatStats> = {};
+      for (const [id, ship] of Object.entries(config.ships)) {
+        shipStats[id] = { weapons: ship.weapons, shotCount: ship.shotCount ?? 1, shield: ship.shield, hull: ship.hull };
+      }
+      const fpConfig: FPConfig = {
+        shotcountExponent: Number(config.universe.fp_shotcount_exponent) || 1.5,
+        divisor: Number(config.universe.fp_divisor) || 100,
+      };
+
+      // Compute player fleet FP (all ships across all planets)
+      const playerFleetFP = await this.getPlayerFleetFP(userId, shipStats, fpConfig);
+
+      // Scale pirate fleet
+      const templateShips = template.ships as Record<string, number>;
+      const { fleet: scaledFleet, fp: pirateFP } = pirateService.buildScaledPirateFleet(
+        templateShips, centerLevel, playerFleetFP, config.universe, shipStats, fpConfig, tier,
+      );
+
+      // Scale rewards proportionally
+      const templateRewards = template.rewards as {
         minerai: number; silicium: number; hydrogene: number;
         bonusShips: { shipId: string; count: number; chance: number }[];
+      };
+      const baseFP = computeFleetFP(templateShips, shipStats, fpConfig);
+      const rewardRatio = baseFP > 0 ? pirateFP / baseFP : 1;
+      const scaledRewards = {
+        minerai: Math.floor(templateRewards.minerai * rewardRatio),
+        silicium: Math.floor(templateRewards.silicium * rewardRatio),
+        hydrogene: Math.floor(templateRewards.hydrogene * rewardRatio),
+        bonusShips: templateRewards.bonusShips,
       };
 
       await db.insert(pveMissions).values({
@@ -323,8 +371,10 @@ export function createPveService(
         parameters: {
           galaxy, system, position,
           templateId: template.id,
+          scaledFleet,
+          pirateFP,
         },
-        rewards,
+        rewards: scaledRewards,
         difficultyTier: tier,
         status: 'available',
       });

@@ -23,13 +23,17 @@ export class PirateHandler implements MissionHandler {
       };
     }
 
-    const params = mission.parameters as { templateId: string };
+    const params = mission.parameters as { templateId: string; scaledFleet: Record<string, number>; pirateFP: number };
     const config = await ctx.gameConfigService.getFullConfig();
     const playerMultipliers = await getCombatMultipliers(ctx.db, fleetEvent.userId, config.bonuses);
     const shipStatsMap = buildShipStatsMap(config);
     const preCargoCapacity = totalCargoCapacity(ships, shipStatsMap);
+    const missionRewards = mission.rewards as {
+      minerai: number; silicium: number; hydrogene: number;
+      bonusShips: { shipId: string; count: number; chance: number }[];
+    };
     const result = await ctx.pirateService.processPirateArrival(
-      ships, playerMultipliers, params.templateId, preCargoCapacity,
+      ships, playerMultipliers, params.scaledFleet, preCargoCapacity, missionRewards,
     );
 
     // Re-cap loot to surviving fleet's actual cargo capacity
