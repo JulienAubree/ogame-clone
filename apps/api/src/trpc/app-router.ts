@@ -49,6 +49,8 @@ import { createExiliumService } from '../modules/exilium/exilium.service.js';
 import { createExiliumRouter } from '../modules/exilium/exilium.router.js';
 import { createFlagshipService } from '../modules/flagship/flagship.service.js';
 import { createFlagshipRouter } from '../modules/flagship/flagship.router.js';
+import { createDailyQuestService } from '../modules/daily-quest/daily-quest.service.js';
+import { createDailyQuestRouter } from '../modules/daily-quest/daily-quest.router.js';
 import { env } from '../config/env.js';
 import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
@@ -82,6 +84,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis);
   const exiliumService = createExiliumService(db, gameConfigService);
   const flagshipService = createFlagshipService(db, exiliumService, gameConfigService);
+  const dailyQuestService = createDailyQuestService(db, exiliumService, gameConfigService, redis);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -106,6 +109,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const pushRouter = createPushRouter(pushService);
   const exiliumRouter = createExiliumRouter(exiliumService);
   const flagshipRouter = createFlagshipRouter(flagshipService, tutorialService);
+  const dailyQuestRouter = createDailyQuestRouter(dailyQuestService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -135,6 +139,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     push: pushRouter,
     exilium: exiliumRouter,
     flagship: flagshipRouter,
+    dailyQuest: dailyQuestRouter,
   });
 }
 
