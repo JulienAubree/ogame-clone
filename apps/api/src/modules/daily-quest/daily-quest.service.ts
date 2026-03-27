@@ -22,11 +22,14 @@ function getUtcDayStart(): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
-/** Tirer `count` quetes au hasard, en excluant `exclude` */
+/** Tirer `count` quetes au hasard, en excluant `exclude` (Fisher-Yates) */
 function drawQuests(count: number, exclude: string[]): string[] {
   const pool = QUEST_IDS.filter(id => !exclude.includes(id));
-  const shuffled = pool.sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
 }
 
 export function createDailyQuestService(
@@ -146,7 +149,7 @@ export function createDailyQuestService(
         // Crediter l'Exilium (hors transaction pour ne pas bloquer si ca echoue)
         await exiliumService.earn(event.userId, reward, 'daily_quest', { questId: quest.id });
 
-        // Notification
+        // Notification (fire-and-forget)
         publishNotification(redis, event.userId, {
           type: 'daily-quest-completed',
           payload: {
@@ -154,7 +157,7 @@ export function createDailyQuestService(
             questName: def.name,
             reward,
           },
-        });
+        }).catch(() => {});
 
         return { questId: quest.id, questName: def.name, reward };
       }
