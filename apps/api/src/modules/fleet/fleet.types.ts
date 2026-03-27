@@ -12,6 +12,7 @@ import type { createPirateService } from '../pve/pirate.service.js';
 import type { createReportService } from '../report/report.service.js';
 import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { createDailyQuestService } from '../daily-quest/daily-quest.service.js';
+import type { createFlagshipService } from '../flagship/flagship.service.js';
 import type { Queue } from 'bullmq';
 import type Redis from 'ioredis';
 
@@ -79,6 +80,7 @@ export interface MissionHandlerContext {
   reportService?: ReturnType<typeof createReportService>;
   exiliumService?: ReturnType<typeof createExiliumService>;
   dailyQuestService?: ReturnType<typeof createDailyQuestService>;
+  flagshipService?: ReturnType<typeof createFlagshipService>;
   fleetQueue: Queue;
   assetsDir: string;
   redis?: Redis;

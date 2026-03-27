@@ -14,6 +14,7 @@ import type { createPirateService } from '../pve/pirate.service.js';
 import type { createReportService } from '../report/report.service.js';
 import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { createDailyQuestService } from '../daily-quest/daily-quest.service.js';
+import type { createFlagshipService } from '../flagship/flagship.service.js';
 import type Redis from 'ioredis';
 import { publishNotification } from '../notification/notification.publisher.js';
 import { TransportHandler } from './handlers/transport.handler.js';
@@ -43,6 +44,7 @@ export function createFleetService(
   reportService?: ReturnType<typeof createReportService>,
   exiliumService?: ReturnType<typeof createExiliumService>,
   dailyQuestService?: ReturnType<typeof createDailyQuestService>,
+  flagshipService?: ReturnType<typeof createFlagshipService>,
 ) {
   const handlers: Record<string, MissionHandler> = {
     transport: new TransportHandler(),
@@ -67,6 +69,7 @@ export function createFleetService(
     reportService,
     exiliumService,
     dailyQuestService,
+    flagshipService,
     fleetQueue,
     assetsDir: env.ASSETS_DIR,
     redis,
@@ -134,6 +137,7 @@ export function createFleetService(
       const planetShipRow = await this.getOrCreateShips(input.originPlanetId);
       for (const [shipId, count] of Object.entries(input.ships)) {
         if (count <= 0) continue;
+        if (shipId === 'flagship') continue; // Validated separately below
         const available = (planetShipRow[shipId as keyof typeof planetShipRow] ?? 0) as number;
         if (available < count) {
           throw new TRPCError({
@@ -142,6 +146,34 @@ export function createFleetService(
           });
         }
       }
+
+      // Validate flagship if included in fleet
+      let hasFlagship = false;
+      if (input.ships['flagship'] && input.ships['flagship'] > 0) {
+        hasFlagship = true;
+        if (!flagshipService) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Service flagship non disponible' });
+        }
+        const flagship = await flagshipService.get(userId);
+        if (!flagship) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vous n\'avez pas de vaisseau amiral' });
+        }
+        if (flagship.status !== 'active') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre vaisseau amiral n\'est pas disponible (statut: ' + flagship.status + ')' });
+        }
+        if (flagship.planetId !== input.originPlanetId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre vaisseau amiral n\'est pas sur cette planete' });
+        }
+        // Inject flagship stats into shipStatsMap for speed/fuel/cargo calculations
+        shipStatsMap['flagship'] = {
+          baseSpeed: flagship.baseSpeed,
+          fuelConsumption: flagship.fuelConsumption,
+          cargoCapacity: flagship.cargoCapacity,
+          driveType: flagship.driveType as ShipStats['driveType'],
+          miningExtraction: 0,
+        };
+      }
+
       const speedMultipliers = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
       const speed = fleetSpeed(input.ships, shipStatsMap, speedMultipliers);
       if (speed === 0) {
@@ -199,10 +231,10 @@ export function createFleetService(
         hydrogene: totalHydrogeneCost,
       });
 
-      // Deduct ships from planet
+      // Deduct ships from planet (skip flagship — managed via flagshipService)
       const shipUpdates: Record<string, number> = {};
       for (const [shipId, count] of Object.entries(input.ships)) {
-        if (count > 0) {
+        if (count > 0 && shipId !== 'flagship') {
           const current = (planetShipRow[shipId as keyof typeof planetShipRow] ?? 0) as number;
           shipUpdates[shipId] = current - count;
         }
@@ -271,6 +303,11 @@ export function createFleetService(
         { fleetEventId: event.id },
         { delay: duration * 1000, jobId: `fleet-arrive-${event.id}` },
       );
+
+      // Set flagship in mission if included
+      if (hasFlagship && flagshipService) {
+        await flagshipService.setInMission(userId);
+      }
 
       // Hook: daily quest detection for fleet dispatch
       if (dailyQuestService) {
@@ -914,12 +951,17 @@ export function createFleetService(
         .where(eq(planets.id, event.originPlanetId))
         .limit(1);
 
+      // Return flagship from mission if present
+      if (ships['flagship'] && ships['flagship'] > 0 && flagshipService) {
+        await flagshipService.returnFromMission(event.userId, event.originPlanetId);
+      }
+
       // Merge returning ships + PvE bonus ships into a single atomic update
       const meta = event.metadata as { bonusShips?: Record<string, number>; reportId?: string } | null;
       const originShips = await this.getOrCreateShips(event.originPlanetId);
       const shipUpdates: Record<string, number> = {};
       for (const [shipId, count] of Object.entries(ships)) {
-        if (count > 0) {
+        if (count > 0 && shipId !== 'flagship') {
           const current = (originShips[shipId as keyof typeof originShips] ?? 0) as number;
           shipUpdates[shipId] = current + count;
         }
@@ -1029,6 +1071,21 @@ export function createFleetService(
       const fleetConfig = buildFleetConfig(config);
       const shipStatsMap = buildShipStatsMap(config);
       const [event] = await db.select().from(fleetEvents).where(eq(fleetEvents.id, fleetEventId)).limit(1);
+
+      // Inject flagship stats if flagship is in returning fleet
+      if (ships['flagship'] && ships['flagship'] > 0 && flagshipService && event) {
+        const flagship = await flagshipService.get(event.userId);
+        if (flagship) {
+          shipStatsMap['flagship'] = {
+            baseSpeed: flagship.baseSpeed,
+            fuelConsumption: flagship.fuelConsumption,
+            cargoCapacity: flagship.cargoCapacity,
+            driveType: flagship.driveType as ShipStats['driveType'],
+            miningExtraction: 0,
+          };
+        }
+      }
+
       const researchLevels = event ? await this.getResearchLevels(event.userId) : {};
       const speedMultipliers = this.buildSpeedMultipliers(ships, shipStatsMap, researchLevels, config.bonuses);
       const speed = fleetSpeed(ships, shipStatsMap, speedMultipliers);
@@ -1102,6 +1159,21 @@ export function createFleetService(
       const planet = await this.getOwnedPlanet(userId, input.originPlanetId);
       const config = await gameConfigService.getFullConfig();
       const shipStatsMap = buildShipStatsMap(config);
+
+      // Inject flagship stats if present in estimate
+      if (input.ships['flagship'] && input.ships['flagship'] > 0 && flagshipService) {
+        const flagship = await flagshipService.get(userId);
+        if (flagship) {
+          shipStatsMap['flagship'] = {
+            baseSpeed: flagship.baseSpeed,
+            fuelConsumption: flagship.fuelConsumption,
+            cargoCapacity: flagship.cargoCapacity,
+            driveType: flagship.driveType as ShipStats['driveType'],
+            miningExtraction: 0,
+          };
+        }
+      }
+
       const researchLevels = await this.getResearchLevels(userId);
       const speedMultipliers = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
       const speed = fleetSpeed(input.ships, shipStatsMap, speedMultipliers);

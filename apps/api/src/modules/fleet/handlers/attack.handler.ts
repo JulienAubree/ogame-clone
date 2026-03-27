@@ -45,6 +45,31 @@ export class AttackHandler implements MissionHandler {
     const shipIdSet = new Set(Object.keys(config.ships));
     const defenseIdSet = new Set(Object.keys(config.defenses));
 
+    // Inject flagship combat config if flagship is in the fleet
+    if (ships['flagship'] && ships['flagship'] > 0 && ctx.flagshipService) {
+      const flagship = await ctx.flagshipService.get(fleetEvent.userId);
+      if (flagship) {
+        shipStatsMap['flagship'] = {
+          baseSpeed: flagship.baseSpeed,
+          fuelConsumption: flagship.fuelConsumption,
+          cargoCapacity: flagship.cargoCapacity,
+          driveType: flagship.driveType as import('@exilium/game-engine').ShipStats['driveType'],
+          miningExtraction: 0,
+        };
+        shipCombatConfigs['flagship'] = {
+          shipType: 'flagship',
+          categoryId: flagship.combatCategoryId ?? 'support',
+          baseShield: flagship.shield,
+          baseArmor: flagship.baseArmor ?? 0,
+          baseHull: flagship.hull,
+          baseWeaponDamage: flagship.weapons,
+          baseShotCount: flagship.shotCount ?? 1,
+        };
+        shipCostsMap['flagship'] = { minerai: 0, silicium: 0 }; // No debris from flagship
+        shipIdSet.add('flagship');
+      }
+    }
+
     // Build CombatConfig from universe config
     const categories: ShipCategory[] = [
       { id: 'light', name: 'Léger', targetable: true, targetOrder: 1 },
@@ -153,11 +178,27 @@ export class AttackHandler implements MissionHandler {
       rounds = result.rounds;
     }
 
-    // Apply attacker losses
+    // Apply attacker losses + handle flagship incapacitation
     const survivingShips: Record<string, number> = { ...ships };
+    let flagshipDestroyed = false;
     for (const [type, lost] of Object.entries(attackerLosses)) {
+      if (type === 'flagship' && (lost as number) > 0) {
+        // Flagship is incapacitated, not destroyed — teleported to home planet
+        if (ctx.flagshipService) {
+          await ctx.flagshipService.incapacitate(fleetEvent.userId);
+        }
+        flagshipDestroyed = true;
+        delete survivingShips['flagship'];
+        continue;
+      }
       survivingShips[type] = (survivingShips[type] ?? 0) - (lost as number);
       if (survivingShips[type] <= 0) delete survivingShips[type];
+    }
+
+    // Remove flagship from returning ships if destroyed (incapacitated)
+    const returnShips = { ...survivingShips };
+    if (flagshipDestroyed) {
+      delete returnShips['flagship'];
     }
 
     // Apply defender ship losses
@@ -323,6 +364,11 @@ export class AttackHandler implements MissionHandler {
     for (const [id, def] of Object.entries(config.defenses)) {
       unitCombatStats[id] = { weapons: def.weapons, shotCount: def.shotCount ?? 1, shield: def.shield, hull: def.hull };
     }
+    // Include flagship in FP calculation if present
+    if (shipCombatConfigs['flagship']) {
+      const fc = shipCombatConfigs['flagship'];
+      unitCombatStats['flagship'] = { weapons: fc.baseWeaponDamage, shotCount: fc.baseShotCount, shield: fc.baseShield, hull: fc.baseHull };
+    }
     const fpConfig: FPConfig = {
       shotcountExponent: Number(config.universe.fp_shotcount_exponent) || 1.5,
       divisor: Number(config.universe.fp_divisor) || 100,
@@ -451,7 +497,7 @@ export class AttackHandler implements MissionHandler {
       }).catch(() => {});
     }
 
-    const hasShips = Object.values(survivingShips).some(v => v > 0);
+    const hasShips = Object.values(returnShips).some(v => v > 0);
     if (hasShips) {
       return {
         scheduleReturn: true,
@@ -460,12 +506,13 @@ export class AttackHandler implements MissionHandler {
           silicium: siliciumCargo + pillagedSilicium,
           hydrogene: hydrogeneCargo + pillagedHydrogene,
         },
-        shipsAfterArrival: survivingShips,
+        shipsAfterArrival: returnShips,
         reportId,
       };
     }
 
     // All ships destroyed — no return
+    // If flagship was incapacitated but all other ships destroyed, still no return
     return { scheduleReturn: false, reportId };
   }
 }
