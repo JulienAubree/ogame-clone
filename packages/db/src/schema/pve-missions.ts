@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, jsonb, timestamp, integer, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
 export const pveMissions = pgTable('pve_missions', {
@@ -19,9 +19,6 @@ export const pirateTemplates = pgTable('pirate_templates', {
   id: varchar('id', { length: 64 }).primaryKey(),
   name: varchar('name', { length: 128 }).notNull(),
   tier: varchar('tier', { length: 16 }).notNull(),  // 'easy' | 'medium' | 'hard'
-  ships: jsonb('ships').notNull(),  // Record<string, number>
-  techs: jsonb('techs').notNull(),  // { weapons, shielding, armor }
+  ships: jsonb('ships').notNull(),  // Record<string, number> — ratios, not absolute counts
   rewards: jsonb('rewards').notNull(),  // { minerai, silicium, hydrogene, bonusShips }
-  centerLevelMin: integer('center_level_min').notNull(),
-  centerLevelMax: integer('center_level_max').notNull(),
 });

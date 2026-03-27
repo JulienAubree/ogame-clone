@@ -127,6 +127,13 @@
       "when": 1774562256473,
       "tag": "0017_damp_tenebrous",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1774598601966,
+      "tag": "0018_modern_energizer",
+      "breakpoints": true
     }
   ]
 }
