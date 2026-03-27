@@ -7,7 +7,8 @@ import { userExilium } from '../schema/user-exilium.js';
 import { flagships } from '../schema/flagships.js';
 import { tutorialProgress } from '../schema/tutorial-progress.js';
 
-const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://exilium:exilium@localhost:5432/exilium';
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) throw new Error('DATABASE_URL is required. Run: source .env && pnpm --filter @exilium/db exec tsx src/scripts/migrate-flagships.ts');
 const client = postgres(DATABASE_URL);
 const db = drizzle(client);
 
