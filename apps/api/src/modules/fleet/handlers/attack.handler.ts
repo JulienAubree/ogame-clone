@@ -1,8 +1,8 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, debrisFields } from '@ogame-clone/db';
-import { simulateCombat, totalCargoCapacity } from '@ogame-clone/game-engine';
-import type { CombatConfig, ShipCategory, CombatInput, RoundResult } from '@ogame-clone/game-engine';
+import { simulateCombat, totalCargoCapacity, computeFleetFP } from '@ogame-clone/game-engine';
+import type { CombatConfig, ShipCategory, CombatInput, RoundResult, UnitCombatStats, FPConfig } from '@ogame-clone/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
 import { buildShipStatsMap, buildShipCombatConfigs, buildShipCosts, getCombatMultipliers, formatDuration } from '../fleet.types.js';
 
@@ -315,6 +315,37 @@ export class AttackHandler implements MissionHandler {
       name: planets.name,
     }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
 
+    // Compute FP for both sides
+    const unitCombatStats: Record<string, UnitCombatStats> = {};
+    for (const [id, ship] of Object.entries(config.ships)) {
+      unitCombatStats[id] = { weapons: ship.weapons, shotCount: ship.shotCount ?? 1, shield: ship.shield, hull: ship.hull };
+    }
+    for (const [id, def] of Object.entries(config.defenses)) {
+      unitCombatStats[id] = { weapons: def.weapons, shotCount: def.shotCount ?? 1, shield: def.shield, hull: def.hull };
+    }
+    const fpConfig: FPConfig = {
+      shotcountExponent: Number(config.universe.fp_shotcount_exponent) || 1.5,
+      divisor: Number(config.universe.fp_divisor) || 100,
+    };
+    const attackerFP = computeFleetFP(ships, unitCombatStats, fpConfig);
+    const defenderCombinedForFP: Record<string, number> = { ...defenderFleet, ...defenderDefenses };
+    const defenderFP = computeFleetFP(defenderCombinedForFP, unitCombatStats, fpConfig);
+
+    // Compute shots per round
+    const shotsPerRound = rounds.map((round, i) => {
+      const attFleet = i === 0 ? ships : rounds[i - 1].attackerShips;
+      const defFleetRound = i === 0 ? { ...defenderFleet, ...defenderDefenses } : rounds[i - 1].defenderShips;
+      const attShots = Object.entries(attFleet).reduce((sum, [id, count]) => {
+        const sc = config.ships[id]?.shotCount ?? config.defenses[id]?.shotCount ?? 1;
+        return sum + count * sc;
+      }, 0);
+      const defShots = Object.entries(defFleetRound).reduce((sum, [id, count]) => {
+        const sc = config.ships[id]?.shotCount ?? config.defenses[id]?.shotCount ?? 1;
+        return sum + count * sc;
+      }, 0);
+      return { attacker: attShots, defender: defShots };
+    });
+
     // Create structured mission report
     let reportId: string | undefined;
     if (ctx.reportService) {
@@ -342,6 +373,9 @@ export class AttackHandler implements MissionHandler {
         // New combat stats
         attackerStats: result?.attackerStats,
         defenderStats: result?.defenderStats,
+        attackerFP,
+        defenderFP,
+        shotsPerRound,
       };
       if (outcome === 'attacker') {
         reportResult.pillage = {
