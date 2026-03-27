@@ -1,6 +1,7 @@
 import { lte, eq, and } from 'drizzle-orm';
 import { buildQueue, fleetEvents } from '@exilium/db';
 import type { Database } from '@exilium/db';
+import type { Queue } from 'bullmq';
 import { buildCompletionQueue, fleetQueue } from '../queues/queues.js';
 
 const fleetPhaseToJobName: Record<string, string> = {
@@ -9,6 +10,21 @@ const fleetPhaseToJobName: Record<string, string> = {
   prospecting: 'prospect-done',
   mining: 'mine-done',
 };
+
+async function ensureJobQueued(queue: Queue, jobName: string, data: Record<string, string>, jobId: string): Promise<boolean> {
+  const existingJob = await queue.getJob(jobId);
+  if (!existingJob) {
+    await queue.add(jobName, data, { jobId });
+    return true;
+  }
+  const state = await existingJob.getState();
+  if (state === 'completed' || state === 'failed') {
+    await existingJob.remove();
+    await queue.add(jobName, data, { jobId });
+    return true;
+  }
+  return false;
+}
 
 export async function eventCatchup(db: Database) {
   const now = new Date();
@@ -34,10 +50,9 @@ export async function eventCatchup(db: Database) {
       jobId = `shipyard-${entry.id}-${entry.completedCount + 1}`;
     }
 
-    const existingJob = await buildCompletionQueue.getJob(jobId);
-    if (!existingJob) {
+    const requeued = await ensureJobQueued(buildCompletionQueue, jobName, { buildQueueId: entry.id }, jobId);
+    if (requeued) {
       console.log(`[event-catchup] Re-queuing expired ${entry.type} ${entry.id}`);
-      await buildCompletionQueue.add(jobName, { buildQueueId: entry.id }, { jobId });
     }
   }
 
@@ -51,10 +66,9 @@ export async function eventCatchup(db: Database) {
     const jobName = fleetPhaseToJobName[fleet.phase] ?? 'arrive';
     const jobId = `fleet-${jobName}-${fleet.id}`;
 
-    const existingJob = await fleetQueue.getJob(jobId);
-    if (!existingJob) {
+    const requeued = await ensureJobQueued(fleetQueue, jobName, { fleetEventId: fleet.id }, jobId);
+    if (requeued) {
       console.log(`[event-catchup] Re-queuing expired fleet ${fleet.id} (${fleet.phase})`);
-      await fleetQueue.add(jobName, { fleetEventId: fleet.id }, { jobId });
     }
   }
 
