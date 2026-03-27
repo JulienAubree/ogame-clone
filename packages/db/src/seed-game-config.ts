@@ -459,6 +459,19 @@ const UNIVERSE_CONFIG = [
   // ── Daily Quests ──
   { key: 'daily_quest_count', value: 3 },
   { key: 'daily_quest_miner_threshold', value: 5000 },
+
+  // ── Talent Tree ──
+  { key: 'talent_cost_tier_1', value: 1 },
+  { key: 'talent_cost_tier_2', value: 2 },
+  { key: 'talent_cost_tier_3', value: 3 },
+  { key: 'talent_cost_tier_4', value: 4 },
+  { key: 'talent_cost_tier_5', value: 5 },
+  { key: 'talent_tier_2_threshold', value: 5 },
+  { key: 'talent_tier_3_threshold', value: 10 },
+  { key: 'talent_tier_4_threshold', value: 15 },
+  { key: 'talent_tier_5_threshold', value: 20 },
+  { key: 'talent_respec_ratio', value: 0.5 },
+  { key: 'talent_full_reset_cost', value: 50 },
 ];
 
 // ── Talent Branches ──
