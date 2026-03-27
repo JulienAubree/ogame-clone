@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 export default function Missions() {
+  const [combatInfoOpen, setCombatInfoOpen] = useState(false);
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data: gameConfig } = useGameConfig();
@@ -180,6 +182,48 @@ export default function Missions() {
             Repaires pirates
           </h2>
           <span className="text-[10px] text-muted-foreground/60 ml-auto">{pirateMissions.length}/2</span>
+        </div>
+
+        {/* Combat info encart */}
+        <div className="glass-card border-rose-500/20 bg-rose-500/5 p-4 space-y-2">
+          <button
+            type="button"
+            className="flex items-center gap-2 w-full text-left"
+            onClick={() => setCombatInfoOpen(!combatInfoOpen)}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400 shrink-0">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4M12 8h.01" />
+            </svg>
+            <span className="text-xs text-muted-foreground">
+              Le <span className="text-rose-300 font-semibold">Facteur de Puissance (FP)</span> mesure la force d&apos;une flotte.
+            </span>
+            <svg
+              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              className={`text-muted-foreground/60 ml-auto shrink-0 transition-transform ${combatInfoOpen ? 'rotate-180' : ''}`}
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          {combatInfoOpen && (
+            <div className="space-y-2 pt-1 text-xs text-muted-foreground">
+              <p>
+                Plus le FP est élevé, plus la flotte est puissante. Comparez votre FP à celui des pirates avant d&apos;attaquer.
+              </p>
+              <p>
+                Le combat se déroule en <span className="text-foreground">4 rounds maximum</span>. Chaque round, vos vaisseaux tirent simultanément sur les ennemis et vice-versa. Les <span className="text-foreground">boucliers</span> absorbent les dégâts en premier puis se régénèrent à chaque round. Les dégâts sur la <span className="text-foreground">coque</span> sont permanents.
+              </p>
+              <Link
+                to="/guide/combat"
+                className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 font-medium"
+              >
+                Guide complet du combat spatial
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          )}
         </div>
 
         {pirateMissions.length === 0 ? (
