@@ -134,6 +134,13 @@
       "when": 1774598601966,
       "tag": "0018_modern_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1774622650456,
+      "tag": "0019_aberrant_switch",
+      "breakpoints": true
     }
   ]
 }
