@@ -52,6 +52,7 @@ export class StationHandler implements MissionHandler {
       .where(eq(planetShips.planetId, targetPlanet.id))
       .limit(1);
 
+    // Transfer regular ships (flagship handled centrally in processArrival)
     if (targetShips) {
       const shipUpdates: Record<string, number> = {};
       for (const [shipId, count] of Object.entries(fleetEvent.ships)) {
