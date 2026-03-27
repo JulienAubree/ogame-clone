@@ -372,8 +372,7 @@ const UNIVERSE_CONFIG = [
   { key: 'startingMinerai', value: 500 },
   { key: 'startingSilicium', value: 300 },
   { key: 'startingHydrogene', value: 100 },
-  { key: 'slag_rate.pos8', value: 0.45 },
-  { key: 'slag_rate.pos16', value: 0.30 },
+  { key: 'slag_rate', value: 0.5 },
 
   // ── Economy & general rules ──
   { key: 'cancel_refund_ratio', value: 0.7 },

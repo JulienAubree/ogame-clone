@@ -73,15 +73,13 @@ export function depositComposition(
 
 /**
  * Compute effective slag rate after deep space refining tech.
- * Formula: clamp(baseSlagRate * 0.85^refiningLevel, 0, 0.99)
+ * Formula: baseSlagRate / (1 + refiningLevel)
  */
 export function computeSlagRate(
   baseSlagRate: number,
   refiningLevel: number,
-  config: { decayBase: number; maxRate: number } = { decayBase: 0.85, maxRate: 0.99 },
 ): number {
-  const rate = baseSlagRate * Math.pow(config.decayBase, refiningLevel);
-  return Math.min(config.maxRate, Math.max(0, rate));
+  return baseSlagRate / (1 + refiningLevel);
 }
 
 export interface ResourceAmounts {

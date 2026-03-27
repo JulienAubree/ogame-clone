@@ -136,10 +136,8 @@ export class MineHandler implements PhasedMissionHandler {
     const cargoCapacity = totalCargoCapacity(ships, shipStatsMap);
     const baseFleetExtr = totalMiningExtraction(ships, shipStatsMap);
 
-    // Single slag rate per position
-    const position = fleetEvent.targetPosition as 8 | 16;
-    const slagKey = `slag_rate.pos${position}`;
-    const baseSlagRate = Number(config.universe[slagKey] ?? 0);
+    // Single slag rate
+    const baseSlagRate = Number(config.universe.slag_rate ?? 0.5);
 
     const [research] = await ctx.db.select().from(userResearch).where(eq(userResearch.userId, fleetEvent.userId)).limit(1);
     const refiningLevel = research?.deepSpaceRefining ?? 0;

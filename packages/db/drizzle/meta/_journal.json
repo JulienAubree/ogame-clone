@@ -141,6 +141,13 @@
       "when": 1774622650456,
       "tag": "0019_aberrant_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1774710000000,
+      "tag": "0020_simplify_slag_rate",
+      "breakpoints": true
     }
   ]
 }
