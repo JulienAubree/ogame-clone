@@ -46,7 +46,7 @@ export function Layout() {
         <ResourceBar planetId={resolvedPlanetId} />
 
         {/* Page content - pb-14 for bottom tab bar on mobile */}
-        <main className="flex-1 overflow-y-auto pb-14 lg:pb-0">
+        <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
           <div className="mx-auto lg:max-w-6xl">
             <Outlet context={{ planetId: resolvedPlanetId }} />
           </div>

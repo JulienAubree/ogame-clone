@@ -97,40 +97,40 @@ export function BottomTabBar() {
               <button
                 key={item.path}
                 onClick={() => handleSheetNav(item.path)}
-                className={`flex items-center gap-3 rounded-lg p-3 text-left transition-colors ${
+                className={`flex items-center gap-3 rounded-lg p-4 text-left touch-feedback transition-colors ${
                   location.pathname === item.path
                     ? 'bg-primary/15 text-primary'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 }`}
               >
-                <item.icon width={20} height={20} />
-                <span className="text-sm font-medium">{item.label}</span>
+                <item.icon width={22} height={22} />
+                <span className="text-base font-medium">{item.label}</span>
               </button>
             ))}
           </nav>
         </BottomSheet>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-white/10 bg-card/95 backdrop-blur-lg lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-white/10 bg-card/95 backdrop-blur-lg pb-safe-bottom lg:hidden">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab || tab.id === activeSheet;
           return (
             <button
               key={tab.id}
               onClick={tab.action}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-colors ${
+              className={`flex flex-1 flex-col items-center justify-center gap-1 py-2 touch-feedback transition-colors ${
                 isActive ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
               <div className="relative">
-                <tab.icon width={22} height={22} />
+                <tab.icon width={24} height={24} />
                 {'badge' in tab && (tab as any).badge > 0 && (
                   <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                     {(tab as any).badge}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-xs font-medium">{tab.label}</span>
               {isActive && (
                 <div className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--accent-glow))]" />
               )}
