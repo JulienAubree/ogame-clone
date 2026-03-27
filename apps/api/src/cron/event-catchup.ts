@@ -23,6 +23,10 @@ async function ensureJobQueued(queue: Queue, jobName: string, data: Record<strin
     await queue.add(jobName, data, { jobId });
     return true;
   }
+  if (state === 'delayed') {
+    await existingJob.promote();
+    return true;
+  }
   return false;
 }
 
