@@ -61,6 +61,11 @@ export default function Profile() {
     },
   });
 
+  const { data: pushPrefs } = trpc.push.getPreferences.useQuery();
+  const updatePushPrefs = trpc.push.updatePreferences.useMutation({
+    onSuccess: () => utils.push.getPreferences.invalidate(),
+  });
+
   if (isLoading || !profile) return <ProfileSkeleton />;
 
   const currentBio = bio ?? profile.bio ?? '';
@@ -290,6 +295,32 @@ export default function Profile() {
                     type="checkbox"
                     checked={visibility[key] !== false}
                     onChange={(e) => handleVisibilityChange(key, e.target.checked)}
+                    className="h-4 w-4 rounded border-input accent-primary"
+                  />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Push Notifications */}
+          <div className="glass-card p-4 space-y-3">
+            <h3 className="text-sm font-semibold">Notifications push</h3>
+            <p className="text-xs text-muted-foreground">Recevez des alertes même quand le jeu est fermé.</p>
+            <div className="space-y-2">
+              {([
+                { key: 'building' as const, label: 'Construction' },
+                { key: 'research' as const, label: 'Recherche' },
+                { key: 'shipyard' as const, label: 'Chantier spatial' },
+                { key: 'fleet' as const, label: 'Flotte' },
+                { key: 'combat' as const, label: 'Combat' },
+                { key: 'message' as const, label: 'Messages' },
+              ]).map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pushPrefs?.[key] !== false}
+                    onChange={(e) => updatePushPrefs.mutate({ [key]: e.target.checked })}
                     className="h-4 w-4 rounded border-input accent-primary"
                   />
                   <span className="text-sm">{label}</span>
