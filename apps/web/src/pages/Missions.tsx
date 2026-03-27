@@ -21,6 +21,7 @@ export default function Missions() {
   const utils = trpc.useUtils();
   const { data: gameConfig } = useGameConfig();
   const { data, isLoading } = trpc.pve.getMissions.useQuery();
+  const { data: movements } = trpc.fleet.movements.useQuery();
   const dismissMutation = trpc.pve.dismissMission.useMutation({
     onSuccess: () => {
       utils.pve.getMissions.invalidate();
@@ -43,6 +44,28 @@ export default function Missions() {
 
   const miningMissions = missions.filter((m) => m.missionType === 'mine');
   const pirateMissions = missions.filter((m) => m.missionType === 'pirate');
+
+  // Build lookup: pveMissionId → active fleet events
+  const fleetsByMission = new Map<string, typeof movements>();
+  if (movements) {
+    for (const m of movements) {
+      if (m.pveMissionId) {
+        const existing = fleetsByMission.get(m.pveMissionId);
+        if (existing) {
+          existing.push(m);
+        } else {
+          fleetsByMission.set(m.pveMissionId, [m]);
+        }
+      }
+    }
+  }
+
+  const PHASE_LABELS: Record<string, string> = {
+    outbound: 'En vol',
+    prospecting: 'Prospection',
+    mining: 'Extraction',
+    return: 'Retour',
+  };
 
   if (centerLevel === 0) {
     return (
@@ -142,6 +165,23 @@ export default function Missions() {
                       {rewards.hydrogene > 0 && <span className="text-hydrogene">H: {fmt(rewards.hydrogene)}</span>}
                     </div>
                   </div>
+                  {/* Fleet en route indicator */}
+                  {fleetsByMission.get(mission.id)?.map((fleet) => (
+                    <div
+                      key={fleet.id}
+                      className="flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-2.5 py-1.5"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
+                      <span className="text-[11px] text-blue-300">
+                        {PHASE_LABELS[fleet.phase] ?? fleet.phase}
+                      </span>
+                      <Timer
+                        endTime={new Date(fleet.arrivalTime)}
+                        onComplete={() => utils.fleet.movements.invalidate()}
+                        className="text-[11px] text-blue-400"
+                      />
+                    </div>
+                  ))}
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -277,12 +317,30 @@ export default function Missions() {
                       </div>
                     )}
                   </div>
+                  {/* Fleet en route indicator */}
+                  {fleetsByMission.get(mission.id)?.map((fleet) => (
+                    <div
+                      key={fleet.id}
+                      className="flex items-center gap-2 rounded-lg bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shrink-0" />
+                      <span className="text-[11px] text-rose-300">
+                        {PHASE_LABELS[fleet.phase] ?? fleet.phase}
+                      </span>
+                      <Timer
+                        endTime={new Date(fleet.arrivalTime)}
+                        onComplete={() => utils.fleet.movements.invalidate()}
+                        className="text-[11px] text-rose-400"
+                      />
+                    </div>
+                  ))}
                   <Button
                     size="sm"
                     className="w-full bg-rose-600 hover:bg-rose-700 text-white"
                     onClick={() => navigate(`/fleet/send?mission=pirate&galaxy=${params.galaxy}&system=${params.system}&position=${params.position}&pveMissionId=${mission.id}`)}
+                    disabled={!!fleetsByMission.get(mission.id)?.length}
                   >
-                    Attaquer
+                    {fleetsByMission.get(mission.id)?.length ? 'Flotte en route' : 'Attaquer'}
                   </Button>
                 </div>
               );
