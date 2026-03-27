@@ -9,12 +9,14 @@ import type { createBuildingService } from '../modules/building/building.service
 import type { createResearchService } from '../modules/research/research.service.js';
 import type { createShipyardService } from '../modules/shipyard/shipyard.service.js';
 import type { createTutorialService } from '../modules/tutorial/tutorial.service.js';
+import type { createPushService } from '../modules/push/push.service.js';
 
 type Services = {
   buildingService: ReturnType<typeof createBuildingService>;
   researchService: ReturnType<typeof createResearchService>;
   shipyardService: ReturnType<typeof createShipyardService>;
   tutorialService: ReturnType<typeof createTutorialService>;
+  pushService: ReturnType<typeof createPushService>;
 };
 
 export function startBuildCompletionWorker(db: Database, redis: Redis, services: Services) {
@@ -49,6 +51,24 @@ export function startBuildCompletionWorker(db: Database, redis: Redis, services:
         type: result.eventType,
         payload: result.notificationPayload,
       });
+
+      // Push notification
+      const categoryMap: Record<string, 'building' | 'research' | 'shipyard'> = {
+        'building': 'building',
+        'research': 'research',
+        'shipyard-unit': 'shipyard',
+      };
+      const pushCategory = categoryMap[job.name];
+      if (pushCategory) {
+        const name = String(result.notificationPayload.name ?? result.notificationPayload.buildingId ?? result.notificationPayload.techId ?? result.notificationPayload.unitId);
+        const level = result.notificationPayload.level ? ` niv. ${result.notificationPayload.level}` : '';
+        const labels: Record<string, string> = { building: 'Construction terminée', research: 'Recherche terminée', shipyard: 'Production terminée' };
+        await services.pushService.sendToUser(result.userId, pushCategory, {
+          title: labels[pushCategory],
+          body: `${name}${level}`,
+          url: pushCategory === 'building' ? '/buildings' : pushCategory === 'research' ? '/research' : '/shipyard',
+        });
+      }
 
       await db.insert(gameEvents).values({
         userId: result.userId,

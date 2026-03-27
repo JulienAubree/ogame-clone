@@ -13,6 +13,7 @@ import { createAsteroidBeltService } from '../modules/pve/asteroid-belt.service.
 import { createPirateService } from '../modules/pve/pirate.service.js';
 import { createPveService } from '../modules/pve/pve.service.js';
 import { createReportService } from '../modules/report/report.service.js';
+import { createPushService } from '../modules/push/push.service.js';
 import { buildCompletionQueue, fleetQueue, marketQueue } from '../queues/queues.js';
 import { startBuildCompletionWorker } from './build-completion.worker.js';
 import { startFleetWorker } from './fleet.worker.js';
@@ -34,6 +35,7 @@ const pirateService = createPirateService(db, gameConfigService);
 const pveService = createPveService(db, asteroidBeltService, pirateService, gameConfigService);
 const reportService = createReportService(db);
 const tutorialService = createTutorialService(db, pveService);
+const pushService = createPushService(db);
 
 // Build services (receive the unified build queue)
 const buildingService = createBuildingService(db, resourceService, buildCompletionQueue, gameConfigService);
@@ -48,10 +50,10 @@ const marketService = createMarketService(db, resourceService, gameConfigService
 
 console.log('[worker] Starting workers...');
 
-startBuildCompletionWorker(db, redis, { buildingService, researchService, shipyardService, tutorialService });
+startBuildCompletionWorker(db, redis, { buildingService, researchService, shipyardService, tutorialService, pushService });
 console.log('[worker] Build completion worker started');
 
-startFleetWorker(db, redis, { fleetService, tutorialService });
+startFleetWorker(db, redis, { fleetService, tutorialService, pushService });
 console.log('[worker] Fleet worker started');
 
 startMarketWorker(marketService);

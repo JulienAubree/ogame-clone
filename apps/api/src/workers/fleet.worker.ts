@@ -7,10 +7,12 @@ import { env } from '../config/env.js';
 import type { FleetCompletionResult } from './completion.types.js';
 import type { createFleetService } from '../modules/fleet/fleet.service.js';
 import type { createTutorialService } from '../modules/tutorial/tutorial.service.js';
+import type { createPushService } from '../modules/push/push.service.js';
 
 type Services = {
   fleetService: ReturnType<typeof createFleetService>;
   tutorialService: ReturnType<typeof createTutorialService>;
+  pushService: ReturnType<typeof createPushService>;
 };
 
 export function startFleetWorker(db: Database, redis: Redis, services: Services) {
@@ -56,6 +58,15 @@ export function startFleetWorker(db: Database, redis: Redis, services: Services)
           payload: result.notificationPayload,
         });
 
+        // Push notification
+        const fleetCombatTypes = ['fleet-attack-landed', 'fleet-hostile-inbound'];
+        const pushCategory = fleetCombatTypes.includes(result.eventType) ? 'combat' as const : 'fleet' as const;
+        await services.pushService.sendToUser(result.userId, pushCategory, {
+          title: result.eventType.includes('arrive') ? 'Flotte arrivée' : result.eventType.includes('return') ? 'Flotte de retour' : 'Événement de flotte',
+          body: String(result.notificationPayload.targetCoords ?? result.notificationPayload.originName ?? ''),
+          url: '/fleet',
+        });
+
         await db.insert(gameEvents).values({
           userId: result.userId,
           planetId: result.planetId,
@@ -69,6 +80,13 @@ export function startFleetWorker(db: Database, redis: Redis, services: Services)
             publishNotification(redis, notify.userId, {
               type: notify.type,
               payload: notify.payload,
+            });
+
+            const cat = notify.type.includes('attack') || notify.type.includes('hostile') ? 'combat' as const : 'fleet' as const;
+            await services.pushService.sendToUser(notify.userId, cat, {
+              title: notify.type.includes('attack') ? 'Planète attaquée !' : 'Flotte en approche',
+              body: String(notify.payload.targetCoords ?? ''),
+              url: notify.type.includes('attack') ? '/reports' : '/fleet',
             });
           }
         }
