@@ -29,13 +29,13 @@ const db = createDb(env.DATABASE_URL);
 const redis = new Redis(env.REDIS_URL);
 const gameConfigService = createGameConfigService(db);
 const resourceService = createResourceService(db, gameConfigService);
-const messageService = createMessageService(db, redis);
+const pushService = createPushService(db);
+const messageService = createMessageService(db, redis, pushService);
 const asteroidBeltService = createAsteroidBeltService(db);
 const pirateService = createPirateService(db, gameConfigService);
 const pveService = createPveService(db, asteroidBeltService, pirateService, gameConfigService);
 const reportService = createReportService(db);
 const tutorialService = createTutorialService(db, pveService);
-const pushService = createPushService(db);
 
 // Build services (receive the unified build queue)
 const buildingService = createBuildingService(db, resourceService, buildCompletionQueue, gameConfigService);

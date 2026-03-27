@@ -4,8 +4,9 @@ import { messages, users, allianceMembers, alliances } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
 import { publishNotification } from '../notification/notification.publisher.js';
+import type { createPushService } from '../push/push.service.js';
 
-export function createMessageService(db: Database, redis: Redis) {
+export function createMessageService(db: Database, redis: Redis, pushService: ReturnType<typeof createPushService>) {
   return {
     async sendMessage(senderId: string, recipientUsername: string, subject: string, body: string, _threadId?: string) {
       const [recipient] = await db
@@ -75,6 +76,12 @@ export function createMessageService(db: Database, redis: Redis) {
         payload: { messageId: msg.id, type: 'player', subject, senderUsername: sender?.username ?? null, senderId, threadId: msg.threadId },
       });
 
+      await pushService.sendToUser(recipient.id, 'message', {
+        title: 'Nouveau message',
+        body: `Message de ${sender?.username ?? 'Inconnu'}`,
+        url: '/messages',
+      });
+
       return msg;
     },
 
@@ -136,6 +143,12 @@ export function createMessageService(db: Database, redis: Redis) {
       publishNotification(redis, recipientId, {
         type: 'new-message',
         payload: { messageId: msg.id, type: 'player', subject, senderUsername: sender?.username ?? null, senderId, threadId },
+      });
+
+      await pushService.sendToUser(recipientId, 'message', {
+        title: 'Nouveau message',
+        body: `Message de ${sender?.username ?? 'Inconnu'}`,
+        url: '/messages',
       });
 
       return msg;

@@ -60,7 +60,8 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const researchService = createResearchService(db, resourceService, buildCompletionQueue, gameConfigService);
   const shipyardService = createShipyardService(db, resourceService, buildCompletionQueue, gameConfigService);
   const galaxyService = createGalaxyService(db, gameConfigService);
-  const messageService = createMessageService(db, redis);
+  const pushService = createPushService(db);
+  const messageService = createMessageService(db, redis, pushService);
   const rankingService = createRankingService(db, gameConfigService);
   const asteroidBeltService = createAsteroidBeltService(db);
   const pirateService = createPirateService(db, gameConfigService);
@@ -75,7 +76,6 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const playerAdminService = createPlayerAdminService(db);
   const tutorialService = createTutorialService(db, pveService);
   const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis);
-  const pushService = createPushService(db);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
