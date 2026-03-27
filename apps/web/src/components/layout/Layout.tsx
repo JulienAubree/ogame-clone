@@ -9,6 +9,7 @@ import { UpdatePrompt } from '@/components/pwa/UpdatePrompt';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { ChatOverlay } from '@/components/chat/ChatOverlay';
 import { TutorialPanel } from '@/components/tutorial/TutorialPanel';
+import { DailyQuestWidget } from '@/components/daily-quests/DailyQuestWidget';
 import { trpc } from '@/trpc';
 import { usePlanetStore } from '@/stores/planet.store';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -51,6 +52,11 @@ export function Layout() {
             <Outlet context={{ planetId: resolvedPlanetId }} />
           </div>
         </main>
+      </div>
+
+      {/* Daily quest widget — fixed bottom-left above mobile nav */}
+      <div className="fixed bottom-16 left-4 z-40 lg:bottom-4 lg:left-60">
+        <DailyQuestWidget />
       </div>
 
       {/* Tutorial panel */}

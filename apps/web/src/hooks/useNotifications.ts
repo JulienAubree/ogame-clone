@@ -206,6 +206,12 @@ export function useNotifications() {
         addToast(`Offre expirée, ressources restituées (${event.payload.quantity}x ${event.payload.resourceType})`);
         showBrowserNotification('Offre expirée', 'Ressources restituées');
         break;
+      case 'daily-quest-completed':
+        utils.exilium.getBalance.invalidate();
+        utils.dailyQuest.getQuests.invalidate();
+        addToast(`Quete completee : ${event.payload.questName}`, 'success');
+        showBrowserNotification('Quete completee', `+${event.payload.reward} Exilium`);
+        break;
       case 'new-alliance-message': {
         const allianceId = String(event.payload.allianceId);
         utils.message.allianceChat.invalidate({ allianceId });
