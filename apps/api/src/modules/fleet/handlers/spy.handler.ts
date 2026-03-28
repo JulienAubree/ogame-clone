@@ -12,7 +12,7 @@ export class SpyHandler implements MissionHandler {
     const config = await ctx.gameConfigService.getFullConfig();
     const probeDef = findShipByRole(config, 'probe');
     for (const [shipType, count] of Object.entries(input.ships)) {
-      if (count > 0 && shipType !== probeDef.id) {
+      if (count > 0 && shipType !== probeDef.id && shipType !== 'flagship') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seules les sondes d\'espionnage peuvent être envoyées en mission espionnage' });
       }
     }

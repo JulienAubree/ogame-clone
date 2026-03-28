@@ -8,6 +8,7 @@ import { getShipName } from '@/lib/entity-names';
 import { CombatReportDetail } from '@/components/reports/CombatReportDetail';
 import { MineReportDetail } from '@/components/reports/MineReportDetail';
 import { SpyReportDetail } from '@/components/reports/SpyReportDetail';
+import { RecycleReportDetail } from '@/components/reports/RecycleReportDetail';
 
 function formatDate(date: string | Date) {
   return new Intl.DateTimeFormat('fr-FR', {
@@ -145,6 +146,9 @@ export default function ReportDetail() {
       )}
       {report.missionType === 'spy' && (
         <SpyReportDetail result={result} gameConfig={gameConfig} />
+      )}
+      {report.missionType === 'recycle' && (
+        <RecycleReportDetail result={result} />
       )}
     </div>
   );

@@ -208,7 +208,7 @@ export function createFleetService(
       try {
       // Find target planet (may not exist for colonization or PvE missions)
       let targetPlanet: typeof planets.$inferSelect | undefined;
-      if (input.mission !== 'mine' && input.mission !== 'pirate') {
+      if (input.mission !== 'mine' && input.mission !== 'pirate' && input.mission !== 'recycle') {
         const [found] = await db
           .select()
           .from(planets)

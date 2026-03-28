@@ -114,9 +114,9 @@ export default function Fleet() {
 
   // Auto-select ships when data loads (PvE prefill)
   useEffect(() => {
-    if (!ships || !prefillRef.current) return;
+    if (!ships || !gameConfig || !prefillRef.current) return;
     const missionType = prefillRef.current.mission;
-    const config = gameConfig?.missions[missionType];
+    const config = gameConfig.missions[missionType];
 
     if (config?.requiredShipRoles) {
       const preselect: Record<string, number> = {};
@@ -128,7 +128,7 @@ export default function Fleet() {
     }
 
     prefillRef.current = null;
-  }, [ships]);
+  }, [ships, gameConfig]);
 
   // Send mutation
   const sendMutation = trpc.fleet.send.useMutation({

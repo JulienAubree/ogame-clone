@@ -1,8 +1,9 @@
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { debrisFields } from '@exilium/db';
+import { debrisFields, planets } from '@exilium/db';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
-import { formatDuration } from '../fleet.types.js';
+import { formatDuration, buildShipStatsMap } from '../fleet.types.js';
+import { totalCargoCapacity } from '@exilium/game-engine';
 import { findShipByRole } from '../../../lib/config-helpers.js';
 
 export class RecycleHandler implements MissionHandler {
@@ -10,7 +11,7 @@ export class RecycleHandler implements MissionHandler {
     const config = await ctx.gameConfigService.getFullConfig();
     const recyclerDef = findShipByRole(config, 'recycler');
     for (const [shipType, count] of Object.entries(input.ships)) {
-      if (count > 0 && shipType !== recyclerDef.id) {
+      if (count > 0 && shipType !== recyclerDef.id && shipType !== 'flagship') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seuls les recycleurs peuvent être envoyés en mission recyclage' });
       }
     }
@@ -73,16 +74,71 @@ export class RecycleHandler implements MissionHandler {
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
     const duration = formatDuration(fleetEvent.arrivalTime.getTime() - fleetEvent.departureTime.getTime());
 
+    // Fetch origin planet for report
+    const [originPlanet] = await ctx.db.select({
+      galaxy: planets.galaxy,
+      system: planets.system,
+      position: planets.position,
+      name: planets.name,
+    }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+
+    let messageId: string | undefined;
     if (ctx.messageService) {
       const parts = [`Recyclage effectué en ${coords}\n`];
       parts.push(`Durée du trajet : ${duration}`);
-      parts.push(`Débris collectés : ${collectedMinerai} minerai, ${collectedSilicium} silicium`);
-      await ctx.messageService.createSystemMessage(
+      parts.push(`Débris collectés : ${collectedMinerai.toLocaleString('fr-FR')} minerai, ${collectedSilicium.toLocaleString('fr-FR')} silicium`);
+      if (newMinerai > 0 || newSilicium > 0) {
+        parts.push(`Débris restants : ${newMinerai.toLocaleString('fr-FR')} minerai, ${newSilicium.toLocaleString('fr-FR')} silicium`);
+      } else {
+        parts.push('Champ de débris entièrement recyclé');
+      }
+      const msg = await ctx.messageService.createSystemMessage(
         fleetEvent.userId,
         'mission',
         `Recyclage effectué ${coords}`,
         parts.join('\n'),
       );
+      messageId = msg.id;
+    }
+
+    // Create mission report
+    let reportId: string | undefined;
+    if (ctx.reportService) {
+      const shipStatsMap = buildShipStatsMap(config);
+      const report = await ctx.reportService.create({
+        userId: fleetEvent.userId,
+        fleetEventId: fleetEvent.id,
+        messageId,
+        missionType: 'recycle',
+        title: `Rapport de recyclage ${coords}`,
+        coordinates: {
+          galaxy: fleetEvent.targetGalaxy,
+          system: fleetEvent.targetSystem,
+          position: fleetEvent.targetPosition,
+        },
+        originCoordinates: originPlanet ? {
+          galaxy: originPlanet.galaxy,
+          system: originPlanet.system,
+          position: originPlanet.position,
+          planetName: originPlanet.name,
+        } : undefined,
+        fleet: {
+          ships: fleetEvent.ships,
+          totalCargo: totalCargoCapacity(fleetEvent.ships, shipStatsMap),
+        },
+        departureTime: fleetEvent.departureTime,
+        completionTime: new Date(),
+        result: {
+          collected: { minerai: collectedMinerai, silicium: collectedSilicium },
+          debrisRemaining: newMinerai > 0 || newSilicium > 0
+            ? { minerai: newMinerai, silicium: newSilicium }
+            : null,
+          debrisAvailable: { minerai: availableMinerai, silicium: availableSilicium },
+          recyclerCount,
+          cargoCapacity: totalCargoCapacityValue,
+        },
+      });
+      reportId = report.id;
     }
 
     // Hook: Exilium drop on recycling
@@ -99,6 +155,7 @@ export class RecycleHandler implements MissionHandler {
         silicium: siliciumCargo + collectedSilicium,
         hydrogene: hydrogeneCargo,
       },
+      reportId,
     };
   }
 }

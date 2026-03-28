@@ -13,6 +13,7 @@ const TYPE_ICONS: Record<string, string> = {
   pirate: '☠',
   mine: '⛏',
   spy: '👁',
+  recycle: '♻',
 };
 
 function timeAgo(date: string | Date): string {
@@ -52,6 +53,8 @@ export function ReportCard({ report, gameConfig }: ReportCardProps) {
   const rewards = isMine ? result.rewards ?? {} : {};
 
   const isSpy = report.missionType === 'spy';
+  const isRecycle = report.missionType === 'recycle';
+  const collected = isRecycle ? result.collected ?? {} : {};
 
   return (
     <button
@@ -79,6 +82,11 @@ export function ReportCard({ report, gameConfig }: ReportCardProps) {
             Terminée
           </span>
         )}
+        {isRecycle && (
+          <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-400">
+            {result.debrisRemaining ? 'Partiel' : 'Complet'}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         {isCombat && result.attackerFP != null && (
@@ -92,6 +100,13 @@ export function ReportCard({ report, gameConfig }: ReportCardProps) {
             {rewards.minerai > 0 && <span className="text-minerai">M: {rewards.minerai.toLocaleString('fr-FR')}</span>}
             {rewards.minerai > 0 && rewards.silicium > 0 && ' · '}
             {rewards.silicium > 0 && <span className="text-silicium">S: {rewards.silicium.toLocaleString('fr-FR')}</span>}
+          </span>
+        )}
+        {isRecycle && (
+          <span>
+            {collected.minerai > 0 && <span className="text-minerai">M: {collected.minerai.toLocaleString('fr-FR')}</span>}
+            {collected.minerai > 0 && collected.silicium > 0 && ' · '}
+            {collected.silicium > 0 && <span className="text-silicium">S: {collected.silicium.toLocaleString('fr-FR')}</span>}
           </span>
         )}
         {isSpy && result.visibility && (
