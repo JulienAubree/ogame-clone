@@ -804,7 +804,7 @@ export function createFleetService(
               type: 'fleet-attack-landed',
               payload: {
                 targetCoords: eventMeta.targetCoords,
-                reportId: result.reportId,
+                reportId: result.defenderReportId ?? result.reportId,
               },
             });
           }

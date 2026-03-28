@@ -100,6 +100,7 @@ export interface ArrivalResult {
   completePveMission?: boolean;
   createReturnEvent?: Record<string, unknown>;
   reportId?: string;
+  defenderReportId?: string;
 }
 
 export interface PhaseResult {

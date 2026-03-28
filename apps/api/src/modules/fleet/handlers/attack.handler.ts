@@ -423,6 +423,7 @@ export class AttackHandler implements MissionHandler {
 
     // Create structured mission report
     let reportId: string | undefined;
+    let defenderReportId: string | undefined;
     if (ctx.reportService) {
       const reportResult: Record<string, unknown> = {
         outcome,
@@ -487,7 +488,7 @@ export class AttackHandler implements MissionHandler {
       reportId = report.id;
       const defenderOutcomeText = outcome === 'attacker' ? 'Défaite' :
                                   outcome === 'defender' ? 'Victoire' : 'Match nul';
-      await ctx.reportService.create({
+      const defenderReport = await ctx.reportService.create({
         userId: targetPlanet.userId,
         messageId: defenderMsgId,
         missionType: 'attack',
@@ -508,6 +509,7 @@ export class AttackHandler implements MissionHandler {
         completionTime: fleetEvent.arrivalTime,
         result: reportResult,
       });
+      defenderReportId = defenderReport.id;
     }
 
     // Hook: daily quest detection for PvP battle
@@ -537,11 +539,12 @@ export class AttackHandler implements MissionHandler {
         },
         shipsAfterArrival: returnShips,
         reportId,
+        defenderReportId,
       };
     }
 
     // All ships destroyed — no return
     // Pass empty shipsAfterArrival so fleet.service doesn't call returnFromMission on destroyed flagship
-    return { scheduleReturn: false, reportId, shipsAfterArrival: returnShips };
+    return { scheduleReturn: false, reportId, defenderReportId, shipsAfterArrival: returnShips };
   }
 }
