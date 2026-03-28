@@ -25,6 +25,7 @@ export function createResearchService(
   resourceService: ReturnType<typeof createResourceService>,
   completionQueue: Queue,
   gameConfigService: GameConfigService,
+  talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
 ) {
   return {
     async listResearch(userId: string, planetId: string) {
@@ -49,6 +50,8 @@ export function createResearchService(
         ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
         : undefined;
       const timeDivisor = Number(config.universe.research_time_divisor) || 1000;
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
+      const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
 
       return Object.values(config.research)
         .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -57,7 +60,7 @@ export function createResearchService(
           const nextLevel = currentLevel + 1;
           const cost = researchCost(def, nextLevel, phaseMap);
           const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
-          const time = researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap });
+          const time = researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier;
 
           const researchLevels: Record<string, number> = {};
           for (const [key, rDef] of Object.entries(config.research)) {
@@ -124,7 +127,9 @@ export function createResearchService(
       const timeDivisor = Number(config.universe.research_time_divisor) || 1000;
       const cost = researchCost(def, nextLevel, phaseMap);
       const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
-      const time = researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap });
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
+      const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
+      const time = researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier;
 
       await resourceService.spendResources(planetId, userId, cost);
 
