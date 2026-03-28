@@ -13,6 +13,7 @@ export function createPveService(
   asteroidBeltService: ReturnType<typeof createAsteroidBeltService>,
   pirateService: ReturnType<typeof createPirateService>,
   gameConfigService: GameConfigService,
+  talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
 ) {
   return {
     async getMissions(userId: string) {
@@ -242,6 +243,13 @@ export function createPveService(
         belt.id, cappedTotal, cappedComposition,
       );
 
+      // Apply talent pve_loot bonus to resource rewards
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
+      const lootMultiplier = 1 + (talentCtx['pve_loot'] ?? 0);
+      minerai = Math.floor(minerai * lootMultiplier);
+      silicium = Math.floor(silicium * lootMultiplier);
+      hydrogene = Math.floor(hydrogene * lootMultiplier);
+
       // rewards = total deposit size (for display to the player, not per-trip extraction)
       await db.insert(pveMissions).values({
         userId,
@@ -370,10 +378,14 @@ export function createPveService(
       };
       const baseFP = computeFleetFP(templateShips, shipStats, fpConfig);
       const rewardRatio = baseFP > 0 ? pirateFP / baseFP : 1;
+
+      // Apply talent pve_loot bonus to resource rewards (not bonus ships)
+      const pirateTalentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
+      const pirateLootMultiplier = 1 + (pirateTalentCtx['pve_loot'] ?? 0);
       const scaledRewards = {
-        minerai: Math.floor(templateRewards.minerai * rewardRatio),
-        silicium: Math.floor(templateRewards.silicium * rewardRatio),
-        hydrogene: Math.floor(templateRewards.hydrogene * rewardRatio),
+        minerai: Math.floor(templateRewards.minerai * rewardRatio * pirateLootMultiplier),
+        silicium: Math.floor(templateRewards.silicium * rewardRatio * pirateLootMultiplier),
+        hydrogene: Math.floor(templateRewards.hydrogene * rewardRatio * pirateLootMultiplier),
         bonusShips: templateRewards.bonusShips,
       };
 
