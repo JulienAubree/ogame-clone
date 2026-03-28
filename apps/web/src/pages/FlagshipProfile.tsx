@@ -1,9 +1,153 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { trpc } from '@/trpc';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Skeleton } from '@/components/common/Skeleton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { cn } from '@/lib/utils';
+
+// ── Incapacitation Overlay ──
+
+function useCountdown(endTime: Date | null) {
+  const [seconds, setSeconds] = useState(() =>
+    endTime ? Math.max(0, Math.floor((endTime.getTime() - Date.now()) / 1000)) : 0,
+  );
+  const cbRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!endTime) return;
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((endTime.getTime() - Date.now()) / 1000));
+      setSeconds(remaining);
+      if (remaining <= 0 && cbRef.current) cbRef.current();
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [endTime]);
+
+  return seconds;
+}
+
+function fmtCountdown(total: number) {
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return { h, m, s };
+}
+
+function IncapacitatedOverlay({
+  name,
+  repairEndsAt,
+  imageId,
+  onRepaired,
+}: {
+  name: string;
+  repairEndsAt: Date;
+  imageId: string | null;
+  onRepaired: () => void;
+}) {
+  const totalDuration = useMemo(() => Math.max(1, Math.floor((repairEndsAt.getTime() - Date.now()) / 1000 + 7200)), [repairEndsAt]);
+  const secondsLeft = useCountdown(repairEndsAt);
+  const { h, m, s } = fmtCountdown(secondsLeft);
+  const progress = Math.min(100, ((totalDuration - secondsLeft) / totalDuration) * 100);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) onRepaired();
+  }, [secondsLeft, onRepaired]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+      {/* Animated background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-red-500/5 animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-red-500/8 animate-pulse" style={{ animationDelay: '0.5s' }} />
+      </div>
+
+      <div className="relative flex flex-col items-center gap-6 max-w-md mx-auto px-6 text-center">
+        {/* Damaged ship image */}
+        <div className="relative">
+          {imageId ? (
+            <img
+              src={`/assets/flagships/${imageId}.webp`}
+              alt={name}
+              className="h-40 w-40 rounded-2xl object-cover border-2 border-red-500/30 grayscale opacity-60"
+            />
+          ) : (
+            <div className="h-40 w-40 rounded-2xl bg-red-950/40 flex items-center justify-center text-5xl font-bold text-red-500/40 border-2 border-red-500/30">
+              VA
+            </div>
+          )}
+          {/* Damage icon overlay */}
+          <div className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full bg-red-600 border-2 border-red-400 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-red-400 tracking-tight uppercase">
+            Vaisseau incapacite
+          </h1>
+          <p className="text-sm text-red-300/60">
+            <span className="font-semibold text-red-300/80">{name}</span> a ete mis hors service au combat.
+          </p>
+          <p className="text-xs text-muted-foreground/60">
+            Reparation automatique en cours...
+          </p>
+        </div>
+
+        {/* Countdown */}
+        <div className="w-full space-y-4">
+          <div className="flex items-center justify-center gap-3">
+            {[
+              { value: h, label: 'h' },
+              { value: m, label: 'min' },
+              { value: s, label: 'sec' },
+            ].map((unit, i) => (
+              <div key={unit.label} className="flex items-center gap-3">
+                {i > 0 && <span className="text-2xl text-red-500/40 font-light -mt-4">:</span>}
+                <div className="flex flex-col items-center">
+                  <span className="text-4xl sm:text-5xl font-mono font-black tabular-nums text-red-400 leading-none">
+                    {String(unit.value).padStart(2, '0')}
+                  </span>
+                  <span className="text-[10px] text-red-400/40 uppercase tracking-widest mt-1">
+                    {unit.label}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full space-y-1.5">
+            <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-[width] duration-1000 ease-linear bg-gradient-to-r from-red-600 to-red-400"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] text-muted-foreground/40">
+              <span>Reparation</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Repair end time */}
+        <div className="text-xs text-muted-foreground/50">
+          Retour operationnel : {repairEndsAt.toLocaleString('fr-FR', {
+            day: '2-digit', month: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   active: { label: 'Actif', color: 'text-emerald-400' },
@@ -149,6 +293,18 @@ export default function FlagshipProfile() {
     );
   }
 
+  // Full-screen overlay when incapacitated
+  if (flagship.status === 'incapacitated' && flagship.repairEndsAt) {
+    return (
+      <IncapacitatedOverlay
+        name={flagship.name}
+        repairEndsAt={new Date(flagship.repairEndsAt)}
+        imageId={flagship.imageId}
+        onRepaired={() => utils.flagship.get.invalidate()}
+      />
+    );
+  }
+
   const status = STATUS_LABELS[flagship.status] ?? { label: flagship.status, color: 'text-muted-foreground' };
   const effectiveStats = 'effectiveStats' in flagship ? (flagship as any).effectiveStats : null;
   const talentBonuses = 'talentBonuses' in flagship ? (flagship as any).talentBonuses as Record<string, number> : {};
@@ -287,15 +443,6 @@ export default function FlagshipProfile() {
             </span>
           </div>
 
-          {/* Repair info */}
-          {flagship.status === 'incapacitated' && flagship.repairEndsAt && (
-            <div className="glass-card p-4 border border-red-500/30">
-              <h3 className="text-sm font-semibold text-red-400">En réparation</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Réparation automatique : {new Date(flagship.repairEndsAt).toLocaleString('fr-FR')}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* ===== Right column — Stats ===== */}
