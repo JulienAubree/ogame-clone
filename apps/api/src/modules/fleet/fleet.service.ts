@@ -960,7 +960,9 @@ export function createFleetService(
         .limit(1);
 
       // Return flagship from mission if present
+      console.log(`[processReturn] fleetEventId=${fleetEventId}, ships=`, JSON.stringify(ships));
       if (ships['flagship'] && ships['flagship'] > 0 && flagshipService) {
+        console.log(`[processReturn] calling returnFromMission for userId=${event.userId}, originPlanetId=${event.originPlanetId}`);
         await flagshipService.returnFromMission(event.userId, event.originPlanetId);
       }
 

@@ -46,9 +46,13 @@ export function createFlagshipService(
 
       if (!flagship) return null;
 
+      console.log(`[flagship] get: id=${flagship.id}, status=${flagship.status}, planetId=${flagship.planetId}, repairEndsAt=${flagship.repairEndsAt?.toISOString() ?? 'null'}`);
+
       // Verification lazy de la reparation
       if (flagship.status === 'incapacitated' && flagship.repairEndsAt) {
-        if (new Date() >= flagship.repairEndsAt) {
+        const now = new Date();
+        console.log(`[flagship] lazy-repair check: status=${flagship.status}, repairEndsAt=${flagship.repairEndsAt.toISOString()}, now=${now.toISOString()}, expired=${now >= flagship.repairEndsAt}`);
+        if (now >= flagship.repairEndsAt) {
           // Ensure flagship returns to home planet after repair
           const [homePlanet] = await db
             .select({ id: planets.id })
@@ -56,6 +60,7 @@ export function createFlagshipService(
             .where(eq(planets.userId, userId))
             .limit(1);
           const repairedPlanetId = homePlanet?.id ?? flagship.planetId;
+          console.log(`[flagship] lazy-repair: repairing flagship ${flagship.id}, planetId=${repairedPlanetId}`);
           await db
             .update(flagships)
             .set({ status: 'active', repairEndsAt: null, planetId: repairedPlanetId, updatedAt: new Date() })
@@ -219,6 +224,7 @@ export function createFlagshipService(
       if (!homePlanet) return;
 
       const repairEndsAt = new Date(Date.now() + repairSeconds * 1000);
+      console.log(`[flagship] incapacitate: userId=${userId}, homePlanetId=${homePlanet.id}, repairEndsAt=${repairEndsAt.toISOString()}, repairSeconds=${repairSeconds}`);
 
       await db
         .update(flagships)
@@ -240,6 +246,7 @@ export function createFlagshipService(
     },
 
     async returnFromMission(userId: string, planetId: string) {
+      console.log(`[flagship] returnFromMission: userId=${userId}, planetId=${planetId}`);
       await db
         .update(flagships)
         .set({ status: 'active', planetId, updatedAt: new Date() })
