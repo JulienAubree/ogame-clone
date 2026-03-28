@@ -1,5 +1,5 @@
 exilium-game.com, www.exilium-game.com {
-	@game_assets path /assets/buildings/* /assets/research/* /assets/ships/* /assets/defenses/* /assets/planets/*
+	@game_assets path /assets/buildings/* /assets/research/* /assets/ships/* /assets/defenses/* /assets/planets/* /assets/planets/*/* /assets/flagships/*
 	handle @game_assets {
 		root * /opt/exilium/uploads
 		file_server
@@ -35,7 +35,7 @@ admin.exilium-game.com {
 		reverse_proxy localhost:3000
 	}
 
-	@game_assets path /assets/buildings/* /assets/research/* /assets/ships/* /assets/defenses/* /assets/planets/*
+	@game_assets path /assets/buildings/* /assets/research/* /assets/ships/* /assets/defenses/* /assets/planets/* /assets/planets/*/* /assets/flagships/*
 	handle @game_assets {
 		root * /opt/exilium/uploads
 		file_server

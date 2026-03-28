@@ -22,7 +22,10 @@ export function AdminImageUpload({ category, entityId, entityName, onUploadCompl
   const [cacheBust, setCacheBust] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const iconUrl = `/assets/${category}/${toKebab(entityId)}-icon.webp${cacheBust ? `?t=${cacheBust}` : ''}`;
+  // Planets use subdirectories (e.g., /assets/planets/temperate/1-icon.webp), no single icon preview
+  const iconUrl = category === 'planets'
+    ? null
+    : `/assets/${category}/${toKebab(entityId)}-icon.webp${cacheBust ? `?t=${cacheBust}` : ''}`;
 
   const handleClick = () => {
     inputRef.current?.click();
@@ -78,7 +81,7 @@ export function AdminImageUpload({ category, entityId, entityName, onUploadCompl
         </div>
       )}
 
-      {error ? (
+      {error || !iconUrl ? (
         <div className="w-full h-full flex items-center justify-center bg-panel text-gray-500 text-xs font-mono border border-dashed border-panel-border">
           {initial}
         </div>
