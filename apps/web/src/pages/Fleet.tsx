@@ -212,7 +212,15 @@ export default function Fleet() {
   );
 
   const totalCargo = cargo.minerai + cargo.silicium + cargo.hydrogene;
-  const cargoCapacity = getCargoCapacity(selectedShips, gameConfig?.ships ?? {});
+  const shipConfigs = (() => {
+    const base = gameConfig?.ships ?? {};
+    if (flagship) {
+      const fs = 'effectiveStats' in flagship ? (flagship as any).effectiveStats : null;
+      return { ...base, flagship: { ...base['flagship'], cargoCapacity: fs?.cargoCapacity ?? flagship.cargoCapacity } };
+    }
+    return base;
+  })();
+  const cargoCapacity = getCargoCapacity(selectedShips, shipConfigs);
 
   // FP computation for pirate missions
   const playerFleetFP = (() => {
@@ -220,6 +228,15 @@ export default function Fleet() {
     const shipStats: Record<string, { weapons: number; shotCount: number; shield: number; hull: number }> = {};
     for (const [id, ship] of Object.entries(gameConfig.ships)) {
       shipStats[id] = { weapons: ship.weapons, shotCount: ship.shotCount ?? 1, shield: ship.shield, hull: ship.hull };
+    }
+    if (flagship) {
+      const fs = 'effectiveStats' in flagship ? (flagship as any).effectiveStats : null;
+      shipStats['flagship'] = {
+        weapons: fs?.weapons ?? flagship.weapons,
+        shotCount: fs?.shotCount ?? flagship.shotCount,
+        shield: fs?.shield ?? flagship.shield,
+        hull: fs?.hull ?? flagship.hull,
+      };
     }
     const fpConfig = {
       shotcountExponent: Number(gameConfig.universe?.fp_shotcount_exponent ?? 1.5),
