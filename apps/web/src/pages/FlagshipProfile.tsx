@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   active: { label: 'Actif', color: 'text-emerald-400' },
   in_mission: { label: 'En mission', color: 'text-blue-400' },
-  incapacitated: { label: 'Incapacit\u00e9', color: 'text-red-400' },
+  incapacitated: { label: 'Incapacité', color: 'text-red-400' },
 };
 
 const DRIVE_LABELS: Record<string, string> = {
@@ -26,9 +26,9 @@ const BRANCH_COLORS: Record<string, { border: string; text: string; bg: string }
 const EFFECT_LABELS: Record<string, { label: string; color: string }> = {
   modify_stat: { label: 'Stat', color: 'text-blue-400' },
   global_bonus: { label: 'Global', color: 'text-amber-400' },
-  planet_bonus: { label: 'Plan\u00e8te', color: 'text-emerald-400' },
+  planet_bonus: { label: 'Planète', color: 'text-emerald-400' },
   timed_buff: { label: 'Actif', color: 'text-pink-400' },
-  unlock: { label: 'D\u00e9blocage', color: 'text-purple-400' },
+  unlock: { label: 'Déblocage', color: 'text-purple-400' },
 };
 
 function FlagshipSkeleton() {
@@ -290,9 +290,9 @@ export default function FlagshipProfile() {
           {/* Repair info */}
           {flagship.status === 'incapacitated' && flagship.repairEndsAt && (
             <div className="glass-card p-4 border border-red-500/30">
-              <h3 className="text-sm font-semibold text-red-400">En r\u00e9paration</h3>
+              <h3 className="text-sm font-semibold text-red-400">En réparation</h3>
               <p className="text-xs text-muted-foreground mt-1">
-                R\u00e9paration automatique : {new Date(flagship.repairEndsAt).toLocaleString('fr-FR')}
+                Réparation automatique : {new Date(flagship.repairEndsAt).toLocaleString('fr-FR')}
               </p>
             </div>
           )}
@@ -330,7 +330,7 @@ export default function FlagshipProfile() {
               onClick={() => setConfirmReset(true)}
               className="text-xs text-red-400 hover:text-red-300 transition-colors"
             >
-              R\u00e9initialiser tout
+              Réinitialiser tout
             </button>
           </div>
 
@@ -434,7 +434,7 @@ export default function FlagshipProfile() {
         onConfirm={() => { if (confirmInvest) investMutation.mutate({ talentId: confirmInvest }); }}
         onCancel={() => setConfirmInvest(null)}
         title="Investir dans ce talent ?"
-        description={`Co\u00fbt : ${confirmInvest && talentTree ? getTierCost(talentTree.talents[confirmInvest]?.tier ?? 1) : 0} Exilium`}
+        description={`Coût : ${confirmInvest && talentTree ? getTierCost(talentTree.talents[confirmInvest]?.tier ?? 1) : 0} Exilium`}
         confirmLabel="Investir"
       />
 
@@ -442,20 +442,20 @@ export default function FlagshipProfile() {
         open={!!confirmRespec}
         onConfirm={() => { if (confirmRespec) respecMutation.mutate({ talentId: confirmRespec }); }}
         onCancel={() => setConfirmRespec(null)}
-        title="R\u00e9initialiser ce talent ?"
-        description="Les talents d\u00e9pendants seront aussi r\u00e9initialis\u00e9s. Le co\u00fbt est 50% de l'Exilium investi."
+        title="Réinitialiser ce talent ?"
+        description="Les talents dépendants seront aussi réinitialisés. Le coût est 50% de l'Exilium investi."
         variant="destructive"
-        confirmLabel="R\u00e9initialiser"
+        confirmLabel="Réinitialiser"
       />
 
       <ConfirmDialog
         open={confirmReset}
         onConfirm={() => resetMutation.mutate()}
         onCancel={() => setConfirmReset(false)}
-        title="R\u00e9initialiser tout l'arbre ?"
-        description="Co\u00fbt : 50 Exilium. Tous vos talents seront r\u00e9initialis\u00e9s."
+        title="Réinitialiser tout l'arbre ?"
+        description="Coût : 50 Exilium. Tous vos talents seront réinitialisés."
         variant="destructive"
-        confirmLabel="Tout r\u00e9initialiser"
+        confirmLabel="Tout réinitialiser"
       />
 
       {/* Image picker modal */}
