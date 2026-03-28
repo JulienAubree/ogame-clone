@@ -155,6 +155,13 @@
       "when": 1774642800671,
       "tag": "0021_faithful_banshee",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1774900000000,
+      "tag": "0022_separate_pirate_timer",
+      "breakpoints": true
     }
   ]
 }

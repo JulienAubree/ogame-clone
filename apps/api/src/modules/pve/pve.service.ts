@@ -77,27 +77,26 @@ export function createPveService(
       if (centerLevel === 0) return;
 
       const now = new Date();
+      const cooldownBase = Number(config.universe.pve_discovery_cooldown_base) || 7;
+      const cooldownMs = discoveryCooldown(centerLevel, { base: cooldownBase, minimum: 1 }) * 3600 * 1000;
+      // Pirate timer offset: 50% of cooldown so they never spawn at the same time as mining
+      const pirateOffsetMs = Math.floor(cooldownMs / 2);
 
       // Get or create state
       let [state] = await db.select().from(missionCenterState)
         .where(eq(missionCenterState.userId, userId)).limit(1);
 
-      const cooldownBase = Number(config.universe.pve_discovery_cooldown_base) || 7;
-
       if (!state) {
-        const cooldownMs = discoveryCooldown(centerLevel, { base: cooldownBase, minimum: 1 }) * 3600 * 1000;
-        // Set nextDiscoveryAt to now so the first visit triggers an immediate discovery
         const [created] = await db.insert(missionCenterState).values({
           userId,
           nextDiscoveryAt: now,
+          nextPirateDiscoveryAt: now,
           updatedAt: now,
         }).onConflictDoNothing().returning();
         if (!created) {
-          // Race condition — re-read
           [state] = await db.select().from(missionCenterState)
             .where(eq(missionCenterState.userId, userId)).limit(1);
         } else {
-          // Immediately generate a first discovery
           const [homePlanet] = await db.select({
             galaxy: planets.galaxy,
             system: planets.system,
@@ -106,20 +105,15 @@ export function createPveService(
             await this.generateDiscoveredMission(userId, homePlanet.galaxy, homePlanet.system, centerLevel);
             await this.generatePirateMission(userId, homePlanet.galaxy, homePlanet.system, centerLevel);
           }
-          // Schedule next discovery
           await db.update(missionCenterState).set({
             nextDiscoveryAt: new Date(now.getTime() + cooldownMs),
+            nextPirateDiscoveryAt: new Date(now.getTime() + cooldownMs + pirateOffsetMs),
           }).where(eq(missionCenterState.userId, userId));
           return;
         }
       }
 
-      if (!state || state.nextDiscoveryAt > now) return;
-
-      const cooldownMs = discoveryCooldown(centerLevel, { base: cooldownBase, minimum: 1 }) * 3600 * 1000;
-      const elapsed = now.getTime() - state.nextDiscoveryAt.getTime();
-      // +1 because the discovery at nextDiscoveryAt itself counts as the first one
-      const n = Math.floor(elapsed / cooldownMs) + 1;
+      if (!state) return;
 
       // Count current available missions by type (single query)
       const missionCounts = await db
@@ -136,8 +130,6 @@ export function createPveService(
 
       const MINING_CAP = Number(config.universe.pve_max_concurrent_missions) || 3;
       const PIRATE_CAP = Number(config.universe.pve_max_pirate_missions) || 2;
-      const miningToCreate = Math.min(n, MINING_CAP - (countByType['mine'] ?? 0));
-      const pirateToCreate = Math.min(n, PIRATE_CAP - (countByType['pirate'] ?? 0));
 
       // Get player's home planet for coordinates
       const [homePlanet] = await db.select({
@@ -145,21 +137,41 @@ export function createPveService(
         system: planets.system,
       }).from(planets).where(eq(planets.userId, userId)).limit(1);
 
-      if (homePlanet) {
-        for (let i = 0; i < miningToCreate; i++) {
-          await this.generateDiscoveredMission(userId, homePlanet.galaxy, homePlanet.system, centerLevel);
+      const updates: Partial<typeof missionCenterState.$inferInsert> = { updatedAt: now };
+
+      // ── Mining timer ──
+      if (state.nextDiscoveryAt <= now) {
+        const elapsed = now.getTime() - state.nextDiscoveryAt.getTime();
+        const n = Math.floor(elapsed / cooldownMs) + 1;
+        const miningToCreate = Math.min(n, MINING_CAP - (countByType['mine'] ?? 0));
+        if (homePlanet) {
+          for (let i = 0; i < miningToCreate; i++) {
+            await this.generateDiscoveredMission(userId, homePlanet.galaxy, homePlanet.system, centerLevel);
+          }
         }
-        for (let i = 0; i < pirateToCreate; i++) {
-          await this.generatePirateMission(userId, homePlanet.galaxy, homePlanet.system, centerLevel);
-        }
+        updates.nextDiscoveryAt = new Date(state.nextDiscoveryAt.getTime() + n * cooldownMs);
       }
 
-      // Advance timer by n * cooldown
-      const newNextDiscovery = new Date(state.nextDiscoveryAt.getTime() + n * cooldownMs);
-      await db.update(missionCenterState).set({
-        nextDiscoveryAt: newNextDiscovery,
-        updatedAt: now,
-      }).where(eq(missionCenterState.userId, userId));
+      // ── Pirate timer ──
+      // Backfill: existing rows without nextPirateDiscoveryAt get an offset from now
+      const pirateNextAt = state.nextPirateDiscoveryAt ?? new Date(now.getTime() + pirateOffsetMs);
+      if (pirateNextAt <= now) {
+        const elapsed = now.getTime() - pirateNextAt.getTime();
+        const n = Math.floor(elapsed / cooldownMs) + 1;
+        const pirateToCreate = Math.min(n, PIRATE_CAP - (countByType['pirate'] ?? 0));
+        if (homePlanet) {
+          for (let i = 0; i < pirateToCreate; i++) {
+            await this.generatePirateMission(userId, homePlanet.galaxy, homePlanet.system, centerLevel);
+          }
+        }
+        updates.nextPirateDiscoveryAt = new Date(pirateNextAt.getTime() + n * cooldownMs);
+      } else if (!state.nextPirateDiscoveryAt) {
+        // Persist the backfill value
+        updates.nextPirateDiscoveryAt = pirateNextAt;
+      }
+
+      await db.update(missionCenterState).set(updates)
+        .where(eq(missionCenterState.userId, userId));
     },
 
     async generateDiscoveredMission(userId: string, galaxy: number, system: number, centerLevel: number) {
