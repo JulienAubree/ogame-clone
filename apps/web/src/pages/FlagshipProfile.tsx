@@ -268,6 +268,11 @@ export default function FlagshipProfile() {
     onSuccess: () => utils.talent.list.invalidate(),
   });
 
+  // Callback for incapacitation overlay — must be before early returns (Rules of Hooks)
+  const handleRepaired = useCallback(() => {
+    utils.flagship.get.invalidate();
+  }, [utils.flagship.get]);
+
   // Organiser les talents par branche et tier
   const branchData = useMemo(() => {
     if (!talentTree) return [];
@@ -302,10 +307,6 @@ export default function FlagshipProfile() {
   }
 
   // Full-screen overlay when incapacitated
-  const handleRepaired = useCallback(() => {
-    utils.flagship.get.invalidate();
-  }, [utils.flagship.get]);
-
   if (flagship.status === 'incapacitated' && flagship.repairEndsAt) {
     return (
       <IncapacitatedOverlay
