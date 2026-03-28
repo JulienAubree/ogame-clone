@@ -49,11 +49,18 @@ export function createFlagshipService(
       // Verification lazy de la reparation
       if (flagship.status === 'incapacitated' && flagship.repairEndsAt) {
         if (new Date() >= flagship.repairEndsAt) {
+          // Ensure flagship returns to home planet after repair
+          const [homePlanet] = await db
+            .select({ id: planets.id })
+            .from(planets)
+            .where(eq(planets.userId, userId))
+            .limit(1);
+          const repairedPlanetId = homePlanet?.id ?? flagship.planetId;
           await db
             .update(flagships)
-            .set({ status: 'active', repairEndsAt: null, updatedAt: new Date() })
+            .set({ status: 'active', repairEndsAt: null, planetId: repairedPlanetId, updatedAt: new Date() })
             .where(eq(flagships.id, flagship.id));
-          Object.assign(flagship, { status: 'active', repairEndsAt: null });
+          Object.assign(flagship, { status: 'active', repairEndsAt: null, planetId: repairedPlanetId });
         }
       }
 
