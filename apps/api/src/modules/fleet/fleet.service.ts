@@ -45,6 +45,7 @@ export function createFleetService(
   exiliumService?: ReturnType<typeof createExiliumService>,
   dailyQuestService?: ReturnType<typeof createDailyQuestService>,
   flagshipService?: ReturnType<typeof createFlagshipService>,
+  talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
 ) {
   const handlers: Record<string, MissionHandler> = {
     transport: new TransportHandler(),
@@ -70,6 +71,7 @@ export function createFleetService(
     exiliumService,
     dailyQuestService,
     flagshipService,
+    talentService,
     fleetQueue,
     assetsDir: env.ASSETS_DIR,
     redis,
@@ -174,7 +176,15 @@ export function createFleetService(
         };
       }
 
-      const speedMultipliers = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
+      // Fetch talent context for fleet bonuses
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
+
+      const baseSpeedMultipliers = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
+      const talentSpeedFactor = 1 + (talentCtx['fleet_speed'] ?? 0);
+      const speedMultipliers: Record<string, number> = {};
+      for (const [k, v] of Object.entries(baseSpeedMultipliers)) {
+        speedMultipliers[k] = v * talentSpeedFactor;
+      }
       const speed = fleetSpeed(input.ships, shipStatsMap, speedMultipliers);
       if (speed === 0) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucun vaisseau sélectionné' });
@@ -186,10 +196,10 @@ export function createFleetService(
       const dist = distance(origin, target, fleetConfig);
       const universeSpeed = Number(config.universe.speed) || 1;
       const duration = travelTime(origin, target, speed, universeSpeed, fleetConfig);
-      const fuel = fuelConsumption(input.ships, dist, duration, shipStatsMap, { speedFactor: fleetConfig.speedFactor });
+      const fuel = fuelConsumption(input.ships, dist, duration, shipStatsMap, { speedFactor: fleetConfig.speedFactor }) / (1 + (talentCtx['fleet_fuel'] ?? 0));
 
       // Validate cargo doesn't exceed capacity
-      const cargo = totalCargoCapacity(input.ships, shipStatsMap);
+      const cargo = totalCargoCapacity(input.ships, shipStatsMap) * (1 + (talentCtx['fleet_cargo'] ?? 0));
       const mineraiCargo = input.mineraiCargo ?? 0;
       const siliciumCargo = input.siliciumCargo ?? 0;
       const hydrogeneCargo = input.hydrogeneCargo ?? 0;
@@ -1099,7 +1109,13 @@ export function createFleetService(
       }
 
       const researchLevels = event ? await this.getResearchLevels(event.userId) : {};
-      const speedMultipliers = this.buildSpeedMultipliers(ships, shipStatsMap, researchLevels, config.bonuses);
+      const returnTalentCtx = (event && talentService) ? await talentService.computeTalentContext(event.userId) : {};
+      const baseReturnSpeedMult = this.buildSpeedMultipliers(ships, shipStatsMap, researchLevels, config.bonuses);
+      const returnTalentSpeedFactor = 1 + (returnTalentCtx['fleet_speed'] ?? 0);
+      const speedMultipliers: Record<string, number> = {};
+      for (const [k, v] of Object.entries(baseReturnSpeedMult)) {
+        speedMultipliers[k] = v * returnTalentSpeedFactor;
+      }
       const speed = fleetSpeed(ships, shipStatsMap, speedMultipliers);
       const universeSpeed = Number(config.universe.speed) || 1;
       const origin = { galaxy: originPlanet.galaxy, system: originPlanet.system, position: originPlanet.position };
@@ -1187,8 +1203,14 @@ export function createFleetService(
       }
 
       const researchLevels = await this.getResearchLevels(userId);
-      const speedMultipliers = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
-      const speed = fleetSpeed(input.ships, shipStatsMap, speedMultipliers);
+      const estTalentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
+      const baseEstSpeedMult = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
+      const estTalentSpeedFactor = 1 + (estTalentCtx['fleet_speed'] ?? 0);
+      const estSpeedMultipliers: Record<string, number> = {};
+      for (const [k, v] of Object.entries(baseEstSpeedMult)) {
+        estSpeedMultipliers[k] = v * estTalentSpeedFactor;
+      }
+      const speed = fleetSpeed(input.ships, shipStatsMap, estSpeedMultipliers);
       if (speed === 0) return { fuel: 0, duration: 0 };
 
       const fleetConfig = buildFleetConfig(config);
@@ -1197,7 +1219,7 @@ export function createFleetService(
       const target = { galaxy: input.targetGalaxy, system: input.targetSystem, position: input.targetPosition };
       const dist = distance(origin, target, fleetConfig);
       const dur = travelTime(origin, target, speed, universeSpeed, fleetConfig);
-      const fuel = fuelConsumption(input.ships, dist, dur, shipStatsMap, { speedFactor: fleetConfig.speedFactor });
+      const fuel = fuelConsumption(input.ships, dist, dur, shipStatsMap, { speedFactor: fleetConfig.speedFactor }) / (1 + (estTalentCtx['fleet_fuel'] ?? 0));
 
       return { fuel, duration: dur };
     },

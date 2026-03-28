@@ -81,6 +81,7 @@ export interface MissionHandlerContext {
   exiliumService?: ReturnType<typeof createExiliumService>;
   dailyQuestService?: ReturnType<typeof createDailyQuestService>;
   flagshipService?: ReturnType<typeof createFlagshipService>;
+  talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> };
   fleetQueue: Queue;
   assetsDir: string;
   redis?: Redis;
@@ -205,6 +206,7 @@ export async function getCombatMultipliers(
   db: Database,
   userId: string,
   bonusDefs: BonusDefinition[],
+  talentCtx?: Record<string, number>,
 ): Promise<CombatMultipliers> {
   const [research] = await db
     .select()
@@ -215,8 +217,8 @@ export async function getCombatMultipliers(
   const { userId: _, ...levels } = research ?? {};
 
   return {
-    weapons: resolveBonus('weapons', null, levels as Record<string, number>, bonusDefs),
-    shielding: resolveBonus('shielding', null, levels as Record<string, number>, bonusDefs),
-    armor: resolveBonus('armor', null, levels as Record<string, number>, bonusDefs),
+    weapons: resolveBonus('weapons', null, levels as Record<string, number>, bonusDefs) * (1 + (talentCtx?.['combat_weapons'] ?? 0)),
+    shielding: resolveBonus('shielding', null, levels as Record<string, number>, bonusDefs) * (1 + (talentCtx?.['combat_shield'] ?? 0)),
+    armor: resolveBonus('armor', null, levels as Record<string, number>, bonusDefs) * (1 + (talentCtx?.['combat_armor'] ?? 0)),
   };
 }
