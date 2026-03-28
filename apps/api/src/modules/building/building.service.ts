@@ -13,6 +13,7 @@ export function createBuildingService(
   resourceService: ReturnType<typeof createResourceService>,
   completionQueue: Queue,
   gameConfigService: GameConfigService,
+  talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
 ) {
   return {
     async getBuildingLevels(planetId: string): Promise<Record<string, number>> {
@@ -48,6 +49,9 @@ export function createBuildingService(
         ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
         : undefined;
 
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
+      const talentTimeMultiplier = 1 / (1 + (talentCtx['building_time'] ?? 0));
+
       return Object.values(config.buildings)
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((def) => {
@@ -55,7 +59,7 @@ export function createBuildingService(
           const nextLevel = currentLevel + 1;
           const cost = buildingCost(def, nextLevel, phaseMap);
           const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
-          const time = buildingTime(def, nextLevel, bonusMultiplier, phaseMap);
+          const time = buildingTime(def, nextLevel, bonusMultiplier * talentTimeMultiplier, phaseMap);
 
           return {
             id: def.id,
@@ -124,7 +128,9 @@ export function createBuildingService(
       const nextLevel = currentLevel + 1;
       const cost = buildingCost(def, nextLevel, phaseMap);
       const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
-      const time = buildingTime(def, nextLevel, bonusMultiplier, phaseMap);
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
+      const talentTimeMultiplier = 1 / (1 + (talentCtx['building_time'] ?? 0));
+      const time = buildingTime(def, nextLevel, bonusMultiplier * talentTimeMultiplier, phaseMap);
 
       // Spend resources (atomic)
       await resourceService.spendResources(planetId, userId, cost);
