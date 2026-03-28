@@ -190,14 +190,14 @@ function StatCard({ label, value, base, bonus, unit, accent }: {
 }) {
   const hasBonus = bonus != null && bonus !== 0 && typeof bonus === 'number';
   return (
-    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3">
-      <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">{label}</div>
-      <div className={cn('text-xl font-bold tabular-nums', accent ?? 'text-foreground')}>
+    <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 py-2">
+      <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wider mb-0.5">{label}</div>
+      <div className={cn('text-base font-bold tabular-nums leading-tight', accent ?? 'text-foreground')}>
         {typeof value === 'number' ? value.toLocaleString('fr-FR') : value}
-        {unit && <span className="text-xs font-normal text-muted-foreground/50 ml-0.5">{unit}</span>}
+        {unit && <span className="text-[10px] font-normal text-muted-foreground/40 ml-0.5">{unit}</span>}
       </div>
       {hasBonus && (
-        <div className="text-[10px] text-emerald-400/80 mt-0.5">
+        <div className="text-[9px] text-emerald-400/70 mt-0.5 leading-tight">
           {base?.toLocaleString('fr-FR')} {bonus > 0 ? '+' : ''}{bonus.toLocaleString('fr-FR')}
         </div>
       )}
@@ -385,47 +385,34 @@ export default function FlagshipProfile() {
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Vaisseau amiral" />
 
-      {/* ===== Hero Card — Image + Identity + Stats ===== */}
-      <div className="glass-card overflow-hidden">
-        <div className="flex flex-col sm:flex-row">
-          {/* Image section */}
-          <div className="relative flex-shrink-0 sm:w-52 lg:w-60">
-            <div className="aspect-square sm:h-full">
-              {flagship.flagshipImageIndex ? (
-                <img
-                  src={getFlagshipImageUrl(flagship.flagshipImageIndex)}
-                  alt={flagship.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-primary/10 flex items-center justify-center text-6xl font-black text-primary/20">
-                  VA
-                </div>
-              )}
-            </div>
-            {/* Status badge overlay */}
-            <div className="absolute top-3 left-3">
-              <span className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur-sm bg-black/50',
-                status.color,
-              )}>
-                <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', status.dot)} />
-                {status.label}
-              </span>
-            </div>
+      {/* ===== Identity Card ===== */}
+      <div className="glass-card p-4 lg:p-5">
+        <div className="flex gap-4 lg:gap-5">
+          {/* Image — fixed size */}
+          <div className="relative flex-shrink-0">
+            {flagship.flagshipImageIndex ? (
+              <img
+                src={getFlagshipImageUrl(flagship.flagshipImageIndex, 'thumb')}
+                alt={flagship.name}
+                className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-xl object-cover border border-white/10"
+              />
+            ) : (
+              <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-xl bg-primary/10 border border-white/10 flex items-center justify-center text-3xl sm:text-4xl lg:text-5xl font-black text-primary/20">
+                VA
+              </div>
+            )}
             {flagshipImages && flagshipImages.length > 0 && (
               <button
                 onClick={() => setShowImagePicker(true)}
-                className="absolute bottom-3 right-3 rounded-full px-3 py-1.5 text-[10px] font-medium bg-black/60 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/80 transition-colors"
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-1 text-[10px] font-medium bg-black/70 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/90 transition-colors border border-white/10 whitespace-nowrap"
               >
                 Changer
               </button>
             )}
           </div>
 
-          {/* Identity + meta */}
-          <div className="flex-1 p-4 sm:p-5 lg:p-6 space-y-4">
-            {/* Name + description */}
+          {/* Name + status + planet */}
+          <div className="flex-1 min-w-0 space-y-2">
             {editingName ? (
               <div className="space-y-2">
                 <input
@@ -436,7 +423,6 @@ export default function FlagshipProfile() {
                   className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-lg font-bold"
                   autoFocus
                 />
-                <div className="text-right text-xs text-muted-foreground">{name.length}/32</div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -445,124 +431,82 @@ export default function FlagshipProfile() {
                   placeholder="Description (optionnel)"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
                 />
-                <div className="text-right text-xs text-muted-foreground">{description.length}/256</div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    onClick={() => setEditingName(false)}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={handleRename}
-                    disabled={name.length < 2 || renameMutation.isPending}
-                    className="text-xs text-primary hover:text-primary/80 disabled:opacity-50"
-                  >
-                    {renameMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                <div className="flex items-center gap-2 justify-end text-xs">
+                  <span className="text-muted-foreground">{name.length}/32</span>
+                  <button onClick={() => setEditingName(false)} className="text-muted-foreground hover:text-foreground">Annuler</button>
+                  <button onClick={handleRename} disabled={name.length < 2 || renameMutation.isPending} className="text-primary hover:text-primary/80 disabled:opacity-50">
+                    {renameMutation.isPending ? '...' : 'Enregistrer'}
                   </button>
                 </div>
               </div>
             ) : (
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl lg:text-2xl font-bold">{flagship.name}</h2>
-                  <button
-                    onClick={startEditName}
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">{flagship.name}</h2>
+                  <button onClick={startEditName} className="text-[11px] text-muted-foreground/50 hover:text-primary transition-colors flex-shrink-0">
                     Renommer
                   </button>
                 </div>
                 {flagship.description && (
-                  <p className="text-sm text-muted-foreground mt-1">{flagship.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{flagship.description}</p>
                 )}
               </div>
             )}
 
-            {/* Meta row: planet + exilium + talents */}
-            <div className="flex flex-wrap gap-3">
+            {/* Status */}
+            <div className="flex items-center gap-1.5">
+              <span className={cn('w-2 h-2 rounded-full', status.dot)} />
+              <span className={cn('text-xs font-medium', status.color)}>{status.label}</span>
+            </div>
+
+            {/* Planet + Exilium + Talents — inline */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
               {stationedPlanet && (
-                <Link
-                  to={`/overview`}
-                  className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2 hover:bg-white/[0.06] transition-colors"
-                >
+                <Link to="/overview" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
                   {stationedPlanet.planetClassId && stationedPlanet.planetImageIndex != null ? (
                     <img
                       src={getPlanetImageUrl(stationedPlanet.planetClassId, stationedPlanet.planetImageIndex, 'icon')}
-                      alt={stationedPlanet.name}
-                      className="w-7 h-7 rounded-full object-cover"
+                      alt=""
+                      className="w-5 h-5 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-primary/20" />
+                    <div className="w-5 h-5 rounded-full bg-primary/20" />
                   )}
-                  <div className="text-left">
-                    <div className="text-xs font-medium leading-tight">{stationedPlanet.name}</div>
-                    <div className="text-[10px] text-muted-foreground/60">
-                      [{stationedPlanet.galaxy}:{stationedPlanet.system}:{stationedPlanet.position}]
-                    </div>
-                  </div>
+                  <span>{stationedPlanet.name}</span>
+                  <span className="text-muted-foreground/40 text-[10px]">[{stationedPlanet.galaxy}:{stationedPlanet.system}:{stationedPlanet.position}]</span>
                 </Link>
               )}
-
-              <div className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2">
-                <span className="text-base">✦</span>
-                <div className="text-left">
-                  <div className="text-xs font-bold text-primary leading-tight">{balance}</div>
-                  <div className="text-[10px] text-muted-foreground/60">Exilium</div>
-                </div>
-              </div>
-
+              <span className="text-primary font-medium">{balance} Exilium</span>
               {totalTalentPoints > 0 && (
-                <Link
-                  to="/flagship/talents"
-                  className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2 hover:bg-white/[0.06] transition-colors"
-                >
-                  <span className="text-base">◆</span>
-                  <div className="text-left">
-                    <div className="text-xs font-bold leading-tight">{totalTalentPoints} pts</div>
-                    <div className="text-[10px] text-muted-foreground/60">Talents</div>
-                  </div>
+                <Link to="/flagship/talents" className="text-muted-foreground hover:text-foreground transition-colors">
+                  {totalTalentPoints} pts talents
                 </Link>
               )}
-            </div>
-
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-              <StatCard label="Armes" value={effectiveStats?.weapons ?? flagship.weapons} base={flagship.weapons} bonus={talentBonuses.weapons} accent="text-red-400" />
-              <StatCard label="Bouclier" value={effectiveStats?.shield ?? flagship.shield} base={flagship.shield} bonus={talentBonuses.shield} accent="text-blue-400" />
-              <StatCard label="Coque" value={effectiveStats?.hull ?? flagship.hull} base={flagship.hull} bonus={talentBonuses.hull} accent="text-amber-400" />
-              <StatCard label="Blindage" value={effectiveStats?.baseArmor ?? flagship.baseArmor} base={flagship.baseArmor} bonus={talentBonuses.baseArmor} />
-              <StatCard label="Tirs" value={effectiveStats?.shotCount ?? flagship.shotCount} base={flagship.shotCount} bonus={talentBonuses.shotCount} />
-              <StatCard label="Soute" value={effectiveStats?.cargoCapacity ?? flagship.cargoCapacity} base={flagship.cargoCapacity} bonus={talentBonuses.cargoCapacity} />
-              <StatCard label="Vitesse" value={effectiveStats?.baseSpeed ?? flagship.baseSpeed} base={flagship.baseSpeed} bonus={talentBonuses.speedPercent ? Math.round(flagship.baseSpeed * talentBonuses.speedPercent) : undefined} />
-              <StatCard label="Carburant" value={effectiveStats?.fuelConsumption ?? flagship.fuelConsumption} base={flagship.fuelConsumption} bonus={talentBonuses.fuelConsumption} unit="/u" />
-              <StatCard label="Propulsion" value={DRIVE_LABELS[driveType] ?? driveType} accent="text-purple-400" />
             </div>
 
             {/* Quick links */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Link
-                to="/flagship/talents"
-                className="text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
-              >
-                Arbre de talents
-              </Link>
-              <span className="text-muted-foreground/30">|</span>
-              <Link
-                to="/fleet"
-                className="text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
-              >
-                Ma flotte
-              </Link>
-              <span className="text-muted-foreground/30">|</span>
-              <Link
-                to="/fleet/movements"
-                className="text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
-              >
-                Mouvements
-              </Link>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
+              <Link to="/flagship/talents" className="text-[11px] text-primary/70 hover:text-primary transition-colors">Arbre de talents</Link>
+              <Link to="/fleet" className="text-[11px] text-primary/70 hover:text-primary transition-colors">Flotte</Link>
+              <Link to="/fleet/movements" className="text-[11px] text-primary/70 hover:text-primary transition-colors">Mouvements</Link>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ===== Stats Card ===== */}
+      <div className="glass-card p-4 lg:p-5">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Statistiques</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
+          <StatCard label="Armes" value={effectiveStats?.weapons ?? flagship.weapons} base={flagship.weapons} bonus={talentBonuses.weapons} accent="text-red-400" />
+          <StatCard label="Bouclier" value={effectiveStats?.shield ?? flagship.shield} base={flagship.shield} bonus={talentBonuses.shield} accent="text-blue-400" />
+          <StatCard label="Coque" value={effectiveStats?.hull ?? flagship.hull} base={flagship.hull} bonus={talentBonuses.hull} accent="text-amber-400" />
+          <StatCard label="Blindage" value={effectiveStats?.baseArmor ?? flagship.baseArmor} base={flagship.baseArmor} bonus={talentBonuses.baseArmor} />
+          <StatCard label="Tirs" value={effectiveStats?.shotCount ?? flagship.shotCount} base={flagship.shotCount} bonus={talentBonuses.shotCount} />
+          <StatCard label="Soute" value={effectiveStats?.cargoCapacity ?? flagship.cargoCapacity} base={flagship.cargoCapacity} bonus={talentBonuses.cargoCapacity} />
+          <StatCard label="Vitesse" value={effectiveStats?.baseSpeed ?? flagship.baseSpeed} base={flagship.baseSpeed} bonus={talentBonuses.speedPercent ? Math.round(flagship.baseSpeed * talentBonuses.speedPercent) : undefined} />
+          <StatCard label="Carburant" value={effectiveStats?.fuelConsumption ?? flagship.fuelConsumption} base={flagship.fuelConsumption} bonus={talentBonuses.fuelConsumption} unit="/u" />
+          <StatCard label="Propulsion" value={DRIVE_LABELS[driveType] ?? driveType} accent="text-purple-400" />
         </div>
       </div>
 
