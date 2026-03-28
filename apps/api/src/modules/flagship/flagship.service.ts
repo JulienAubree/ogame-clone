@@ -6,6 +6,7 @@ import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { createTalentService } from './talent.service.js';
 import { listFlagshipImageIndexes, getRandomFlagshipImageIndex } from '../../lib/flagship-image.util.js';
+import { computeBaseStatsFromShips, FLAGSHIP_EXCLUDED_SHIPS } from '@exilium/game-engine';
 
 // Regex de validation du nom : lettres (toutes langues), chiffres, espaces, tirets, apostrophes
 const NAME_REGEX = /^[\p{L}\p{N}\s\-']{2,32}$/u;
@@ -280,6 +281,75 @@ export function createFlagshipService(
       }
 
       return updated;
+    },
+
+    async recalculateBaseStats(userId: string) {
+      const [flagship] = await db
+        .select({ id: flagships.id, unlockedShips: flagships.unlockedShips })
+        .from(flagships)
+        .where(eq(flagships.userId, userId))
+        .limit(1);
+
+      if (!flagship) return;
+
+      const config = await gameConfigService.getFullConfig();
+      const shipDefs: Record<string, { weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; baseSpeed: number; fuelConsumption: number; cargoCapacity: number }> = {};
+      for (const [id, def] of Object.entries(config.ships)) {
+        shipDefs[id] = {
+          weapons: def.weapons,
+          shield: def.shield,
+          hull: def.hull,
+          baseArmor: def.baseArmor,
+          shotCount: def.shotCount,
+          baseSpeed: def.baseSpeed,
+          fuelConsumption: def.fuelConsumption,
+          cargoCapacity: def.cargoCapacity,
+        };
+      }
+
+      const stats = computeBaseStatsFromShips(flagship.unlockedShips, shipDefs);
+
+      await db
+        .update(flagships)
+        .set({ ...stats, updatedAt: new Date() })
+        .where(eq(flagships.id, flagship.id));
+    },
+
+    async addUnlockedShip(userId: string, shipId: string) {
+      if ((FLAGSHIP_EXCLUDED_SHIPS as readonly string[]).includes(shipId)) return;
+
+      const [flagship] = await db
+        .select({ id: flagships.id, unlockedShips: flagships.unlockedShips })
+        .from(flagships)
+        .where(eq(flagships.userId, userId))
+        .limit(1);
+
+      if (!flagship) return;
+      if (flagship.unlockedShips.includes(shipId)) return;
+
+      const updatedList = [...flagship.unlockedShips, shipId];
+
+      const config = await gameConfigService.getFullConfig();
+      const shipDefs: Record<string, { weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; baseSpeed: number; fuelConsumption: number; cargoCapacity: number }> = {};
+      for (const [id, def] of Object.entries(config.ships)) {
+        shipDefs[id] = {
+          weapons: def.weapons,
+          shield: def.shield,
+          hull: def.hull,
+          baseArmor: def.baseArmor,
+          shotCount: def.shotCount,
+          baseSpeed: def.baseSpeed,
+          fuelConsumption: def.fuelConsumption,
+          cargoCapacity: def.cargoCapacity,
+        };
+      }
+
+      const stats = computeBaseStatsFromShips(updatedList, shipDefs);
+
+      await db
+        .update(flagships)
+        .set({ unlockedShips: updatedList, ...stats, updatedAt: new Date() })
+        .where(eq(flagships.id, flagship.id));
     },
   };
 }
