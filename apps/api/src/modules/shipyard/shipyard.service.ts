@@ -14,6 +14,7 @@ export function createShipyardService(
   completionQueue: Queue,
   gameConfigService: GameConfigService,
   talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
+  flagshipService?: { addUnlockedShip(userId: string, shipId: string): Promise<void> },
 ) {
   function getShipBuildCategory(
     shipDef: { prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } },
@@ -265,6 +266,10 @@ export function createShipyardService(
             .update(planetShips)
             .set({ [col]: current + 1 })
             .where(eq(planetShips.planetId, entry.planetId));
+          // Update flagship base stats if this is a new ship type
+          if (flagshipService) {
+            await flagshipService.addUnlockedShip(entry.userId, entry.itemId);
+          }
         }
       } else {
         const defenseDef = config.defenses[entry.itemId];
