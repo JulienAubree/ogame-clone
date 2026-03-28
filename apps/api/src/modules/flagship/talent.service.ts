@@ -343,5 +343,80 @@ export function createTalentService(
       }
       return active;
     },
+
+    // ── COMPUTE TALENT CONTEXT ──
+
+    async computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> {
+      // 1. Fetch flagship — return {} if none exists
+      const [flagship] = await db
+        .select({ id: flagships.id, planetId: flagships.planetId, status: flagships.status })
+        .from(flagships)
+        .where(eq(flagships.userId, userId))
+        .limit(1);
+      if (!flagship) return {};
+
+      // 2. Fetch talent ranks
+      const ranks = await getTalentRanks(flagship.id);
+
+      // 3. Fetch game config (cached)
+      const config = await gameConfigService.getFullConfig();
+
+      // 4. Fetch cooldown rows
+      const cooldownRows = await db.select().from(flagshipCooldowns)
+        .where(eq(flagshipCooldowns.flagshipId, flagship.id));
+
+      // Index active cooldowns by talentId for quick lookup
+      const now = new Date();
+      const activeCooldowns = new Map<string, boolean>();
+      for (const cd of cooldownRows) {
+        if (now < cd.expiresAt) {
+          activeCooldowns.set(cd.talentId, true);
+        }
+      }
+
+      const isPlanetBonusActive = flagship.status === 'active' && flagship.planetId === planetId;
+
+      // 5. Build context
+      const ctx: Record<string, number> = {};
+
+      for (const [talentId, rank] of Object.entries(ranks)) {
+        if (rank <= 0) continue;
+
+        const def = config.talents[talentId];
+        if (!def) continue;
+
+        switch (def.effectType) {
+          case 'global_bonus': {
+            const params = def.effectParams as { key: string; perRank: number };
+            ctx[params.key] = (ctx[params.key] ?? 0) + params.perRank * rank;
+            break;
+          }
+
+          case 'planet_bonus': {
+            if (!isPlanetBonusActive) break;
+            const params = def.effectParams as { key: string; perRank: number };
+            ctx[params.key] = (ctx[params.key] ?? 0) + params.perRank * rank;
+            break;
+          }
+
+          case 'timed_buff': {
+            if (!activeCooldowns.has(talentId)) break;
+            const params = def.effectParams as { key: string; perRank: number; durationSeconds: number; cooldownSeconds: number };
+            ctx[params.key] = (ctx[params.key] ?? 0) + params.perRank * rank;
+            break;
+          }
+
+          case 'unlock': {
+            const params = def.effectParams as { key: string };
+            ctx[params.key] = (ctx[params.key] ?? 0) + rank;
+            break;
+          }
+
+          // modify_stat: skip — already handled by getStatBonuses()
+        }
+      }
+
+      return ctx;
+    },
   };
 }
