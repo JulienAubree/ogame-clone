@@ -132,11 +132,12 @@ export default function Fleet() {
 
   // Send mutation
   const sendMutation = trpc.fleet.send.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       addToast('Flotte envoyée !', 'success');
       utils.shipyard.ships.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.fleet.slots.invalidate();
+      await utils.fleet.movements.invalidate();
       navigate('/fleet/movements');
     },
   });
