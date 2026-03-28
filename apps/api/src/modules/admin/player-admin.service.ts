@@ -1,5 +1,5 @@
 import { eq, like, or, sql, count } from 'drizzle-orm';
-import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings } from '@exilium/db';
+import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings, flagships, userExilium, flagshipTalents } from '@exilium/db';
 import type { Database } from '@exilium/db';
 
 export function createPlayerAdminService(db: Database) {
@@ -68,11 +68,21 @@ export function createPlayerAdminService(db: Database) {
         })
       );
 
+      // Load flagship, exilium balance, and talents
+      const [flagshipRow] = await db.select().from(flagships).where(eq(flagships.userId, userId)).limit(1);
+      const [exiliumRow] = await db.select().from(userExilium).where(eq(userExilium.userId, userId)).limit(1);
+      const talentRows = flagshipRow
+        ? await db.select().from(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagshipRow.id))
+        : [];
+
       return {
         user: { id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin, bannedAt: user.bannedAt, createdAt: user.createdAt },
         planets: planetsWithUnits,
         research: research[0] ?? null,
         ranking: ranking[0] ?? null,
+        flagship: flagshipRow ?? null,
+        exilium: exiliumRow ?? null,
+        flagshipTalents: talentRows,
       };
     },
 
@@ -104,6 +114,27 @@ export function createPlayerAdminService(db: Database) {
 
     async deletePlayer(userId: string) {
       await db.delete(users).where(eq(users.id, userId));
+    },
+
+    async updateFlagshipStats(userId: string, stats: Partial<{
+      weapons: number; shield: number; hull: number; baseArmor: number;
+      shotCount: number; baseSpeed: number; fuelConsumption: number;
+      cargoCapacity: number; driveType: string; combatCategoryId: string;
+      status: string; name: string; description: string; imageId: string;
+    }>) {
+      await db.update(flagships).set({ ...stats, updatedAt: new Date() }).where(eq(flagships.userId, userId));
+    },
+
+    async repairFlagship(userId: string) {
+      await db.update(flagships).set({ status: 'active', repairEndsAt: null, updatedAt: new Date() }).where(eq(flagships.userId, userId));
+    },
+
+    async setExiliumBalance(userId: string, balance: number) {
+      await db.update(userExilium).set({ balance, updatedAt: new Date() }).where(eq(userExilium.userId, userId));
+    },
+
+    async resetFlagshipTalents(flagshipId: string) {
+      await db.delete(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagshipId));
     },
   };
 }

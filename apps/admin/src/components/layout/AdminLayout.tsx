@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import {
   Building2, FlaskConical, Rocket, Shield, Zap,
   Factory, Globe, Users, LogOut, LayoutGrid, Orbit,
-  Skull, GraduationCap, Compass, Tag,
+  Skull, GraduationCap, Compass, Tag, Sparkles,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -26,6 +26,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/missions', label: 'Missions', icon: Compass },
       { to: '/pve-missions', label: 'Missions PvE', icon: Skull },
+      { to: '/talents', label: 'Talents Flagship', icon: Sparkles },
       { to: '/tutorial-quests', label: 'Onboarding', icon: GraduationCap },
     ],
   },

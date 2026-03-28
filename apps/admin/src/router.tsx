@@ -37,6 +37,7 @@ export const router = createBrowserRouter([
       { path: 'tutorial-quests', lazy: () => import('./pages/TutorialQuests').then((m) => ({ Component: m.default })) },
       { path: 'missions', lazy: () => import('./pages/Missions').then((m) => ({ Component: m.default })) },
       { path: 'labels', lazy: () => import('./pages/Labels').then((m) => ({ Component: m.default })) },
+      { path: 'talents', lazy: () => import('./pages/Talents').then((m) => ({ Component: m.default })) },
     ],
   },
 ]);

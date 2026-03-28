@@ -78,5 +78,54 @@ export function createPlayerAdminRouter(
         await playerAdminService.deletePlayer(input.userId);
         return { success: true };
       }),
+
+    updateFlagshipStats: adminProcedure
+      .input(z.object({
+        userId: z.string().uuid(),
+        stats: z.object({
+          weapons: z.number().int().optional(),
+          shield: z.number().int().optional(),
+          hull: z.number().int().optional(),
+          baseArmor: z.number().int().optional(),
+          shotCount: z.number().int().optional(),
+          baseSpeed: z.number().int().optional(),
+          fuelConsumption: z.number().int().optional(),
+          cargoCapacity: z.number().int().optional(),
+          driveType: z.string().optional(),
+          combatCategoryId: z.string().optional(),
+          status: z.string().optional(),
+          name: z.string().optional(),
+          description: z.string().optional(),
+          imageId: z.string().optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.updateFlagshipStats(input.userId, input.stats);
+        return { success: true };
+      }),
+
+    repairFlagship: adminProcedure
+      .input(z.object({ userId: z.string().uuid() }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.repairFlagship(input.userId);
+        return { success: true };
+      }),
+
+    setExiliumBalance: adminProcedure
+      .input(z.object({
+        userId: z.string().uuid(),
+        balance: z.number().int().min(0),
+      }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.setExiliumBalance(input.userId, input.balance);
+        return { success: true };
+      }),
+
+    resetFlagshipTalents: adminProcedure
+      .input(z.object({ flagshipId: z.string().uuid() }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.resetFlagshipTalents(input.flagshipId);
+        return { success: true };
+      }),
   });
 }
