@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router';
 import { cn } from '@/lib/utils';
+import { MessageSquarePlus } from 'lucide-react';
 import {
   OverviewIcon,
   ResourcesIcon,
@@ -60,6 +61,7 @@ const sections: { title: string; items: NavItem[] }[] = [
       { label: 'Alliance', path: '/alliance', icon: AllianceIcon },
       { label: 'Classement', path: '/ranking', icon: RankingIcon },
       { label: 'Classement Alliances', path: '/alliance-ranking', icon: AllianceRankingIcon },
+      { label: 'Feedback', path: '/feedback', icon: MessageSquarePlus as any },
     ],
   },
 ];

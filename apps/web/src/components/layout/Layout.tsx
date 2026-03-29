@@ -9,6 +9,7 @@ import { UpdatePrompt } from '@/components/pwa/UpdatePrompt';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { ChatOverlay } from '@/components/chat/ChatOverlay';
 import { TutorialPanel } from '@/components/tutorial/TutorialPanel';
+import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
 import { DailyQuestWidget } from '@/components/daily-quests/DailyQuestWidget';
 import { trpc } from '@/trpc';
 import { usePlanetStore } from '@/stores/planet.store';
@@ -58,6 +59,8 @@ export function Layout() {
       <div className="fixed bottom-16 left-4 z-40 lg:bottom-4 lg:left-60">
         <DailyQuestWidget />
       </div>
+
+      <FloatingFeedbackButton />
 
       {/* Tutorial panel */}
       <TutorialPanel />

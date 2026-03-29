@@ -160,6 +160,16 @@ export const router = createBrowserRouter([
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
       },
       {
+        path: 'feedback',
+        lazy: lazyLoad(() => import('./pages/Feedback')),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
+      {
+        path: 'feedback/:feedbackId',
+        lazy: lazyLoad(() => import('./pages/FeedbackDetail')),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
+      {
         path: 'ranking',
         lazy: lazyLoad(() => import('./pages/Ranking')),
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
