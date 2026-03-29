@@ -44,10 +44,22 @@ export function ReportCard({ report, gameConfig }: ReportCardProps) {
   const result = report.result ?? {};
   const isCombat = report.missionType === 'attack' || report.missionType === 'pirate';
 
-  const outcomeLabel = isCombat
-    ? result.outcome === 'attacker' ? 'Victoire' : result.outcome === 'defender' ? 'Défaite' : 'Nul'
-    : null;
-  const outcomeStyle = isCombat ? (OUTCOME_STYLES[result.outcome] ?? OUTCOME_STYLES.draw) : '';
+  const perspective = result.perspective as 'attacker' | 'defender' | undefined;
+  const isPlayerVictory = !isCombat
+    ? null
+    : result.outcome === 'draw'
+      ? null
+      : perspective === 'defender'
+        ? result.outcome === 'defender'
+        : result.outcome === 'attacker';
+  const outcomeLabel = !isCombat
+    ? null
+    : isPlayerVictory === null ? 'Nul' : isPlayerVictory ? 'Victoire' : 'Défaite';
+  const outcomeStyle = !isCombat
+    ? ''
+    : isPlayerVictory === null ? OUTCOME_STYLES.draw
+    : isPlayerVictory ? OUTCOME_STYLES.attacker
+    : OUTCOME_STYLES.defender;
 
   const isMine = report.missionType === 'mine';
   const rewards = isMine ? result.rewards ?? {} : {};
