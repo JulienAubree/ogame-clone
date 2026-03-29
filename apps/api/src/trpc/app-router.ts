@@ -53,6 +53,8 @@ import { createTalentService } from '../modules/flagship/talent.service.js';
 import { createTalentRouter } from '../modules/flagship/talent.router.js';
 import { createDailyQuestService } from '../modules/daily-quest/daily-quest.service.js';
 import { createDailyQuestRouter } from '../modules/daily-quest/daily-quest.router.js';
+import { createFeedbackService } from '../modules/feedback/feedback.service.js';
+import { createFeedbackRouter } from '../modules/feedback/feedback.router.js';
 import { env } from '../config/env.js';
 import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
@@ -88,6 +90,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const playerAdminService = createPlayerAdminService(db);
   const tutorialService = createTutorialService(db, pveService);
   const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis, dailyQuestService, exiliumService, talentService);
+  const feedbackService = createFeedbackService(db);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -114,6 +117,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const flagshipRouter = createFlagshipRouter(flagshipService, tutorialService);
   const talentRouter = createTalentRouter(talentService);
   const dailyQuestRouter = createDailyQuestRouter(dailyQuestService, gameConfigService);
+  const feedbackRouter = createFeedbackRouter(feedbackService, adminProcedure);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -145,6 +149,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     flagship: flagshipRouter,
     talent: talentRouter,
     dailyQuest: dailyQuestRouter,
+    feedback: feedbackRouter,
   });
 }
 
