@@ -246,6 +246,23 @@ export function useNotifications() {
         showBrowserNotification('Chat Alliance', `${event.payload.senderUsername}: nouveau message`);
         break;
       }
+      case 'alliance-activity': {
+        utils.alliance.myAlliance.invalidate();
+        const payload = event.payload;
+        let msg = '';
+        if (payload.action === 'invitation') {
+          msg = `Invitation alliance [${payload.allianceTag}] reçue`;
+        } else if (payload.action === 'application') {
+          msg = `Candidature de ${payload.applicantUsername} [${payload.allianceTag}]`;
+        } else if (payload.action === 'circular') {
+          msg = `[Alliance] ${payload.senderUsername} : ${payload.subject}`;
+        }
+        if (msg) {
+          addToast(msg, 'info', '/alliance');
+          showBrowserNotification('Alliance', msg);
+        }
+        break;
+      }
     }
   });
 }
