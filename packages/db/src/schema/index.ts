@@ -28,3 +28,4 @@ export * from './exilium-log.js';
 export * from './flagships.js';
 export * from './flagship-talents.js';
 export * from './flagship-cooldowns.js';
+export * from './feedbacks.js';
