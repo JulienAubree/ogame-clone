@@ -1,0 +1,211 @@
+<h2>Dashboard Flotte</h2>
+<p class="subtitle">Layout 2 colonnes avec images de vaisseaux et barre d'action. Le composant GameImage existe deja (fallback lettre coloree tant que les images ne sont pas ajoutees).</p>
+
+<div class="mockup">
+  <div class="mockup-header">Dashboard Flotte — /fleet</div>
+  <div class="mockup-body" style="background: #0c0e1a; padding: 16px; font-family: system-ui, sans-serif; font-size: 12px; color: #e0e0e0;">
+
+    <!-- Breadcrumb -->
+    <div style="font-size: 11px; color: #666; margin-bottom: 12px;">
+      <span style="color: #8ab4f8;">Flotte</span>
+    </div>
+
+    <!-- Header row: Alerts + Slots + CTA -->
+    <div style="display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap;">
+      <!-- Alert badge -->
+      <div style="background: #e74c3c18; border: 1px solid #e74c3c55; border-radius: 6px; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+        <span style="color: #e74c3c; font-size: 14px;">&#9888;</span>
+        <span style="color: #e74c3c; font-weight: 600;">2 flottes hostiles detectees</span>
+      </div>
+      <!-- Slots -->
+      <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 6px 12px;">
+        <span style="color: #888;">Slots:</span> <span style="color: #8ab4f8; font-weight: 600;">3 / 7</span>
+      </div>
+      <!-- PvE missions -->
+      <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 6px 12px; cursor: pointer;">
+        <span style="color: #2ecc71; font-weight: 600;">2 missions PvE</span>
+        <span style="color: #555;"> &rarr;</span>
+      </div>
+      <!-- Spacer -->
+      <div style="flex: 1;"></div>
+      <!-- CTA -->
+      <div style="background: #3b82f6; color: white; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">
+        Envoyer une flotte &rarr;
+      </div>
+    </div>
+
+    <!-- Two columns -->
+    <div style="display: flex; gap: 12px;">
+
+      <!-- LEFT: Flotte stationnee -->
+      <div style="flex: 1; background: #111827; border: 1px solid #1e2740; border-radius: 8px; overflow: hidden;">
+        <div style="padding: 10px 14px; border-bottom: 1px solid #1e2740; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #f1c40f; font-weight: 700; font-size: 13px;">Flotte stationnee</span>
+          <span style="color: #555; cursor: pointer; font-size: 11px;">Voir tout &rarr;</span>
+        </div>
+        <div style="padding: 10px;">
+          <!-- Ship grid with images -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <!-- Ship 1 -->
+            <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="width: 48px; height: 48px; margin: 0 auto 6px; background: #3b82f622; border: 1px dashed #3b82f644; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #3b82f6; font-size: 20px; font-weight: bold;">C</span>
+              </div>
+              <div style="font-size: 10px; color: #ccc; line-height: 1.2;">Chasseur leger</div>
+              <div style="color: #8ab4f8; font-weight: 700; font-size: 14px; margin-top: 2px;">x12</div>
+            </div>
+            <!-- Ship 2 -->
+            <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="width: 48px; height: 48px; margin: 0 auto 6px; background: #f1c40f22; border: 1px dashed #f1c40f44; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #f1c40f; font-size: 20px; font-weight: bold;">P</span>
+              </div>
+              <div style="font-size: 10px; color: #ccc; line-height: 1.2;">Petit transporteur</div>
+              <div style="color: #8ab4f8; font-weight: 700; font-size: 14px; margin-top: 2px;">x5</div>
+            </div>
+            <!-- Ship 3 -->
+            <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="width: 48px; height: 48px; margin: 0 auto 6px; background: #2ecc7122; border: 1px dashed #2ecc7144; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #2ecc71; font-size: 20px; font-weight: bold;">S</span>
+              </div>
+              <div style="font-size: 10px; color: #ccc; line-height: 1.2;">Sonde espionnage</div>
+              <div style="color: #8ab4f8; font-weight: 700; font-size: 14px; margin-top: 2px;">x20</div>
+            </div>
+            <!-- Ship 4 -->
+            <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="width: 48px; height: 48px; margin: 0 auto 6px; background: #e74c3c22; border: 1px dashed #e74c3c44; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #e74c3c; font-size: 20px; font-weight: bold;">R</span>
+              </div>
+              <div style="font-size: 10px; color: #ccc; line-height: 1.2;">Recycleur</div>
+              <div style="color: #8ab4f8; font-weight: 700; font-size: 14px; margin-top: 2px;">x3</div>
+            </div>
+            <!-- Ship 5 -->
+            <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="width: 48px; height: 48px; margin: 0 auto 6px; background: #9b59b622; border: 1px dashed #9b59b644; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #9b59b6; font-size: 20px; font-weight: bold;">C</span>
+              </div>
+              <div style="font-size: 10px; color: #ccc; line-height: 1.2;">Croiseur</div>
+              <div style="color: #8ab4f8; font-weight: 700; font-size: 14px; margin-top: 2px;">x2</div>
+            </div>
+            <!-- Ship 6 -->
+            <div style="background: #1a1f35; border: 1px solid #2a2f45; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="width: 48px; height: 48px; margin: 0 auto 6px; background: #e67e2222; border: 1px dashed #e67e2244; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #e67e22; font-size: 20px; font-weight: bold;">P</span>
+              </div>
+              <div style="font-size: 10px; color: #ccc; line-height: 1.2;">Prospecteur</div>
+              <div style="color: #8ab4f8; font-weight: 700; font-size: 14px; margin-top: 2px;">x4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Mouvements actifs -->
+      <div style="flex: 1.3; background: #111827; border: 1px solid #1e2740; border-radius: 8px; overflow: hidden;">
+        <div style="padding: 10px 14px; border-bottom: 1px solid #1e2740; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #f1c40f; font-weight: 700; font-size: 13px;">Mouvements actifs (3)</span>
+          <span style="color: #555; cursor: pointer; font-size: 11px;">Voir tout &rarr;</span>
+        </div>
+        <div style="padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+
+          <!-- Movement 1: Transport -->
+          <div style="background: #1a1f35; border-left: 3px solid #3b82f6; border-radius: 0 6px 6px 0; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">&#128666;</span>
+                <span style="color: #3b82f6; font-weight: 600;">Transport</span>
+                <span style="background: #3b82f622; color: #3b82f6; padding: 1px 6px; border-radius: 4px; font-size: 10px;">Aller</span>
+              </div>
+              <span style="color: #e67e22; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums;">12:34</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="color: #888; font-size: 11px;">
+                Planete 1 &rarr; <span style="color: #aaa;">[2:4:8]</span>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <div style="width: 20px; height: 20px; background: #f1c40f22; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #f1c40f; font-weight: bold;">P</div>
+                <span style="color: #666; font-size: 10px;">x5</span>
+              </div>
+            </div>
+            <!-- Progress bar -->
+            <div style="margin-top: 6px; background: #0c0e1a; border-radius: 3px; height: 4px; overflow: hidden;">
+              <div style="width: 65%; height: 100%; background: #3b82f6; border-radius: 3px;"></div>
+            </div>
+          </div>
+
+          <!-- Movement 2: Attack -->
+          <div style="background: #1a1f35; border-left: 3px solid #e74c3c; border-radius: 0 6px 6px 0; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">&#9876;</span>
+                <span style="color: #e74c3c; font-weight: 600;">Attaque</span>
+                <span style="background: #e74c3c22; color: #e74c3c; padding: 1px 6px; border-radius: 4px; font-size: 10px;">Aller</span>
+              </div>
+              <span style="color: #e67e22; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums;">45:12</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="color: #888; font-size: 11px;">
+                Planete 1 &rarr; <span style="color: #aaa;">[1:33:5]</span>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <div style="width: 20px; height: 20px; background: #e74c3c22; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #e74c3c; font-weight: bold;">C</div>
+                <span style="color: #666; font-size: 10px;">x12</span>
+                <div style="width: 20px; height: 20px; background: #9b59b622; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #9b59b6; font-weight: bold;">C</div>
+                <span style="color: #666; font-size: 10px;">x2</span>
+              </div>
+            </div>
+            <div style="margin-top: 6px; background: #0c0e1a; border-radius: 3px; height: 4px; overflow: hidden;">
+              <div style="width: 25%; height: 100%; background: #e74c3c; border-radius: 3px;"></div>
+            </div>
+          </div>
+
+          <!-- Movement 3: Mine -->
+          <div style="background: #1a1f35; border-left: 3px solid #2ecc71; border-radius: 0 6px 6px 0; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">&#9935;</span>
+                <span style="color: #2ecc71; font-weight: 600;">Mine</span>
+                <span style="background: #2ecc7122; color: #2ecc71; padding: 1px 6px; border-radius: 4px; font-size: 10px;">Extraction</span>
+              </div>
+              <span style="color: #e67e22; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums;">2:15:00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="color: #888; font-size: 11px;">
+                Planete 1 &rarr; <span style="color: #aaa;">[3:12:1]</span>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <div style="width: 20px; height: 20px; background: #e67e2222; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #e67e22; font-weight: bold;">P</div>
+                <span style="color: #666; font-size: 10px;">x4</span>
+              </div>
+            </div>
+            <!-- Mining stepper -->
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 0;">
+              <div style="flex: 1; height: 4px; background: #2ecc71; border-radius: 3px 0 0 3px;"></div>
+              <div style="width: 8px; height: 8px; background: #2ecc71; border-radius: 50%;"></div>
+              <div style="flex: 1; height: 4px; background: #2ecc71;"></div>
+              <div style="width: 8px; height: 8px; background: #2ecc71; border-radius: 50%;"></div>
+              <div style="flex: 1; height: 4px; background: #2ecc71;"></div>
+              <div style="width: 10px; height: 10px; background: #2ecc71; border-radius: 50%; border: 2px solid #fff;"></div>
+              <div style="flex: 1; height: 4px; background: #333;"></div>
+              <div style="width: 8px; height: 8px; background: #333; border-radius: 50%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 9px; color: #666;">
+              <span>Aller</span><span>Prospec.</span><span style="color: #2ecc71; font-weight: 600;">Extract.</span><span>Retour</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top: 20px; padding: 16px; background: #1a1a2e; border-radius: 8px; font-size: 13px; line-height: 1.6;">
+  <h3 style="margin-top: 0;">Notes</h3>
+  <ul style="color: #ccc; padding-left: 20px;">
+    <li>Les carres colores (C, P, S...) sont les <strong>fallbacks GameImage</strong> actuels — ils seront remplaces par les vraies images de vaisseaux quand elles seront ajoutees</li>
+    <li>La grille de vaisseaux a gauche utilise les memes images en plus grand (48x48)</li>
+    <li>Chaque mouvement montre les <strong>mini-vignettes des vaisseaux</strong> impliques</li>
+    <li>"Voir tout &rarr;" sur chaque section mene a la sous-page detaillee</li>
+    <li>Le bouton <strong>"Envoyer une flotte"</strong> est toujours visible en haut</li>
+  </ul>
+</div>

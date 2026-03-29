@@ -1,0 +1,5 @@
+{"type":"server-started","port":55686,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:55686","screen_dir":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/3111-1774450742"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/3111-1774450742/dashboard-fleet.html"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/3111-1774450742/dashboard-fleet-v2.html"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/ogame-clone/.superpowers/brainstorm/3111-1774450742/dashboard-fleet-v3.html"}
+{"type":"server-stopped","reason":"idle timeout"}

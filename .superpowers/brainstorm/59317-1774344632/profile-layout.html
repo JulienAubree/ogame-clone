@@ -1,0 +1,121 @@
+<h2>Layout de la page "Mon Profil"</h2>
+<p class="subtitle">Quel agencement te semble le plus adapte au style du jeu ?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0a0e1a;padding:16px;border-radius:8px;font-family:monospace;color:#e0e0e0;min-height:320px;">
+        <!-- Layout A: Card centree -->
+        <div style="max-width:500px;margin:0 auto;">
+          <!-- Avatar + identite -->
+          <div style="text-align:center;padding:20px 0;">
+            <div style="width:80px;height:80px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(135deg,#4a90d9,#7b68ee);border:3px solid #4a90d9;display:flex;align-items:center;justify-content:center;font-size:28px;">&#x1F680;</div>
+            <div style="font-size:18px;font-weight:bold;color:#fff;">CommanderX</div>
+            <div style="font-size:12px;color:#888;margin-top:4px;">Rang #42 &middot; 12,450 pts</div>
+            <div style="margin-top:8px;display:inline-block;padding:2px 10px;border-radius:12px;background:#1a2a4a;color:#4a90d9;font-size:11px;">Guerrier</div>
+          </div>
+          <!-- Bio -->
+          <div style="background:#111827;border:1px solid #1e293b;border-radius:8px;padding:12px;margin:12px 0;">
+            <div style="color:#888;font-size:10px;text-transform:uppercase;margin-bottom:6px;">Bio</div>
+            <div style="color:#ccc;font-size:13px;line-height:1.4;">Veteran de 3 guerres galactiques. Ma flotte est ma fierte.</div>
+          </div>
+          <!-- Stats -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0;">
+            <div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:10px;text-align:center;">
+              <div style="color:#4a90d9;font-size:16px;font-weight:bold;">5</div>
+              <div style="color:#888;font-size:10px;">Planetes</div>
+            </div>
+            <div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:10px;text-align:center;">
+              <div style="color:#4a90d9;font-size:16px;font-weight:bold;">#42</div>
+              <div style="color:#888;font-size:10px;">Rang</div>
+            </div>
+            <div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:10px;text-align:center;">
+              <div style="color:#4a90d9;font-size:16px;font-weight:bold;">Nova</div>
+              <div style="color:#888;font-size:10px;">Alliance</div>
+            </div>
+          </div>
+          <!-- Preferences -->
+          <div style="background:#111827;border:1px solid #1e293b;border-radius:8px;padding:12px;margin:12px 0;">
+            <div style="color:#888;font-size:10px;text-transform:uppercase;margin-bottom:8px;">Preferences</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0;">
+              <span style="color:#ccc;font-size:12px;">Cherche alliance</span>
+              <span style="color:#22c55e;font-size:12px;">Oui</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0;">
+              <span style="color:#ccc;font-size:12px;">Theme</span>
+              <span style="color:#ccc;font-size:12px;">Sombre</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Carte centree</h3>
+      <p>Layout vertical centre, type fiche de personnage. Compact, lisible sur mobile.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0a0e1a;padding:16px;border-radius:8px;font-family:monospace;color:#e0e0e0;min-height:320px;">
+        <!-- Layout B: Deux colonnes -->
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;">
+          <!-- Colonne gauche: avatar + identite -->
+          <div>
+            <div style="background:#111827;border:1px solid #1e293b;border-radius:8px;padding:16px;text-align:center;">
+              <div style="width:100px;height:100px;margin:0 auto 12px;border-radius:8px;background:linear-gradient(135deg,#4a90d9,#7b68ee);border:2px solid #4a90d9;display:flex;align-items:center;justify-content:center;font-size:36px;">&#x1F680;</div>
+              <div style="font-size:16px;font-weight:bold;color:#fff;">CommanderX</div>
+              <div style="font-size:11px;color:#888;margin-top:4px;">Rang #42</div>
+              <div style="margin-top:8px;padding:2px 10px;border-radius:12px;background:#1a2a4a;color:#4a90d9;font-size:11px;display:inline-block;">Guerrier</div>
+            </div>
+            <!-- Amis -->
+            <div style="background:#111827;border:1px solid #1e293b;border-radius:8px;padding:12px;margin-top:12px;">
+              <div style="color:#888;font-size:10px;text-transform:uppercase;margin-bottom:8px;">Amis (3)</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <div style="width:28px;height:28px;border-radius:50%;background:#2a3a5a;"></div>
+                <div style="width:28px;height:28px;border-radius:50%;background:#3a2a5a;"></div>
+                <div style="width:28px;height:28px;border-radius:50%;background:#2a5a3a;"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Colonne droite: bio + stats + prefs -->
+          <div>
+            <div style="background:#111827;border:1px solid #1e293b;border-radius:8px;padding:12px;margin-bottom:12px;">
+              <div style="color:#888;font-size:10px;text-transform:uppercase;margin-bottom:6px;">Bio</div>
+              <div style="color:#ccc;font-size:13px;line-height:1.4;">Veteran de 3 guerres galactiques. Ma flotte est ma fierte. Toujours pret pour une bataille.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+              <div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:10px;text-align:center;">
+                <div style="color:#4a90d9;font-size:16px;font-weight:bold;">12,450</div>
+                <div style="color:#888;font-size:10px;">Points</div>
+              </div>
+              <div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:10px;text-align:center;">
+                <div style="color:#4a90d9;font-size:16px;font-weight:bold;">5</div>
+                <div style="color:#888;font-size:10px;">Planetes</div>
+              </div>
+              <div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:10px;text-align:center;">
+                <div style="color:#4a90d9;font-size:16px;font-weight:bold;">Nova</div>
+                <div style="color:#888;font-size:10px;">Alliance</div>
+              </div>
+            </div>
+            <div style="background:#111827;border:1px solid #1e293b;border-radius:8px;padding:12px;">
+              <div style="color:#888;font-size:10px;text-transform:uppercase;margin-bottom:8px;">Preferences</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0;">
+                <span style="color:#ccc;font-size:12px;">Cherche alliance</span>
+                <span style="color:#22c55e;font-size:12px;">Oui</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0;">
+                <span style="color:#ccc;font-size:12px;">Theme</span>
+                <span style="color:#ccc;font-size:12px;">Sombre</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Deux colonnes</h3>
+      <p>Avatar et amis a gauche, contenu a droite. Plus riche, style dashboard. Responsive en empilant sur mobile.</p>
+    </div>
+  </div>
+</div>

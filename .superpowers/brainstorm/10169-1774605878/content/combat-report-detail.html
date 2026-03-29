@@ -1,0 +1,185 @@
+<h2>Rapport de combat — Page detail</h2>
+<p class="subtitle">Structure et sections du rapport. Quel agencement preferes-tu ?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Replay d'abord, stats ensuite</h3>
+      <p>Le replay anime est la piece maitresse en haut. Les stats et le resume statique sont en dessous, consultables apres avoir vu le combat.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Rapport — Replay first</div>
+        <div class="mockup-body" style="padding:16px;font-size:12px;background:#0a0a1a">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="color:#888">&larr; Rapports</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div>
+              <div style="color:#eee;font-weight:700;font-size:15px">Attaque pirate [2:45:8]</div>
+              <div style="color:#888;font-size:10px">27 mars 2026 — 14h32</div>
+            </div>
+            <span style="padding:3px 10px;border-radius:5px;background:#22c55e20;color:#4ade80;font-size:11px;font-weight:700">VICTOIRE</span>
+          </div>
+
+          <!-- 1. FP Comparison -->
+          <div style="background:#111128;border-radius:8px;padding:10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:4px">
+              <span style="color:#60a5fa;font-weight:600">Votre flotte : 450 FP</span>
+              <span style="color:#f87171;font-weight:600">Pirates : 320 FP</span>
+            </div>
+            <div style="display:flex;height:5px;border-radius:3px;overflow:hidden">
+              <div style="width:58%;background:#3b82f6"></div>
+              <div style="width:42%;background:#ef4444"></div>
+            </div>
+          </div>
+
+          <!-- 2. REPLAY (main) -->
+          <div style="background:#111128;border:1px solid #3b82f620;border-radius:8px;padding:16px;margin-bottom:10px">
+            <div style="text-align:center;color:#60a5fa;font-size:10px;font-weight:600;letter-spacing:1px;margin-bottom:10px">REPLAY DU COMBAT</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <div style="text-align:center;flex:1">
+                <div style="color:#60a5fa;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Attaquant</div>
+                <div style="margin-top:6px">
+                  <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px"><span style="color:#ccc">Intercepteur</span><span style="color:#888">5/5</span></div>
+                  <div style="height:3px;border-radius:2px;background:#1a1a2e"><div style="width:100%;height:100%;background:#3b82f6;border-radius:2px"></div></div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;margin:5px 0 3px"><span style="color:#ccc">Croiseur</span><span style="color:#888">2/3</span></div>
+                  <div style="height:3px;border-radius:2px;background:#1a1a2e"><div style="width:66%;height:100%;background:#3b82f6;border-radius:2px"></div></div>
+                </div>
+              </div>
+              <div style="width:1px;background:#ffffff10;margin:0 12px"></div>
+              <div style="text-align:center;flex:1">
+                <div style="color:#f87171;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Defenseur</div>
+                <div style="margin-top:6px">
+                  <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px"><span style="color:#ccc">Fregate</span><span style="color:#888">0/4</span></div>
+                  <div style="height:3px;border-radius:2px;background:#1a1a2e"><div style="width:0%;height:100%;background:#f87171;border-radius:2px"></div></div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;margin:5px 0 3px"><span style="color:#ccc;text-decoration:line-through;opacity:0.4">Cargo</span><span style="color:#888;opacity:0.4">0/2</span></div>
+                  <div style="height:3px;border-radius:2px;background:#1a1a2e"><div style="width:0%;height:100%;background:#f87171;border-radius:2px"></div></div>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:10px;color:#888;margin-top:8px">Round 3/3 — Termine</div>
+            <div style="display:flex;justify-content:center;gap:6px;margin-top:8px">
+              <span style="padding:2px 8px;border-radius:3px;background:#1a1a2e;color:#888;font-size:9px;cursor:pointer">&larr;</span>
+              <span style="padding:2px 8px;border-radius:3px;background:#3b82f620;color:#60a5fa;font-size:9px;cursor:pointer">&#9654; Rejouer</span>
+              <span style="padding:2px 8px;border-radius:3px;background:#1a1a2e;color:#888;font-size:9px;cursor:pointer">&rarr;</span>
+            </div>
+          </div>
+
+          <!-- 3. Stats grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+            <div style="background:#111128;border-radius:6px;padding:8px;text-align:center">
+              <div style="color:#888;font-size:9px">Bouclier absorbe</div>
+              <div style="color:#eee;font-weight:600;font-size:13px">1 240</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px;text-align:center">
+              <div style="color:#888;font-size:9px">Armure bloquee</div>
+              <div style="color:#eee;font-weight:600;font-size:13px">380</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px;text-align:center">
+              <div style="color:#888;font-size:9px">Tirs effectues</div>
+              <div style="color:#eee;font-weight:600;font-size:13px">48</div>
+            </div>
+          </div>
+
+          <!-- 4. Losses + Debris + Loot -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10px">
+            <div style="background:#111128;border-radius:6px;padding:8px">
+              <div style="color:#f87171;font-weight:600;margin-bottom:4px">Pertes</div>
+              <div style="color:#888">1x Croiseur</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px">
+              <div style="color:#fbbf24;font-weight:600;margin-bottom:4px">Butin</div>
+              <div><span style="color:#f59e0b">M: 8 500</span> · <span style="color:#06b6d4">S: 4 200</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Resume d'abord, replay en dessous</h3>
+      <p>En-tete avec FP + resultat + stats cles. Puis le replay en section depliable. Permet de voir le bilan sans attendre l'animation.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Rapport — Summary first</div>
+        <div class="mockup-body" style="padding:16px;font-size:12px;background:#0a0a1a">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="color:#888">&larr; Rapports</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div>
+              <div style="color:#eee;font-weight:700;font-size:15px">Attaque pirate [2:45:8]</div>
+              <div style="color:#888;font-size:10px">27 mars 2026 — 14h32</div>
+            </div>
+            <span style="padding:3px 10px;border-radius:5px;background:#22c55e20;color:#4ade80;font-size:11px;font-weight:700">VICTOIRE</span>
+          </div>
+
+          <!-- FP -->
+          <div style="background:#111128;border-radius:8px;padding:10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:4px">
+              <span style="color:#60a5fa;font-weight:600">Votre flotte : 450 FP</span>
+              <span style="color:#f87171;font-weight:600">Pirates : 320 FP</span>
+            </div>
+            <div style="display:flex;height:5px;border-radius:3px;overflow:hidden">
+              <div style="width:58%;background:#3b82f6"></div>
+              <div style="width:42%;background:#ef4444"></div>
+            </div>
+          </div>
+
+          <!-- Stats row -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+            <div style="background:#111128;border-radius:6px;padding:8px;text-align:center">
+              <div style="color:#888;font-size:8px">Rounds</div>
+              <div style="color:#eee;font-weight:700;font-size:16px">3</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px;text-align:center">
+              <div style="color:#888;font-size:8px">Tirs</div>
+              <div style="color:#eee;font-weight:700;font-size:16px">48</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px;text-align:center">
+              <div style="color:#888;font-size:8px">Bouclier</div>
+              <div style="color:#eee;font-weight:700;font-size:16px">1.2k</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px;text-align:center">
+              <div style="color:#888;font-size:8px">Armure</div>
+              <div style="color:#eee;font-weight:700;font-size:16px">380</div>
+            </div>
+          </div>
+
+          <!-- Losses summary -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;font-size:10px">
+            <div style="background:#111128;border-radius:6px;padding:8px">
+              <div style="color:#60a5fa;font-weight:600;margin-bottom:4px">Vos pertes</div>
+              <div style="color:#888">1x Croiseur</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px">
+              <div style="color:#f87171;font-weight:600;margin-bottom:4px">Pertes ennemies</div>
+              <div style="color:#888">4x Fregate, 2x Cargo</div>
+            </div>
+          </div>
+
+          <!-- Loot + Debris -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;font-size:10px">
+            <div style="background:#111128;border-radius:6px;padding:8px">
+              <div style="color:#fbbf24;font-weight:600;margin-bottom:4px">Butin</div>
+              <div><span style="color:#f59e0b">M: 8 500</span> · <span style="color:#06b6d4">S: 4 200</span></div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:8px">
+              <div style="color:#888;font-weight:600;margin-bottom:4px">Debris</div>
+              <div><span style="color:#f59e0b">M: 2 100</span> · <span style="color:#06b6d4">S: 1 050</span></div>
+            </div>
+          </div>
+
+          <!-- Replay (collapsed) -->
+          <div style="background:#111128;border:1px solid #3b82f620;border-radius:8px;padding:10px;text-align:center;cursor:pointer">
+            <span style="color:#60a5fa;font-size:10px;font-weight:600">&#9654; Voir le replay du combat (3 rounds)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

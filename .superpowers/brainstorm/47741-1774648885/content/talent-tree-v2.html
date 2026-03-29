@@ -1,0 +1,266 @@
+<h2>Arbre de talents du Flagship — Design complet v2</h2>
+<p class="subtitle">3 branches / 5 tiers / 4 types de talents / 100% data-driven</p>
+
+<style>
+  .tree-container { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .branch {
+    flex: 1; min-width: 290px; max-width: 370px;
+    background: linear-gradient(180deg, rgba(20,20,30,0.95), rgba(10,10,20,0.98));
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px;
+  }
+  .branch-header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+  .branch-header h3 { margin: 0 0 2px; font-size: 15px; }
+  .branch-header .pts { font-size: 10px; color: #666; }
+  .tier-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin: 8px 0 3px; }
+  .tier-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 2px; }
+  .talent {
+    background: rgba(40,40,55,0.9); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 5px; padding: 5px; text-align: center; font-size: 9px;
+    position: relative; min-height: 54px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .talent.stat { border-left: 2px solid rgba(100,160,255,0.6); }
+  .talent.global { border-left: 2px solid rgba(255,180,50,0.6); }
+  .talent.planet { border-left: 2px solid rgba(80,220,120,0.6); }
+  .talent.active { border-left: 2px solid rgba(255,80,180,0.6); }
+  .talent.capstone { border-left: 2px solid rgba(200,120,255,0.7); background: rgba(60,30,80,0.4); grid-column: 1 / -1; }
+  .talent .icon { font-size: 13px; margin-bottom: 1px; }
+  .talent .name { font-weight: 600; font-size: 10px; line-height: 1.2; margin-bottom: 1px; }
+  .talent.stat .name { color: #7ab4ff; }
+  .talent.global .name { color: #ffb832; }
+  .talent.planet .name { color: #50dc78; }
+  .talent.active .name { color: #ff50b4; }
+  .talent.capstone .name { color: #d4a0ff; font-size: 11px; }
+  .talent .ranks { font-size: 8px; color: #555; }
+  .talent .desc { font-size: 8px; color: #888; line-height: 1.15; margin-top: 1px; }
+  .talent .tag { font-size: 7px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; padding: 1px 4px; border-radius: 3px; display: inline-block; }
+  .talent.planet .tag { background: rgba(80,220,120,0.15); color: #50dc78; }
+  .talent.active .tag { background: rgba(255,80,180,0.15); color: #ff50b4; }
+  .arrow-row { text-align: center; color: #333; font-size: 9px; line-height: 1; margin: 1px 0; }
+  .empty { visibility: hidden; }
+  .legend { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 16px 0 8px; font-size: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-bar { width: 14px; height: 3px; border-radius: 2px; }
+  .info-section { margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; }
+  .info-section h3 { font-size: 13px; margin: 0 0 8px; color: #ccc; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 11px; }
+  .info-block h4 { font-size: 11px; margin: 0 0 4px; }
+  .info-block ul { margin: 0; padding-left: 16px; }
+  .info-block li { margin-bottom: 3px; color: #999; line-height: 1.3; }
+  .cost-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+  .cost-chip { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 4px 10px; font-size: 10px; text-align: center; }
+  .cost-chip .tier-name { color: #aaa; font-size: 9px; }
+  .cost-chip .cost-val { color: #fff; font-weight: 600; font-size: 13px; }
+  .cost-chip .cost-unit { color: #666; font-size: 9px; }
+</style>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-bar" style="background:#7ab4ff"></div><span style="color:#7ab4ff">Stat flagship</span></div>
+  <div class="legend-item"><div class="legend-bar" style="background:#ffb832"></div><span style="color:#ffb832">Passif global</span></div>
+  <div class="legend-item"><div class="legend-bar" style="background:#50dc78"></div><span style="color:#50dc78">Passif planetaire</span></div>
+  <div class="legend-item"><div class="legend-bar" style="background:#ff50b4"></div><span style="color:#ff50b4">Actif (cooldown)</span></div>
+  <div class="legend-item"><div class="legend-bar" style="background:#d4a0ff"></div><span style="color:#d4a0ff">Capstone</span></div>
+</div>
+
+<div class="tree-container">
+  <!-- COMBATTANT -->
+  <div class="branch">
+    <div class="branch-header">
+      <h3 style="color:#ff6b6b">Combattant</h3>
+      <div class="pts">Puissance de feu & domination militaire</div>
+    </div>
+
+    <div class="tier-label">Tier 1 — 1 Exilium/rang</div>
+    <div class="tier-row">
+      <div class="talent stat"><div class="name">Armes renforcees</div><div class="ranks">0/3</div><div class="desc">+2 weapons/rang</div></div>
+      <div class="talent stat"><div class="name">Blindage reactif</div><div class="ranks">0/3</div><div class="desc">+2 armor/rang</div></div>
+      <div class="talent stat"><div class="name">Boucliers amplifies</div><div class="ranks">0/3</div><div class="desc">+3 shield/rang</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 2 — 2 Exilium/rang (5 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent stat"><div class="name">Tirs multiples</div><div class="ranks">0/2</div><div class="desc">+1 shotCount/rang</div></div>
+      <div class="talent global"><div class="name">Marche de guerre</div><div class="ranks">0/1</div><div class="desc">+1 vaisseau militaire en construction simultanee</div></div>
+      <div class="talent stat"><div class="name">Coque renforcee</div><div class="ranks">0/3</div><div class="desc">+5 hull/rang</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 3 — 3 Exilium/rang (10 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent planet"><div class="name">Garnison</div><div class="ranks">0/2</div><div class="desc">+10% defense planetaire/rang</div><div class="tag">planete</div></div>
+      <div class="talent active"><div class="name">Assaut coordonne</div><div class="ranks">0/1</div><div class="desc">+25% degats flotte pendant 1h (CD 24h)</div><div class="tag">actif</div></div>
+      <div class="talent stat"><div class="name">Furie</div><div class="ranks">0/2</div><div class="desc">x1.25 degats flagship/rang</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 4 — 4 Exilium/rang (15 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent global"><div class="name">Maitre d'armes</div><div class="ranks">0/1</div><div class="desc">-15% temps construction vaisseaux militaires</div></div>
+      <div class="talent empty"><div class="name">-</div></div>
+      <div class="talent planet"><div class="name">Arsenal avance</div><div class="ranks">0/1</div><div class="desc">Debloque 1 slot de defense supplementaire</div><div class="tag">planete</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 5 — 5 Exilium (20 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent capstone"><div class="name">Suprematie</div><div class="ranks">0/1</div><div class="desc">Le flagship gagne +10% stats combat par type de vaisseau different dans la flotte</div></div>
+    </div>
+  </div>
+
+  <!-- EXPLORATEUR -->
+  <div class="branch">
+    <div class="branch-header">
+      <h3 style="color:#4ecdc4">Explorateur</h3>
+      <div class="pts">Vitesse, mobilite & decouverte</div>
+    </div>
+
+    <div class="tier-label">Tier 1 — 1 Exilium/rang</div>
+    <div class="tier-row">
+      <div class="talent stat"><div class="name">Reacteurs optimises</div><div class="ranks">0/3</div><div class="desc">+10% vitesse flagship/rang</div></div>
+      <div class="talent stat"><div class="name">Economiseur</div><div class="ranks">0/3</div><div class="desc">-1 conso carburant/rang</div></div>
+      <div class="talent global"><div class="name">Scanners longue portee</div><div class="ranks">0/2</div><div class="desc">+1 sonde espionnage/rang</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 2 — 2 Exilium/rang (5 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent stat"><div class="name">Propulsion impulsion</div><div class="ranks">0/1</div><div class="desc">Propulsion flagship → impulsion</div></div>
+      <div class="talent global"><div class="name">Navigation stellaire</div><div class="ranks">0/3</div><div class="desc">-5% temps trajet toutes flottes/rang</div></div>
+      <div class="talent planet"><div class="name">Centre de controle</div><div class="ranks">0/1</div><div class="desc">+1 slot flotte depuis cette planete</div><div class="tag">planete</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 3 — 3 Exilium/rang (10 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent global"><div class="name">Cartographe</div><div class="ranks">0/2</div><div class="desc">+10% reussite expeditions/rang</div></div>
+      <div class="talent active"><div class="name">Hyperscan</div><div class="ranks">0/1</div><div class="desc">Revele les flottes en approche pendant 4h (CD 12h)</div><div class="tag">actif</div></div>
+      <div class="talent global"><div class="name">Eclaireur</div><div class="ranks">0/1</div><div class="desc">+1 slot de flotte global</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 4 — 4 Exilium/rang (15 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent stat"><div class="name">Hyperdrive</div><div class="ranks">0/1</div><div class="desc">Propulsion flagship → hyperespace</div></div>
+      <div class="talent empty"><div class="name">-</div></div>
+      <div class="talent active"><div class="name">Saut d'urgence</div><div class="ranks">0/1</div><div class="desc">Rappel instantane d'une flotte en cours (CD 24h)</div><div class="tag">actif</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 5 — 5 Exilium (20 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent capstone"><div class="name">Navigateur legendaire</div><div class="ranks">0/1</div><div class="desc">Toutes les flottes partant de la planete du flagship +15% vitesse</div></div>
+    </div>
+  </div>
+
+  <!-- NEGOCIANT -->
+  <div class="branch">
+    <div class="branch-header">
+      <h3 style="color:#ffd93d">Negociant</h3>
+      <div class="pts">Cargo, commerce & economie</div>
+    </div>
+
+    <div class="tier-label">Tier 1 — 1 Exilium/rang</div>
+    <div class="tier-row">
+      <div class="talent stat"><div class="name">Soute etendue</div><div class="ranks">0/3</div><div class="desc">+100 cargo flagship/rang</div></div>
+      <div class="talent global"><div class="name">Negociateur</div><div class="ranks">0/2</div><div class="desc">-5% frais marche/rang</div></div>
+      <div class="talent planet"><div class="name">Logisticien</div><div class="ranks">0/3</div><div class="desc">+5% capacite stockage/rang</div><div class="tag">planete</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 2 — 2 Exilium/rang (5 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent stat"><div class="name">Convoi blinde</div><div class="ranks">0/2</div><div class="desc">+5 hull flagship/rang</div></div>
+      <div class="talent global"><div class="name">Reseau commercial</div><div class="ranks">0/1</div><div class="desc">+1 offre simultanee marche</div></div>
+      <div class="talent planet"><div class="name">Prospecteur</div><div class="ranks">0/3</div><div class="desc">+3% production mines/rang</div><div class="tag">planete</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 3 — 3 Exilium/rang (10 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent global"><div class="name">Contrebandier</div><div class="ranks">0/1</div><div class="desc">30% du cargo protege du pillage</div></div>
+      <div class="talent active"><div class="name">Overclock minier</div><div class="ranks">0/1</div><div class="desc">+50% production mines pendant 2h (CD 24h)</div><div class="tag">actif</div></div>
+      <div class="talent global"><div class="name">Maitre des hangars</div><div class="ranks">0/2</div><div class="desc">+10% cargo toutes flottes/rang</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 4 — 4 Exilium/rang (15 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent active"><div class="name">Boom economique</div><div class="ranks">0/1</div><div class="desc">+25% production ressources planete pendant 4h (CD 48h)</div><div class="tag">actif</div></div>
+      <div class="talent empty"><div class="name">-</div></div>
+      <div class="talent global"><div class="name">Magnat</div><div class="ranks">0/1</div><div class="desc">Transactions marche sans frais</div></div>
+    </div>
+
+    <div class="arrow-row">|</div>
+    <div class="tier-label">Tier 5 — 5 Exilium (20 pts requis)</div>
+    <div class="tier-row">
+      <div class="talent capstone"><div class="name">Empire commercial</div><div class="ranks">0/1</div><div class="desc">+5% production ressources sur toutes les planetes du joueur</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE SECTION -->
+<div class="info-section" style="margin-top: 20px;">
+  <h3>Architecture : 100% Data-Driven</h3>
+  <div class="info-grid">
+    <div class="info-block">
+      <h4 style="color:#4ecdc4">Game Config (seed)</h4>
+      <ul>
+        <li>Chaque talent = entree dans <code>talentTree</code></li>
+        <li>Definit : branche, tier, position, rangs max, prerequis, type d'effet, parametres</li>
+        <li>Les handlers sont references par cle (<code>modify_stat</code>, <code>planet_bonus</code>, <code>timed_buff</code>...)</li>
+        <li>Modifier un talent = modifier le seed, pas le code</li>
+      </ul>
+    </div>
+    <div class="info-block">
+      <h4 style="color:#ff50b4">Types d'effets (handlers generiques)</h4>
+      <ul>
+        <li><code>modify_stat</code> — modifie une stat du flagship</li>
+        <li><code>global_bonus</code> — bonus permanent au joueur</li>
+        <li><code>planet_bonus</code> — bonus a la planete stationnee</li>
+        <li><code>timed_buff</code> — effet temporaire activable (duree + cooldown)</li>
+        <li><code>unlock</code> — debloque une capacite</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- RULES SECTION -->
+<div class="info-section">
+  <h3>Regles de fonctionnement</h3>
+  <div class="info-grid">
+    <div class="info-block">
+      <h4 style="color:#ffb832">Progression</h4>
+      <ul>
+        <li>Libre : investir dans toutes les branches</li>
+        <li>Tier N+1 accessible apres X points dans la branche</li>
+        <li>Certains talents ont des prerequis specifiques (fleches)</li>
+        <li>Respec individuel = 50% du cout investi</li>
+        <li>Full reset = 50 Exilium</li>
+      </ul>
+    </div>
+    <div class="info-block">
+      <h4 style="color:#50dc78">Flagship en mission</h4>
+      <ul>
+        <li><strong>Stats flagship :</strong> toujours actives</li>
+        <li><strong>Passifs globaux :</strong> toujours actifs</li>
+        <li><strong>Passifs planetaires :</strong> cessent au depart</li>
+        <li><strong>Actifs deja lances :</strong> persistent jusqu'a expiration</li>
+        <li><strong>Actifs non lances :</strong> non activables en mission</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ECONOMY -->
+<div class="info-section">
+  <h3>Economie</h3>
+  <div class="cost-row">
+    <div class="cost-chip"><div class="tier-name">Tier 1</div><div class="cost-val">1</div><div class="cost-unit">Exilium/rang</div></div>
+    <div class="cost-chip"><div class="tier-name">Tier 2</div><div class="cost-val">2</div><div class="cost-unit">Exilium/rang</div></div>
+    <div class="cost-chip"><div class="tier-name">Tier 3</div><div class="cost-val">3</div><div class="cost-unit">Exilium/rang</div></div>
+    <div class="cost-chip"><div class="tier-name">Tier 4</div><div class="cost-val">4</div><div class="cost-unit">Exilium/rang</div></div>
+    <div class="cost-chip"><div class="tier-name">Tier 5</div><div class="cost-val">5</div><div class="cost-unit">Exilium/rang</div></div>
+    <div class="cost-chip" style="border-color: rgba(78,205,196,0.3)"><div class="tier-name">Total 3 branches</div><div class="cost-val" style="color:#4ecdc4">~120</div><div class="cost-unit">Exilium</div></div>
+    <div class="cost-chip" style="border-color: rgba(78,205,196,0.3)"><div class="tier-name">Joueur actif</div><div class="cost-val" style="color:#4ecdc4">~3 mois</div><div class="cost-unit">pour tout debloquer</div></div>
+  </div>
+</div>

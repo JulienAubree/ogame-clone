@@ -1,0 +1,161 @@
+<h2>Layout du Dashboard Flotte</h2>
+<p class="subtitle">Comment organiser les blocs d'information sur le dashboard central ?</p>
+
+<div class="cards">
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="padding: 16px; font-family: monospace; font-size: 11px; line-height: 1.4; background: #1a1a2e; border-radius: 8px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <div style="flex: 1; background: #e74c3c22; border: 1px solid #e74c3c55; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="color: #e74c3c; font-weight: bold; font-size: 13px;">Alerte</div>
+            <div style="color: #aaa; font-size: 10px;">2 flottes hostiles</div>
+          </div>
+          <div style="flex: 1; background: #3498db22; border: 1px solid #3498db55; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="color: #3498db; font-weight: bold; font-size: 13px;">Slots</div>
+            <div style="color: #aaa; font-size: 10px;">3 / 7</div>
+          </div>
+          <div style="flex: 1; background: #2ecc7122; border: 1px solid #2ecc7155; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="color: #2ecc71; font-weight: bold; font-size: 13px;">PvE</div>
+            <div style="color: #aaa; font-size: 10px;">2 missions</div>
+          </div>
+        </div>
+        <div style="background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+          <div style="color: #f1c40f; font-weight: bold; margin-bottom: 6px;">Flotte stationnee</div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <span style="background: #1a1a2e; padding: 3px 8px; border-radius: 4px; color: #ccc; font-size: 10px;">Chasseur leger x12</span>
+            <span style="background: #1a1a2e; padding: 3px 8px; border-radius: 4px; color: #ccc; font-size: 10px;">Petit transp. x5</span>
+            <span style="background: #1a1a2e; padding: 3px 8px; border-radius: 4px; color: #ccc; font-size: 10px;">Sonde x20</span>
+          </div>
+        </div>
+        <div style="background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+          <div style="color: #f1c40f; font-weight: bold; margin-bottom: 6px;">Mouvements actifs (3)</div>
+          <div style="border-left: 2px solid #3498db; padding-left: 8px; margin-bottom: 4px;">
+            <span style="color: #3498db;">Transport</span> <span style="color: #666;">→ 2:4:8</span> <span style="color: #e67e22; float: right;">12:34</span>
+          </div>
+          <div style="border-left: 2px solid #e74c3c; padding-left: 8px; margin-bottom: 4px;">
+            <span style="color: #e74c3c;">Attaque</span> <span style="color: #666;">→ 1:33:5</span> <span style="color: #e67e22; float: right;">45:12</span>
+          </div>
+        </div>
+        <div style="text-align: center;">
+          <div style="display: inline-block; background: #3498db; color: white; padding: 8px 24px; border-radius: 6px; font-weight: bold;">Envoyer une flotte</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Colonne unique</h3>
+      <p>Tout empile verticalement : alertes en haut, puis flotte, mouvements, et bouton d'action en bas. Simple, lisible, scroll vertical.</p>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="padding: 16px; font-family: monospace; font-size: 11px; line-height: 1.4; background: #1a1a2e; border-radius: 8px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <div style="flex: 1; background: #e74c3c22; border: 1px solid #e74c3c55; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="color: #e74c3c; font-weight: bold;">Alerte: 2 hostiles</div>
+          </div>
+          <div style="flex: 2; text-align: right; padding: 8px;">
+            <span style="color: #3498db;">Slots: 3/7</span>
+            <span style="margin-left: 12px; display: inline-block; background: #3498db; color: white; padding: 4px 16px; border-radius: 4px; font-weight: bold;">Envoyer une flotte</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <div style="flex: 1; background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px;">
+            <div style="color: #f1c40f; font-weight: bold; margin-bottom: 6px;">Flotte stationnee</div>
+            <div style="margin-bottom: 4px;"><span style="color: #ccc;">Chasseur leger</span> <span style="color: #3498db; float: right;">x12</span></div>
+            <div style="margin-bottom: 4px;"><span style="color: #ccc;">Petit transp.</span> <span style="color: #3498db; float: right;">x5</span></div>
+            <div style="margin-bottom: 4px;"><span style="color: #ccc;">Sonde espion.</span> <span style="color: #3498db; float: right;">x20</span></div>
+            <div style="margin-bottom: 4px;"><span style="color: #ccc;">Recycleur</span> <span style="color: #3498db; float: right;">x3</span></div>
+          </div>
+          <div style="flex: 1.5; background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px;">
+            <div style="color: #f1c40f; font-weight: bold; margin-bottom: 6px;">Mouvements actifs (3)</div>
+            <div style="border-left: 2px solid #3498db; padding-left: 8px; margin-bottom: 6px;">
+              <div><span style="color: #3498db;">Transport</span> <span style="color: #e67e22; float: right;">12:34</span></div>
+              <div style="color: #666; font-size: 10px;">Planete 1 → 2:4:8 | Aller</div>
+            </div>
+            <div style="border-left: 2px solid #e74c3c; padding-left: 8px; margin-bottom: 6px;">
+              <div><span style="color: #e74c3c;">Attaque</span> <span style="color: #e67e22; float: right;">45:12</span></div>
+              <div style="color: #666; font-size: 10px;">Planete 1 → 1:33:5 | Aller</div>
+            </div>
+            <div style="border-left: 2px solid #2ecc71; padding-left: 8px; margin-bottom: 6px;">
+              <div><span style="color: #2ecc71;">Mine</span> <span style="color: #e67e22; float: right;">2:15:00</span></div>
+              <div style="color: #666; font-size: 10px;">Planete 1 → 3:12:1 | Extraction</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 8px; background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 8px; text-align: center;">
+          <span style="color: #2ecc71; font-weight: bold;">2 missions PvE disponibles</span>
+          <span style="color: #666; margin-left: 8px;">→ Voir</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Deux colonnes + barre d'action</h3>
+      <p>Header avec alertes + bouton d'envoi. Deux colonnes : flotte stationnee a gauche, mouvements a droite. PvE en bas. Compact, tout visible sans scroll.</p>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="padding: 16px; font-family: monospace; font-size: 11px; line-height: 1.4; background: #1a1a2e; border-radius: 8px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <div style="flex: 1; background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #f1c40f; font-weight: bold;">Flotte stationnee</div>
+                <div style="color: #aaa; font-size: 10px; margin-top: 2px;">40 vaisseaux sur cette planete</div>
+              </div>
+              <div style="color: #555; font-size: 18px;">→</div>
+            </div>
+          </div>
+          <div style="flex: 1; background: #16213e; border: 1px solid #e74c3c55; border-radius: 6px; padding: 10px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #f1c40f; font-weight: bold;">Mouvements</div>
+                <div style="color: #aaa; font-size: 10px; margin-top: 2px;">3 actifs | <span style="color: #e74c3c;">2 hostiles</span></div>
+              </div>
+              <div style="color: #555; font-size: 18px;">→</div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <div style="flex: 1; background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #f1c40f; font-weight: bold;">Envoyer une flotte</div>
+                <div style="color: #aaa; font-size: 10px; margin-top: 2px;">Slots: 3 / 7 disponibles</div>
+              </div>
+              <div style="color: #555; font-size: 18px;">→</div>
+            </div>
+          </div>
+          <div style="flex: 1; background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #2ecc71; font-weight: bold;">Missions PvE</div>
+                <div style="color: #aaa; font-size: 10px; margin-top: 2px;">2 missions disponibles</div>
+              </div>
+              <div style="color: #555; font-size: 18px;">→</div>
+            </div>
+          </div>
+        </div>
+        <div style="background: #16213e; border: 1px solid #333; border-radius: 6px; padding: 10px;">
+          <div style="color: #f1c40f; font-weight: bold; margin-bottom: 6px;">Prochain evenement</div>
+          <div style="display: flex; justify-content: space-between;">
+            <div>
+              <span style="color: #3498db;">Transport</span>
+              <span style="color: #666;"> arrive a 2:4:8</span>
+            </div>
+            <span style="color: #e67e22; font-weight: bold;">12:34</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Hub de navigation (cards cliquables)</h3>
+      <p>Grille de cards-liens : chaque bloc est un resume cliquable qui mene vers la sous-page detaillee. Minimum d'info, maximum de clarte. "Prochain evenement" en bas.</p>
+    </div>
+  </div>
+</div>

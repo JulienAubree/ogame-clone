@@ -1,0 +1,5 @@
+{"type":"server-started","port":52736,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:52736","screen_dir":"/Users/julienaubree/_projet/exilium-game/exilium/.superpowers/brainstorm/47741-1774648885/content","state_dir":"/Users/julienaubree/_projet/exilium-game/exilium/.superpowers/brainstorm/47741-1774648885/state"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/exilium-game/exilium/.superpowers/brainstorm/47741-1774648885/content/talent-tree-overview.html"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/exilium-game/exilium/.superpowers/brainstorm/47741-1774648885/content/talent-tree-v2.html"}
+{"type":"screen-added","file":"/Users/julienaubree/_projet/exilium-game/exilium/.superpowers/brainstorm/47741-1774648885/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

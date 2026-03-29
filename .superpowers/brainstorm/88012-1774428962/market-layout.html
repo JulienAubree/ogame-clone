@@ -1,0 +1,107 @@
+<h2>Page Marche Galactique - Layout</h2>
+<p class="subtitle">Quel agencement pour la page marche ?</p>
+
+<div class="cards">
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #1a1a2e;">
+      <div style="font-size: 11px; color: #888; margin-bottom: 8px;">Option A : Onglets Acheter / Vendre</div>
+      <!-- Tab bar -->
+      <div style="display: flex; gap: 0; margin-bottom: 12px;">
+        <div style="padding: 8px 20px; background: #7c3aed; color: white; border-radius: 6px 6px 0 0; font-size: 12px; font-weight: 600;">Acheter</div>
+        <div style="padding: 8px 20px; background: #2a2a3e; color: #888; border-radius: 6px 6px 0 0; font-size: 12px;">Vendre</div>
+        <div style="padding: 8px 20px; background: #2a2a3e; color: #888; border-radius: 6px 6px 0 0; font-size: 12px;">Mes offres</div>
+      </div>
+      <!-- Filters -->
+      <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+        <div style="padding: 4px 10px; background: #7c3aed33; color: #a78bfa; border-radius: 12px; font-size: 10px;">Tout</div>
+        <div style="padding: 4px 10px; background: #2a2a3e; color: #f97316; border-radius: 12px; font-size: 10px;">Minerai</div>
+        <div style="padding: 4px 10px; background: #2a2a3e; color: #34d399; border-radius: 12px; font-size: 10px;">Silicium</div>
+        <div style="padding: 4px 10px; background: #2a2a3e; color: #60a5fa; border-radius: 12px; font-size: 10px;">Hydrogene</div>
+      </div>
+      <!-- Table -->
+      <div style="background: #16162a; border-radius: 6px; overflow: hidden;">
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.5fr 0.8fr 0.6fr; padding: 6px 8px; font-size: 9px; color: #666; border-bottom: 1px solid #2a2a3e;">
+          <span>Ressource</span><span>Quantite</span><span>Prix</span><span>Distance</span><span></span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.5fr 0.8fr 0.6fr; padding: 8px; font-size: 10px; color: #ccc; border-bottom: 1px solid #1a1a2e;">
+          <span style="color: #f97316;">Minerai</span><span>50 000</span><span style="color: #34d399;">25 000 Si</span><span style="color: #888;">4.2 AL</span><span style="color: #7c3aed; cursor: pointer;">Acheter</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.5fr 0.8fr 0.6fr; padding: 8px; font-size: 10px; color: #ccc; border-bottom: 1px solid #1a1a2e;">
+          <span style="color: #60a5fa;">Hydrogene</span><span>10 000</span><span style="color: #f97316;">30 000 Mi</span><span style="color: #888;">1.8 AL</span><span style="color: #7c3aed; cursor: pointer;">Acheter</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.5fr 0.8fr 0.6fr; padding: 8px; font-size: 10px; color: #ccc;">
+          <span style="color: #34d399;">Silicium</span><span>100 000</span><span style="color: #f97316;">80 000 Mi</span><span style="color: #888;">7.1 AL</span><span style="color: #7c3aed; cursor: pointer;">Acheter</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A : Onglets</h3>
+      <p>3 onglets : Acheter (tableau des offres), Vendre (formulaire), Mes offres (suivi). Vue tableau classique pour les offres. Filtres par ressource + tri par prix.</p>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 16px; background: #1a1a2e;">
+      <div style="font-size: 11px; color: #888; margin-bottom: 8px;">Option B : Split Acheter / Vendre cote a cote</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <!-- Left: Buy -->
+        <div style="background: #16162a; border-radius: 6px; padding: 10px;">
+          <div style="font-size: 11px; font-weight: 600; color: #7c3aed; margin-bottom: 8px;">Acheter</div>
+          <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+            <div style="padding: 3px 8px; background: #7c3aed33; color: #a78bfa; border-radius: 10px; font-size: 9px;">Tout</div>
+            <div style="padding: 3px 8px; background: #2a2a3e; color: #f97316; border-radius: 10px; font-size: 9px;">Mi</div>
+            <div style="padding: 3px 8px; background: #2a2a3e; color: #34d399; border-radius: 10px; font-size: 9px;">Si</div>
+            <div style="padding: 3px 8px; background: #2a2a3e; color: #60a5fa; border-radius: 10px; font-size: 9px;">H2</div>
+          </div>
+          <div style="space-y: 4px;">
+            <div style="padding: 6px; background: #1a1a2e; border-radius: 4px; margin-bottom: 4px; font-size: 9px; color: #ccc;">
+              <div><span style="color: #f97316;">50k Minerai</span> &rarr; <span style="color: #34d399;">25k Si</span></div>
+              <div style="color: #666; margin-top: 2px;">4.2 AL &middot; <span style="color: #7c3aed;">Acheter</span></div>
+            </div>
+            <div style="padding: 6px; background: #1a1a2e; border-radius: 4px; margin-bottom: 4px; font-size: 9px; color: #ccc;">
+              <div><span style="color: #60a5fa;">10k H2</span> &rarr; <span style="color: #f97316;">30k Mi</span></div>
+              <div style="color: #666; margin-top: 2px;">1.8 AL &middot; <span style="color: #7c3aed;">Acheter</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: Sell -->
+        <div style="background: #16162a; border-radius: 6px; padding: 10px;">
+          <div style="font-size: 11px; font-weight: 600; color: #f59e0b; margin-bottom: 8px;">Vendre</div>
+          <div style="margin-bottom: 6px;">
+            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Ressource</div>
+            <div style="background: #2a2a3e; padding: 5px 8px; border-radius: 4px; font-size: 10px; color: #ccc;">Minerai</div>
+          </div>
+          <div style="margin-bottom: 6px;">
+            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Quantite</div>
+            <div style="background: #2a2a3e; padding: 5px 8px; border-radius: 4px; font-size: 10px; color: #ccc;">10 000</div>
+          </div>
+          <div style="margin-bottom: 6px;">
+            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Prix demande</div>
+            <div style="background: #2a2a3e; padding: 5px 8px; border-radius: 4px; font-size: 10px; color: #34d399;">5 000 Si</div>
+          </div>
+          <div style="background: #7c3aed; color: white; text-align: center; padding: 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-top: 8px;">Mettre en vente</div>
+        </div>
+      </div>
+      <!-- Mes offres en bas -->
+      <div style="background: #16162a; border-radius: 6px; padding: 8px; margin-top: 10px;">
+        <div style="font-size: 10px; color: #888; margin-bottom: 6px;">Mes offres (2/4)</div>
+        <div style="display: flex; gap: 6px;">
+          <div style="flex: 1; padding: 6px; background: #1a1a2e; border-radius: 4px; font-size: 9px; color: #ccc;">
+            <span style="color: #f97316;">20k Mi</span> &rarr; <span style="color: #34d399;">10k Si</span>
+            <div style="color: #22c55e; font-size: 8px; margin-top: 2px;">Active</div>
+          </div>
+          <div style="flex: 1; padding: 6px; background: #1a1a2e; border-radius: 4px; font-size: 9px; color: #ccc;">
+            <span style="color: #34d399;">50k Si</span> &rarr; <span style="color: #60a5fa;">5k H2</span>
+            <div style="color: #f59e0b; font-size: 8px; margin-top: 2px;">Reservee</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B : Split</h3>
+      <p>Achat et vente cote a cote sur desktop. Mes offres en bas. Plus dense, tout visible d'un coup. Sur mobile, empile verticalement.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,139 @@
+<h2>Page Rapports — Layout global</h2>
+<p class="subtitle">3 approches pour la navigation et la structure de la page</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Feed chronologique</h3>
+      <p>Flux scrollable de cartes, chaque rapport est un bloc résumé. Clic pour déplier le détail inline (accordion). Filtres en haut (type, résultat, date).</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Rapports — Feed</div>
+        <div class="mockup-body" style="padding:16px;font-size:13px;background:#0a0a1a">
+          <!-- Filters -->
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <span style="padding:4px 12px;border-radius:20px;background:#3b82f620;border:1px solid #3b82f640;color:#60a5fa;font-size:11px">Tous</span>
+            <span style="padding:4px 12px;border-radius:20px;background:#1a1a2e;border:1px solid #ffffff10;color:#888;font-size:11px">Combat</span>
+            <span style="padding:4px 12px;border-radius:20px;background:#1a1a2e;border:1px solid #ffffff10;color:#888;font-size:11px">Mine</span>
+            <span style="padding:4px 12px;border-radius:20px;background:#1a1a2e;border:1px solid #ffffff10;color:#888;font-size:11px">Espionnage</span>
+          </div>
+          <!-- Card 1 -->
+          <div style="background:#111128;border:1px solid #ffffff10;border-radius:8px;padding:12px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="color:#f87171">&#9876;</span>
+                <span style="color:#eee;font-weight:600">Attaque pirate [2:45:8]</span>
+              </div>
+              <span style="padding:2px 8px;border-radius:4px;background:#22c55e20;color:#4ade80;font-size:10px;font-weight:700">VICTOIRE</span>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:#888">
+              <span>450 FP vs 320 FP</span>
+              <span>3 rounds</span>
+              <span>il y a 2h</span>
+            </div>
+          </div>
+          <!-- Card 2 -->
+          <div style="background:#111128;border:1px solid #ffffff10;border-radius:8px;padding:12px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="color:#fbbf24">&#9874;</span>
+                <span style="color:#eee;font-weight:600">Extraction [1:22:3]</span>
+              </div>
+              <span style="padding:2px 8px;border-radius:4px;background:#3b82f620;color:#60a5fa;font-size:10px;font-weight:700">TERMINEE</span>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:#888">
+              <span>M: 12 500 · S: 8 200</span>
+              <span>il y a 5h</span>
+            </div>
+          </div>
+          <!-- Card 3 -->
+          <div style="background:#111128;border:1px solid #ffffff10;border-radius:8px;padding:12px;margin-bottom:10px;opacity:0.6">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="color:#a78bfa">&#128065;</span>
+                <span style="color:#eee;font-weight:600">Espionnage [3:10:5]</span>
+              </div>
+              <span style="font-size:10px;color:#888">il y a 1j</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Avantages</h4><ul><li>Navigation simple, tout visible d'un coup</li><li>Mobile-friendly</li><li>Facile a scanner rapidement</li></ul></div>
+        <div class="cons"><h4>Inconvenients</h4><ul><li>Detailler un rapport prend de la place (pousse le reste)</li><li>Moins d'espace pour le replay anime</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Liste + Page detail dediee</h3>
+      <p>Page liste avec cartes resume. Clic ouvre une page detail plein ecran dediee (route separee). Plus d'espace pour le replay et les stats.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Rapport de combat — Page detail</div>
+        <div class="mockup-body" style="padding:16px;font-size:13px;background:#0a0a1a">
+          <!-- Back + Header -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <span style="color:#888;cursor:pointer">&larr; Rapports</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div>
+              <div style="color:#eee;font-weight:700;font-size:16px">Attaque pirate [2:45:8]</div>
+              <div style="color:#888;font-size:11px">27 mars 2026 a 14h32</div>
+            </div>
+            <span style="padding:4px 12px;border-radius:6px;background:#22c55e20;color:#4ade80;font-size:12px;font-weight:700">VICTOIRE</span>
+          </div>
+          <!-- FP Bar -->
+          <div style="background:#111128;border-radius:8px;padding:12px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:6px">
+              <span style="color:#60a5fa">Votre flotte: 450 FP</span>
+              <span style="color:#f87171">Pirates: 320 FP</span>
+            </div>
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden">
+              <div style="width:58%;background:#3b82f6"></div>
+              <div style="width:42%;background:#ef4444"></div>
+            </div>
+          </div>
+          <!-- Replay placeholder -->
+          <div style="background:#111128;border-radius:8px;padding:20px;text-align:center;margin-bottom:12px">
+            <div style="color:#888;font-size:11px;margin-bottom:8px">REPLAY DU COMBAT</div>
+            <div style="color:#555;font-size:10px">[RoundDisplay anime — plein ecran]</div>
+            <div style="display:flex;justify-content:center;gap:8px;margin-top:12px">
+              <span style="padding:2px 10px;border-radius:4px;background:#1a1a2e;color:#888;font-size:10px">&larr; Prec</span>
+              <span style="padding:2px 10px;border-radius:4px;background:#3b82f620;color:#60a5fa;font-size:10px">&#9654; Lancer</span>
+              <span style="padding:2px 10px;border-radius:4px;background:#1a1a2e;color:#888;font-size:10px">Suiv &rarr;</span>
+            </div>
+          </div>
+          <!-- Stats -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+            <div style="background:#111128;border-radius:6px;padding:10px">
+              <div style="color:#888;margin-bottom:4px">Bouclier absorbe</div>
+              <div style="color:#eee;font-weight:600">1 240</div>
+            </div>
+            <div style="background:#111128;border-radius:6px;padding:10px">
+              <div style="color:#888;margin-bottom:4px">Tirs effectues</div>
+              <div style="color:#eee;font-weight:600">48 tirs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Avantages</h4><ul><li>Plein espace pour le replay et les stats</li><li>Experience immersive</li><li>Chaque type de rapport a son propre layout optimise</li></ul></div>
+        <div class="cons"><h4>Inconvenients</h4><ul><li>Navigation en 2 etapes (liste puis detail)</li><li>Plus de routes a gerer</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Split modernise (variante)</h3>
+      <p>Comme l'actuel mais en mieux : liste compacte a gauche avec icones/FP/statut, panneau detail a droite avec le nouveau contenu. Desktop only, mobile bascule en liste+detail.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Avantages</h4><ul><li>Navigation rapide entre rapports</li><li>Comparaison facile</li></ul></div>
+        <div class="cons"><h4>Inconvenients</h4><ul><li>Panneau detail contraint en largeur</li><li>Replay anime serre</li><li>Proche de l'existant (moins "refonte")</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

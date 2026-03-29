@@ -23,6 +23,7 @@ export class SpyHandler implements MissionHandler {
   async processArrival(fleetEvent: FleetEvent, ctx: MissionHandlerContext): Promise<ArrivalResult> {
     const ships = fleetEvent.ships;
     const config = await ctx.gameConfigService.getFullConfig();
+    const shipStatsMap = buildShipStatsMap(config);
     const probeDef = findShipByRole(config, 'probe');
     const probeCount = ships[probeDef.id] ?? 0;
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
@@ -44,7 +45,6 @@ export class SpyHandler implements MissionHandler {
     if (!targetPlanet) {
       let reportId: string | undefined;
       if (ctx.reportService) {
-        const shipStatsMap = buildShipStatsMap(config);
         const [originPlanet] = await ctx.db.select({
           galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
         }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
@@ -94,6 +94,10 @@ export class SpyHandler implements MissionHandler {
       detected,
     };
 
+    // Fetch ships & defenses once — reused for visibility report AND combat
+    const [targetShipsRow] = await ctx.db.select().from(planetShips).where(eq(planetShips.planetId, targetPlanet.id)).limit(1);
+    const [targetDefsRow] = await ctx.db.select().from(planetDefenses).where(eq(planetDefenses.planetId, targetPlanet.id)).limit(1);
+
     if (visibility.resources) {
       await ctx.resourceService.materializeResources(targetPlanet.id, targetPlanet.userId);
       const [planet] = await ctx.db.select().from(planets).where(eq(planets.id, targetPlanet.id)).limit(1);
@@ -105,32 +109,26 @@ export class SpyHandler implements MissionHandler {
       reportResult.resources = resources;
     }
 
-    if (visibility.fleet) {
-      const [targetShips] = await ctx.db.select().from(planetShips).where(eq(planetShips.planetId, targetPlanet.id)).limit(1);
-      if (targetShips) {
-        const fleetData: Record<string, number> = {};
-        for (const [key, val] of Object.entries(targetShips)) {
-          if (key === 'planetId') continue;
-          if (typeof val === 'number' && val > 0) {
-            fleetData[key] = val;
-          }
+    if (visibility.fleet && targetShipsRow) {
+      const fleetData: Record<string, number> = {};
+      for (const [key, val] of Object.entries(targetShipsRow)) {
+        if (key === 'planetId') continue;
+        if (typeof val === 'number' && val > 0) {
+          fleetData[key] = val;
         }
-        reportResult.fleet = fleetData;
       }
+      reportResult.fleet = fleetData;
     }
 
-    if (visibility.defenses) {
-      const [defs] = await ctx.db.select().from(planetDefenses).where(eq(planetDefenses.planetId, targetPlanet.id)).limit(1);
-      if (defs) {
-        const defensesData: Record<string, number> = {};
-        for (const [key, val] of Object.entries(defs)) {
-          if (key === 'planetId') continue;
-          if (typeof val === 'number' && val > 0) {
-            defensesData[key] = val;
-          }
+    if (visibility.defenses && targetDefsRow) {
+      const defensesData: Record<string, number> = {};
+      for (const [key, val] of Object.entries(targetDefsRow)) {
+        if (key === 'planetId') continue;
+        if (typeof val === 'number' && val > 0) {
+          defensesData[key] = val;
         }
-        reportResult.defenses = defensesData;
       }
+      reportResult.defenses = defensesData;
     }
 
     if (visibility.buildings) {
@@ -170,8 +168,6 @@ export class SpyHandler implements MissionHandler {
     // Create structured mission report
     let reportId: string | undefined;
     if (ctx.reportService) {
-      const config = await ctx.gameConfigService.getFullConfig();
-      const shipStatsMap = buildShipStatsMap(config);
       const report = await ctx.reportService.create({
         userId: fleetEvent.userId,
         fleetEventId: fleetEvent.id,
@@ -200,21 +196,18 @@ export class SpyHandler implements MissionHandler {
     }
 
     if (detected) {
-      // Fetch defender's defenses and ships
-      const [defShips] = await ctx.db.select().from(planetShips).where(eq(planetShips.planetId, targetPlanet.id)).limit(1);
-      const [defDefs] = await ctx.db.select().from(planetDefenses).where(eq(planetDefenses.planetId, targetPlanet.id)).limit(1);
-
+      // Build defender maps from already-fetched rows
       const defenderFleet: Record<string, number> = {};
       const defenderDefenses: Record<string, number> = {};
 
-      if (defShips) {
-        for (const [key, val] of Object.entries(defShips)) {
+      if (targetShipsRow) {
+        for (const [key, val] of Object.entries(targetShipsRow)) {
           if (key === 'planetId') continue;
           if (typeof val === 'number' && val > 0) defenderFleet[key] = val;
         }
       }
-      if (defDefs) {
-        for (const [key, val] of Object.entries(defDefs)) {
+      if (targetDefsRow) {
+        for (const [key, val] of Object.entries(targetDefsRow)) {
           if (key === 'planetId') continue;
           if (typeof val === 'number' && val > 0) defenderDefenses[key] = val;
         }
@@ -229,7 +222,6 @@ export class SpyHandler implements MissionHandler {
       }
 
       // --- Combat setup ---
-      const shipStatsMapCombat = buildShipStatsMap(config);
       const shipCombatConfigs = buildShipCombatConfigs(config);
       const shipCostsMap = buildShipCosts(config);
       const shipIdSet = new Set(Object.keys(config.ships));
@@ -295,12 +287,12 @@ export class SpyHandler implements MissionHandler {
       }
 
       // Apply defender ship losses
-      if (defShips) {
+      if (targetShipsRow) {
         const shipUpdates: Record<string, number> = {};
-        for (const [key, val] of Object.entries(defShips)) {
+        for (const [key, val] of Object.entries(targetShipsRow)) {
           if (key === 'planetId') continue;
           const lost = defenderLosses[key] ?? 0;
-          if (lost > 0) shipUpdates[key] = (val as number) - lost;
+          if (lost > 0) shipUpdates[key] = Math.max(0, Number(val) - lost);
         }
         if (Object.keys(shipUpdates).length > 0) {
           await ctx.db.update(planetShips).set(shipUpdates).where(eq(planetShips.planetId, targetPlanet.id));
@@ -308,14 +300,14 @@ export class SpyHandler implements MissionHandler {
       }
 
       // Apply defender defense losses (minus repairs)
-      if (defDefs) {
+      if (targetDefsRow) {
         const defUpdates: Record<string, number> = {};
-        for (const [key, val] of Object.entries(defDefs)) {
+        for (const [key, val] of Object.entries(targetDefsRow)) {
           if (key === 'planetId') continue;
           const lost = defenderLosses[key] ?? 0;
           const repaired = repairedDefenses[key] ?? 0;
           const netLoss = lost - repaired;
-          if (netLoss > 0) defUpdates[key] = (val as number) - netLoss;
+          if (netLoss > 0) defUpdates[key] = Math.max(0, Number(val) - netLoss);
         }
         if (Object.keys(defUpdates).length > 0) {
           await ctx.db.update(planetDefenses).set(defUpdates).where(eq(planetDefenses.planetId, targetPlanet.id));
@@ -373,7 +365,7 @@ export class SpyHandler implements MissionHandler {
       const defenderFP = computeFleetFP(defenderCombinedForFP, unitCombatStats, fpConfig);
 
       // Compute shots per round
-      const shotsPerRound = rounds.map((round: RoundResult, i: number) => {
+      const shotsPerRound = rounds.map((_round: RoundResult, i: number) => {
         const attFleet = i === 0 ? ships : rounds[i - 1].attackerShips;
         const defFleetRound = i === 0 ? { ...defenderFleet, ...defenderDefenses } : rounds[i - 1].defenderShips;
         const attShots = Object.entries(attFleet).reduce((sum, [id, count]) => {
@@ -458,7 +450,7 @@ export class SpyHandler implements MissionHandler {
           } : undefined,
           fleet: {
             ships,
-            totalCargo: totalCargoCapacity(ships, shipStatsMapCombat),
+            totalCargo: totalCargoCapacity(ships, shipStatsMap),
           },
           departureTime: fleetEvent.departureTime,
           completionTime: fleetEvent.arrivalTime,
