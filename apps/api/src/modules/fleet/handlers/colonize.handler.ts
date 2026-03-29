@@ -1,10 +1,10 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, fleetEvents } from '@exilium/db';
-import { calculateMaxTemp, calculateMinTemp, calculateDiameter, calculateMaxFields } from '@exilium/game-engine';
+import { calculateMaxTemp, calculateMinTemp, calculateDiameter, calculateMaxFields, totalCargoCapacity } from '@exilium/game-engine';
 import { getRandomPlanetImageIndex } from '../../../lib/planet-image.util.js';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
-import { formatDuration } from '../fleet.types.js';
+import { buildShipStatsMap } from '../fleet.types.js';
 import { findShipByRole, findPlanetTypeByRole } from '../../../lib/config-helpers.js';
 
 export class ColonizeHandler implements MissionHandler {
@@ -24,27 +24,53 @@ export class ColonizeHandler implements MissionHandler {
     const siliciumCargo = Number(fleetEvent.siliciumCargo);
     const hydrogeneCargo = Number(fleetEvent.hydrogeneCargo);
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
-    const duration = formatDuration(fleetEvent.arrivalTime.getTime() - fleetEvent.departureTime.getTime());
 
     const config = await ctx.gameConfigService.getFullConfig();
+    const shipStatsMap = buildShipStatsMap(config);
     const colonyShipDef = findShipByRole(config, 'colonizer');
     const homeworldType = findPlanetTypeByRole(config, 'homeworld');
     const beltPositions = (config.universe.belt_positions as number[]) ?? [8, 16];
     const maxPlanetsPerPlayer = Number(config.universe.maxPlanetsPerPlayer) || 9;
 
+    const createColonizeReport = async (title: string, result: Record<string, unknown>) => {
+      if (!ctx.reportService) return undefined;
+      const [originPlanet] = await ctx.db.select({
+        galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
+      }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+      const report = await ctx.reportService.create({
+        userId: fleetEvent.userId,
+        fleetEventId: fleetEvent.id,
+        missionType: 'colonize',
+        title,
+        coordinates: {
+          galaxy: fleetEvent.targetGalaxy,
+          system: fleetEvent.targetSystem,
+          position: fleetEvent.targetPosition,
+        },
+        originCoordinates: originPlanet ? {
+          galaxy: originPlanet.galaxy,
+          system: originPlanet.system,
+          position: originPlanet.position,
+          planetName: originPlanet.name,
+        } : undefined,
+        fleet: { ships, totalCargo: totalCargoCapacity(ships, shipStatsMap) },
+        departureTime: fleetEvent.departureTime,
+        completionTime: fleetEvent.arrivalTime,
+        result,
+      });
+      return report.id;
+    };
+
     // Check if position is an asteroid belt
     if (beltPositions.includes(fleetEvent.targetPosition)) {
-      if (ctx.messageService) {
-        await ctx.messageService.createSystemMessage(
-          fleetEvent.userId,
-          'colonization',
-          `Colonisation échouée ${coords}`,
-          `La position ${coords} est une ceinture d'astéroïdes et ne peut pas être colonisée. Votre flotte fait demi-tour.\nDurée du trajet : ${duration}`,
-        );
-      }
+      const reportId = await createColonizeReport(
+        `Colonisation échouée ${coords}`,
+        { success: false, reason: 'asteroid_belt' },
+      );
       return {
         scheduleReturn: true,
         cargo: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo },
+        reportId,
       };
     }
 
@@ -62,17 +88,14 @@ export class ColonizeHandler implements MissionHandler {
       .limit(1);
 
     if (existing) {
-      if (ctx.messageService) {
-        await ctx.messageService.createSystemMessage(
-          fleetEvent.userId,
-          'colonization',
-          `Colonisation échouée ${coords}`,
-          `La position ${coords} est déjà occupée. Votre flotte fait demi-tour.\nDurée du trajet : ${duration}`,
-        );
-      }
+      const reportId = await createColonizeReport(
+        `Colonisation échouée ${coords}`,
+        { success: false, reason: 'occupied' },
+      );
       return {
         scheduleReturn: true,
         cargo: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo },
+        reportId,
       };
     }
 
@@ -83,17 +106,14 @@ export class ColonizeHandler implements MissionHandler {
       .where(eq(planets.userId, fleetEvent.userId));
 
     if (userPlanets.length >= maxPlanetsPerPlayer) {
-      if (ctx.messageService) {
-        await ctx.messageService.createSystemMessage(
-          fleetEvent.userId,
-          'colonization',
-          `Colonisation échouée ${coords}`,
-          `Nombre maximum de planètes atteint (${maxPlanetsPerPlayer}). Votre flotte fait demi-tour.\nDurée du trajet : ${duration}`,
-        );
-      }
+      const reportId = await createColonizeReport(
+        `Colonisation échouée ${coords}`,
+        { success: false, reason: 'max_planets', maxPlanets: maxPlanetsPerPlayer },
+      );
       return {
         scheduleReturn: true,
         cargo: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo },
+        reportId,
       };
     }
 
@@ -163,14 +183,10 @@ export class ColonizeHandler implements MissionHandler {
       .set({ status: 'completed' })
       .where(eq(fleetEvents.id, fleetEvent.id));
 
-    if (ctx.messageService) {
-      await ctx.messageService.createSystemMessage(
-        fleetEvent.userId,
-        'colonization',
-        `Colonisation réussie ${coords}`,
-        `Une nouvelle colonie a été fondée sur ${coords}. Diamètre : ${diameter}km, ${maxFields} cases disponibles.\nDurée du trajet : ${duration}`,
-      );
-    }
+    const reportId = await createColonizeReport(
+      `Colonisation réussie ${coords}`,
+      { success: true, diameter, maxFields, planetId: newPlanet.id },
+    );
 
     // Return remaining ships in a new fleet event (cargo already transferred to planet)
     const hasRemainingShips = Object.values(remainingShips).some(v => v > 0);
@@ -178,6 +194,7 @@ export class ColonizeHandler implements MissionHandler {
       return {
         scheduleReturn: false,
         cargo: { minerai: 0, silicium: 0, hydrogene: 0 },
+        reportId,
         createReturnEvent: {
           userId: fleetEvent.userId,
           originPlanetId: fleetEvent.originPlanetId,
@@ -199,6 +216,6 @@ export class ColonizeHandler implements MissionHandler {
     }
 
     // No remaining ships — nothing returns
-    return { scheduleReturn: false };
+    return { scheduleReturn: false, reportId };
   }
 }
