@@ -304,11 +304,12 @@ export class AttackHandler implements MissionHandler {
         await ctx.resourceService.materializeResources(targetPlanet.id, targetPlanet.userId);
         const [updatedPlanet] = await ctx.db.select().from(planets).where(eq(planets.id, targetPlanet.id)).limit(1);
 
-        // Pillage protection: reduce available resources (capped at 90%)
+        // Pillage: apply ratio (33% max) then talent protection (capped at 90%)
         const pillageProtection = 1 - Math.min(0.9, defenderTalentCtx['pillage_protection'] ?? 0);
-        const availMinerai = Math.floor(Number(updatedPlanet.minerai) * pillageProtection);
-        const availSilicium = Math.floor(Number(updatedPlanet.silicium) * pillageProtection);
-        const availHydrogene = Math.floor(Number(updatedPlanet.hydrogene) * pillageProtection);
+        const ratio = combatConfig.pillageRatio;
+        const availMinerai = Math.floor(Number(updatedPlanet.minerai) * ratio * pillageProtection);
+        const availSilicium = Math.floor(Number(updatedPlanet.silicium) * ratio * pillageProtection);
+        const availHydrogene = Math.floor(Number(updatedPlanet.hydrogene) * ratio * pillageProtection);
 
         const thirdCargo = Math.floor(availableCargo / 3);
 
