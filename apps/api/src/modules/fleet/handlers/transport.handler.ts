@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { planets } from '@exilium/db';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
-import { formatDuration } from '../fleet.types.js';
+import { buildShipStatsMap } from '../fleet.types.js';
+import { totalCargoCapacity } from '@exilium/game-engine';
 
 export class TransportHandler implements MissionHandler {
   async validateFleet(_input: SendFleetInput, _config: GameConfig, _ctx: MissionHandlerContext): Promise<void> {
@@ -13,7 +14,38 @@ export class TransportHandler implements MissionHandler {
     const siliciumCargo = Number(fleetEvent.siliciumCargo);
     const hydrogeneCargo = Number(fleetEvent.hydrogeneCargo);
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
-    const duration = formatDuration(fleetEvent.arrivalTime.getTime() - fleetEvent.departureTime.getTime());
+    const ships = fleetEvent.ships;
+    const config = await ctx.gameConfigService.getFullConfig();
+    const shipStatsMap = buildShipStatsMap(config);
+
+    const createTransportReport = async (title: string, result: Record<string, unknown>) => {
+      if (!ctx.reportService) return undefined;
+      const [originPlanet] = await ctx.db.select({
+        galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
+      }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+      const report = await ctx.reportService.create({
+        userId: fleetEvent.userId,
+        fleetEventId: fleetEvent.id,
+        missionType: 'transport',
+        title,
+        coordinates: {
+          galaxy: fleetEvent.targetGalaxy,
+          system: fleetEvent.targetSystem,
+          position: fleetEvent.targetPosition,
+        },
+        originCoordinates: originPlanet ? {
+          galaxy: originPlanet.galaxy,
+          system: originPlanet.system,
+          position: originPlanet.position,
+          planetName: originPlanet.name,
+        } : undefined,
+        fleet: { ships, totalCargo: totalCargoCapacity(ships, shipStatsMap) },
+        departureTime: fleetEvent.departureTime,
+        completionTime: fleetEvent.arrivalTime,
+        result,
+      });
+      return report.id;
+    };
 
     // Check target planet exists
     const [targetPlanet] = fleetEvent.targetPlanetId
@@ -21,17 +53,14 @@ export class TransportHandler implements MissionHandler {
       : [];
 
     if (!targetPlanet) {
-      if (ctx.messageService) {
-        await ctx.messageService.createSystemMessage(
-          fleetEvent.userId,
-          'mission',
-          `Transport echoue ${coords}`,
-          `Planete deserte trouvee en ${coords}. Impossible de livrer en zone hostile.\nDuree du trajet : ${duration}\nVotre flotte fait demi-tour avec son cargo.`,
-        );
-      }
+      const reportId = await createTransportReport(
+        `Transport échoué ${coords}`,
+        { aborted: true, reason: 'no_planet' },
+      );
       return {
         scheduleReturn: true,
         cargo: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo },
+        reportId,
       };
     }
 
@@ -44,23 +73,15 @@ export class TransportHandler implements MissionHandler {
       })
       .where(eq(planets.id, targetPlanet.id));
 
-    if (ctx.messageService) {
-      const parts = [`Transport effectué vers ${coords}\n`];
-      parts.push(`Durée du trajet : ${duration}`);
-      if (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0) {
-        parts.push(`Cargo livré : ${mineraiCargo} minerai, ${siliciumCargo} silicium, ${hydrogeneCargo} hydrogène`);
-      }
-      await ctx.messageService.createSystemMessage(
-        fleetEvent.userId,
-        'mission',
-        `Transport effectué ${coords}`,
-        parts.join('\n'),
-      );
-    }
+    const reportId = await createTransportReport(
+      `Transport effectué ${coords}`,
+      { delivered: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo } },
+    );
 
     return {
       scheduleReturn: true,
       cargo: { minerai: 0, silicium: 0, hydrogene: 0 },
+      reportId,
     };
   }
 }
