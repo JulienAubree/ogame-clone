@@ -87,11 +87,6 @@ export default function Profile() {
     updateMutation.mutate({ seekingAlliance: !profile!.seekingAlliance });
   }
 
-  function handleThemeToggle() {
-    const newTheme = profile!.theme === 'dark' ? 'light' : 'dark';
-    updateMutation.mutate({ theme: newTheme });
-  }
-
   function handleVisibilityChange(key: string, checked: boolean) {
     const newVisibility = { ...visibility, [key]: checked };
     updateMutation.mutate({ profileVisibility: newVisibility });
@@ -258,26 +253,6 @@ export default function Profile() {
               </button>
             </div>
 
-            {/* Theme toggle */}
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-muted-foreground">Thème</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={profile.theme === 'dark'}
-                onClick={handleThemeToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                  profile.theme === 'dark' ? 'bg-primary' : 'bg-muted'
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                    profile.theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-              <span className="text-xs text-muted-foreground">{profile.theme === 'dark' ? 'Sombre' : 'Clair'}</span>
-            </div>
           </div>
 
           {/* Visibility */}

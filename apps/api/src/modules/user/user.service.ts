@@ -27,7 +27,6 @@ export function createUserService(db: Database, assetsDir: string) {
         avatarId: users.avatarId,
         playstyle: users.playstyle,
         seekingAlliance: users.seekingAlliance,
-        theme: users.theme,
         profileVisibility: users.profileVisibility,
         createdAt: users.createdAt,
       }).from(users).where(eq(users.id, userId)).limit(1);
@@ -90,7 +89,6 @@ export function createUserService(db: Database, assetsDir: string) {
       if (data.avatarId !== undefined) update.avatarId = data.avatarId;
       if (data.playstyle !== undefined) update.playstyle = data.playstyle;
       if (data.seekingAlliance !== undefined) update.seekingAlliance = data.seekingAlliance;
-      if (data.theme !== undefined) update.theme = data.theme;
       if (data.profileVisibility !== undefined) update.profileVisibility = data.profileVisibility;
 
       if (Object.keys(update).length > 0) {

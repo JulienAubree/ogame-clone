@@ -27,7 +27,6 @@ export function createUserRouter(userService: ReturnType<typeof createUserServic
         avatarId: z.string().max(128).nullable().optional(),
         playstyle: z.enum(['miner', 'warrior', 'explorer']).nullable().optional(),
         seekingAlliance: z.boolean().optional(),
-        theme: z.enum(['dark', 'light']).optional(),
         profileVisibility: z.record(z.string(), z.boolean()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
