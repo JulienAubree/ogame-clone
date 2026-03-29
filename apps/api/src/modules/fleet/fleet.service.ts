@@ -193,7 +193,8 @@ export function createFleetService(
       const fleetConfig = buildFleetConfig(config);
       const origin = { galaxy: planet.galaxy, system: planet.system, position: planet.position };
       const target = { galaxy: input.targetGalaxy, system: input.targetSystem, position: input.targetPosition };
-      if (origin.galaxy === target.galaxy && origin.system === target.system && origin.position === target.position && input.mission !== 'recycle') {
+      const blockedSelfTargetMissions = ['spy', 'attack'];
+      if (origin.galaxy === target.galaxy && origin.system === target.system && origin.position === target.position && blockedSelfTargetMissions.includes(input.mission)) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'La destination doit être différente du point de départ' });
       }
       const dist = distance(origin, target, fleetConfig);
