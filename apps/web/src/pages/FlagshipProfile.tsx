@@ -519,7 +519,7 @@ export default function FlagshipProfile() {
             {/* Planet + Exilium + Talents — inline */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
               {stationedPlanet && (
-                <Link to="/overview" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
                   {stationedPlanet.planetClassId && stationedPlanet.planetImageIndex != null ? (
                     <img
                       src={getPlanetImageUrl(stationedPlanet.planetClassId, stationedPlanet.planetImageIndex, 'icon')}

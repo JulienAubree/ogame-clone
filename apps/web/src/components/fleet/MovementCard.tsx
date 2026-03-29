@@ -10,6 +10,7 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { trpc } from '@/trpc';
 import { getShipName } from '@/lib/entity-names';
 import { resolveBonus } from '@exilium/game-engine';
+import { usePlanetStore } from '@/stores/planet.store';
 
 export const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -184,6 +185,7 @@ export function MovementCard({
   onTimerComplete?: () => void;
 }) {
   const navigate = useNavigate();
+  const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
   const { data: gameConfig } = useGameConfig();
   const [expanded, setExpanded] = useState(false);
   const progress = useProgress(event.departureTime, event.arrivalTime);
@@ -533,7 +535,7 @@ export function MovementCard({
                 </div>
                 <button
                   className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); navigate('/overview'); }}
+                  onClick={(e) => { e.stopPropagation(); setActivePlanet(event.originPlanetId); navigate('/'); }}
                 >
                   {originLabel} {originCoords}
                 </button>
