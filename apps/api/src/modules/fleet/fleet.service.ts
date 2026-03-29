@@ -537,9 +537,9 @@ export function createFleetService(
         .filter(([, m]) => !m.dangerous)
         .map(([id]) => id);
 
-      // Get dangerous mission types
+      // Get dangerous mission types (exclude spy — espionage stays invisible in inbound list)
       const dangerousMissions = Object.entries(config.missions)
-        .filter(([, m]) => m.dangerous)
+        .filter(([id, m]) => m.dangerous && id !== 'spy')
         .map(([id]) => id);
 
       // Query inbound peaceful fleets (outbound only — not returning)
