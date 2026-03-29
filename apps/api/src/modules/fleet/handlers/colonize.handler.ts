@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips, planetDefenses, fleetEvents } from '@exilium/db';
 import { calculateMaxTemp, calculateMinTemp, calculateDiameter, calculateMaxFields } from '@exilium/game-engine';
@@ -139,6 +139,18 @@ export class ColonizeHandler implements MissionHandler {
     await ctx.db.insert(planetShips).values({ planetId: newPlanet.id });
     await ctx.db.insert(planetDefenses).values({ planetId: newPlanet.id });
 
+    // Transfer cargo to the new planet
+    if (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0) {
+      await ctx.db
+        .update(planets)
+        .set({
+          minerai: sql`${planets.minerai} + ${mineraiCargo}`,
+          silicium: sql`${planets.silicium} + ${siliciumCargo}`,
+          hydrogene: sql`${planets.hydrogene} + ${hydrogeneCargo}`,
+        })
+        .where(eq(planets.id, newPlanet.id));
+    }
+
     // Colony ship is consumed
     const remainingShips = { ...ships };
     if (remainingShips[colonyShipDef.id]) {
@@ -160,12 +172,12 @@ export class ColonizeHandler implements MissionHandler {
       );
     }
 
-    // Return remaining ships in a new fleet event
+    // Return remaining ships in a new fleet event (cargo already transferred to planet)
     const hasRemainingShips = Object.values(remainingShips).some(v => v > 0);
     if (hasRemainingShips) {
       return {
         scheduleReturn: false,
-        cargo: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo },
+        cargo: { minerai: 0, silicium: 0, hydrogene: 0 },
         createReturnEvent: {
           userId: fleetEvent.userId,
           originPlanetId: fleetEvent.originPlanetId,
@@ -178,9 +190,9 @@ export class ColonizeHandler implements MissionHandler {
           status: 'active',
           departureTime: new Date(),
           arrivalTime: new Date(),
-          mineraiCargo: String(mineraiCargo),
-          siliciumCargo: String(siliciumCargo),
-          hydrogeneCargo: String(hydrogeneCargo),
+          mineraiCargo: '0',
+          siliciumCargo: '0',
+          hydrogeneCargo: '0',
           ships: remainingShips,
         },
       };
