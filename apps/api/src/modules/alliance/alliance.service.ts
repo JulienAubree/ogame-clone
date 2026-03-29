@@ -2,9 +2,8 @@ import { eq, and, ilike, or, sql, asc, desc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { alliances, allianceMembers, allianceInvitations, allianceApplications, users, rankings } from '@exilium/db';
 import type { Database } from '@exilium/db';
-import type { createMessageService } from '../message/message.service.js';
-
-type MessageService = ReturnType<typeof createMessageService>;
+import type Redis from 'ioredis';
+import { publishNotification } from '../notification/notification.publisher.js';
 
 async function getMembership(db: Database, userId: string) {
   const [membership] = await db
@@ -26,7 +25,7 @@ async function requireRole(db: Database, userId: string, roles: string[]) {
   return membership;
 }
 
-export function createAllianceService(db: Database, messageService: MessageService) {
+export function createAllianceService(db: Database, redis?: Redis) {
   return {
     async create(userId: string, name: string, tag: string) {
       const existing = await getMembership(db, userId);
@@ -128,7 +127,12 @@ export function createAllianceService(db: Database, messageService: MessageServi
 
       const [alliance] = await db.select({ name: alliances.name, tag: alliances.tag }).from(alliances).where(eq(alliances.id, membership.allianceId)).limit(1);
       await db.insert(allianceInvitations).values({ allianceId: membership.allianceId, invitedUserId: targetUser.id, invitedByUserId: userId });
-      await messageService.createSystemMessage(targetUser.id, 'alliance', `Invitation alliance [${alliance.tag}]`, `Vous avez été invité à rejoindre l'alliance ${alliance.name} [${alliance.tag}].`);
+      if (redis) {
+        publishNotification(redis, targetUser.id, {
+          type: 'alliance-activity',
+          payload: { action: 'invitation', allianceTag: alliance.tag, allianceName: alliance.name },
+        });
+      }
       return { success: true };
     },
 
@@ -170,7 +174,12 @@ export function createAllianceService(db: Database, messageService: MessageServi
 
       const [applicant] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
       for (const leader of leaders) {
-        await messageService.createSystemMessage(leader.userId, 'alliance', `Candidature [${alliance.tag}]`, `${applicant.username} a postulé pour rejoindre votre alliance.`);
+        if (redis) {
+          publishNotification(redis, leader.userId, {
+            type: 'alliance-activity',
+            payload: { action: 'application', allianceTag: alliance.tag, applicantUsername: applicant.username },
+          });
+        }
       }
 
       return { success: true };
@@ -195,6 +204,8 @@ export function createAllianceService(db: Database, messageService: MessageServi
 
     async sendCircular(userId: string, subject: string, body: string) {
       const membership = await requireRole(db, userId, ['founder', 'officer']);
+      const [sender] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
+      const senderUsername = sender?.username ?? 'Officier';
 
       const members = await db
         .select({ userId: allianceMembers.userId })
@@ -203,7 +214,12 @@ export function createAllianceService(db: Database, messageService: MessageServi
 
       for (const member of members) {
         if (member.userId === userId) continue;
-        await messageService.createSystemMessage(member.userId, 'alliance', subject, body);
+        if (redis) {
+          publishNotification(redis, member.userId, {
+            type: 'alliance-activity',
+            payload: { action: 'circular', subject, senderUsername },
+          });
+        }
       }
 
       return { success: true, recipientCount: members.length - 1 };
