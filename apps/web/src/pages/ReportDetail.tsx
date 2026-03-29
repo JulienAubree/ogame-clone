@@ -68,14 +68,22 @@ export default function ReportDetail() {
   const fleet = report.fleet as { ships: Record<string, number>; totalCargo: number };
   const isCombat = report.missionType === 'attack' || report.missionType === 'pirate';
 
-  const outcomeLabel = isCombat
-    ? result.outcome === 'attacker' ? 'Victoire' : result.outcome === 'defender' ? 'Défaite' : 'Match nul'
-    : null;
-  const outcomeBg = isCombat
-    ? result.outcome === 'attacker' ? 'bg-emerald-500/20 text-emerald-400'
-    : result.outcome === 'defender' ? 'bg-red-500/20 text-red-400'
-    : 'bg-amber-500/20 text-amber-400'
-    : '';
+  const perspective = result.perspective as 'attacker' | 'defender' | undefined;
+  const isPlayerVictory = !isCombat
+    ? null
+    : result.outcome === 'draw'
+      ? null
+      : perspective === 'defender'
+        ? result.outcome === 'defender'
+        : result.outcome === 'attacker'; // attacker perspective or undefined (backward compat)
+  const outcomeLabel = !isCombat
+    ? null
+    : isPlayerVictory === null ? 'Match nul' : isPlayerVictory ? 'Victoire' : 'Défaite';
+  const outcomeBg = !isCombat
+    ? ''
+    : isPlayerVictory === null ? 'bg-amber-500/20 text-amber-400'
+    : isPlayerVictory ? 'bg-emerald-500/20 text-emerald-400'
+    : 'bg-red-500/20 text-red-400';
 
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6 max-w-4xl mx-auto">

@@ -186,8 +186,8 @@ export function useNotifications() {
         utils.report.list.invalidate();
         utils.report.unreadCount.invalidate();
         const attackLink = event.payload.reportId ? `/reports/${event.payload.reportId}` : undefined;
-        addToast(`Votre planète ${event.payload.targetCoords} a été attaquée !`, 'error', attackLink);
-        showBrowserNotification('Planète attaquée !', `Combat terminé en ${event.payload.targetCoords}`);
+        addToast(`Attaque de ${event.payload.attackerUsername} sur ${event.payload.targetCoords} — ${event.payload.outcome}`, 'error', attackLink);
+        showBrowserNotification('Planète attaquée !', `Attaque de ${event.payload.attackerUsername} sur ${event.payload.targetCoords} — ${event.payload.outcome}`);
         break;
       }
       case 'market-offer-reserved': {

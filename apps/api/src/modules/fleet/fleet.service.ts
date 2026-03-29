@@ -808,6 +808,8 @@ export function createFleetService(
               payload: {
                 targetCoords: eventMeta.targetCoords,
                 reportId: result.defenderReportId ?? result.reportId,
+                attackerUsername: result.attackerUsername,
+                outcome: result.defenderOutcomeText,
               },
             });
           }

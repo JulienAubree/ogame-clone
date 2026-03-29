@@ -25,9 +25,18 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
   const [replayOpen, setReplayOpen] = useState(false);
 
   const outcome = result.outcome as string;
-  const outcomeLabel = outcome === 'attacker' ? 'Victoire' : outcome === 'defender' ? 'Défaite' : 'Match nul';
-  const outcomeColor = outcome === 'attacker' ? 'text-emerald-400' : outcome === 'defender' ? 'text-red-400' : 'text-amber-400';
-  const outcomeBg = outcome === 'attacker' ? 'bg-emerald-500/20' : outcome === 'defender' ? 'bg-red-500/20' : 'bg-amber-500/20';
+  const perspective = result.perspective as 'attacker' | 'defender' | undefined;
+  const attackerUsername = result.attackerUsername as string | undefined;
+  const defenderUsername = result.defenderUsername as string | undefined;
+
+  const isPlayerVictory = outcome === 'draw'
+    ? null
+    : perspective === 'defender'
+      ? outcome === 'defender'
+      : outcome === 'attacker'; // attacker perspective or undefined (backward compat)
+  const outcomeLabel = isPlayerVictory === null ? 'Match nul' : isPlayerVictory ? 'Victoire' : 'Défaite';
+  const outcomeColor = isPlayerVictory === null ? 'text-amber-400' : isPlayerVictory ? 'text-emerald-400' : 'text-red-400';
+  const outcomeBg = isPlayerVictory === null ? 'bg-amber-500/20' : isPlayerVictory ? 'bg-emerald-500/20' : 'bg-red-500/20';
 
   const attackerFP = result.attackerFP as number | undefined;
   const defenderFP = result.defenderFP as number | undefined;
@@ -60,12 +69,24 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
 
   return (
     <div className="space-y-4">
+      {/* Perspective banner */}
+      {perspective === 'attacker' && defenderUsername && (
+        <div className="glass-card border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-300">
+          Vous avez attaqué la planète de <span className="font-bold text-blue-200">{defenderUsername}</span>
+        </div>
+      )}
+      {perspective === 'defender' && attackerUsername && (
+        <div className="glass-card border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-300">
+          Vous avez été attaqué par <span className="font-bold text-rose-200">{attackerUsername}</span>
+        </div>
+      )}
+
       {/* FP Comparison Bar */}
       {attackerFP != null && defenderFP != null && (
         <div className="glass-card p-4">
           <div className="flex justify-between text-xs mb-2">
-            <span className="text-blue-400 font-semibold">Votre flotte : {fmt(attackerFP)} FP</span>
-            <span className="text-rose-400 font-semibold">{missionType === 'pirate' ? 'Pirates' : 'Défenseur'} : {fmt(defenderFP)} FP</span>
+            <span className="text-blue-400 font-semibold">Attaquant{attackerUsername ? ` (${attackerUsername})` : ''} : {fmt(attackerFP)} FP</span>
+            <span className="text-rose-400 font-semibold">{missionType === 'pirate' ? 'Pirates' : `Défenseur${defenderUsername ? ` (${defenderUsername})` : ''}`} : {fmt(defenderFP)} FP</span>
           </div>
           <div className="flex h-2 rounded-full overflow-hidden">
             <div className="bg-blue-500 transition-all" style={{ width: `${attackerFPPct}%` }} />
@@ -223,7 +244,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {attStats && (
               <div className="glass-card p-4">
-                <div className="text-xs font-medium text-blue-400 mb-2">Attaquant</div>
+                <div className="text-xs font-medium text-blue-400 mb-2">Attaquant{attackerUsername ? ` (${attackerUsername})` : ''}</div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">Bouclier absorbé</span><span className="text-cyan-400 font-medium">{fmt(attStats.shieldAbsorbed)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Armure bloquée</span><span className="text-amber-400 font-medium">{fmt(attStats.armorBlocked)}</span></div>
@@ -244,7 +265,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
             )}
             {defStats && (
               <div className="glass-card p-4">
-                <div className="text-xs font-medium text-rose-400 mb-2">Défenseur</div>
+                <div className="text-xs font-medium text-rose-400 mb-2">Défenseur{defenderUsername ? ` (${defenderUsername})` : ''}</div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">Bouclier absorbé</span><span className="text-cyan-400 font-medium">{fmt(defStats.shieldAbsorbed)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Armure bloquée</span><span className="text-amber-400 font-medium">{fmt(defStats.armorBlocked)}</span></div>

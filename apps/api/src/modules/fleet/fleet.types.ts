@@ -101,6 +101,8 @@ export interface ArrivalResult {
   createReturnEvent?: Record<string, unknown>;
   reportId?: string;
   defenderReportId?: string;
+  attackerUsername?: string;
+  defenderOutcomeText?: string;
 }
 
 export interface PhaseResult {

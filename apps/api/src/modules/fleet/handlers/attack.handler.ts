@@ -1,10 +1,10 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, debrisFields } from '@exilium/db';
+import { planets, planetShips, planetDefenses, debrisFields, users } from '@exilium/db';
 import { simulateCombat, totalCargoCapacity, computeFleetFP } from '@exilium/game-engine';
 import type { CombatConfig, ShipCategory, CombatInput, RoundResult, UnitCombatStats, FPConfig } from '@exilium/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
-import { buildShipStatsMap, buildShipCombatConfigs, buildShipCosts, getCombatMultipliers, formatDuration } from '../fleet.types.js';
+import { buildShipStatsMap, buildShipCombatConfigs, buildShipCosts, getCombatMultipliers } from '../fleet.types.js';
 import { publishNotification } from '../../notification/notification.publisher.js';
 
 export class AttackHandler implements MissionHandler {
@@ -115,6 +115,15 @@ export class AttackHandler implements MissionHandler {
         cargo: { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo },
       };
     }
+
+    // Fetch attacker & defender usernames for combat reports
+    const [[attackerUser], [defenderUser]] = await Promise.all([
+      ctx.db.select({ username: users.username }).from(users).where(eq(users.id, fleetEvent.userId)).limit(1),
+      ctx.db.select({ username: users.username }).from(users).where(eq(users.id, targetPlanet.userId)).limit(1),
+    ]);
+    const attackerUsername = attackerUser?.username ?? 'Inconnu';
+    const defenderUsername = defenderUser?.username ?? 'Inconnu';
+    const targetPlanetName = targetPlanet.name;
 
     const [defShips] = await ctx.db.select().from(planetShips).where(eq(planetShips.planetId, targetPlanet.id)).limit(1);
     const [defDefs] = await ctx.db.select().from(planetDefenses).where(eq(planetDefenses.planetId, targetPlanet.id)).limit(1);
@@ -339,44 +348,6 @@ export class AttackHandler implements MissionHandler {
     const outcomeText = outcome === 'attacker' ? 'Victoire' :
                         outcome === 'defender' ? 'Défaite' : 'Match nul';
 
-    const duration = formatDuration(fleetEvent.arrivalTime.getTime() - fleetEvent.departureTime.getTime());
-    const formatLosses = (losses: Record<string, number>) => {
-      const entries = Object.entries(losses).filter(([, v]) => v > 0);
-      if (entries.length === 0) return 'Aucune';
-      return entries.map(([id, count]) => {
-        const name = id === 'flagship' ? 'Vaisseau amiral' : config.ships[id]?.name ?? config.defenses[id]?.name ?? id;
-        return `${count}x ${name}`;
-      }).join(', ');
-    };
-    const reportBody = `Combat ${coords} — ${outcomeText}\n\n` +
-      `Durée du trajet : ${duration}\n` +
-      `Rounds : ${roundCount}\n` +
-      `Pertes attaquant : ${formatLosses(attackerLosses)}\n` +
-      `Pertes défenseur : ${formatLosses(defenderLosses)}\n` +
-      (Object.values(repairedDefenses).some(v => v > 0) ? `Défenses réparées : ${formatLosses(repairedDefenses)}\n` : '') +
-      `Débris : ${debris.minerai.toLocaleString('fr-FR')} minerai, ${debris.silicium.toLocaleString('fr-FR')} silicium\n` +
-      (outcome === 'attacker' ?
-        `Pillage : ${pillagedMinerai.toLocaleString('fr-FR')} minerai, ${pillagedSilicium.toLocaleString('fr-FR')} silicium, ${pillagedHydrogene.toLocaleString('fr-FR')} hydrogène\n` : '');
-
-    let messageId: string | undefined;
-    let defenderMsgId: string | undefined;
-    if (ctx.messageService) {
-      const msg = await ctx.messageService.createSystemMessage(
-        fleetEvent.userId,
-        'combat',
-        `Rapport de combat ${coords} — ${outcomeText}`,
-        reportBody,
-      );
-      messageId = msg.id;
-      const defenderMsg = await ctx.messageService.createSystemMessage(
-        targetPlanet.userId,
-        'combat',
-        `Rapport de combat ${coords} — ${outcome === 'attacker' ? 'Défaite' : outcome === 'defender' ? 'Victoire' : 'Match nul'}`,
-        reportBody,
-      );
-      defenderMsgId = defenderMsg.id;
-    }
-
     // Fetch origin planet for report
     const [originPlanet] = await ctx.db.select({
       galaxy: planets.galaxy,
@@ -422,11 +393,18 @@ export class AttackHandler implements MissionHandler {
     });
 
     // Create structured mission report
+    const defenderOutcomeText = outcome === 'attacker' ? 'Défaite' :
+                                outcome === 'defender' ? 'Victoire' : 'Match nul';
+
     let reportId: string | undefined;
     let defenderReportId: string | undefined;
     if (ctx.reportService) {
       const reportResult: Record<string, unknown> = {
         outcome,
+        perspective: 'attacker' as const,
+        attackerUsername,
+        defenderUsername,
+        targetPlanetName,
         roundCount,
         attackerFleet: ships,
         attackerLosses,
@@ -463,7 +441,6 @@ export class AttackHandler implements MissionHandler {
       const report = await ctx.reportService.create({
         userId: fleetEvent.userId,
         fleetEventId: fleetEvent.id,
-        messageId,
         missionType: 'attack',
         title: `Rapport de combat ${coords} — ${outcomeText}`,
         coordinates: {
@@ -486,11 +463,9 @@ export class AttackHandler implements MissionHandler {
         result: reportResult,
       });
       reportId = report.id;
-      const defenderOutcomeText = outcome === 'attacker' ? 'Défaite' :
-                                  outcome === 'defender' ? 'Victoire' : 'Match nul';
+      const defenderReportResult = { ...reportResult, perspective: 'defender' as const };
       const defenderReport = await ctx.reportService.create({
         userId: targetPlanet.userId,
-        messageId: defenderMsgId,
         missionType: 'attack',
         title: `Rapport de combat ${coords} — ${defenderOutcomeText}`,
         coordinates: {
@@ -507,7 +482,7 @@ export class AttackHandler implements MissionHandler {
         fleet: { ships: {}, totalCargo: 0 },
         departureTime: fleetEvent.departureTime,
         completionTime: fleetEvent.arrivalTime,
-        result: reportResult,
+        result: defenderReportResult,
       });
       defenderReportId = defenderReport.id;
     }
@@ -540,11 +515,13 @@ export class AttackHandler implements MissionHandler {
         shipsAfterArrival: returnShips,
         reportId,
         defenderReportId,
+        attackerUsername,
+        defenderOutcomeText,
       };
     }
 
     // All ships destroyed — no return
     // Pass empty shipsAfterArrival so fleet.service doesn't call returnFromMission on destroyed flagship
-    return { scheduleReturn: false, reportId, defenderReportId, shipsAfterArrival: returnShips };
+    return { scheduleReturn: false, reportId, defenderReportId, shipsAfterArrival: returnShips, attackerUsername, defenderOutcomeText };
   }
 }
