@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Outlet } from 'react-router';
 import { TopBar } from './TopBar';
 import { ResourceBar } from './ResourceBar';
@@ -15,6 +15,7 @@ import { trpc } from '@/trpc';
 import { usePlanetStore } from '@/stores/planet.store';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { HostileAlertBanner } from '@/components/fleet/HostileAlertBanner';
 
 export function Layout() {
   const { data: planets } = trpc.planet.list.useQuery();
@@ -36,6 +37,12 @@ export function Layout() {
   useNotifications();
   useDocumentTitle();
 
+  const { data: inboundFleets } = trpc.fleet.inbound.useQuery();
+  const hostileFleets = useMemo(
+    () => (inboundFleets ?? []).filter((f) => f.hostile),
+    [inboundFleets],
+  );
+
   return (
     <div className="flex h-dvh flex-col bg-background bg-stars text-foreground">
       {/* Desktop sidebar */}
@@ -46,6 +53,7 @@ export function Layout() {
         <TopBar planetId={resolvedPlanetId} planets={planets ?? []} />
         <OfflineBanner />
         <ResourceBar planetId={resolvedPlanetId} />
+        <HostileAlertBanner hostileFleets={hostileFleets} fixed />
 
         {/* Page content - pb-14 for bottom tab bar on mobile */}
         <main className="flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">

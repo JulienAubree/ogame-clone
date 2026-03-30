@@ -3,8 +3,9 @@ import { Timer } from '@/components/common/Timer';
 
 interface InboundFleet {
   id: string;
-  arrivalTime: string; // ISO string — convert to Date for Timer
-  targetPlanetName?: string;
+  arrivalTime: string;
+  targetPlanetName?: string | null;
+  targetPlanetId?: string | null;
   mission: string;
 }
 
@@ -12,17 +13,22 @@ interface HostileAlertBannerProps {
   hostileFleets: InboundFleet[];
   /** If true, hides the "Voir details" link (used on the movements page itself) */
   hideLink?: boolean;
+  /** If true, renders as a fixed global banner at top of viewport */
+  fixed?: boolean;
 }
 
-export function HostileAlertBanner({ hostileFleets, hideLink = false }: HostileAlertBannerProps) {
+export function HostileAlertBanner({ hostileFleets, hideLink = false, fixed = false }: HostileAlertBannerProps) {
   if (hostileFleets.length === 0) return null;
 
   const count = hostileFleets.length;
 
-  return (
+  const content = (
     <div
-      className="w-full rounded-lg border border-destructive/60 bg-gradient-to-r from-destructive/20 via-destructive/10 to-destructive/20 px-4 py-3"
-      style={{ borderColor: 'hsl(var(--destructive) / 0.6)', background: 'linear-gradient(to right, hsl(var(--destructive) / 0.2), hsl(var(--destructive) / 0.1), hsl(var(--destructive) / 0.2))' }}
+      className={
+        fixed
+          ? 'w-full border-b border-destructive/60 bg-gradient-to-r from-destructive/20 via-destructive/10 to-destructive/20 px-4 py-2'
+          : 'w-full rounded-lg border border-destructive/60 bg-gradient-to-r from-destructive/20 via-destructive/10 to-destructive/20 px-4 py-3'
+      }
     >
       {/* Header row */}
       <div className="flex items-center justify-between gap-3">
@@ -59,8 +65,8 @@ export function HostileAlertBanner({ hostileFleets, hideLink = false }: HostileA
 
           <span className="text-sm font-semibold" style={{ color: 'hsl(var(--destructive))' }}>
             {count === 1
-              ? '1 flotte hostile en approche'
-              : `${count} flottes hostiles en approche`}
+              ? 'ATTAQUE IMMINENTE'
+              : `${count} ATTAQUES IMMINENTES`}
           </span>
         </div>
 
@@ -76,17 +82,26 @@ export function HostileAlertBanner({ hostileFleets, hideLink = false }: HostileA
       </div>
 
       {/* Per-attack details */}
-      <ul className="mt-2 space-y-1.5">
+      <ul className="mt-1.5 space-y-1">
         {hostileFleets.map((fleet) => (
           <li key={fleet.id} className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--destructive) / 0.85)' }}>
             <span className="shrink-0">▸</span>
-            <span className="flex-1 truncate">
-              {fleet.targetPlanetName ? (
-                <>Attaque sur <span className="font-medium">{fleet.targetPlanetName}</span></>
-              ) : (
-                'Attaque en approche'
-              )}
-            </span>
+            {fleet.targetPlanetId ? (
+              <Link
+                to={`/fleet?planet=${fleet.targetPlanetId}`}
+                className="flex-1 truncate hover:underline underline-offset-2"
+              >
+                Attaque sur <span className="font-medium">{fleet.targetPlanetName ?? 'planète'}</span>
+              </Link>
+            ) : (
+              <span className="flex-1 truncate">
+                {fleet.targetPlanetName ? (
+                  <>Attaque sur <span className="font-medium">{fleet.targetPlanetName}</span></>
+                ) : (
+                  'Attaque en approche'
+                )}
+              </span>
+            )}
             <Timer
               endTime={new Date(fleet.arrivalTime)}
               className="shrink-0 font-mono"
@@ -96,4 +111,6 @@ export function HostileAlertBanner({ hostileFleets, hideLink = false }: HostileA
       </ul>
     </div>
   );
+
+  return content;
 }
