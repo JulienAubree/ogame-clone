@@ -162,7 +162,6 @@ export const planetTypes = pgTable('planet_types', {
   hydrogeneBonus: real('hydrogene_bonus').notNull().default(1.0),
   diameterMin: integer('diameter_min').notNull(),
   diameterMax: integer('diameter_max').notNull(),
-  fieldsBonus: real('fields_bonus').notNull().default(1.0),
   sortOrder: integer('sort_order').notNull().default(0),
   role: varchar('role', { length: 64 }).unique(),
 });

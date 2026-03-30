@@ -3,7 +3,6 @@ import {
   calculateMaxTemp,
   calculateMinTemp,
   calculateDiameter,
-  calculateMaxFields,
 } from './planet.js';
 
 describe('calculateMaxTemp', () => {
@@ -37,17 +36,5 @@ describe('calculateDiameter', () => {
   });
   it('position 1 has smaller range than position 8', () => {
     expect(calculateDiameter(1, 0.5)).toBeLessThan(calculateDiameter(8, 0.5));
-  });
-});
-
-describe('calculateMaxFields', () => {
-  it('diameter 12800 gives 163 fields', () => {
-    expect(calculateMaxFields(12800)).toBe(163);
-  });
-  it('diameter 5000 gives 25 fields', () => {
-    expect(calculateMaxFields(5000)).toBe(25);
-  });
-  it('diameter 15000 gives 225 fields', () => {
-    expect(calculateMaxFields(15000)).toBe(225);
   });
 });

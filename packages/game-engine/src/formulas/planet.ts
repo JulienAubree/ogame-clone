@@ -30,11 +30,3 @@ export function calculateDiameter(position: number, randomFactor: number): numbe
   const [min, max] = ranges[position] ?? [5000, 9400];
   return Math.floor(min + (max - min) * randomFactor);
 }
-
-/**
- * Max fields (building slots) from diameter.
- * max_fields = floor((diameter / 1000)^2 * fieldsBonus)
- */
-export function calculateMaxFields(diameter: number, fieldsBonus: number = 1): number {
-  return Math.floor(Math.pow(diameter / 1000, 2) * fieldsBonus);
-}
