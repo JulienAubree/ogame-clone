@@ -38,16 +38,16 @@ const CHANNEL_META: Record<Channel, { label: string; desc: string; icon: React.R
   },
 };
 
-function Toggle({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
+function Toggle({ enabled, onClick, size = 'md' }: { enabled: boolean; onClick: () => void; size?: 'sm' | 'md' }) {
+  const cls = size === 'sm'
+    ? `h-4 w-7 rounded-full transition-colors ${enabled ? 'bg-primary' : 'bg-muted'}`
+    : `h-5 w-9 rounded-full transition-colors ${enabled ? 'bg-primary' : 'bg-muted'}`;
+  const dot = size === 'sm'
+    ? `h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${enabled ? 'translate-x-[13px]' : 'translate-x-0.5'}`
+    : `h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${enabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`h-5 w-9 rounded-full transition-colors ${enabled ? 'bg-emerald-500' : 'bg-muted'}`}
-    >
-      <div
-        className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`}
-      />
+    <button type="button" onClick={onClick} className={cls}>
+      <div className={dot} />
     </button>
   );
 }
@@ -148,141 +148,138 @@ export function NotificationPreferences() {
     return <div className="text-sm text-muted-foreground p-4">Chargement...</div>;
   }
 
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
-        Choisissez quels événements déclenchent chaque type de notification. Cliquez sur une catégorie pour régler chaque événement individuellement.
-      </p>
+  const globalAllDisabled = ALL_EVENT_TYPES.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
+  const globalSomeDisabled = ALL_EVENT_TYPES.some((et) => CHANNELS.some((ch) => prefs[ch].includes(et)));
 
-      {/* Channel descriptions */}
+  return (
+    <div className="space-y-5">
+      {/* Channel legend */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {CHANNELS.map((ch) => (
-          <div key={ch} className="flex items-start gap-2 rounded-lg border border-border/30 bg-muted/30 p-2.5">
-            <span className="mt-0.5 text-muted-foreground shrink-0">{CHANNEL_META[ch].icon}</span>
+          <div key={ch} className="flex items-start gap-2.5 rounded-lg border border-white/5 bg-white/[0.02] p-3">
+            <span className="mt-0.5 text-primary/70 shrink-0">{CHANNEL_META[ch].icon}</span>
             <div>
-              <div className="text-xs font-medium">{CHANNEL_META[ch].label}</div>
-              <div className="text-[10px] text-muted-foreground leading-tight">{CHANNEL_META[ch].desc}</div>
+              <div className="text-xs font-semibold text-foreground">{CHANNEL_META[ch].label}</div>
+              <div className="text-[10px] text-muted-foreground leading-snug mt-0.5">{CHANNEL_META[ch].desc}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Global master toggle */}
-      {(() => {
-        const allDisabled = ALL_EVENT_TYPES.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
-        const someDisabled = ALL_EVENT_TYPES.some((et) => CHANNELS.some((ch) => prefs[ch].includes(et)));
-        return (
-          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-4 py-3">
-            <div>
-              <div className="text-sm font-semibold">Toutes les notifications</div>
-              <div className="text-[10px] text-muted-foreground">
-                {allDisabled ? 'Tout désactivé' : someDisabled ? 'Partiellement actif' : 'Tout activé'}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {someDisabled && !allDisabled && (
-                <div className="h-2 w-2 rounded-full bg-amber-400" />
-              )}
-              <Toggle enabled={!allDisabled} onClick={toggleAll} />
+      <div className="glass-card flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className={`h-2.5 w-2.5 rounded-full ${globalAllDisabled ? 'bg-muted' : globalSomeDisabled ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+          <div>
+            <div className="text-sm font-semibold">Toutes les notifications</div>
+            <div className="text-[10px] text-muted-foreground">
+              {globalAllDisabled ? 'Tout est désactivé' : globalSomeDisabled ? 'Configuration personnalisée' : 'Tout est activé'}
             </div>
           </div>
-        );
-      })()}
+        </div>
+        <Toggle enabled={!globalAllDisabled} onClick={toggleAll} />
+      </div>
 
-      {/* Header row */}
-      <div className="grid grid-cols-[1fr_repeat(3,56px)_44px] gap-1 items-center text-center">
+      {/* Column header */}
+      <div className="grid grid-cols-[1fr_repeat(3,48px)_48px] gap-1 items-end text-center px-1">
         <div />
         {CHANNELS.map((ch) => (
-          <div key={ch} className="flex flex-col items-center gap-0.5">
-            {CHANNEL_META[ch].icon}
-            <span className="text-[10px] text-muted-foreground">{CHANNEL_META[ch].label}</span>
+          <div key={ch} className="flex flex-col items-center gap-1">
+            <span className="text-primary/60">{CHANNEL_META[ch].icon}</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">{CHANNEL_META[ch].label}</span>
           </div>
         ))}
-        <div className="flex flex-col items-center gap-0.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12H2m4.314-5.686L4.9 4.9m5.686-2.414V.6M17.686 6.314 19.1 4.9M22 12h-2m-4.314 5.686L17.1 19.1M12 22v-1.886M6.314 17.686 4.9 19.1"/><circle cx="12" cy="12" r="4"/></svg>
-          <span className="text-[10px] text-muted-foreground">Tout</span>
+        <div className="flex flex-col items-center gap-1">
+          <svg className="text-primary/60" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 18 12 13 17 18"/><polyline points="7 6 12 11 17 6"/></svg>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Tout</span>
         </div>
       </div>
 
-      {/* Category rows with expandable events */}
-      {NOTIFICATION_CATEGORIES.map((cat) => {
-        const eventTypes = getEventTypesForCategory(cat);
-        const isExpanded = expanded.has(cat);
+      {/* Categories */}
+      <div className="space-y-2">
+        {NOTIFICATION_CATEGORIES.map((cat) => {
+          const eventTypes = getEventTypesForCategory(cat);
+          const isExpanded = expanded.has(cat);
+          const catAllDisabled = eventTypes.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
 
-        return (
-          <div key={cat} className="rounded-lg border border-border/50 overflow-hidden">
-            {/* Category header row */}
-            <div className="grid grid-cols-[1fr_repeat(3,56px)_44px] gap-1 items-center px-3 py-2 bg-muted/20">
-              <button
-                type="button"
-                onClick={() => toggleExpand(cat)}
-                className="flex items-center gap-2 text-sm font-medium text-left"
-              >
-                <svg
-                  className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+          return (
+            <div key={cat} className="retro-card overflow-hidden">
+              {/* Category row */}
+              <div className="grid grid-cols-[1fr_repeat(3,48px)_48px] gap-1 items-center px-3 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(cat)}
+                  className="flex items-center gap-2 text-left group"
                 >
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-                {NOTIFICATION_CATEGORY_LABELS[cat]}
-                <span className="text-[10px] text-muted-foreground font-normal">({eventTypes.length})</span>
-              </button>
-              {CHANNELS.map((ch) => {
-                const allDisabled = eventTypes.every((et) => prefs[ch].includes(et));
-                const someDisabled = eventTypes.some((et) => prefs[ch].includes(et));
-                return (
-                  <div key={ch} className="flex justify-center relative">
-                    <Toggle
-                      enabled={!allDisabled}
-                      onClick={() => toggleCategory(ch, cat)}
-                    />
-                    {someDisabled && !allDisabled && (
-                      <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-400" />
-                    )}
-                  </div>
-                );
-              })}
-              <div className="flex justify-center">
-                {(() => {
-                  const catAllDisabled = eventTypes.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
-                  return <Toggle enabled={!catAllDisabled} onClick={() => toggleCategoryRow(cat)} />;
-                })()}
-              </div>
-            </div>
-
-            {/* Expanded individual events */}
-            {isExpanded && (
-              <div className="border-t border-border/30">
-                {eventTypes.map((et) => (
-                  <div
-                    key={et}
-                    className="grid grid-cols-[1fr_repeat(3,56px)_44px] gap-1 items-center px-3 py-1.5 pl-9"
+                  <svg
+                    className={`h-3 w-3 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
                   >
-                    <span className="text-xs text-muted-foreground">{EVENT_TYPE_LABELS[et] ?? et}</span>
-                    {CHANNELS.map((ch) => (
-                      <div key={ch} className="flex justify-center">
-                        <Toggle
-                          enabled={!prefs[ch].includes(et)}
-                          onClick={() => toggleEvent(ch, et)}
-                        />
-                      </div>
-                    ))}
-                    <div className="flex justify-center">
-                      <Toggle
-                        enabled={!CHANNELS.every((ch) => prefs[ch].includes(et))}
-                        onClick={() => toggleRow(et)}
-                      />
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                  <span className="text-[13px] font-medium group-hover:text-primary transition-colors">
+                    {NOTIFICATION_CATEGORY_LABELS[cat]}
+                  </span>
+                  {eventTypes.length > 1 && (
+                    <span className="text-[10px] text-muted-foreground/60">{eventTypes.length}</span>
+                  )}
+                </button>
+                {CHANNELS.map((ch) => {
+                  const allDisabled = eventTypes.every((et) => prefs[ch].includes(et));
+                  const someDisabled = eventTypes.some((et) => prefs[ch].includes(et));
+                  return (
+                    <div key={ch} className="flex justify-center relative">
+                      <Toggle enabled={!allDisabled} onClick={() => toggleCategory(ch, cat)} />
+                      {someDisabled && !allDisabled && (
+                        <div className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+                <div className="flex justify-center">
+                  <Toggle enabled={!catAllDisabled} onClick={() => toggleCategoryRow(cat)} />
+                </div>
               </div>
-            )}
-          </div>
-        );
-      })}
+
+              {/* Expanded events */}
+              {isExpanded && (
+                <div className="border-t border-white/5">
+                  {eventTypes.map((et, i) => {
+                    const rowAllDisabled = CHANNELS.every((ch) => prefs[ch].includes(et));
+                    return (
+                      <div
+                        key={et}
+                        className={`grid grid-cols-[1fr_repeat(3,48px)_48px] gap-1 items-center pl-8 pr-3 py-2 ${i > 0 ? 'border-t border-white/[0.03]' : ''} ${rowAllDisabled ? 'opacity-50' : ''} transition-opacity`}
+                      >
+                        <span className="text-xs text-muted-foreground">{EVENT_TYPE_LABELS[et] ?? et}</span>
+                        {CHANNELS.map((ch) => (
+                          <div key={ch} className="flex justify-center">
+                            <Toggle
+                              size="sm"
+                              enabled={!prefs[ch].includes(et)}
+                              onClick={() => toggleEvent(ch, et)}
+                            />
+                          </div>
+                        ))}
+                        <div className="flex justify-center">
+                          <Toggle
+                            size="sm"
+                            enabled={!rowAllDisabled}
+                            onClick={() => toggleRow(et)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
