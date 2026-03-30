@@ -310,50 +310,5 @@ export function createMarketService(
       }
     },
 
-    // Called by trade handler on arrival to notify seller
-    async notifySold(offerId: string, buyerId?: string) {
-      const [offer] = await db
-        .select()
-        .from(marketOffers)
-        .where(eq(marketOffers.id, offerId))
-        .limit(1);
-
-      if (!offer) return;
-
-      publishNotification(redis, offer.sellerId, {
-        type: 'market-offer-sold',
-        payload: {
-          offerId: offer.id,
-          resourceType: offer.resourceType,
-          quantity: Number(offer.quantity),
-          payment: {
-            minerai: Number(offer.priceMinerai),
-            silicium: Number(offer.priceSilicium),
-            hydrogene: Number(offer.priceHydrogene),
-          },
-        },
-      });
-
-      // Hook: daily quest detection for market transaction
-      if (dailyQuestService) {
-        await dailyQuestService.processEvent({
-          type: 'market:transaction_completed',
-          userId: offer.sellerId,
-          payload: {},
-        }).catch(() => {});
-        if (buyerId) {
-          await dailyQuestService.processEvent({
-            type: 'market:transaction_completed',
-            userId: buyerId,
-            payload: {},
-          }).catch(() => {});
-        }
-      }
-
-      // Hook: Exilium drop for seller on market transaction
-      if (exiliumService) {
-        await exiliumService.tryDrop(offer.sellerId, 'market', { offerId }).catch(() => {});
-      }
-    },
   };
 }

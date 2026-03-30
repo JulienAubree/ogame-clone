@@ -7,6 +7,7 @@ import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
 import type { BuildCompletionResult } from '../../workers/completion.types.js';
+import type { createDailyQuestService } from '../daily-quest/daily-quest.service.js';
 
 async function getBuildingLevels(db: Database, planetId: string): Promise<Record<string, number>> {
   const rows = await db
@@ -26,6 +27,7 @@ export function createResearchService(
   completionQueue: Queue,
   gameConfigService: GameConfigService,
   talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
+  dailyQuestService?: ReturnType<typeof createDailyQuestService>,
 ) {
   return {
     async listResearch(userId: string, planetId: string) {
@@ -154,6 +156,15 @@ export function createResearchService(
         { buildQueueId: entry.id },
         { delay: time * 1000, jobId: `research-${entry.id}` },
       );
+
+      // Hook: daily quest detection for construction start
+      if (dailyQuestService) {
+        dailyQuestService.processEvent({
+          type: 'construction:started',
+          userId,
+          payload: { researchId },
+        }).catch(() => {});
+      }
 
       return { entry, endTime: endTime.toISOString(), researchTime: time };
     },

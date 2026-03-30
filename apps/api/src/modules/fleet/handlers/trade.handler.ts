@@ -190,6 +190,38 @@ export class TradeHandler implements MissionHandler {
       .set({ status: 'sold' })
       .where(eq(marketOffers.id, tradeId));
 
+    // Hook: daily quest detection for market transaction
+    if (ctx.dailyQuestService) {
+      ctx.dailyQuestService.processEvent({
+        type: 'market:transaction_completed',
+        userId: offer.sellerId,
+        payload: {},
+      }).catch(() => {});
+      ctx.dailyQuestService.processEvent({
+        type: 'market:transaction_completed',
+        userId: fleetEvent.userId,
+        payload: {},
+      }).catch(() => {});
+    }
+
+    // Hook: Exilium drop for seller on market transaction
+    if (ctx.exiliumService) {
+      ctx.exiliumService.tryDrop(offer.sellerId, 'market', { offerId: offer.id }).catch(() => {});
+    }
+
+    // Notify seller
+    if (ctx.redis) {
+      publishNotification(ctx.redis, offer.sellerId, {
+        type: 'market-offer-sold',
+        payload: {
+          offerId: offer.id,
+          resourceType: offer.resourceType,
+          quantity: Number(offer.quantity),
+          payment: price,
+        },
+      });
+    }
+
     // Load merchandise into fleet cargo for return trip
     const merchandise = { minerai: 0, silicium: 0, hydrogene: 0 };
     if (offer.resourceType in merchandise) {
