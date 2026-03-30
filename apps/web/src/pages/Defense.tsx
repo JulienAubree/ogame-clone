@@ -208,9 +208,16 @@ export default function Defense() {
                 <div className="space-y-1 lg:hidden">
                   {categoryDefenses.map((defense) => {
                     const qty = quantities[defense.id] || 1;
-                    const maxQty = defense.maxPerPlanet
+                    const maxPerPlanetQty = defense.maxPerPlanet
                       ? Math.max(0, defense.maxPerPlanet - defense.count)
                       : 9999;
+                    const maxAffordable = Math.max(1, Math.min(
+                      defense.cost.minerai > 0 ? Math.floor(resources.minerai / defense.cost.minerai) : 9999,
+                      defense.cost.silicium > 0 ? Math.floor(resources.silicium / defense.cost.silicium) : 9999,
+                      defense.cost.hydrogene > 0 ? Math.floor(resources.hydrogene / defense.cost.hydrogene) : 9999,
+                      9999,
+                    ));
+                    const maxQty = Math.min(maxPerPlanetQty, maxAffordable);
                     const effectiveQty = Math.min(qty, maxQty);
                     const totalCost = {
                       minerai: defense.cost.minerai * effectiveQty,
@@ -285,9 +292,16 @@ export default function Defense() {
                 <div className="hidden lg:grid lg:gap-4 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                   {categoryDefenses.map((defense) => {
                     const qty = quantities[defense.id] || 1;
-                    const maxQty = defense.maxPerPlanet
+                    const maxPerPlanetQty = defense.maxPerPlanet
                       ? Math.max(0, defense.maxPerPlanet - defense.count)
                       : 9999;
+                    const maxAffordable = Math.max(1, Math.min(
+                      defense.cost.minerai > 0 ? Math.floor(resources.minerai / defense.cost.minerai) : 9999,
+                      defense.cost.silicium > 0 ? Math.floor(resources.silicium / defense.cost.silicium) : 9999,
+                      defense.cost.hydrogene > 0 ? Math.floor(resources.hydrogene / defense.cost.hydrogene) : 9999,
+                      9999,
+                    ));
+                    const maxQty = Math.min(maxPerPlanetQty, maxAffordable);
                     const effectiveQty = Math.min(qty, maxQty);
                     const totalCost = {
                       minerai: defense.cost.minerai * effectiveQty,

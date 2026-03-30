@@ -208,6 +208,12 @@ export default function Shipyard() {
                 <div className="space-y-1 lg:hidden">
                   {categoryShips.map((ship) => {
                     const qty = quantities[ship.id] || 1;
+                    const maxAffordable = Math.max(1, Math.min(
+                      ship.cost.minerai > 0 ? Math.floor(resources.minerai / ship.cost.minerai) : 9999,
+                      ship.cost.silicium > 0 ? Math.floor(resources.silicium / ship.cost.silicium) : 9999,
+                      ship.cost.hydrogene > 0 ? Math.floor(resources.hydrogene / ship.cost.hydrogene) : 9999,
+                      9999,
+                    ));
                     const totalCost = {
                       minerai: ship.cost.minerai * qty,
                       silicium: ship.cost.silicium * qty,
@@ -240,7 +246,7 @@ export default function Shipyard() {
                             <QuantityStepper
                               value={qty}
                               onChange={(v) => setQuantities({ ...quantities, [ship.id]: v })}
-                              max={9999}
+                              max={maxAffordable}
                               showMax={false}
                             />
                             <Button
@@ -265,6 +271,12 @@ export default function Shipyard() {
                 <div className="hidden lg:grid lg:gap-4 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                   {categoryShips.map((ship) => {
                     const qty = quantities[ship.id] || 1;
+                    const maxAffordable = Math.max(1, Math.min(
+                      ship.cost.minerai > 0 ? Math.floor(resources.minerai / ship.cost.minerai) : 9999,
+                      ship.cost.silicium > 0 ? Math.floor(resources.silicium / ship.cost.silicium) : 9999,
+                      ship.cost.hydrogene > 0 ? Math.floor(resources.hydrogene / ship.cost.hydrogene) : 9999,
+                      9999,
+                    ));
                     const totalCost = {
                       minerai: ship.cost.minerai * qty,
                       silicium: ship.cost.silicium * qty,
@@ -323,7 +335,7 @@ export default function Shipyard() {
                               <QuantityStepper
                                 value={qty}
                                 onChange={(v) => setQuantities({ ...quantities, [ship.id]: v })}
-                                max={9999}
+                                max={maxAffordable}
                               />
                               <Button
                                 variant="retro"
