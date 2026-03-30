@@ -38,6 +38,9 @@ importers:
       '@exilium/game-engine':
         specifier: workspace:*
         version: link:../../packages/game-engine
+      '@exilium/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@tanstack/react-query':
         specifier: ^5.64.1
         version: 5.90.21(react@19.2.4)
@@ -260,6 +263,10 @@ importers:
         version: 5.9.3
 
   packages/game-engine:
+    dependencies:
+      '@exilium/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       typescript:
         specifier: ^5.7.3
