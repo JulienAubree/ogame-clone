@@ -223,8 +223,8 @@ export function useNotifications() {
       case 'daily-quest-completed':
         utils.exilium.getBalance.invalidate();
         utils.dailyQuest.getQuests.invalidate();
-        addToast(`Quete completee : ${event.payload.questName}`, 'success');
-        showBrowserNotification('Quete completee', `+${event.payload.reward} Exilium`);
+        addToast(`Mission completee : ${event.payload.questName}`, 'success');
+        showBrowserNotification('Mission completee', `+${event.payload.reward} Exilium`);
         break;
       case 'flagship-incapacitated':
         utils.flagship.get.invalidate();

@@ -46,9 +46,11 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [questOpen, setQuestOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const questRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
   const clearActivePlanet = usePlanetStore((s) => s.clearActivePlanet);
@@ -56,6 +58,7 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
   const user = useAuthStore((s) => s.user);
   const utils = trpc.useUtils();
   const { data: exiliumData } = useExilium();
+  const { data: dailyQuests } = trpc.dailyQuest.getQuests.useQuery(undefined, { refetchInterval: 60_000 });
   const { data: unreadCount } = trpc.message.unreadCount.useQuery();
   const { data: eventUnreadCount } = trpc.gameEvent.unreadCount.useQuery();
   const { data: recentEvents } = trpc.gameEvent.recent.useQuery();
@@ -129,6 +132,19 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
       return () => document.removeEventListener('mousedown', handleClick);
     }
   }, [profileOpen]);
+
+  // Close quest on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (questRef.current && !questRef.current.contains(e.target as Node)) {
+        setQuestOpen(false);
+      }
+    }
+    if (questOpen) {
+      document.addEventListener('mousedown', handleClick);
+      return () => document.removeEventListener('mousedown', handleClick);
+    }
+  }, [questOpen]);
 
   const handleSelectPlanet = (id: string) => {
     setActivePlanet(id);
@@ -217,15 +233,79 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Exilium balance */}
-        {exiliumData && (
-          <div className="flex items-center gap-1">
+        {/* Exilium balance + daily quests */}
+        <div className="relative" ref={questRef}>
+          <button
+            onClick={() => setQuestOpen(!questOpen)}
+            className="relative flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted-foreground touch-feedback hover:bg-accent"
+          >
             <ExiliumIcon size={14} className="text-purple-400" />
             <span className="text-sm font-medium tabular-nums text-purple-400">
-              {exiliumData.balance}
+              {exiliumData?.balance ?? 0}
             </span>
-          </div>
-        )}
+            {dailyQuests && dailyQuests.quests.some(q => q.status === 'pending') && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-purple-500" />
+              </span>
+            )}
+          </button>
+
+          {questOpen && dailyQuests && (() => {
+            const now = new Date();
+            const endOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59));
+            const msRemaining = Math.max(0, endOfDay.getTime() - now.getTime());
+            const hoursRemaining = Math.floor(msRemaining / 3600000);
+            const minutesRemaining = Math.floor((msRemaining % 3600000) / 60000);
+
+            return (
+              <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-md border border-purple-500/30 bg-card/95 backdrop-blur-lg shadow-lg animate-slide-up">
+                <div className="flex items-center justify-between border-b border-border/30 px-3 py-2">
+                  <span className="text-xs font-semibold text-purple-400">Missions journalieres</span>
+                  <span className="text-[10px] text-muted-foreground">+1 Exilium</span>
+                </div>
+                <div className="p-3 space-y-2">
+                  {dailyQuests.quests.map(quest => (
+                    <div key={quest.id} className="flex items-start gap-2">
+                      <div className="mt-0.5">
+                        {quest.status === 'completed' ? (
+                          <svg className="h-4 w-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : quest.status === 'expired' ? (
+                          <svg className="h-4 w-4 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        ) : (
+                          <div className="h-4 w-4 rounded border border-border" />
+                        )}
+                      </div>
+                      <div>
+                        <span className={cn(
+                          'text-xs font-medium',
+                          quest.status === 'completed' ? 'text-emerald-400' :
+                          quest.status === 'expired' ? 'text-muted-foreground/40 line-through' :
+                          'text-foreground',
+                        )}>
+                          {quest.name}
+                        </span>
+                        <p className={cn('text-[10px]', quest.status === 'expired' ? 'text-muted-foreground/30' : 'text-muted-foreground')}>
+                          {quest.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-border/30 px-3 py-1.5">
+                  <span className={cn('text-[10px]', hoursRemaining < 1 ? 'text-destructive' : 'text-muted-foreground')}>
+                    Expire dans {hoursRemaining}h {minutesRemaining.toString().padStart(2, '0')}m
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
 
         {/* Messages (envelope) */}
         <button
