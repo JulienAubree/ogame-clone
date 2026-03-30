@@ -52,8 +52,11 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
   const totalShield = (attStats?.shieldAbsorbed ?? 0) + (defStats?.shieldAbsorbed ?? 0);
   const totalArmor = (attStats?.armorBlocked ?? 0) + (defStats?.armorBlocked ?? 0);
 
-  const hasAttackerLosses = result.attackerLosses && Object.keys(result.attackerLosses).length > 0;
-  const hasDefenderLosses = result.defenderLosses && Object.keys(result.defenderLosses).length > 0;
+  const isDefender = perspective === 'defender';
+  const myLosses = isDefender ? result.defenderLosses : result.attackerLosses;
+  const enemyLosses = isDefender ? result.attackerLosses : result.defenderLosses;
+  const hasMyLosses = myLosses && Object.keys(myLosses).length > 0;
+  const hasEnemyLosses = enemyLosses && Object.keys(enemyLosses).length > 0;
 
   // Build CombatResult-like object for RoundDisplay
   const combatResultForReplay: CombatResult | null = result.rounds ? {
@@ -82,18 +85,29 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
       )}
 
       {/* FP Comparison Bar */}
-      {attackerFP != null && defenderFP != null && (
-        <div className="glass-card p-4">
-          <div className="flex justify-between text-xs mb-2">
-            <span className="text-blue-400 font-semibold">Attaquant{attackerUsername ? ` (${attackerUsername})` : ''} : {fmt(attackerFP)} FP</span>
-            <span className="text-rose-400 font-semibold">{missionType === 'pirate' ? 'Pirates' : `Défenseur${defenderUsername ? ` (${defenderUsername})` : ''}`} : {fmt(defenderFP)} FP</span>
+      {attackerFP != null && defenderFP != null && (() => {
+        const myFP = isDefender ? defenderFP : attackerFP;
+        const enemyFP = isDefender ? attackerFP : defenderFP;
+        const myLabel = isDefender
+          ? `Défenseur${defenderUsername ? ` (${defenderUsername})` : ''}`
+          : `Attaquant${attackerUsername ? ` (${attackerUsername})` : ''}`;
+        const enemyLabel = isDefender
+          ? `Attaquant${attackerUsername ? ` (${attackerUsername})` : ''}`
+          : missionType === 'pirate' ? 'Pirates' : `Défenseur${defenderUsername ? ` (${defenderUsername})` : ''}`;
+        const myPct = totalFP > 0 ? (myFP / totalFP) * 100 : 50;
+        return (
+          <div className="glass-card p-4">
+            <div className="flex justify-between text-xs mb-2">
+              <span className="text-blue-400 font-semibold">{myLabel} : {fmt(myFP)} FP</span>
+              <span className="text-rose-400 font-semibold">{enemyLabel} : {fmt(enemyFP)} FP</span>
+            </div>
+            <div className="flex h-2 rounded-full overflow-hidden">
+              <div className="bg-blue-500 transition-all" style={{ width: `${myPct}%` }} />
+              <div className="bg-rose-500 transition-all" style={{ width: `${100 - myPct}%` }} />
+            </div>
           </div>
-          <div className="flex h-2 rounded-full overflow-hidden">
-            <div className="bg-blue-500 transition-all" style={{ width: `${attackerFPPct}%` }} />
-            <div className="bg-rose-500 transition-all" style={{ width: `${100 - attackerFPPct}%` }} />
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -116,13 +130,13 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
       </div>
 
       {/* Losses */}
-      {(hasAttackerLosses || hasDefenderLosses) && (
+      {(hasMyLosses || hasEnemyLosses) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="glass-card p-4">
             <h4 className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Vos pertes</h4>
-            {hasAttackerLosses ? (
+            {hasMyLosses ? (
               <div className="flex flex-wrap gap-2">
-                {Object.entries(result.attackerLosses as Record<string, number>).map(([unit, count]) => (
+                {Object.entries(myLosses as Record<string, number>).map(([unit, count]) => (
                   <span key={unit} className="text-sm">
                     <span className="text-red-400 font-medium">-{fmt(count)}</span>{' '}
                     <span className="text-muted-foreground">{getUnitName(unit, gameConfig)}</span>
@@ -135,9 +149,9 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
           </div>
           <div className="glass-card p-4">
             <h4 className="text-xs font-semibold text-rose-400 uppercase tracking-wider mb-2">Pertes ennemies</h4>
-            {hasDefenderLosses ? (
+            {hasEnemyLosses ? (
               <div className="flex flex-wrap gap-2">
-                {Object.entries(result.defenderLosses as Record<string, number>).map(([unit, count]) => (
+                {Object.entries(enemyLosses as Record<string, number>).map(([unit, count]) => (
                   <span key={unit} className="text-sm">
                     <span className="text-red-400 font-medium">-{fmt(count)}</span>{' '}
                     <span className="text-muted-foreground">{getUnitName(unit, gameConfig)}</span>
@@ -237,56 +251,62 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
         </div>
       )}
 
-      {/* Combat stats detail (attacker/defender) */}
-      {(attStats || defStats) && (
-        <div>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Statistiques détaillées</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {attStats && (
-              <div className="glass-card p-4">
-                <div className="text-xs font-medium text-blue-400 mb-2">Attaquant{attackerUsername ? ` (${attackerUsername})` : ''}</div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Bouclier absorbé</span><span className="text-cyan-400 font-medium">{fmt(attStats.shieldAbsorbed)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Armure bloquée</span><span className="text-amber-400 font-medium">{fmt(attStats.armorBlocked)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Dégâts gaspillés</span><span className="text-red-400/60 font-medium">{fmt(attStats.overkillWasted)}</span></div>
-                  {attStats.damageDealtByCategory && Object.keys(attStats.damageDealtByCategory).length > 0 && (
-                    <div className="pt-1 border-t border-border/30">
-                      <div className="text-xs text-muted-foreground mb-1">Dégâts par catégorie</div>
-                      {Object.entries(attStats.damageDealtByCategory).map(([cat, dmg]) => (
-                        <div key={cat} className="flex justify-between text-xs">
-                          <span className="text-muted-foreground capitalize">{cat}</span>
-                          <span className="text-foreground">{fmt(dmg)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+      {/* Combat stats detail */}
+      {(attStats || defStats) && (() => {
+        const myStats = isDefender ? defStats : attStats;
+        const enemyStats = isDefender ? attStats : defStats;
+        const myLabel = isDefender ? `Défenseur${defenderUsername ? ` (${defenderUsername})` : ''}` : `Attaquant${attackerUsername ? ` (${attackerUsername})` : ''}`;
+        const enemyLabel = isDefender ? `Attaquant${attackerUsername ? ` (${attackerUsername})` : ''}` : `Défenseur${defenderUsername ? ` (${defenderUsername})` : ''}`;
+        return (
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Statistiques détaillées</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {myStats && (
+                <div className="glass-card p-4">
+                  <div className="text-xs font-medium text-blue-400 mb-2">{myLabel}</div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Bouclier absorbé</span><span className="text-cyan-400 font-medium">{fmt(myStats.shieldAbsorbed)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Armure bloquée</span><span className="text-amber-400 font-medium">{fmt(myStats.armorBlocked)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Dégâts gaspillés</span><span className="text-red-400/60 font-medium">{fmt(myStats.overkillWasted)}</span></div>
+                    {myStats.damageDealtByCategory && Object.keys(myStats.damageDealtByCategory).length > 0 && (
+                      <div className="pt-1 border-t border-border/30">
+                        <div className="text-xs text-muted-foreground mb-1">Dégâts par catégorie</div>
+                        {Object.entries(myStats.damageDealtByCategory).map(([cat, dmg]) => (
+                          <div key={cat} className="flex justify-between text-xs">
+                            <span className="text-muted-foreground capitalize">{cat}</span>
+                            <span className="text-foreground">{fmt(dmg)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-            {defStats && (
-              <div className="glass-card p-4">
-                <div className="text-xs font-medium text-rose-400 mb-2">Défenseur{defenderUsername ? ` (${defenderUsername})` : ''}</div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Bouclier absorbé</span><span className="text-cyan-400 font-medium">{fmt(defStats.shieldAbsorbed)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Armure bloquée</span><span className="text-amber-400 font-medium">{fmt(defStats.armorBlocked)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Dégâts gaspillés</span><span className="text-red-400/60 font-medium">{fmt(defStats.overkillWasted)}</span></div>
-                  {defStats.damageDealtByCategory && Object.keys(defStats.damageDealtByCategory).length > 0 && (
-                    <div className="pt-1 border-t border-border/30">
-                      <div className="text-xs text-muted-foreground mb-1">Dégâts par catégorie</div>
-                      {Object.entries(defStats.damageDealtByCategory).map(([cat, dmg]) => (
-                        <div key={cat} className="flex justify-between text-xs">
-                          <span className="text-muted-foreground capitalize">{cat}</span>
-                          <span className="text-foreground">{fmt(dmg)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              )}
+              {enemyStats && (
+                <div className="glass-card p-4">
+                  <div className="text-xs font-medium text-rose-400 mb-2">{enemyLabel}</div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Bouclier absorbé</span><span className="text-cyan-400 font-medium">{fmt(enemyStats.shieldAbsorbed)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Armure bloquée</span><span className="text-amber-400 font-medium">{fmt(enemyStats.armorBlocked)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Dégâts gaspillés</span><span className="text-red-400/60 font-medium">{fmt(enemyStats.overkillWasted)}</span></div>
+                    {enemyStats.damageDealtByCategory && Object.keys(enemyStats.damageDealtByCategory).length > 0 && (
+                      <div className="pt-1 border-t border-border/30">
+                        <div className="text-xs text-muted-foreground mb-1">Dégâts par catégorie</div>
+                        {Object.entries(enemyStats.damageDealtByCategory).map(([cat, dmg]) => (
+                          <div key={cat} className="flex justify-between text-xs">
+                            <span className="text-muted-foreground capitalize">{cat}</span>
+                            <span className="text-foreground">{fmt(dmg)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Replay section (collapsible) */}
       {combatResultForReplay && combatResultForReplay.rounds.length > 0 && (
