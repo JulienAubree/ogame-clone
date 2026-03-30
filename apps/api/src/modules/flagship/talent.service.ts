@@ -204,8 +204,9 @@ export function createTalentService(
       }
       findDependants(talentId);
 
-      // Calculer le cout total du respec (talent + dependants)
+      // Calculer le cout du respec et le remboursement
       const respecRatio = config.universe['talent_respec_ratio'] != null ? Number(config.universe['talent_respec_ratio']) : 0.5;
+      let totalInvested = 0;
       let totalRespecCost = 0;
       const talentsToReset = [talentId, ...dependants];
       for (const id of talentsToReset) {
@@ -214,6 +215,7 @@ export function createTalentService(
         if (!def || rank <= 0) continue;
         const tierCost = getTierCost(def.tier, config);
         const invested = tierCost * rank;
+        totalInvested += invested;
         totalRespecCost += Math.ceil(invested * respecRatio);
       }
 
@@ -226,13 +228,23 @@ export function createTalentService(
         });
       }
 
+      // Rembourser l'Exilium investi (minus le cout du respec)
+      const refund = totalInvested - totalRespecCost;
+      if (refund > 0) {
+        await exiliumService.earn(userId, refund, 'respec', {
+          talentId,
+          cascade: dependants,
+          refund,
+        });
+      }
+
       // Supprimer les rangs (talent + cascade)
       for (const id of talentsToReset) {
         await db.delete(flagshipTalents)
           .where(and(eq(flagshipTalents.flagshipId, flagship.id), eq(flagshipTalents.talentId, id)));
       }
 
-      return { reset: talentsToReset, cost: totalRespecCost };
+      return { reset: talentsToReset, cost: totalRespecCost, refund };
     },
 
     // ── RESET ALL ──
@@ -247,9 +259,24 @@ export function createTalentService(
       const investedCount = Object.values(ranks).filter(r => r > 0).length;
       if (investedCount === 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucun talent à réinitialiser' });
 
+      // Calculer le total investi pour le remboursement
+      let totalInvested = 0;
+      for (const [id, rank] of Object.entries(ranks)) {
+        if (rank <= 0) continue;
+        const def = config.talents[id];
+        if (!def) continue;
+        totalInvested += getTierCost(def.tier, config) * rank;
+      }
+
       // Depenser l'Exilium (skip si gratuit)
       if (fullResetCost > 0) {
         await exiliumService.spend(userId, fullResetCost, 'respec', { cost: fullResetCost });
+      }
+
+      // Rembourser l'Exilium investi (minus le cout du reset)
+      const refund = totalInvested - fullResetCost;
+      if (refund > 0) {
+        await exiliumService.earn(userId, refund, 'respec', { refund });
       }
 
       // Supprimer tous les rangs
@@ -258,7 +285,7 @@ export function createTalentService(
       // Supprimer tous les cooldowns
       await db.delete(flagshipCooldowns).where(eq(flagshipCooldowns.flagshipId, flagship.id));
 
-      return { cost: fullResetCost };
+      return { cost: fullResetCost, refund };
     },
 
     // ── ACTIVATE BUFF ──
