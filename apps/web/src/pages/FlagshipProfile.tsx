@@ -720,7 +720,7 @@ export default function FlagshipProfile() {
                   ))}
                 </div>
                 <p className="text-muted-foreground/50">
-                  Vous pouvez reinitialiser un talent individuel (50% du cout rembourse) ou tout l'arbre (50 Exilium).
+                  Vous pouvez reinitialiser un talent individuel ou tout l'arbre. Gratuit pendant la phase de developpement.
                 </p>
               </div>
             )}
@@ -835,7 +835,7 @@ export default function FlagshipProfile() {
         onConfirm={() => { if (confirmRespec) respecMutation.mutate({ talentId: confirmRespec }); }}
         onCancel={() => setConfirmRespec(null)}
         title="Reinitialiser ce talent ?"
-        description="Les talents dependants seront aussi reinitialises. Le cout est 50% de l'Exilium investi."
+        description="Les talents dependants seront aussi reinitialises. Gratuit pendant la phase de developpement."
         variant="destructive"
         confirmLabel="Reinitialiser"
       />
@@ -845,7 +845,7 @@ export default function FlagshipProfile() {
         onConfirm={() => resetMutation.mutate()}
         onCancel={() => setConfirmReset(false)}
         title="Reinitialiser tout l'arbre ?"
-        description="Cout : 50 Exilium. Tous vos talents seront reinitialises."
+        description="Tous vos talents seront reinitialises. Gratuit pendant la phase de developpement."
         variant="destructive"
         confirmLabel="Tout reinitialiser"
       />
