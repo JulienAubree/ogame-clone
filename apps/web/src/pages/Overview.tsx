@@ -244,7 +244,6 @@ export default function Overview() {
 
   const stationaryShips = ships?.filter((s) => s.count > 0) ?? [];
   const stationaryDefenses = defenses?.filter((d) => d.count > 0) ?? [];
-  const usedFields = buildings?.reduce((sum, b) => sum + b.currentLevel, 0) ?? 0;
 
   return (
     <div className="space-y-4 p-4 lg:p-6">
@@ -811,21 +810,6 @@ export default function Overview() {
               Informations planete
             </h2>
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between py-1 border-b border-border/30">
-                <span className="text-muted-foreground">Cases</span>
-                <span className="text-foreground font-medium">{usedFields} / {planet.maxFields}</span>
-              </div>
-              <div className="mx-0 my-1">
-                <div className="h-1 rounded-full bg-muted/30">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${planet.maxFields > 0 ? Math.min(100, (usedFields / planet.maxFields) * 100) : 0}%`,
-                      background: 'linear-gradient(90deg, #6366f1, #818cf8)',
-                    }}
-                  />
-                </div>
-              </div>
               <div className="flex justify-between py-1 border-b border-border/30">
                 <span className="text-muted-foreground">Energie</span>
                 <span className="font-medium" style={{ color: (resourceData?.rates.energyProduced ?? 0) >= (resourceData?.rates.energyConsumed ?? 0) ? '#facc15' : '#f87171' }}>
