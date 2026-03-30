@@ -158,18 +158,6 @@ export function buildShipStatsMap(config: GameConfig): Record<string, ShipStats>
   return map;
 }
 
-/** @deprecated Use buildShipCombatConfigs instead — kept for backward compatibility with handlers not yet migrated. */
-export function buildCombatStats(config: GameConfig) {
-  const stats: Record<string, { weapons: number; shield: number; hull: number }> = {};
-  for (const [id, ship] of Object.entries(config.ships)) {
-    stats[id] = { weapons: ship.weapons, shield: ship.shield, hull: ship.hull };
-  }
-  for (const [id, def] of Object.entries(config.defenses)) {
-    stats[id] = { weapons: def.weapons, shield: def.shield, hull: def.hull };
-  }
-  return stats;
-}
-
 export function buildShipCombatConfigs(config: GameConfig): Record<string, ShipCombatConfig> {
   const configs: Record<string, ShipCombatConfig> = {};
   for (const [id, ship] of Object.entries(config.ships)) {
