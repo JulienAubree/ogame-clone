@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import type { Queue } from 'bullmq';
 import { marketOffers, planets, planetBuildings, fleetEvents } from '@exilium/db';
 import type { Database } from '@exilium/db';
-import { maxMarketOffers } from '@exilium/game-engine';
+import { maxMarketOffers, calculateSellerCommission } from '@exilium/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { createExiliumService } from '../exilium/exilium.service.js';
@@ -19,7 +19,7 @@ export function createMarketService(
   redis: Redis,
   dailyQuestService?: ReturnType<typeof createDailyQuestService>,
   exiliumService?: ReturnType<typeof createExiliumService>,
-  _talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
+  talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
 ) {
   async function getMarketLevel(planetId: string): Promise<number> {
     const [row] = await db
@@ -101,13 +101,19 @@ export function createMarketService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'La quantité doit être supérieure à 0' });
       }
 
-      // Deduct resources (escrow)
+      // Calculate commission (paid by seller, non-refundable)
+      const config = await gameConfigService.getFullConfig();
+      const commissionPercent = Number(config.universe.market_commission_percent) || 5;
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
+      const adjustedPercent = commissionPercent / (1 + (talentCtx['market_fee'] ?? 0));
+      const commission = calculateSellerCommission(input.quantity, adjustedPercent);
+
+      // Deduct resources (escrow + commission destroyed)
       const cost = { minerai: 0, silicium: 0, hydrogene: 0 };
-      cost[input.resourceType] = input.quantity;
+      cost[input.resourceType] = input.quantity + commission;
       await resourceService.spendResources(planetId, userId, cost);
 
       // Calculate expiration
-      const config = await gameConfigService.getFullConfig();
       const durationHours = Number(config.universe.market_offer_duration_hours) || 48;
       const expiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000);
 

@@ -1,7 +1,7 @@
 import { eq, and, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { marketOffers, planets } from '@exilium/db';
-import { calculateCommission, totalCargoCapacity } from '@exilium/game-engine';
+import { totalCargoCapacity } from '@exilium/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
 import { buildShipStatsMap } from '../fleet.types.js';
 import { publishNotification } from '../../notification/notification.publisher.js';
@@ -70,28 +70,18 @@ export class TradeHandler implements MissionHandler {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Coordonnées ne correspondent pas à l\'offre' });
     }
 
-    // Verify cargo covers price + commission
-    const commissionPercent = Number(config.universe.market_commission_percent) || 5;
-
-    // Apply talent bonus to reduce commission for buyer
-    const talentCtxValidate = ctx.talentService ? await ctx.talentService.computeTalentContext(userId) : {};
-    const adjustedCommissionValidate = commissionPercent / (1 + (talentCtxValidate['market_fee'] ?? 0));
-
+    // Verify cargo covers price (commission is now paid by seller at offer creation)
     const price = {
       minerai: Number(offer.priceMinerai),
       silicium: Number(offer.priceSilicium),
       hydrogene: Number(offer.priceHydrogene),
     };
-    const commission = calculateCommission(price, adjustedCommissionValidate);
-    const requiredMinerai = price.minerai + commission.minerai;
-    const requiredSilicium = price.silicium + commission.silicium;
-    const requiredHydrogene = price.hydrogene + commission.hydrogene;
 
     const cargoMinerai = input.mineraiCargo ?? 0;
     const cargoSilicium = input.siliciumCargo ?? 0;
     const cargoHydrogene = input.hydrogeneCargo ?? 0;
 
-    if (cargoMinerai < requiredMinerai || cargoSilicium < requiredSilicium || cargoHydrogene < requiredHydrogene) {
+    if (cargoMinerai < price.minerai || cargoSilicium < price.silicium || cargoHydrogene < price.hydrogene) {
       // Rollback reservation
       await ctx.db
         .update(marketOffers)
@@ -99,7 +89,7 @@ export class TradeHandler implements MissionHandler {
         .where(eq(marketOffers.id, input.tradeId));
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: `Cargo insuffisant. Requis: ${requiredMinerai} Mi, ${requiredSilicium} Si, ${requiredHydrogene} H2`,
+        message: `Cargo insuffisant. Requis: ${price.minerai} Mi, ${price.silicium} Si, ${price.hydrogene} H2`,
       });
     }
 
