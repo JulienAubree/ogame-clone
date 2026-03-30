@@ -104,21 +104,23 @@ export default function FlagshipTalents() {
     return tier; // Simplifie — le vrai cout est cote serveur
   }
 
-  function canInvest(talentId: string): boolean {
-    if (!talentTree) return false;
+  function getInvestBlockReason(talentId: string): string | null {
+    if (!talentTree) return 'Chargement…';
     const def = talentTree.talents[talentId];
-    if (!def) return false;
+    if (!def) return null;
     const rank = talentTree.ranks[talentId] ?? 0;
-    if (rank >= def.maxRanks) return false;
-    // Seuil de tier
+    if (rank >= def.maxRanks) return null; // maxed, pas besoin de message
     const bp = branchData.find(b => b.branch.id === def.branchId);
     const thresholds: Record<number, number> = { 1: 0, 2: 5, 3: 10, 4: 15, 5: 20 };
-    if ((bp?.totalPoints ?? 0) < (thresholds[def.tier] ?? 0)) return false;
-    // Prerequis
-    if (def.prerequisiteId && (talentTree.ranks[def.prerequisiteId] ?? 0) < 1) return false;
-    // Cout
-    if (balance < getTierCost(def.tier)) return false;
-    return true;
+    const needed = thresholds[def.tier] ?? 0;
+    const pts = bp?.totalPoints ?? 0;
+    if (pts < needed) return `${needed - pts} pts manquants`;
+    if (def.prerequisiteId && (talentTree.ranks[def.prerequisiteId] ?? 0) < 1) {
+      const prereqName = talentTree.talents[def.prerequisiteId]?.name ?? def.prerequisiteId;
+      return `Requiert : ${prereqName}`;
+    }
+    if (balance < getTierCost(def.tier)) return `${getTierCost(def.tier)} Exilium requis`;
+    return null; // investissable
   }
 
   return (
@@ -158,13 +160,14 @@ export default function FlagshipTalents() {
                   <div key={tier}>
                     <div className="text-[9px] text-muted-foreground/50 uppercase tracking-wide mb-1">
                       Tier {tier} — {getTierCost(tier)} Exilium/rang
-                      {!unlocked && ` (${thresholds[tier]} pts requis)`}
+                      {!unlocked && ` (${thresholds[tier]} pts dans la branche requis)`}
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
                       {tierTalents.map(talent => {
                         const rank = talentTree.ranks[talent.id] ?? 0;
                         const maxed = rank >= talent.maxRanks;
-                        const available = canInvest(talent.id);
+                        const blockReason = !maxed ? getInvestBlockReason(talent.id) : null;
+                        const available = !maxed && !blockReason;
                         const effectInfo = EFFECT_LABELS[talent.effectType];
                         const cooldown = talentTree.cooldowns[talent.id];
                         const isOnCooldown = cooldown && new Date() < new Date(cooldown.cooldownEnds);
@@ -184,6 +187,10 @@ export default function FlagshipTalents() {
                             <div className={cn('text-[8px]', effectInfo?.color)}>{effectInfo?.label}</div>
                             <div className="text-muted-foreground text-[8px] leading-tight">{talent.description}</div>
                             <div className="font-mono text-[9px]">{rank}/{talent.maxRanks}</div>
+
+                            {blockReason && (
+                              <div className="text-[8px] text-orange-400/80">{blockReason}</div>
+                            )}
 
                             <div className="flex gap-1 justify-center flex-wrap">
                               {available && (
