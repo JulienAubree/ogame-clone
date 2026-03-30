@@ -42,7 +42,6 @@ export default {
         silicium: '#34d399',
         hydrogene: '#60a5fa',
         energy: '#f0c040',
-        'accent-glow': 'hsl(var(--accent-glow) / <alpha-value>)',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -53,7 +52,6 @@ export default {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up-sheet': 'slide-up-sheet 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
         'slide-down-sheet': 'slide-down-sheet 0.25s ease-out',
-        'slide-in-left': 'slideInLeft 0.3s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
         'skeleton-shimmer': 'skeletonShimmer 1.5s ease-in-out infinite',
@@ -63,10 +61,6 @@ export default {
         fadeIn: {
           from: { opacity: '0' },
           to: { opacity: '1' },
-        },
-        slideInLeft: {
-          from: { transform: 'translateX(-100%)' },
-          to: { transform: 'translateX(0)' },
         },
         slideUp: {
           from: { opacity: '0', transform: 'translateY(8px)' },
@@ -93,15 +87,8 @@ export default {
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
-      boxShadow: {
-        'glow-minerai': 'var(--glow-minerai)',
-        'glow-silicium': 'var(--glow-silicium)',
-        'glow-hydrogene': 'var(--glow-hydrogene)',
-        'glow-energy': 'var(--glow-energy)',
-      },
       spacing: {
         'safe-bottom': 'env(safe-area-inset-bottom)',
-        'safe-top': 'env(safe-area-inset-top)',
       },
     },
   },
