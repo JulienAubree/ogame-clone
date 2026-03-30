@@ -205,7 +205,7 @@ export function createTalentService(
       findDependants(talentId);
 
       // Calculer le cout total du respec (talent + dependants)
-      const respecRatio = Number(config.universe['talent_respec_ratio']) || 0.5;
+      const respecRatio = config.universe['talent_respec_ratio'] != null ? Number(config.universe['talent_respec_ratio']) : 0.5;
       let totalRespecCost = 0;
       const talentsToReset = [talentId, ...dependants];
       for (const id of talentsToReset) {
@@ -217,12 +217,14 @@ export function createTalentService(
         totalRespecCost += Math.ceil(invested * respecRatio);
       }
 
-      // Depenser l'Exilium pour le respec
-      await exiliumService.spend(userId, totalRespecCost, 'respec', {
-        talentId,
-        cascade: dependants,
-        cost: totalRespecCost,
-      });
+      // Depenser l'Exilium pour le respec (skip si gratuit)
+      if (totalRespecCost > 0) {
+        await exiliumService.spend(userId, totalRespecCost, 'respec', {
+          talentId,
+          cascade: dependants,
+          cost: totalRespecCost,
+        });
+      }
 
       // Supprimer les rangs (talent + cascade)
       for (const id of talentsToReset) {
@@ -238,15 +240,17 @@ export function createTalentService(
     async resetAll(userId: string) {
       const flagship = await getFlagship(userId);
       const config = await gameConfigService.getFullConfig();
-      const fullResetCost = Number(config.universe['talent_full_reset_cost']) || 50;
+      const fullResetCost = config.universe['talent_full_reset_cost'] != null ? Number(config.universe['talent_full_reset_cost']) : 50;
 
       // Verifier qu'il y a des talents a reset
       const ranks = await getTalentRanks(flagship.id);
       const investedCount = Object.values(ranks).filter(r => r > 0).length;
       if (investedCount === 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucun talent à réinitialiser' });
 
-      // Depenser l'Exilium
-      await exiliumService.spend(userId, fullResetCost, 'respec', { cost: fullResetCost });
+      // Depenser l'Exilium (skip si gratuit)
+      if (fullResetCost > 0) {
+        await exiliumService.spend(userId, fullResetCost, 'respec', { cost: fullResetCost });
+      }
 
       // Supprimer tous les rangs
       await db.delete(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagship.id));
