@@ -178,7 +178,7 @@ export default function Research() {
                               />
                             </div>
                           ) : (
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                               <ResourceCost
                                 minerai={tech.nextLevelCost.minerai}
                                 silicium={tech.nextLevelCost.silicium}
@@ -187,6 +187,7 @@ export default function Research() {
                                 currentSilicium={resources.silicium}
                                 currentHydrogene={resources.hydrogene}
                               />
+                              <span className="font-mono text-[10px] shrink-0">{formatDuration(tech.nextLevelTime)}</span>
                             </div>
                           )}
                         </div>

@@ -230,8 +230,9 @@ export default function Shipyard() {
                             <span className="text-sm font-medium truncate">{ship.name}</span>
                             <span className="text-xs text-muted-foreground">x{ship.count}</span>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                             <ResourceCost minerai={ship.cost.minerai} silicium={ship.cost.silicium} hydrogene={ship.cost.hydrogene} />
+                            <span className="font-mono text-[10px] shrink-0">{formatDuration(ship.timePerUnit)}</span>
                           </div>
                         </div>
                         {ship.prerequisitesMet && (

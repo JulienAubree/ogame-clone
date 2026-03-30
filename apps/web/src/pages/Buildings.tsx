@@ -283,7 +283,7 @@ export default function Buildings() {
                               />
                             </div>
                           ) : (
-                            <div className="mt-0.5">
+                            <div className="flex items-center gap-2 mt-0.5">
                               <ResourceCost
                                 minerai={building.nextLevelCost.minerai}
                                 silicium={building.nextLevelCost.silicium}
@@ -292,6 +292,7 @@ export default function Buildings() {
                                 currentSilicium={resources.silicium}
                                 currentHydrogene={resources.hydrogene}
                               />
+                              <span className="font-mono text-[10px] text-muted-foreground shrink-0">{formatDuration(building.nextLevelTime)}</span>
                             </div>
                           )}
                         </div>
