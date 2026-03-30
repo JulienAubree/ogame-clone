@@ -118,10 +118,7 @@ export default function Market() {
     sellerCoords: { galaxy: number; system: number; position: number };
   }) => {
     if (!planetId) return;
-    const commMi = offer.priceMinerai > 0 ? Math.ceil(offer.priceMinerai * commissionPercent / 100) : 0;
-    const commSi = offer.priceSilicium > 0 ? Math.ceil(offer.priceSilicium * commissionPercent / 100) : 0;
-    const commH2 = offer.priceHydrogene > 0 ? Math.ceil(offer.priceHydrogene * commissionPercent / 100) : 0;
-    navigate(`/fleet/send?mission=trade&galaxy=${offer.sellerCoords.galaxy}&system=${offer.sellerCoords.system}&position=${offer.sellerCoords.position}&tradeId=${offer.id}&cargoMi=${offer.priceMinerai + commMi}&cargoSi=${offer.priceSilicium + commSi}&cargoH2=${offer.priceHydrogene + commH2}`);
+    navigate(`/fleet/send?mission=trade&galaxy=${offer.sellerCoords.galaxy}&system=${offer.sellerCoords.system}&position=${offer.sellerCoords.position}&tradeId=${offer.id}&cargoMi=${offer.priceMinerai}&cargoSi=${offer.priceSilicium}&cargoH2=${offer.priceHydrogene}`);
   };
 
   const formatPrice = (mi: number, si: number, h2: number) => {
@@ -241,9 +238,6 @@ export default function Market() {
             {!offersLoading && offersData?.offers && offersData.offers.length > 0 && (
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {offersData.offers.map((offer) => {
-                  const commMi = offer.priceMinerai > 0 ? Math.ceil(offer.priceMinerai * commissionPercent / 100) : 0;
-                  const commSi = offer.priceSilicium > 0 ? Math.ceil(offer.priceSilicium * commissionPercent / 100) : 0;
-                  const commH2 = offer.priceHydrogene > 0 ? Math.ceil(offer.priceHydrogene * commissionPercent / 100) : 0;
                   return (
                     <div
                       key={offer.id}
@@ -267,20 +261,6 @@ export default function Market() {
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Prix</span>
                           <span className="text-foreground">{formatPrice(offer.priceMinerai, offer.priceSilicium, offer.priceHydrogene)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Commission ({commissionPercent}%)</span>
-                          <span className="text-muted-foreground">{formatPrice(commMi, commSi, commH2)}</span>
-                        </div>
-                        <div className="border-t border-white/10 pt-1 flex justify-between font-medium">
-                          <span className="text-muted-foreground">Total</span>
-                          <span className="text-foreground">
-                            {formatPrice(
-                              offer.priceMinerai + commMi,
-                              offer.priceSilicium + commSi,
-                              offer.priceHydrogene + commH2,
-                            )}
-                          </span>
                         </div>
                       </div>
 
@@ -363,18 +343,20 @@ export default function Market() {
                 </div>
               </div>
 
-              {/* Commission preview */}
-              {(sellPriceMinerai > 0 || sellPriceSilicium > 0 || sellPriceHydrogene > 0) && (
-                <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-xs">
-                  <div className="text-muted-foreground mb-1.5">
-                    Commission ({commissionPercent}%) payee par l'acheteur :
+              {/* Commission preview (paid by seller) */}
+              {sellQuantity > 0 && (
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Quantité en vente</span>
+                    <span className="text-foreground">{sellQuantity.toLocaleString('fr-FR')} {RESOURCE_LABELS[sellResource]}</span>
                   </div>
-                  <div className="text-primary font-medium">
-                    {formatPrice(
-                      sellPriceMinerai > 0 ? Math.ceil(sellPriceMinerai * commissionPercent / 100) : 0,
-                      sellPriceSilicium > 0 ? Math.ceil(sellPriceSilicium * commissionPercent / 100) : 0,
-                      sellPriceHydrogene > 0 ? Math.ceil(sellPriceHydrogene * commissionPercent / 100) : 0,
-                    )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Commission ({commissionPercent}%)</span>
+                    <span className="text-destructive">{Math.ceil(sellQuantity * commissionPercent / 100).toLocaleString('fr-FR')} {RESOURCE_LABELS[sellResource]}</span>
+                  </div>
+                  <div className="border-t border-white/10 pt-1 flex justify-between font-medium">
+                    <span className="text-muted-foreground">Total prélevé</span>
+                    <span className="text-foreground">{(sellQuantity + Math.ceil(sellQuantity * commissionPercent / 100)).toLocaleString('fr-FR')} {RESOURCE_LABELS[sellResource]}</span>
                   </div>
                 </div>
               )}

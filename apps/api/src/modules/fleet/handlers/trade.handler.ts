@@ -152,7 +152,7 @@ export class TradeHandler implements MissionHandler {
       silicium: Number(offer.priceSilicium),
       hydrogene: Number(offer.priceHydrogene),
     };
-    // Commission was already deducted from buyer at purchase time (economic sink)
+    // Commission was paid by seller at offer creation (economic sink)
 
     // Credit seller's planet with price (NOT commission)
     const [sellerPlanet] = await ctx.db
