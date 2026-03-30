@@ -51,3 +51,36 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, NotificationCategory> = {
   'daily-quest-completed': 'quest',
   'tutorial-quest-complete': 'quest',
 };
+
+/** Human-readable labels for individual event types */
+export const EVENT_TYPE_LABELS: Record<string, string> = {
+  'building-done': 'Construction terminée',
+  'research-done': 'Recherche terminée',
+  'shipyard-done': 'Production terminée',
+  'fleet-arrived': 'Flotte arrivée',
+  'fleet-returned': 'Flotte de retour',
+  'fleet-inbound': 'Flotte en approche',
+  'fleet-attack-landed': 'Attaque subie',
+  'fleet-hostile-inbound': 'Attaque détectée',
+  'flagship-incapacitated': 'Vaisseau amiral détruit',
+  'new-message': 'Nouveau message',
+  'new-reply': 'Nouvelle réponse',
+  'market-offer-reserved': 'Offre acceptée',
+  'market-offer-sold': 'Vente finalisée',
+  'market-offer-expired': 'Offre expirée',
+  'market-reservation-expired': 'Réservation expirée',
+  'new-alliance-message': 'Message alliance',
+  'alliance-activity': 'Activité alliance',
+  'friend-request': 'Demande d\'ami',
+  'friend-accepted': 'Ami accepté',
+  'friend-declined': 'Ami refusé',
+  'daily-quest-completed': 'Mission quotidienne',
+  'tutorial-quest-complete': 'Quête tutoriel',
+};
+
+/** Get all event types belonging to a category */
+export function getEventTypesForCategory(category: NotificationCategory): string[] {
+  return Object.entries(EVENT_TYPE_TO_CATEGORY)
+    .filter(([, cat]) => cat === category)
+    .map(([eventType]) => eventType);
+}
