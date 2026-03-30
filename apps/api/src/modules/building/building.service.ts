@@ -167,7 +167,7 @@ export function createBuildingService(
           type: 'construction:started',
           userId,
           payload: { buildingId },
-        }).catch(() => {});
+        }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
       }
 
       return { entry, endTime: endTime.toISOString(), buildingTime: time };

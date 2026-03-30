@@ -119,7 +119,7 @@ export function startBuildCompletionWorker(db: Database, redis: Redis, services:
           type: 'construction:completed',
           userId: result.userId,
           payload: { buildingId: result.notificationPayload.buildingId ?? result.notificationPayload.techId ?? result.notificationPayload.unitId },
-        }).catch(() => {});
+        }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
       }
 
       console.log(`[build-completion] ${job.name} completed for ${buildQueueId}`);

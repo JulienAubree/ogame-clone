@@ -331,7 +331,7 @@ export function createFleetService(
           type: 'fleet:dispatched',
           userId,
           payload: { missionType: input.mission },
-        }).catch(() => {});
+        }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
       }
 
       // Notify target planet owner for non-dangerous missions

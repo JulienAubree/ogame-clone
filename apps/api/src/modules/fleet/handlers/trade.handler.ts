@@ -196,17 +196,17 @@ export class TradeHandler implements MissionHandler {
         type: 'market:transaction_completed',
         userId: offer.sellerId,
         payload: {},
-      }).catch(() => {});
+      }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
       ctx.dailyQuestService.processEvent({
         type: 'market:transaction_completed',
         userId: fleetEvent.userId,
         payload: {},
-      }).catch(() => {});
+      }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
     }
 
     // Hook: Exilium drop for seller on market transaction
     if (ctx.exiliumService) {
-      ctx.exiliumService.tryDrop(offer.sellerId, 'market', { offerId: offer.id }).catch(() => {});
+      ctx.exiliumService.tryDrop(offer.sellerId, 'market', { offerId: offer.id }).catch((e) => console.warn('[exilium-drop] tryDrop failed:', e));
     }
 
     // Notify seller

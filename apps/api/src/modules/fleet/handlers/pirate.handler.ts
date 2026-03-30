@@ -257,14 +257,14 @@ export class PirateHandler implements MissionHandler {
         type: 'pve:victory',
         userId: fleetEvent.userId,
         payload: { missionId: fleetEvent.pveMissionId },
-      }).catch(() => {});
+      }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
     }
 
     // Hook: Exilium drop on PvE victory
     if (result.outcome === 'attacker' && ctx.exiliumService) {
       await ctx.exiliumService.tryDrop(fleetEvent.userId, 'pve', {
         missionId: fleetEvent.pveMissionId,
-      }).catch(() => {});
+      }).catch((e) => console.warn('[exilium-drop] tryDrop failed:', e));
     }
 
     const hasShips = Object.values(returnShips).some(v => v > 0);

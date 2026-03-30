@@ -167,7 +167,7 @@ export function createResourceService(
           type: 'resources:collected',
           userId,
           payload: { totalCollected },
-        }).catch(() => {});
+        }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
       }
 
       return updated;

@@ -163,7 +163,7 @@ export function createResearchService(
           type: 'construction:started',
           userId,
           payload: { researchId },
-        }).catch(() => {});
+        }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
       }
 
       return { entry, endTime: endTime.toISOString(), researchTime: time };

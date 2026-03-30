@@ -370,14 +370,14 @@ export class AttackHandler implements MissionHandler {
         type: 'pvp:battle_resolved',
         userId: fleetEvent.userId,
         payload: { role: 'attacker', result: outcome },
-      }).catch(() => {});
+      }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
     }
 
     // Hook: Exilium drop on PvP victory
     if (outcome === 'attacker' && ctx.exiliumService) {
       await ctx.exiliumService.tryDrop(fleetEvent.userId, 'pvp', {
         coords: `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`,
-      }).catch(() => {});
+      }).catch((e) => console.warn('[exilium-drop] tryDrop failed:', e));
     }
 
     const hasShips = Object.values(returnShips).some(v => v > 0);

@@ -157,7 +157,7 @@ export function createDailyQuestService(
             questName: def.name,
             reward,
           },
-        }).catch(() => {});
+        }).catch((e) => console.warn('[notification] send failed:', e));
 
         return { questId: quest.id, questName: def.name, reward };
       }

@@ -165,7 +165,7 @@ export class RecycleHandler implements MissionHandler {
     if (ctx.exiliumService) {
       await ctx.exiliumService.tryDrop(fleetEvent.userId, 'recycling', {
         fleetEventId: fleetEvent.id,
-      }).catch(() => {});
+      }).catch((e) => console.warn('[exilium-drop] tryDrop failed:', e));
     }
 
     return {
