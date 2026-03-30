@@ -4,9 +4,12 @@ import {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CATEGORY_LABELS,
   EVENT_TYPE_LABELS,
+  EVENT_TYPE_TO_CATEGORY,
   getEventTypesForCategory,
 } from '@exilium/shared';
 import type { NotificationCategory } from '@exilium/shared';
+
+const ALL_EVENT_TYPES = Object.keys(EVENT_TYPE_TO_CATEGORY);
 
 const CHANNELS = ['toastDisabled', 'pushDisabled', 'bellDisabled'] as const;
 type Channel = (typeof CHANNELS)[number];
@@ -86,6 +89,41 @@ export function NotificationPreferences() {
     applyUpdate({ ...prefs, [channel]: next });
   }
 
+  function toggleRow(eventType: string) {
+    if (!prefs) return;
+    const allDisabled = CHANNELS.every((ch) => prefs[ch].includes(eventType));
+    const updated = { ...prefs };
+    for (const ch of CHANNELS) {
+      updated[ch] = allDisabled
+        ? updated[ch].filter((e) => e !== eventType)
+        : [...updated[ch].filter((e) => e !== eventType), eventType];
+    }
+    applyUpdate(updated);
+  }
+
+  function toggleCategoryRow(category: NotificationCategory) {
+    if (!prefs) return;
+    const eventTypes = getEventTypesForCategory(category);
+    const allDisabled = eventTypes.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
+    const updated = { ...prefs };
+    for (const ch of CHANNELS) {
+      updated[ch] = allDisabled
+        ? updated[ch].filter((e) => !eventTypes.includes(e))
+        : [...updated[ch].filter((e) => !eventTypes.includes(e)), ...eventTypes];
+    }
+    applyUpdate(updated);
+  }
+
+  function toggleAll() {
+    if (!prefs) return;
+    const allDisabled = ALL_EVENT_TYPES.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
+    const updated = { ...prefs };
+    for (const ch of CHANNELS) {
+      updated[ch] = allDisabled ? [] : [...ALL_EVENT_TYPES];
+    }
+    applyUpdate(updated);
+  }
+
   function toggleCategory(channel: Channel, category: NotificationCategory) {
     if (!prefs) return;
     const eventTypes = getEventTypesForCategory(category);
@@ -129,8 +167,30 @@ export function NotificationPreferences() {
         ))}
       </div>
 
+      {/* Global master toggle */}
+      {(() => {
+        const allDisabled = ALL_EVENT_TYPES.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
+        const someDisabled = ALL_EVENT_TYPES.some((et) => CHANNELS.some((ch) => prefs[ch].includes(et)));
+        return (
+          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-4 py-3">
+            <div>
+              <div className="text-sm font-semibold">Toutes les notifications</div>
+              <div className="text-[10px] text-muted-foreground">
+                {allDisabled ? 'Tout désactivé' : someDisabled ? 'Partiellement actif' : 'Tout activé'}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {someDisabled && !allDisabled && (
+                <div className="h-2 w-2 rounded-full bg-amber-400" />
+              )}
+              <Toggle enabled={!allDisabled} onClick={toggleAll} />
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Header row */}
-      <div className="grid grid-cols-[1fr_repeat(3,56px)] gap-1 items-center text-center">
+      <div className="grid grid-cols-[1fr_repeat(3,56px)_44px] gap-1 items-center text-center">
         <div />
         {CHANNELS.map((ch) => (
           <div key={ch} className="flex flex-col items-center gap-0.5">
@@ -138,6 +198,10 @@ export function NotificationPreferences() {
             <span className="text-[10px] text-muted-foreground">{CHANNEL_META[ch].label}</span>
           </div>
         ))}
+        <div className="flex flex-col items-center gap-0.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12H2m4.314-5.686L4.9 4.9m5.686-2.414V.6M17.686 6.314 19.1 4.9M22 12h-2m-4.314 5.686L17.1 19.1M12 22v-1.886M6.314 17.686 4.9 19.1"/><circle cx="12" cy="12" r="4"/></svg>
+          <span className="text-[10px] text-muted-foreground">Tout</span>
+        </div>
       </div>
 
       {/* Category rows with expandable events */}
@@ -148,7 +212,7 @@ export function NotificationPreferences() {
         return (
           <div key={cat} className="rounded-lg border border-border/50 overflow-hidden">
             {/* Category header row */}
-            <div className="grid grid-cols-[1fr_repeat(3,56px)] gap-1 items-center px-3 py-2 bg-muted/20">
+            <div className="grid grid-cols-[1fr_repeat(3,56px)_44px] gap-1 items-center px-3 py-2 bg-muted/20">
               <button
                 type="button"
                 onClick={() => toggleExpand(cat)}
@@ -181,6 +245,12 @@ export function NotificationPreferences() {
                   </div>
                 );
               })}
+              <div className="flex justify-center">
+                {(() => {
+                  const catAllDisabled = eventTypes.every((et) => CHANNELS.every((ch) => prefs[ch].includes(et)));
+                  return <Toggle enabled={!catAllDisabled} onClick={() => toggleCategoryRow(cat)} />;
+                })()}
+              </div>
             </div>
 
             {/* Expanded individual events */}
@@ -189,7 +259,7 @@ export function NotificationPreferences() {
                 {eventTypes.map((et) => (
                   <div
                     key={et}
-                    className="grid grid-cols-[1fr_repeat(3,56px)] gap-1 items-center px-3 py-1.5 pl-9"
+                    className="grid grid-cols-[1fr_repeat(3,56px)_44px] gap-1 items-center px-3 py-1.5 pl-9"
                   >
                     <span className="text-xs text-muted-foreground">{EVENT_TYPE_LABELS[et] ?? et}</span>
                     {CHANNELS.map((ch) => (
@@ -200,6 +270,12 @@ export function NotificationPreferences() {
                         />
                       </div>
                     ))}
+                    <div className="flex justify-center">
+                      <Toggle
+                        enabled={!CHANNELS.every((ch) => prefs[ch].includes(et))}
+                        onClick={() => toggleRow(et)}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
