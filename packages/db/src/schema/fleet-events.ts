@@ -47,4 +47,5 @@ export const fleetEvents = pgTable('fleet_events', {
 }, (table) => [
   index('fleet_events_arrival_idx').on(table.arrivalTime).where(sql`status = 'active'`),
   index('fleet_events_user_idx').on(table.userId),
+  index('fleet_events_origin_planet_idx').on(table.originPlanetId),
 ]);

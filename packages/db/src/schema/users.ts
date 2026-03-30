@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb, pgEnum, index } from 'drizzle-orm/pg-core';
 
 export const playstyleEnum = pgEnum('playstyle', ['miner', 'warrior', 'explorer']);
 
@@ -24,4 +24,7 @@ export const refreshTokens = pgTable('refresh_tokens', {
   tokenHash: varchar('token_hash', { length: 255 }).notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index('refresh_tokens_token_hash_idx').on(table.tokenHash),
+  index('refresh_tokens_expires_at_idx').on(table.expiresAt),
+]);
