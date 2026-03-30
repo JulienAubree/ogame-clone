@@ -3,8 +3,8 @@ import { useOutletContext, Link } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ResourceCost } from '@/components/common/ResourceCost';
+import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { Timer } from '@/components/common/Timer';
 import { GameImage } from '@/components/common/GameImage';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -237,26 +237,22 @@ export default function CommandCenter() {
                         </div>
                         {ship.prerequisitesMet && (
                           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={9999}
+                            <QuantityStepper
                               value={qty}
-                              onChange={(e) =>
-                                setQuantities({ ...quantities, [ship.id]: Math.max(1, Number(e.target.value) || 1) })
-                              }
-                              className="w-14 h-8 text-xs"
+                              onChange={(v) => setQuantities({ ...quantities, [ship.id]: v })}
+                              max={9999}
+                              showMax={false}
                             />
                             <Button
                               size="sm"
-                              className="h-8 px-2"
+                              className="h-7 px-2"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 buildMutation.mutate({ planetId: planetId!, shipId: ship.id as any, quantity: qty });
                               }}
                               disabled={!canAfford || buildMutation.isPending}
                             >
-                              +
+                              OK
                             </Button>
                           </div>
                         )}
@@ -323,21 +319,16 @@ export default function CommandCenter() {
                           {!ship.prerequisitesMet ? (
                             <PrerequisiteList items={buildPrerequisiteItems(gameConfig?.ships[ship.id]?.prerequisites ?? {}, buildingLevels, researchLevels, gameConfig)} missingOnly />
                           ) : (
-                            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <Input
-                                type="number"
-                                min={1}
-                                max={9999}
+                            <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                              <QuantityStepper
                                 value={qty}
-                                onChange={(e) =>
-                                  setQuantities({ ...quantities, [ship.id]: Math.max(1, Number(e.target.value) || 1) })
-                                }
-                                className="w-14 h-7 text-xs"
+                                onChange={(v) => setQuantities({ ...quantities, [ship.id]: v })}
+                                max={9999}
                               />
                               <Button
                                 variant="retro"
                                 size="sm"
-                                className="flex-1"
+                                className="w-full"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   buildMutation.mutate({ planetId: planetId!, shipId: ship.id as any, quantity: qty });

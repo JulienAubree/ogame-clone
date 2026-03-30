@@ -3,8 +3,8 @@ import { useOutletContext, Link } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ResourceCost } from '@/components/common/ResourceCost';
+import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { Timer } from '@/components/common/Timer';
 import { GameImage } from '@/components/common/GameImage';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -254,22 +254,15 @@ export default function Defense() {
                         </div>
                         {defense.prerequisitesMet && maxQty > 0 && (
                           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={maxQty}
+                            <QuantityStepper
                               value={effectiveQty}
-                              onChange={(e) =>
-                                setQuantities({
-                                  ...quantities,
-                                  [defense.id]: Math.max(1, Math.min(maxQty, Number(e.target.value) || 1)),
-                                })
-                              }
-                              className="w-16 h-8 text-xs"
+                              onChange={(v) => setQuantities({ ...quantities, [defense.id]: v })}
+                              max={maxQty}
+                              showMax={false}
                             />
                             <Button
                               size="sm"
-                              className="shrink-0 h-8 px-2"
+                              className="h-7 px-2"
                               onClick={() =>
                                 buildMutation.mutate({
                                   planetId: planetId!,
@@ -279,7 +272,7 @@ export default function Defense() {
                               }
                               disabled={!canAfford || buildMutation.isPending || effectiveQty === 0}
                             >
-                              +
+                              OK
                             </Button>
                           </div>
                         )}
@@ -355,24 +348,16 @@ export default function Defense() {
                               {!defense.prerequisitesMet ? (
                                 <PrerequisiteList items={buildPrerequisiteItems(gameConfig?.defenses[defense.id]?.prerequisites ?? {}, buildingLevels, researchLevels, gameConfig)} missingOnly />
                               ) : maxQty > 0 ? (
-                                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    max={maxQty}
+                                <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                                  <QuantityStepper
                                     value={effectiveQty}
-                                    onChange={(e) =>
-                                      setQuantities({
-                                        ...quantities,
-                                        [defense.id]: Math.max(1, Math.min(maxQty, Number(e.target.value) || 1)),
-                                      })
-                                    }
-                                    className="w-14 h-7 text-xs"
+                                    onChange={(v) => setQuantities({ ...quantities, [defense.id]: v })}
+                                    max={maxQty}
                                   />
                                   <Button
                                     variant="retro"
                                     size="sm"
-                                    className="flex-1"
+                                    className="w-full"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       buildMutation.mutate({

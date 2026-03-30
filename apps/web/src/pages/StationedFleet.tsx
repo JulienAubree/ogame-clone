@@ -7,6 +7,7 @@ import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { ShipCategoryGrid, type ShipData } from '@/components/fleet/ShipCategoryGrid';
 import { cn } from '@/lib/utils';
 import { getFlagshipImageUrl } from '@/lib/assets';
+import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent';
 
@@ -192,25 +193,11 @@ export default function StationedFleet() {
           return (
             <div className="mt-1 flex flex-col items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
               {isSelected && (
-                <div className="flex items-center gap-1.5 w-full">
-                  <button
-                    onClick={() => setQuantity(ship.id, ship.count)}
-                    className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 shrink-0"
-                  >
-                    MAX
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={ship.count}
-                    value={selectedShips[ship.id]}
-                    onChange={(e) => {
-                      const v = Math.min(ship.count, Math.max(1, Number(e.target.value)));
-                      setQuantity(ship.id, v);
-                    }}
-                    className="flex-1 min-w-0 rounded border border-border bg-background px-1 py-0.5 text-center text-xs font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
+                <QuantityStepper
+                  value={selectedShips[ship.id]}
+                  onChange={(v) => setQuantity(ship.id, v)}
+                  max={ship.count}
+                />
               )}
               <button
                 onClick={() => setOverlayShipId(ship.id)}
