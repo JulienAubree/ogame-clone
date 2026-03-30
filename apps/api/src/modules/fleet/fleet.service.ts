@@ -107,7 +107,7 @@ export function createFleetService(
       if (activeFleets >= maxFleets) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Nombre maximum de flottes atteint (${maxFleets}). Améliorez la Technologie informatique pour envoyer plus de flottes.`,
+          message: `Nombre maximum de flottes atteint (${maxFleets}). Améliorez la Technologie Ordinateur pour envoyer plus de flottes.`,
         });
       }
 

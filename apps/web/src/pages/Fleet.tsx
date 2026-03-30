@@ -171,7 +171,7 @@ export default function Fleet() {
   // Validation
   const getValidationError = (): string | null => {
     if (!mission) return 'Sélectionnez une mission';
-    if (fleetSlots && fleetSlots.current >= fleetSlots.max) return `Nombre max de flottes atteint (${fleetSlots.max}). Améliorez Technologie informatique.`;
+    if (fleetSlots && fleetSlots.current >= fleetSlots.max) return `Nombre max de flottes atteint (${fleetSlots.max}). Améliorez la Technologie Ordinateur.`;
     if (!target.galaxy || !target.system || !target.position) return 'Destination incomplète';
 
     const config = gameConfig?.missions[mission];
