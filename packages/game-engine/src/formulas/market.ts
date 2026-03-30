@@ -21,17 +21,3 @@ export function calculateCommission(
   };
 }
 
-/**
- * Total payment the buyer must load as cargo (price + commission).
- */
-export function totalPayment(
-  price: { minerai: number; silicium: number; hydrogene: number },
-  commissionPercent: number,
-): { minerai: number; silicium: number; hydrogene: number } {
-  const commission = calculateCommission(price, commissionPercent);
-  return {
-    minerai: price.minerai + commission.minerai,
-    silicium: price.silicium + commission.silicium,
-    hydrogene: price.hydrogene + commission.hydrogene,
-  };
-}
