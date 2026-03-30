@@ -251,7 +251,7 @@ export default function FlagshipTalents() {
         onConfirm={() => { if (confirmRespec) respecMutation.mutate({ talentId: confirmRespec }); }}
         onCancel={() => setConfirmRespec(null)}
         title="Réinitialiser ce talent ?"
-        description="Les talents dépendants seront aussi réinitialisés. Le coût est 50% de l'Exilium investi."
+        description="Les talents dépendants seront aussi réinitialisés. Gratuit pendant la phase de développement."
         variant="destructive"
         confirmLabel="Réinitialiser"
       />
@@ -261,7 +261,7 @@ export default function FlagshipTalents() {
         onConfirm={() => resetMutation.mutate()}
         onCancel={() => setConfirmReset(false)}
         title="Réinitialiser tout l'arbre ?"
-        description="Coût : 50 Exilium. Tous vos talents seront réinitialisés."
+        description="Tous vos talents seront réinitialisés. Gratuit pendant la phase de développement."
         variant="destructive"
         confirmLabel="Tout réinitialiser"
       />
