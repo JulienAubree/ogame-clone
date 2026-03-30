@@ -32,6 +32,7 @@ interface FeedbackCardProps {
     id: string;
     type: 'bug' | 'idea' | 'feedback';
     title: string;
+    description?: string | null;
     status: 'new' | 'in_progress' | 'resolved' | 'rejected';
     username: string | null;
     upvoteCount: number;
@@ -74,6 +75,9 @@ export function FeedbackCard({ feedback }: FeedbackCardProps) {
             </span>
           </div>
         </div>
+        {feedback.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2">{feedback.description}</p>
+        )}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>{feedback.username ?? 'Inconnu'}</span>
           <span className="ml-auto">{timeAgo(feedback.createdAt)}</span>

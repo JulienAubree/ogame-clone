@@ -22,6 +22,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function Feedback() {
+  const [tab, setTab] = useState<'active' | 'resolved'>('active');
   const [typeFilter, setTypeFilter] = useState<'bug' | 'idea' | 'feedback' | undefined>();
   const [sort, setSort] = useState<'recent' | 'popular'>('recent');
   const [formOpen, setFormOpen] = useState(false);
@@ -32,7 +33,12 @@ export default function Feedback() {
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const { data, isFetching } = trpc.feedback.list.useQuery(
-    { type: typeFilter, sort, cursor: currentCursor },
+    {
+      type: typeFilter,
+      sort,
+      cursor: currentCursor,
+      ...(tab === 'active' ? { excludeResolved: true } : { status: 'resolved' }),
+    },
     { placeholderData: (prev: any) => prev },
   );
 
@@ -90,6 +96,27 @@ export default function Feedback() {
           </Button>
         }
       />
+
+      <div className="flex gap-1 rounded-lg bg-muted p-1">
+        <button
+          onClick={() => { setTab('active'); resetList(); }}
+          className={cn(
+            'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            tab === 'active' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          Actifs
+        </button>
+        <button
+          onClick={() => { setTab('resolved'); resetList(); }}
+          className={cn(
+            'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            tab === 'resolved' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          Resolus
+        </button>
+      </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-1.5">

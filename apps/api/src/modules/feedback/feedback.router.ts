@@ -56,6 +56,7 @@ export function createFeedbackRouter(
       .input(z.object({
         type: z.enum(['bug', 'idea', 'feedback']).optional(),
         status: z.enum(['new', 'in_progress', 'resolved', 'rejected']).optional(),
+        excludeResolved: z.boolean().optional(),
         sort: z.enum(['recent', 'popular']).default('recent'),
         cursor: z.string().uuid().optional(),
       }).optional())

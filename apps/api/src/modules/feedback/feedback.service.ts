@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, ne, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { feedbacks, feedbackVotes, feedbackComments, users } from '@exilium/db';
 import type { Database } from '@exilium/db';
@@ -12,6 +12,7 @@ export function createFeedbackService(db: Database) {
       cursor?: string;
       limit?: number;
       userId?: string;
+      excludeResolved?: boolean;
     }) {
       const limit = options?.limit ?? 20;
       const sort = options?.sort ?? 'recent';
@@ -19,6 +20,7 @@ export function createFeedbackService(db: Database) {
       const conditions = [];
       if (options?.type) conditions.push(eq(feedbacks.type, options.type));
       if (options?.status) conditions.push(eq(feedbacks.status, options.status));
+      if (options?.excludeResolved) conditions.push(ne(feedbacks.status, 'resolved'));
       if (options?.cursor) {
         conditions.push(sql`${feedbacks.createdAt} < (SELECT created_at FROM feedbacks WHERE id = ${options.cursor})`);
       }
@@ -34,6 +36,7 @@ export function createFeedbackService(db: Database) {
           username: users.username,
           type: feedbacks.type,
           title: feedbacks.title,
+          description: feedbacks.description,
           status: feedbacks.status,
           upvoteCount: feedbacks.upvoteCount,
           commentCount: feedbacks.commentCount,
@@ -62,7 +65,11 @@ export function createFeedbackService(db: Database) {
       }
 
       return {
-        items: items.map(item => ({ ...item, hasVoted: votedIds.has(item.id) })),
+        items: items.map(item => ({
+          ...item,
+          description: item.description ? item.description.slice(0, 280) : null,
+          hasVoted: votedIds.has(item.id),
+        })),
         nextCursor,
       };
     },
