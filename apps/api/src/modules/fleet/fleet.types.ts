@@ -161,14 +161,15 @@ export function buildShipStatsMap(config: GameConfig): Record<string, ShipStats>
 export function buildShipCombatConfigs(config: GameConfig): Record<string, ShipCombatConfig> {
   const configs: Record<string, ShipCombatConfig> = {};
   for (const [id, ship] of Object.entries(config.ships)) {
+    const isStationary = ship.role === 'stationary';
     configs[id] = {
       shipType: id,
       categoryId: ship.combatCategoryId ?? 'support',
       baseShield: ship.shield,
       baseArmor: ship.baseArmor ?? 0,
       baseHull: ship.hull,
-      baseWeaponDamage: ship.weapons,
-      baseShotCount: ship.shotCount ?? 1,
+      baseWeaponDamage: isStationary ? 0 : ship.weapons,
+      baseShotCount: isStationary ? 0 : (ship.shotCount ?? 1),
     };
   }
   for (const [id, def] of Object.entries(config.defenses)) {

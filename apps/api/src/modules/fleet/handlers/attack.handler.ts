@@ -140,13 +140,7 @@ export class AttackHandler implements MissionHandler {
     const [defShipsRow] = await ctx.db.select().from(planetShips).where(eq(planetShips.planetId, targetPlanet.id)).limit(1);
     const [defDefsRow] = await ctx.db.select().from(planetDefenses).where(eq(planetDefenses.planetId, targetPlanet.id)).limit(1);
 
-    const defenderFleetRaw = parseUnitRow(defShipsRow);
-    // Exclude stationary units (e.g. solar satellites) from combat
-    const defenderFleet: Record<string, number> = {};
-    for (const [id, count] of Object.entries(defenderFleetRaw)) {
-      if (config.ships[id]?.role === 'stationary') continue;
-      defenderFleet[id] = count;
-    }
+    const defenderFleet = parseUnitRow(defShipsRow);
     const defenderDefenses = parseUnitRow(defDefsRow);
 
     const { attackerMultipliers, defenderMultipliers, defenderTalentCtx } = await computeCombatMultipliers(
