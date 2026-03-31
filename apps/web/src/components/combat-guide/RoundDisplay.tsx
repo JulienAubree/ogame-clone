@@ -132,20 +132,17 @@ export function RoundDisplay({
               {result.rounds.map((round, i) => {
                 const pierced = (round.shieldAbsorbed ?? 0) >= shieldMax;
                 const isCurrentRound = displayedRound === i + 1;
-                const isFutureRound = displayedRound > 0 && displayedRound <= i;
-                const isDeployment = displayedRound === 0;
-                // Shield is LIT when it holds, DARK when pierced
-                const held = isDeployment || !pierced;
+                const revealed = displayedRound === 0 || displayedRound > i;
+                // All blocks start cyan. Only darken if pierced AND round has been revealed.
+                const dark = pierced && revealed;
 
                 return (
                   <div
                     key={i}
                     className={`flex-1 h-5 rounded transition-all duration-700 ease-in-out ${
-                      isFutureRound
-                        ? 'bg-muted/10 border border-white/5'
-                        : held
-                          ? 'bg-gradient-to-r from-cyan-600 to-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.3)]'
-                          : 'bg-muted/20 border border-red-500/30'
+                      dark
+                        ? 'bg-muted/15 border border-red-500/20'
+                        : 'bg-gradient-to-r from-cyan-600 to-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.3)]'
                     } ${isCurrentRound ? 'ring-1 ring-white/40' : ''}`}
                     title={`Round ${i + 1}${pierced ? ' — Percé' : ' — Tenu'}`}
                   />
