@@ -276,6 +276,8 @@ export function createResourceService(
           }
           const energyMult = resolveBonus('energy_production', null, researchLevels, config.bonuses);
           if (energyMult > 1) talentCtx['energy_production'] = energyMult - 1;
+          const energyEfficiency = resolveBonus('energy_consumption', null, researchLevels, config.bonuses);
+          if (energyEfficiency < 1) talentCtx['energy_consumption'] = energyEfficiency - 1;
         }
       }
 

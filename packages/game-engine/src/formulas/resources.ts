@@ -102,11 +102,12 @@ export function calculateProductionRates(
   const solarSatEnergy = solarSatelliteEnergy(planet.maxTemp, planet.isHomePlanet, prodConfig.satellite) * planet.solarSatelliteCount;
   const energyProduced = Math.floor((solarPlantEnergy(planet.solarPlantLevel, prodConfig.solar) + solarSatEnergy) * energyBonus);
 
-  const mineraiEnergy = Math.floor(mineraiMineEnergy(planet.mineraiMineLevel, prodConfig.mineraiEnergy) * mineraiPct);
-  const siliciumEnergy = Math.floor(siliciumMineEnergy(planet.siliciumMineLevel, prodConfig.siliciumEnergy) * siliciumPct);
-  const hydrogeneEnergy = Math.floor(hydrogeneSynthEnergy(planet.hydrogeneSynthLevel, prodConfig.hydrogeneEnergy) * hydrogenePct);
+  const energyEfficiency = 1 + (talentBonuses?.['energy_consumption'] ?? 0);
+  const mineraiEnergy = Math.floor(mineraiMineEnergy(planet.mineraiMineLevel, prodConfig.mineraiEnergy) * mineraiPct * energyEfficiency);
+  const siliciumEnergy = Math.floor(siliciumMineEnergy(planet.siliciumMineLevel, prodConfig.siliciumEnergy) * siliciumPct * energyEfficiency);
+  const hydrogeneEnergy = Math.floor(hydrogeneSynthEnergy(planet.hydrogeneSynthLevel, prodConfig.hydrogeneEnergy) * hydrogenePct * energyEfficiency);
   const shieldPct = (planet.shieldPercent ?? 100) / 100;
-  const shieldEnergy = Math.floor(calculateShieldEnergy(planet.planetaryShieldLevel ?? 0) * shieldPct);
+  const shieldEnergy = Math.floor(calculateShieldEnergy(planet.planetaryShieldLevel ?? 0) * shieldPct * energyEfficiency);
   const energyConsumed = mineraiEnergy + siliciumEnergy + hydrogeneEnergy + shieldEnergy;
 
   const factor = calculateProductionFactor(energyProduced, energyConsumed);
