@@ -17,3 +17,4 @@ export * from './formulas/attack-detection.js';
 export * from './formulas/fp.js';
 export * from './formulas/flagship-stats.js';
 export * from './formulas/production-config.js';
+export * from './formulas/shield.js';
