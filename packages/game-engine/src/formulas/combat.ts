@@ -47,6 +47,7 @@ export interface CombatInput {
   shipIds: Set<string>;
   defenseIds: Set<string>;
   rngSeed?: number;
+  planetaryShieldCapacity?: number;
 }
 
 interface CombatUnit {
@@ -77,6 +78,7 @@ export interface RoundResult {
   defenderShips: Record<string, number>;
   attackerStats: CombatSideStats;
   defenderStats: CombatSideStats;
+  shieldAbsorbed?: number;
 }
 
 export interface CombatResult {
@@ -289,7 +291,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
     attackerMultipliers, defenderMultipliers,
     attackerTargetPriority, defenderTargetPriority,
     combatConfig, shipConfigs, shipCosts, shipIds, defenseIds,
-    rngSeed,
+    rngSeed, planetaryShieldCapacity,
   } = input;
 
   const rng = createRng(rngSeed);
@@ -300,13 +302,36 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const defenderDefenseUnits = createUnits(defenderDefenses, defenderMultipliers, shipConfigs, attackers.length + defenderShipUnits.length);
   const defenders = [...defenderShipUnits, ...defenderDefenseUnits];
 
+  // Inject planetary shield as a special defender unit.
+  // Hull is set to 1 so that once shield HP is depleted, the unit is "destroyed" for the
+  // remainder of the round (letting damage pass through to defenses). It is revived each
+  // round during shield regeneration.
+  if (planetaryShieldCapacity && planetaryShieldCapacity > 0) {
+    defenders.push({
+      id: 'planetary-shield-0',
+      shipType: '__planetaryShield__',
+      category: 'shield',
+      shield: planetaryShieldCapacity,
+      maxShield: planetaryShieldCapacity,
+      armor: 0,
+      hull: 1,
+      maxHull: 1,
+      weaponDamage: 0,
+      shotCount: 0,
+      destroyed: false,
+    });
+  }
+
   const rounds: RoundResult[] = [];
   const totalAttackerStats = emptySideStats();
   const totalDefenderStats = emptySideStats();
 
+  // Filter helper: exclude the planetary shield from gameplay-affecting checks
+  const isNotShield = (u: CombatUnit) => u.shipType !== '__planetaryShield__';
+
   for (let round = 1; round <= combatConfig.maxRounds; round++) {
     const aliveAttackers = attackers.filter(u => !u.destroyed);
-    const aliveDefenders = defenders.filter(u => !u.destroyed);
+    const aliveDefenders = defenders.filter(u => !u.destroyed && isNotShield(u));
 
     if (aliveDefenders.length === 0 || aliveAttackers.length === 0) break;
 
@@ -321,6 +346,14 @@ export function simulateCombat(input: CombatInput): CombatResult {
     for (const attacker of aliveAttackers) {
       fireSalvo(attacker, defendersForAttackerFire, attackerTargetPriority,
         sortedCategories, combatConfig.minDamagePerHit, roundAttackerStats, roundDefenderStats, rng);
+    }
+
+    // Track planetary shield absorption before defenders fire
+    let roundShieldAbsorbed: number | undefined;
+    const shieldClone = defendersForAttackerFire.find(u => u.shipType === '__planetaryShield__');
+    const shieldUnit = defenders.find(u => u.shipType === '__planetaryShield__');
+    if (shieldClone && shieldUnit) {
+      roundShieldAbsorbed = shieldUnit.maxShield - Math.max(0, shieldClone.shield);
     }
 
     // Defenders fire at attacker clones
@@ -338,18 +371,31 @@ export function simulateCombat(input: CombatInput): CombatResult {
       if (!unit.destroyed) unit.shield = unit.maxShield;
     }
 
+    // Revive the planetary shield for the next round (it regenerates fully each round)
+    for (const unit of defenders) {
+      if (unit.shipType === '__planetaryShield__' && unit.destroyed) {
+        unit.destroyed = false;
+        unit.hull = unit.maxHull;
+        unit.shield = unit.maxShield;
+      }
+    }
+
     mergeStats(totalAttackerStats, roundAttackerStats);
     mergeStats(totalDefenderStats, roundDefenderStats);
 
-    rounds.push({
+    const roundResult: RoundResult = {
       round,
       attackerShips: countSurvivingByType(attackers),
-      defenderShips: countSurvivingByType(defenders),
+      defenderShips: countSurvivingByType(defenders.filter(isNotShield)),
       attackerStats: roundAttackerStats,
       defenderStats: roundDefenderStats,
-    });
+    };
+    if (roundShieldAbsorbed !== undefined) {
+      roundResult.shieldAbsorbed = roundShieldAbsorbed;
+    }
+    rounds.push(roundResult);
 
-    if (!attackers.some(u => !u.destroyed) || !defenders.some(u => !u.destroyed)) break;
+    if (!attackers.some(u => !u.destroyed) || !defenders.some(u => !u.destroyed && isNotShield(u))) break;
   }
 
   // Handle case where combat ends before any rounds (e.g., empty defender)
@@ -357,21 +403,23 @@ export function simulateCombat(input: CombatInput): CombatResult {
     rounds.push({
       round: 1,
       attackerShips: countSurvivingByType(attackers),
-      defenderShips: countSurvivingByType(defenders),
+      defenderShips: countSurvivingByType(defenders.filter(isNotShield)),
       attackerStats: emptySideStats(),
       defenderStats: emptySideStats(),
     });
   }
 
   const attackersAlive = attackers.some(u => !u.destroyed);
-  const defendersAlive = defenders.some(u => !u.destroyed);
+  const defendersAlive = defenders.some(u => !u.destroyed && isNotShield(u));
   let outcome: 'attacker' | 'defender' | 'draw';
   if (attackersAlive && !defendersAlive) outcome = 'attacker';
   else if (!attackersAlive && defendersAlive) outcome = 'defender';
   else outcome = 'draw';
 
   const attackerLosses = countDestroyedByType(attackers);
-  const defenderLosses = countDestroyedByType(defenders);
+  // Filter out the planetary shield from defender losses (it has hull: Infinity and is never destroyed,
+  // but be defensive about it)
+  const defenderLosses = countDestroyedByType(defenders.filter(isNotShield));
   const debris = calculateDebris(attackerLosses, defenderLosses, shipIds, shipCosts, combatConfig.debrisRatio);
   const repairedDefenses = repairDefenses(defenderLosses, defenseIds, combatConfig.defenseRepairRate, rng);
 

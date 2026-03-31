@@ -4,7 +4,9 @@ export const COMBAT_CATEGORIES: ShipCategory[] = [
   { id: 'light', name: 'Léger', targetable: true, targetOrder: 1 },
   { id: 'medium', name: 'Moyen', targetable: true, targetOrder: 2 },
   { id: 'heavy', name: 'Lourd', targetable: true, targetOrder: 3 },
-  { id: 'support', name: 'Support', targetable: false, targetOrder: 4 },
+  { id: 'shield', name: 'Bouclier', targetable: true, targetOrder: 4 },
+  { id: 'defense', name: 'Défense', targetable: true, targetOrder: 5 },
+  { id: 'support', name: 'Support', targetable: false, targetOrder: 6 },
 ];
 
 export function buildCombatConfig(
