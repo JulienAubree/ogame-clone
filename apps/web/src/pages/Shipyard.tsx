@@ -143,9 +143,32 @@ export default function Shipyard() {
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Chantier spatial" />
 
-      {shipQueue.length > 0 && (
+      {shipQueue.length > 0 && (() => {
+        // Calculate total queue end time
+        let queueEndTime: Date | null = null;
+        let totalMs = 0;
+        for (const item of shipQueue) {
+          const remaining = item.quantity - (item.completedCount ?? 0);
+          if (item.status === 'active' && item.endTime) {
+            const unitDurationMs = new Date(item.endTime).getTime() - new Date(item.startTime).getTime();
+            totalMs += (new Date(item.endTime).getTime() - Date.now()) + unitDurationMs * (remaining - 1);
+          } else if (item.status === 'queued') {
+            const ship = ships.find((s) => s.id === item.itemId);
+            if (ship) totalMs += (ship.timePerUnit * 1000) * remaining;
+          }
+        }
+        if (totalMs > 0) queueEndTime = new Date(Date.now() + totalMs);
+
+        return (
         <section className="glass-card p-4">
-          <h2 className="text-base font-semibold mb-3">File de construction</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold">File de construction</h2>
+            {queueEndTime && (
+              <span className="text-xs text-muted-foreground">
+                Fin : {queueEndTime.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+              </span>
+            )}
+          </div>
           <div className="space-y-3">
             {shipQueue.map((item) => {
               const name = getShipName(item.itemId, gameConfig);
@@ -195,7 +218,8 @@ export default function Shipyard() {
             })}
           </div>
         </section>
-      )}
+        );
+      })()}
 
       {shipCategories.map((category) => {
         const categoryShips = ships.filter((s) =>

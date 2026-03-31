@@ -143,9 +143,31 @@ export default function Defense() {
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Défense" />
 
-      {defenseQueue.length > 0 && (
+      {defenseQueue.length > 0 && (() => {
+        let queueEndTime: Date | null = null;
+        let totalMs = 0;
+        for (const item of defenseQueue) {
+          const remaining = item.quantity - (item.completedCount ?? 0);
+          if (item.status === 'active' && item.endTime) {
+            const unitDurationMs = new Date(item.endTime).getTime() - new Date(item.startTime).getTime();
+            totalMs += (new Date(item.endTime).getTime() - Date.now()) + unitDurationMs * (remaining - 1);
+          } else if (item.status === 'queued') {
+            const defense = defenses.find((d) => d.id === item.itemId);
+            if (defense) totalMs += (defense.timePerUnit * 1000) * remaining;
+          }
+        }
+        if (totalMs > 0) queueEndTime = new Date(Date.now() + totalMs);
+
+        return (
         <section className="glass-card p-4">
-          <h2 className="text-base font-semibold mb-3">File de construction</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold">File de construction</h2>
+            {queueEndTime && (
+              <span className="text-xs text-muted-foreground">
+                Fin : {queueEndTime.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+              </span>
+            )}
+          </div>
           <div className="space-y-3">
             {defenseQueue.map((item) => {
               const name = getDefenseName(item.itemId, gameConfig);
@@ -195,7 +217,8 @@ export default function Defense() {
             })}
           </div>
         </section>
-      )}
+        );
+      })()}
 
       {defenseCategories.map((category) => {
         const categoryDefenses = defenses.filter((d) =>
