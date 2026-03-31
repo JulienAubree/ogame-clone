@@ -114,11 +114,39 @@ export default function Research() {
     );
   }
 
+  const researchingTech = techs.find((t) => t.isResearching && t.researchEndTime);
   const isAnyResearching = techs.some((t) => t.isResearching);
 
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Recherche" />
+
+      {researchingTech && (
+        <section className="glass-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-foreground">Recherche en cours</h2>
+          </div>
+          <div className="flex items-center gap-3 rounded-md bg-card/50 p-3 border-l-4 border-l-orange-500">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {researchingTech.name} <span className="text-muted-foreground">Niv. {researchingTech.currentLevel + 1}</span>
+              </p>
+              <Timer
+                endTime={new Date(researchingTech.researchEndTime!)}
+                totalDuration={researchingTech.nextLevelTime}
+                onComplete={() => utils.research.list.invalidate()}
+              />
+            </div>
+            <button
+              onClick={() => cancelMutation.mutate()}
+              disabled={cancelMutation.isPending}
+              className="text-sm text-destructive hover:text-destructive/80 font-medium shrink-0"
+            >
+              Annuler
+            </button>
+          </div>
+        </section>
+      )}
 
       {researchCategories.map((category) => {
         const categoryTechs = techs.filter((t) =>

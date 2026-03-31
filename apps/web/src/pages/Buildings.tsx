@@ -206,6 +206,7 @@ export default function Buildings() {
     );
   }
 
+  const upgradingBuilding = buildings.find((b) => b.isUpgrading && b.upgradeEndTime);
   const isAnyUpgrading = buildings.some((b) => b.isUpgrading);
   const maxTemp = resourceData?.maxTemp ?? 50;
   const productionFactor = resourceData?.rates.productionFactor ?? 1;
@@ -218,6 +219,33 @@ export default function Buildings() {
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
       <PageHeader title="Bâtiments" />
+
+      {upgradingBuilding && (
+        <section className="glass-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-foreground">En cours de construction</h2>
+          </div>
+          <div className="flex items-center gap-3 rounded-md bg-card/50 p-3 border-l-4 border-l-orange-500">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {upgradingBuilding.name} <span className="text-muted-foreground">Niv. {upgradingBuilding.currentLevel + 1}</span>
+              </p>
+              <Timer
+                endTime={new Date(upgradingBuilding.upgradeEndTime!)}
+                totalDuration={upgradingBuilding.nextLevelTime}
+                onComplete={() => utils.building.list.invalidate({ planetId: planetId! })}
+              />
+            </div>
+            <button
+              onClick={() => cancelMutation.mutate({ planetId: planetId! })}
+              disabled={cancelMutation.isPending}
+              className="text-sm text-destructive hover:text-destructive/80 font-medium shrink-0"
+            >
+              Annuler
+            </button>
+          </div>
+        </section>
+      )}
 
       {buildingCategories.map((category) => {
         const categoryBuildings = buildings.filter((b) =>
