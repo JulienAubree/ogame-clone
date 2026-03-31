@@ -115,6 +115,7 @@ export class PirateHandler implements MissionHandler {
     const outcomeText = result.outcome === 'attacker' ? 'Victoire' : 'Défaite';
 
     // Create structured combat report
+    let reportId: string | undefined;
     if (ctx.reportService) {
       // Compute FP
       const shipStats: Record<string, UnitCombatStats> = {};
@@ -190,7 +191,7 @@ export class PirateHandler implements MissionHandler {
         name: planets.name,
       }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
 
-      await ctx.reportService.create({
+      const report = await ctx.reportService.create({
         userId: fleetEvent.userId,
         fleetEventId: fleetEvent.id,
         pveMissionId: pveMissionId ?? undefined,
@@ -215,6 +216,7 @@ export class PirateHandler implements MissionHandler {
         completionTime: fleetEvent.arrivalTime,
         result: reportResult,
       });
+      reportId = report.id;
     }
 
     // Create/accumulate debris field from combat (atomic upsert)
@@ -247,7 +249,7 @@ export class PirateHandler implements MissionHandler {
 
     const hasShips = Object.values(returnShips).some(v => v > 0);
     if (!hasShips) {
-      return { scheduleReturn: false, shipsAfterArrival: returnShips };
+      return { scheduleReturn: false, shipsAfterArrival: returnShips, reportId };
     }
 
     return {
@@ -258,6 +260,7 @@ export class PirateHandler implements MissionHandler {
         hydrogene: result.loot.hydrogene,
       },
       shipsAfterArrival: returnShips,
+      reportId,
     };
   }
 }
