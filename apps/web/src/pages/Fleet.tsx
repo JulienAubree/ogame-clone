@@ -184,10 +184,11 @@ export default function Fleet() {
     if (selected.length === 0) return 'Sélectionnez au moins un vaisseau';
 
     if (config?.requiredShipRoles && !config.recommendedShipRoles) {
+      const hasFlagship = (selectedShips['flagship'] ?? 0) > 0;
       const hasRequired = config.requiredShipRoles.some((id) => (selectedShips[id] ?? 0) > 0);
-      if (!hasRequired) {
+      if (!hasRequired && !hasFlagship) {
         const names = config.requiredShipRoles.map((id) => getShipName(id, gameConfig)).join(', ');
-        return `Cette mission nécessite : ${names}`;
+        return `Cette mission nécessite : ${names} ou le vaisseau amiral`;
       }
     }
 
