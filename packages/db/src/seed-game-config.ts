@@ -609,7 +609,7 @@ async function seed() {
 
   // 5. Ship definitions — cleanup old renamed IDs
   const OLD_SHIP_IDS = ['lightFighter', 'heavyFighter', 'battleship'];
-  const OLD_DEFENSE_IDS = ['gaussCannon'];
+  const OLD_DEFENSE_IDS = ['gaussCannon', 'smallShield', 'largeShield'];
   await db.delete(shipPrerequisites).where(sql`ship_id IN (${sql.join(OLD_SHIP_IDS.map(id => sql`${id}`), sql`, `)})`);
   await db.delete(shipDefinitions).where(sql`id IN (${sql.join(OLD_SHIP_IDS.map(id => sql`${id}`), sql`, `)})`);
   await db.delete(defensePrerequisites).where(sql`defense_id IN (${sql.join(OLD_DEFENSE_IDS.map(id => sql`${id}`), sql`, `)})`);
