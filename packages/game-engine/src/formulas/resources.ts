@@ -10,6 +10,7 @@ import {
   storageCapacity,
   calculateProductionFactor,
 } from './production.js';
+import { calculateShieldEnergy } from './shield.js';
 
 export interface ProductionConfig {
   minerai: { baseProduction: number; exponentBase: number };
@@ -55,6 +56,8 @@ export interface PlanetLevels {
   mineraiMinePercent?: number;
   siliciumMinePercent?: number;
   hydrogeneSynthPercent?: number;
+  planetaryShieldLevel?: number;
+  shieldPercent?: number;
 }
 
 export interface ProductionRates {
@@ -67,6 +70,8 @@ export interface ProductionRates {
   mineraiMineEnergyConsumption: number;
   siliciumMineEnergyConsumption: number;
   hydrogeneSynthEnergyConsumption: number;
+  shieldEnergyConsumption: number;
+  shieldPercent: number;
   mineraiMinePercent: number;
   siliciumMinePercent: number;
   hydrogeneSynthPercent: number;
@@ -100,7 +105,9 @@ export function calculateProductionRates(
   const mineraiEnergy = Math.floor(mineraiMineEnergy(planet.mineraiMineLevel, prodConfig.mineraiEnergy) * mineraiPct);
   const siliciumEnergy = Math.floor(siliciumMineEnergy(planet.siliciumMineLevel, prodConfig.siliciumEnergy) * siliciumPct);
   const hydrogeneEnergy = Math.floor(hydrogeneSynthEnergy(planet.hydrogeneSynthLevel, prodConfig.hydrogeneEnergy) * hydrogenePct);
-  const energyConsumed = mineraiEnergy + siliciumEnergy + hydrogeneEnergy;
+  const shieldPct = (planet.shieldPercent ?? 100) / 100;
+  const shieldEnergy = Math.floor(calculateShieldEnergy(planet.planetaryShieldLevel ?? 0) * shieldPct);
+  const energyConsumed = mineraiEnergy + siliciumEnergy + hydrogeneEnergy + shieldEnergy;
 
   const factor = calculateProductionFactor(energyProduced, energyConsumed);
 
@@ -114,6 +121,8 @@ export function calculateProductionRates(
     mineraiMineEnergyConsumption: mineraiEnergy,
     siliciumMineEnergyConsumption: siliciumEnergy,
     hydrogeneSynthEnergyConsumption: hydrogeneEnergy,
+    shieldEnergyConsumption: shieldEnergy,
+    shieldPercent: planet.shieldPercent ?? 100,
     mineraiMinePercent: planet.mineraiMinePercent ?? 100,
     siliciumMinePercent: planet.siliciumMinePercent ?? 100,
     hydrogeneSynthPercent: planet.hydrogeneSynthPercent ?? 100,

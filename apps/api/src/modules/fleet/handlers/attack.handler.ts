@@ -1,7 +1,7 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses } from '@exilium/db';
-import { simulateCombat, totalCargoCapacity } from '@exilium/game-engine';
+import { planets, planetShips, planetDefenses, planetBuildings } from '@exilium/db';
+import { simulateCombat, totalCargoCapacity, calculateShieldCapacity } from '@exilium/game-engine';
 import type { CombatInput, RoundResult } from '@exilium/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
 import { buildShipStatsMap, buildShipCombatConfigs, buildShipCosts } from '../fleet.types.js';
@@ -84,6 +84,13 @@ export class AttackHandler implements MissionHandler {
       }
     }
 
+    // Override defense unit categories so they are targeted after the planetary shield
+    for (const defId of defenseIdSet) {
+      if (shipCombatConfigs[defId]) {
+        shipCombatConfigs[defId] = { ...shipCombatConfigs[defId], categoryId: 'defense' };
+      }
+    }
+
     const combatConfig = buildCombatConfig(config.universe);
 
     const [targetPlanet] = await ctx.db
@@ -143,6 +150,20 @@ export class AttackHandler implements MissionHandler {
     const defenderFleet = parseUnitRow(defShipsRow);
     const defenderDefenses = parseUnitRow(defDefsRow);
 
+    const [shieldBuilding] = await ctx.db
+      .select({ level: planetBuildings.level })
+      .from(planetBuildings)
+      .where(and(
+        eq(planetBuildings.planetId, targetPlanet.id),
+        eq(planetBuildings.buildingId, 'planetaryShield'),
+      ))
+      .limit(1);
+    const shieldLevel = shieldBuilding?.level ?? 0;
+    const shieldPercent = (targetPlanet as any).shieldPercent ?? 100;
+    const planetaryShieldCapacity = shieldLevel > 0
+      ? Math.floor(calculateShieldCapacity(shieldLevel) * (shieldPercent / 100))
+      : 0;
+
     const { attackerMultipliers, defenderMultipliers, defenderTalentCtx } = await computeCombatMultipliers(
       ctx, config, fleetEvent.userId, targetPlanet.userId, targetPlanet.id,
     );
@@ -174,6 +195,7 @@ export class AttackHandler implements MissionHandler {
         shipCosts: shipCostsMap,
         shipIds: shipIdSet,
         defenseIds: defenseIdSet,
+        planetaryShieldCapacity,
       };
       result = simulateCombat(combatInput);
       outcome = result.outcome;
@@ -314,6 +336,9 @@ export class AttackHandler implements MissionHandler {
           silicium: pillagedSilicium,
           hydrogene: pillagedHydrogene,
         };
+      }
+      if (planetaryShieldCapacity > 0) {
+        reportResult.planetaryShield = { level: shieldLevel, capacity: planetaryShieldCapacity };
       }
       const report = await ctx.reportService.create({
         userId: fleetEvent.userId,

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../../trpc/router.js';
-import { planetTypes, planetShips } from '@exilium/db';
+import { planets, planetTypes, planetShips } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createResourceService } from './resource.service.js';
 import type { createPlanetService } from '../planet/planet.service.js';
@@ -77,6 +78,19 @@ export function createResourceRouter(
           siliciumMinePercent: input.siliciumMinePercent,
           hydrogeneSynthPercent: input.hydrogeneSynthPercent,
         });
+      }),
+
+    setShieldPercent: protectedProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        percent: z.number().int().min(0).max(100).multipleOf(10),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verify ownership
+        const [planet] = await db.select({ userId: planets.userId }).from(planets).where(eq(planets.id, input.planetId)).limit(1);
+        if (!planet || planet.userId !== ctx.userId) throw new TRPCError({ code: 'NOT_FOUND' });
+        await db.update(planets).set({ shieldPercent: input.percent }).where(eq(planets.id, input.planetId));
+        return { success: true };
       }),
   });
 }

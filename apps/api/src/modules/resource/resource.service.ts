@@ -53,6 +53,7 @@ async function buildPlanetLevels(
     mineraiMinePercent: number;
     siliciumMinePercent: number;
     hydrogeneSynthPercent: number;
+    shieldPercent?: number | null;
     planetClassId?: string | null;
   },
   roleMap: {
@@ -84,6 +85,8 @@ async function buildPlanetLevels(
     mineraiMinePercent: planet.mineraiMinePercent,
     siliciumMinePercent: planet.siliciumMinePercent,
     hydrogeneSynthPercent: planet.hydrogeneSynthPercent,
+    planetaryShieldLevel: buildingLevels['planetaryShield'] ?? 0,
+    shieldPercent: planet.shieldPercent ?? 100,
   };
 }
 
@@ -254,6 +257,7 @@ export function createResourceService(
       mineraiMinePercent: number;
       siliciumMinePercent: number;
       hydrogeneSynthPercent: number;
+      shieldPercent?: number | null;
       planetClassId?: string | null;
     }, bonus?: PlanetTypeBonus, userId?: string) {
       const roleMap = await getRoleMap();
