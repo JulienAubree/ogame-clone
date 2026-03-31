@@ -7,11 +7,12 @@ import { buildProductionConfig } from '@/lib/production-config';
 import { solarSatelliteEnergy, calculateShieldCapacity } from '@exilium/game-engine';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
+import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
+import { DefenseIcon } from '@/lib/icons';
 import { PlanetCard } from '@/components/energy/PlanetCard';
+import { EnergyBar } from '@/components/energy/EnergyBar';
 import { FluxView } from '@/components/energy/FluxView';
 import { TableView } from '@/components/energy/TableView';
-import { EnergyBalance } from '@/components/energy/EnergyBalance';
-import { ResourceImpact } from '@/components/energy/ResourceImpact';
 
 type View = 'flux' | 'table';
 
@@ -56,7 +57,6 @@ export default function Energy() {
     onSuccess: () => utils.resource.production.invalidate({ planetId: planetId! }),
   });
 
-  // Optimistic local state for knob dragging
   const [localPercents, setLocalPercents] = useState<Record<string, number>>({});
 
   const handlePercentChange = useCallback((key: string, value: number) => {
@@ -89,7 +89,6 @@ export default function Energy() {
     );
   }
 
-  // Compute derived data
   const isHomePlanet = data.planetClassId === 'homeworld';
   const prodConfig = gameConfig ? buildProductionConfig(gameConfig) : undefined;
   const satEnergyPerUnit = solarSatelliteEnergy(data.maxTemp, isHomePlanet, prodConfig?.satellite);
@@ -100,88 +99,78 @@ export default function Energy() {
   const shieldLevel = buildings?.find((b) => b.id === 'planetaryShield')?.currentLevel ?? 0;
   const shieldPercent = localPercents['shield'] ?? data.rates.shieldPercent ?? 100;
 
-  // Build source list
+  // Energy bar segments
+  const energySegments = [
+    { label: 'Mine Min.', value: data.rates.mineraiMineEnergyConsumption, color: '#fb923c' },
+    { label: 'Mine Sil.', value: data.rates.siliciumMineEnergyConsumption, color: '#34d399' },
+    { label: 'Synth. H\u2082', value: data.rates.hydrogeneSynthEnergyConsumption, color: '#60a5fa' },
+    ...(shieldLevel > 0 ? [{ label: 'Bouclier', value: data.rates.shieldEnergyConsumption, color: '#22d3ee' }] : []),
+  ];
+
+  // Sources
   const energySources = [
-    { name: 'Centrale Solaire', icon: '☀️', energy: plantEnergy, detail: `Niveau ${data.levels.solarPlant}` },
+    { name: 'Centrale Solaire', icon: <EnergieIcon size={20} />, energy: plantEnergy, detail: `Niveau ${data.levels.solarPlant}` },
     ...(satCount > 0
-      ? [{ name: 'Satellites Solaires', icon: '🛰️', energy: satEnergyTotal, detail: `${satCount} × ${satEnergyPerUnit}` }]
+      ? [{ name: 'Satellites Solaires', icon: <EnergieIcon size={20} />, energy: satEnergyTotal, detail: `${satCount} \u00d7 ${satEnergyPerUnit}` }]
       : []),
   ];
 
-  // Build consumer list (superset — works for both views)
+  // Consumers
   const consumers = [
     {
       key: 'mineraiMinePercent',
       name: 'Mine Minerai',
-      icon: '⛏️',
+      icon: <MineraiIcon size={18} />,
       level: data.levels.mineraiMine,
       colorHex: '#fb923c',
       colorClass: 'text-minerai',
       percent: localPercents['mineraiMinePercent'] ?? data.rates.mineraiMinePercent,
       energyConsumption: data.rates.mineraiMineEnergyConsumption,
-      production: data.rates.mineraiPerHour.toLocaleString('fr-FR'),
+      production: `+${data.rates.mineraiPerHour.toLocaleString('fr-FR')}/h`,
       productionLabel: 'Produit',
       productionUnit: '/heure',
-      stock: {
-        current: resources.minerai,
-        capacity: data.rates.storageMineraiCapacity,
-      },
     },
     {
       key: 'siliciumMinePercent',
       name: 'Mine Silicium',
-      icon: '💎',
+      icon: <SiliciumIcon size={18} />,
       level: data.levels.siliciumMine,
       colorHex: '#34d399',
       colorClass: 'text-silicium',
       percent: localPercents['siliciumMinePercent'] ?? data.rates.siliciumMinePercent,
       energyConsumption: data.rates.siliciumMineEnergyConsumption,
-      production: data.rates.siliciumPerHour.toLocaleString('fr-FR'),
+      production: `+${data.rates.siliciumPerHour.toLocaleString('fr-FR')}/h`,
       productionLabel: 'Produit',
       productionUnit: '/heure',
-      stock: {
-        current: resources.silicium,
-        capacity: data.rates.storageSiliciumCapacity,
-      },
     },
     {
       key: 'hydrogeneSynthPercent',
-      name: 'Synth. H₂',
-      icon: '🧪',
+      name: 'Synth. H\u2082',
+      icon: <HydrogeneIcon size={18} />,
       level: data.levels.hydrogeneSynth,
       colorHex: '#60a5fa',
       colorClass: 'text-hydrogene',
       percent: localPercents['hydrogeneSynthPercent'] ?? data.rates.hydrogeneSynthPercent,
       energyConsumption: data.rates.hydrogeneSynthEnergyConsumption,
-      production: data.rates.hydrogenePerHour.toLocaleString('fr-FR'),
+      production: `+${data.rates.hydrogenePerHour.toLocaleString('fr-FR')}/h`,
       productionLabel: 'Produit',
       productionUnit: '/heure',
-      stock: {
-        current: resources.hydrogene,
-        capacity: data.rates.storageHydrogeneCapacity,
-      },
     },
     ...(shieldLevel > 0
       ? [{
           key: 'shield',
           name: 'Bouclier',
-          icon: '🛡️',
+          icon: <DefenseIcon width={18} height={18} />,
           level: shieldLevel,
           colorHex: '#22d3ee',
           colorClass: 'text-shield',
           percent: shieldPercent,
           energyConsumption: data.rates.shieldEnergyConsumption,
-          production: String(Math.floor(calculateShieldCapacity(shieldLevel) * shieldPercent / 100)),
+          production: `${Math.floor(calculateShieldCapacity(shieldLevel) * shieldPercent / 100)}/tour`,
           productionLabel: 'Capacité',
           productionUnit: '/tour',
         }]
       : []),
-  ];
-
-  const resourceRows = [
-    { name: 'Minerai', colorClass: 'text-minerai', current: resources.minerai, perHour: data.rates.mineraiPerHour, capacity: data.rates.storageMineraiCapacity },
-    { name: 'Silicium', colorClass: 'text-silicium', current: resources.silicium, perHour: data.rates.siliciumPerHour, capacity: data.rates.storageSiliciumCapacity },
-    { name: 'Hydrogène', colorClass: 'text-hydrogene', current: resources.hydrogene, perHour: data.rates.hydrogenePerHour, capacity: data.rates.storageHydrogeneCapacity },
   ];
 
   const isMutating = setPercentMutation.isPending || setShieldMutation.isPending;
@@ -189,6 +178,14 @@ export default function Energy() {
   return (
     <div className="space-y-4 p-4 lg:p-6">
       <PageHeader title="Énergie" />
+
+      {/* Energy budget bar */}
+      <EnergyBar
+        totalProduced={data.rates.energyProduced}
+        totalConsumed={data.rates.energyConsumed}
+        segments={energySegments}
+        productionFactor={data.rates.productionFactor}
+      />
 
       {/* Planet Card */}
       <PlanetCard
@@ -208,7 +205,7 @@ export default function Energy() {
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          ⚡ Flux
+          Flux
         </button>
         <button
           onClick={() => setActiveView('table')}
@@ -218,7 +215,7 @@ export default function Energy() {
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          📊 Tableau
+          Tableau
         </button>
       </div>
 
@@ -226,7 +223,6 @@ export default function Energy() {
       {activeView === 'flux' ? (
         <FluxView
           sources={energySources}
-          totalEnergy={data.rates.energyProduced}
           consumers={consumers}
           onPercentChange={handlePercentChange}
           onPercentChangeEnd={handlePercentChangeEnd}
@@ -245,16 +241,6 @@ export default function Energy() {
           disabled={isMutating}
         />
       )}
-
-      {/* Energy balance (common to both views) */}
-      <EnergyBalance
-        energyProduced={data.rates.energyProduced}
-        energyConsumed={data.rates.energyConsumed}
-        productionFactor={data.rates.productionFactor}
-      />
-
-      {/* Resource impact (common to both views) */}
-      <ResourceImpact resources={resourceRows} />
     </div>
   );
 }
