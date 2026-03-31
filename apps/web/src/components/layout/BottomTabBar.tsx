@@ -16,12 +16,14 @@ import {
   AllianceIcon,
   AllianceRankingIcon,
   FlagshipIcon,
+  EmpireIcon,
 } from '@/lib/icons';
 import { useUIStore } from '@/stores/ui.store';
 import { trpc } from '@/trpc';
 import { BottomSheet } from './BottomSheet';
 
 const TAB_GROUPS = {
+  empire: ['/empire'],
   planete: ['/', '/energy', '/buildings', '/research'],
   production: ['/shipyard', '/command-center', '/defense'],
   espace: ['/galaxy', '/fleet', '/missions', '/market', '/flagship'],
@@ -31,6 +33,9 @@ const TAB_GROUPS = {
 type TabGroup = keyof typeof TAB_GROUPS;
 
 const SHEET_ITEMS = {
+  empire: [
+    { label: 'Empire', path: '/empire', icon: EmpireIcon },
+  ],
   planete: [
     { label: "Vue d'ensemble", path: '/', icon: OverviewIcon },
     { label: 'Énergie', path: '/energy', icon: ResourcesIcon },
@@ -84,6 +89,7 @@ export function BottomTabBar() {
   };
 
   const tabs = [
+    { id: 'empire' as const, label: 'Empire', icon: EmpireIcon, action: () => navigate('/empire') },
     { id: 'planete' as const, label: 'Planète', icon: OverviewIcon, action: () => toggleSheet('planete') },
     { id: 'production' as const, label: 'Production', icon: ShipyardIcon, action: () => toggleSheet('production') },
     { id: 'espace' as const, label: 'Espace', icon: GalaxyIcon, action: () => toggleSheet('espace') },

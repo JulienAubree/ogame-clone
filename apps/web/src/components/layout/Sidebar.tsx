@@ -18,6 +18,7 @@ import {
   RankingIcon,
   AllianceIcon,
   AllianceRankingIcon,
+  EmpireIcon,
 } from '@/lib/icons';
 
 interface NavItem {
@@ -27,6 +28,12 @@ interface NavItem {
 }
 
 const sections: { title: string; items: NavItem[] }[] = [
+  {
+    title: 'Empire',
+    items: [
+      { label: 'Empire', path: '/empire', icon: EmpireIcon },
+    ],
+  },
   {
     title: 'Planète',
     items: [

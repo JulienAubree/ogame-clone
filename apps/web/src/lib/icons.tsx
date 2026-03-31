@@ -250,3 +250,12 @@ export function ProfileIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function EmpireIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M2 4l3 12h14l3-12-6 7-4-9-4 9-6-7z" />
+      <path d="M3 20h18" />
+    </Icon>
+  );
+}
