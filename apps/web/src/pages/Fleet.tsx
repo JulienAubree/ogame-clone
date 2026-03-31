@@ -292,12 +292,21 @@ export default function Fleet() {
 
   const validationError = getValidationError();
 
-  // Inject flagship as first "ship" if active and on the current planet
+  // Inject flagship as first "ship" — available if active on planet, disabled otherwise
   const allShips = (() => {
     const base = ships ?? [];
-    if (flagship && flagship.status === 'active' && flagship.planetId === planetId) {
+    if (!flagship) return base;
+    const isAvailable = flagship.status === 'active' && flagship.planetId === planetId;
+    const isUnavailable = flagship.status === 'in_mission' || flagship.status === 'incapacitated' || (flagship.status === 'active' && flagship.planetId !== planetId);
+    if (isAvailable) {
       return [
         { id: 'flagship', name: flagship.name, count: 1, flagshipImageIndex: flagship.flagshipImageIndex ?? undefined },
+        ...base,
+      ];
+    }
+    if (isUnavailable) {
+      return [
+        { id: 'flagship', name: flagship.name, count: 1, isStationary: true, flagshipImageIndex: flagship.flagshipImageIndex ?? undefined },
         ...base,
       ];
     }
