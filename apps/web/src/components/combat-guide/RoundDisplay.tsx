@@ -132,9 +132,8 @@ export function RoundDisplay({
               {result.rounds.map((round, i) => {
                 const pierced = (round.shieldAbsorbed ?? 0) >= shieldMax;
                 const isCurrentRound = displayedRound === i + 1;
-                const revealed = displayedRound === 0 || displayedRound > i;
-                // All blocks start cyan. Only darken if pierced AND round has been revealed.
-                const dark = pierced && revealed;
+                // At deployment (round 0): all blocks lit. During replay: darken only past pierced rounds.
+                const dark = displayedRound > 0 && pierced && displayedRound > i;
 
                 return (
                   <div
