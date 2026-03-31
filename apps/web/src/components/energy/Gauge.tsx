@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface GaugeProps {
   value: number; // 0-100
@@ -13,6 +13,14 @@ export function Gauge({ value, onChange, onChangeEnd, color, disabled = false }:
   const [dragging, setDragging] = useState(false);
   const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState(String(value));
+  // Local display value — holds the drag position until the parent catches up
+  const [localValue, setLocalValue] = useState(value);
+  const interactingRef = useRef(false);
+
+  // Sync from parent only when not interacting
+  useEffect(() => {
+    if (!interactingRef.current) setLocalValue(value);
+  }, [value]);
 
   const calcValue = useCallback((clientX: number) => {
     const track = trackRef.current;
@@ -25,30 +33,42 @@ export function Gauge({ value, onChange, onChangeEnd, color, disabled = false }:
     if (disabled || editing) return;
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    interactingRef.current = true;
     setDragging(true);
     const newVal = calcValue(e.clientX);
+    setLocalValue(newVal);
     onChange(newVal);
   }, [disabled, editing, calcValue, onChange]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging || disabled) return;
-    onChange(calcValue(e.clientX));
+    const newVal = calcValue(e.clientX);
+    setLocalValue(newVal);
+    onChange(newVal);
   }, [dragging, disabled, calcValue, onChange]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragging) return;
     setDragging(false);
     const finalVal = calcValue(e.clientX);
+    setLocalValue(finalVal);
     onChange(finalVal);
     onChangeEnd?.(finalVal);
+    // Keep interacting until parent value catches up
+    setTimeout(() => { interactingRef.current = false; }, 500);
   }, [dragging, calcValue, onChange, onChangeEnd]);
 
   const commitEdit = useCallback(() => {
     setEditing(false);
+    interactingRef.current = true;
     const parsed = Math.round(Math.min(100, Math.max(0, Number(inputValue) || 0)));
+    setLocalValue(parsed);
     onChange(parsed);
     onChangeEnd?.(parsed);
+    setTimeout(() => { interactingRef.current = false; }, 500);
   }, [inputValue, onChange, onChangeEnd]);
+
+  const displayValue = localValue;
 
   return (
     <div className="space-y-1">
@@ -64,7 +84,7 @@ export function Gauge({ value, onChange, onChangeEnd, color, disabled = false }:
         <div
           className={`absolute inset-y-0 left-0 rounded-md ${dragging ? '' : 'transition-[width] duration-150'}`}
           style={{
-            width: `${value}%`,
+            width: `${displayValue}%`,
             background: `linear-gradient(90deg, ${color}26, ${color}80)`,
           }}
         >
@@ -101,12 +121,12 @@ export function Gauge({ value, onChange, onChangeEnd, color, disabled = false }:
                 e.stopPropagation();
                 if (!disabled) {
                   setEditing(true);
-                  setInputValue(String(value));
+                  setInputValue(String(displayValue));
                 }
               }}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {value}%
+              {displayValue}%
             </button>
           )}
         </div>
