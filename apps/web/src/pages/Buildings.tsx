@@ -20,6 +20,7 @@ import {
   mineraiProduction, siliciumProduction, hydrogeneProduction,
   solarPlantEnergy, mineraiMineEnergy, siliciumMineEnergy, hydrogeneSynthEnergy,
   storageCapacity,
+  calculateShieldCapacity, calculateShieldEnergy,
 } from '@exilium/game-engine';
 
 
@@ -89,6 +90,16 @@ function getProductionStats(
         next: storageCapacity(level + 1, prodConfig?.storage),
         delta: storageCapacity(level + 1, prodConfig?.storage) - storageCapacity(level, prodConfig?.storage),
         label: 'Capacité', unit: '', color: 'text-sky-400',
+      };
+    case 'planetaryShield':
+      return {
+        current: calculateShieldCapacity(level),
+        next: calculateShieldCapacity(level + 1),
+        delta: calculateShieldCapacity(level + 1) - calculateShieldCapacity(level),
+        label: 'Bouclier', unit: ' pts', color: 'text-blue-400',
+        energyCurrent: calculateShieldEnergy(level),
+        energyNext: calculateShieldEnergy(level + 1),
+        energyDelta: calculateShieldEnergy(level + 1) - calculateShieldEnergy(level),
       };
     default:
       return null;
@@ -393,7 +404,9 @@ export default function Buildings() {
                                 ? `capacité ${stats.current.toLocaleString('fr-FR')}`
                                 : stats.label === 'Énergie'
                                   ? `+${stats.current.toLocaleString('fr-FR')} énergie`
-                                  : `+${stats.current.toLocaleString('fr-FR')}${stats.unit}`}
+                                  : stats.label === 'Bouclier'
+                                    ? `${stats.current.toLocaleString('fr-FR')} pts`
+                                    : `+${stats.current.toLocaleString('fr-FR')}${stats.unit}`}
                             </div>
                           )}
 

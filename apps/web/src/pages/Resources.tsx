@@ -4,7 +4,7 @@ import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { buildProductionConfig } from '@/lib/production-config';
-import { solarSatelliteEnergy } from '@exilium/game-engine';
+import { solarSatelliteEnergy, calculateShieldCapacity } from '@exilium/game-engine';
 import { Badge } from '@/components/ui/badge';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -36,7 +36,18 @@ export default function Resources() {
       : undefined,
   );
 
+  const { data: buildings } = trpc.building.list.useQuery(
+    { planetId: planetId! },
+    { enabled: !!planetId },
+  );
+
   const setPercentMutation = trpc.resource.setProductionPercent.useMutation({
+    onSuccess: () => {
+      utils.resource.production.invalidate({ planetId: planetId! });
+    },
+  });
+
+  const setShieldPercent = trpc.resource.setShieldPercent.useMutation({
     onSuccess: () => {
       utils.resource.production.invalidate({ planetId: planetId! });
     },
@@ -194,6 +205,43 @@ export default function Resources() {
                   </div>
                 </div>
               ))}
+
+              {(() => {
+                const shieldLevel = buildings?.find((b) => b.id === 'planetaryShield')?.currentLevel ?? 0;
+                if (shieldLevel === 0) return null;
+                const shieldPercent = data.rates.shieldPercent ?? 100;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-blue-400">Bouclier planétaire</span>
+                        <Badge variant="secondary" className="text-xs">Niv. {shieldLevel}</Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="text-muted-foreground">{Math.floor(calculateShieldCapacity(shieldLevel) * shieldPercent / 100)} pts</span>
+                        <span className="text-energy">-{data.rates.shieldEnergyConsumption}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={10}
+                        value={shieldPercent}
+                        onChange={(e) => setShieldPercent.mutate({ planetId: planetId!, percent: Number(e.target.value) })}
+                        disabled={setShieldPercent.isPending}
+                        className="flex-1 h-1.5 appearance-none bg-muted rounded-full cursor-pointer accent-primary
+                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer
+                          [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:rounded-full
+                          [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                      />
+                      <span className="text-sm font-mono w-10 text-right">{shieldPercent}%</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </section>
 
