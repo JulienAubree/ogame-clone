@@ -91,11 +91,6 @@ export function RoundDisplay({
         const currentRound = displayedRound > 0 ? result.rounds[displayedRound - 1] : null;
         const defenderHP = currentRound?.defenderHPByType;
         const attackerHP = currentRound?.attackerHPByType;
-        const shieldHP = defenderHP?.['__planetaryShield__'];
-
-        // Show planetary shield at deployment (round 0) with full capacity from first round data
-        const firstRoundShield = result.rounds[0]?.defenderHPByType?.['__planetaryShield__'];
-        const effectiveShieldHP = shieldHP ?? (firstRoundShield ? { shieldRemaining: firstRoundShield.shieldMax, shieldMax: firstRoundShield.shieldMax } : undefined);
 
         return (
           <div className="grid grid-cols-2 gap-4">
@@ -107,7 +102,6 @@ export function RoundDisplay({
               gameConfig={gameConfig}
               color="text-blue-400"
               hpByType={isDefPerspective ? defenderHP : attackerHP}
-              planetaryShield={isDefPerspective ? effectiveShieldHP : undefined}
             />
             <FleetColumn
               title={isDefPerspective ? 'Attaquant' : 'Défenseur'}
@@ -117,8 +111,54 @@ export function RoundDisplay({
               gameConfig={gameConfig}
               color="text-rose-400"
               hpByType={isDefPerspective ? attackerHP : defenderHP}
-              planetaryShield={isDefPerspective ? undefined : effectiveShieldHP}
             />
+          </div>
+        );
+      })()}
+
+      {/* Planetary shield — multi-round progression */}
+      {(() => {
+        const firstRoundShield = result.rounds[0]?.defenderHPByType?.['__planetaryShield__'];
+        if (!firstRoundShield || firstRoundShield.shieldMax <= 0) return null;
+        const shieldMax = firstRoundShield.shieldMax;
+
+        return (
+          <div className="rounded-lg border border-cyan-500/15 bg-cyan-950/10 p-3 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-cyan-400 font-semibold uppercase tracking-wider text-[10px]">Bouclier planétaire</span>
+              <span className="text-muted-foreground font-mono text-[10px]">{Math.floor(shieldMax)} pts</span>
+            </div>
+            <div className="flex gap-1">
+              {result.rounds.map((round, i) => {
+                const hp = round.defenderHPByType?.['__planetaryShield__'];
+                const remaining = hp?.shieldRemaining ?? shieldMax;
+                const pct = (remaining / shieldMax) * 100;
+                const pierced = remaining <= 0;
+                const absorbed = round.shieldAbsorbed ?? 0;
+                const isCurrentRound = displayedRound === i + 1;
+                const isFutureRound = displayedRound > 0 && displayedRound <= i;
+                const isDeployment = displayedRound === 0;
+
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 transition-opacity duration-300 ${isFutureRound ? 'opacity-30' : ''}`}
+                    title={`Round ${i + 1}: ${absorbed > 0 ? `${Math.floor(absorbed)} absorbés` : 'aucun dégât'}${pierced ? ' — PERCÉ' : ''}`}
+                  >
+                    <div className="text-[9px] text-center text-muted-foreground mb-0.5">R{i + 1}</div>
+                    <div className={`h-6 rounded bg-muted/20 overflow-hidden border transition-all duration-300 ${isCurrentRound ? 'border-white/30 ring-1 ring-cyan-500/30' : 'border-white/5'}`}>
+                      <div
+                        className={`h-full transition-all duration-1000 ease-in-out ${pierced ? 'bg-red-500/80' : 'bg-gradient-to-t from-cyan-600 to-cyan-400'}`}
+                        style={{ width: '100%', height: isDeployment ? '100%' : `${Math.max(0, pct)}%` }}
+                      />
+                    </div>
+                    <div className={`text-[8px] text-center mt-0.5 font-mono transition-colors duration-300 ${pierced ? 'text-red-400' : absorbed > 0 ? 'text-cyan-400' : 'text-muted-foreground/40'}`}>
+                      {isDeployment ? '' : pierced ? 'PERCÉ' : absorbed > 0 ? `-${Math.floor(absorbed)}` : '—'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
       })()}
@@ -194,7 +234,6 @@ function FleetColumn({
   gameConfig,
   color,
   hpByType,
-  planetaryShield,
 }: {
   title: string;
   types: string[];
@@ -203,7 +242,6 @@ function FleetColumn({
   gameConfig: any;
   color: string;
   hpByType?: Record<string, { shieldRemaining: number; shieldMax: number; hullRemaining: number; hullMax: number }>;
-  planetaryShield?: { shieldRemaining: number; shieldMax: number };
 }) {
   return (
     <div className="space-y-2">
@@ -234,28 +272,6 @@ function FleetColumn({
           </div>
         );
       })}
-      {planetaryShield && planetaryShield.shieldMax > 0 && (() => {
-        const pct = (planetaryShield.shieldRemaining / planetaryShield.shieldMax) * 100;
-        const pierced = planetaryShield.shieldRemaining <= 0;
-        return (
-          <div className={`space-y-1 border-t border-cyan-500/20 pt-2 mt-1 transition-colors duration-500 ${pierced ? 'bg-red-500/5 -mx-2 px-2 rounded' : ''}`}>
-            <div className="flex items-center justify-between text-xs">
-              <span className={`font-medium transition-colors duration-500 ${pierced ? 'text-red-400' : 'text-cyan-400'}`}>
-                {pierced ? '\u26A0 ' : '\uD83D\uDEE1 '}Bouclier planétaire
-              </span>
-              <span className={`font-mono tabular-nums transition-colors duration-500 ${pierced ? 'text-red-400' : 'text-muted-foreground'}`}>
-                {Math.floor(planetaryShield.shieldRemaining)}/{Math.floor(planetaryShield.shieldMax)}
-              </span>
-            </div>
-            <div className="h-2.5 rounded-full bg-muted/30 overflow-hidden border border-cyan-500/10">
-              <div
-                className={`h-full rounded-full transition-all duration-1000 ease-in-out ${pierced ? 'bg-red-500' : 'bg-gradient-to-r from-cyan-600 to-cyan-400'}`}
-                style={{ width: `${Math.max(0, pct)}%` }}
-              />
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }
