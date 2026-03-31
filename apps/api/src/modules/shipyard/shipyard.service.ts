@@ -535,15 +535,16 @@ export function createShipyardService(
         return this.cancelBatch(userId, planetId, batchId);
       }
 
-      // Full refund: these units haven't started building, no resources consumed
+      // Refund at cancel ratio (default 70%) to prevent resource sheltering exploits
       const config = await gameConfigService.getFullConfig();
+      const cancelRefundRatio = Number(config.universe.cancel_refund_ratio) || 0.7;
       const def = entry.type === 'ship' ? config.ships[entry.itemId] : config.defenses[entry.itemId];
       const unitCost = def ? (entry.type === 'ship' ? shipCost(def) : defenseCost(def)) : { minerai: 0, silicium: 0, hydrogene: 0 };
 
       const refund = {
-        minerai: unitCost.minerai * removeCount,
-        silicium: unitCost.silicium * removeCount,
-        hydrogene: unitCost.hydrogene * removeCount,
+        minerai: Math.floor(unitCost.minerai * cancelRefundRatio) * removeCount,
+        silicium: Math.floor(unitCost.silicium * cancelRefundRatio) * removeCount,
+        hydrogene: Math.floor(unitCost.hydrogene * cancelRefundRatio) * removeCount,
       };
 
       // Refund resources
