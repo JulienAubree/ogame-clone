@@ -17,6 +17,7 @@ export function Knob({ value, onChange, onChangeEnd, color, size = 'md', disable
   const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState(String(value));
   const dragStartRef = useRef<{ y: number; startValue: number } | null>(null);
+  const hasMovedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const px = SIZES[size];
@@ -35,6 +36,7 @@ export function Knob({ value, onChange, onChangeEnd, color, size = 'md', disable
       e.preventDefault();
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       dragStartRef.current = { y: e.clientY, startValue: value };
+      hasMovedRef.current = false;
       setDragging(true);
     },
     [disabled, editing, value],
@@ -44,6 +46,7 @@ export function Knob({ value, onChange, onChangeEnd, color, size = 'md', disable
     (e: React.PointerEvent) => {
       if (!dragStartRef.current || disabled) return;
       const deltaY = dragStartRef.current.y - e.clientY;
+      if (Math.abs(deltaY) > 3) hasMovedRef.current = true;
       // 150px of drag = 100% change
       const deltaPercent = (deltaY / 150) * 100;
       const newValue = Math.round(Math.min(100, Math.max(0, dragStartRef.current.startValue + deltaPercent)));
@@ -67,10 +70,10 @@ export function Knob({ value, onChange, onChangeEnd, color, size = 'md', disable
 
   // Tap to edit (only if no drag movement)
   const handleClick = useCallback(() => {
-    if (disabled || dragging) return;
+    if (disabled || hasMovedRef.current) return;
     setEditing(true);
     setInputValue(String(value));
-  }, [disabled, dragging, value]);
+  }, [disabled, value]);
 
   // Input submit
   const commitEdit = useCallback(() => {
