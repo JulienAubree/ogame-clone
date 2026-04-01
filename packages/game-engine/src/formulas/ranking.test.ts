@@ -46,7 +46,7 @@ const SHIP_DEFS: Record<string, UnitDef> = {
   colonyShip:     { countColumn: 'colonyShip',     cost: { minerai: 10000, silicium: 20000, hydrogene: 10000 } },
   recycler:       { countColumn: 'recycler',       cost: { minerai: 10000, silicium: 6000,  hydrogene: 2000 } },
   prospector:     { countColumn: 'prospector',     cost: { minerai: 3000,  silicium: 1000,  hydrogene: 500 } },
-  explorer:       { countColumn: 'explorer',       cost: { minerai: 5000,  silicium: 2500,  hydrogene: 500 } },
+  recuperateur:   { countColumn: 'recuperateur',   cost: { minerai: 5000,  silicium: 2500,  hydrogene: 500 } },
 };
 
 const DEFENSE_DEFS: Record<string, UnitDef> = {
@@ -116,7 +116,7 @@ describe('calculateFleetPoints', () => {
     expect(calculateFleetPoints({
       smallCargo: 0, largeCargo: 0, interceptor: 0, frigate: 0,
       cruiser: 0, battlecruiser: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
-      prospector: 0, explorer: 0,
+      prospector: 0, recuperateur: 0,
     }, SHIP_DEFS)).toBe(0);
   });
 
@@ -124,7 +124,7 @@ describe('calculateFleetPoints', () => {
     expect(calculateFleetPoints({
       smallCargo: 10, largeCargo: 0, interceptor: 0, frigate: 0,
       cruiser: 0, battlecruiser: 0, espionageProbe: 0, colonyShip: 0, recycler: 0,
-      prospector: 0, explorer: 0,
+      prospector: 0, recuperateur: 0,
     }, SHIP_DEFS)).toBe(40);
   });
 });

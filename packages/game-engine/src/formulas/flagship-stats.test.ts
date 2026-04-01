@@ -63,10 +63,10 @@ describe('computeBaseStatsFromShips', () => {
 });
 
 describe('FLAGSHIP_EXCLUDED_SHIPS', () => {
-  it('excludes espionageProbe, solarSatellite, explorer', () => {
+  it('excludes espionageProbe, solarSatellite, recuperateur', () => {
     expect(FLAGSHIP_EXCLUDED_SHIPS).toContain('espionageProbe');
     expect(FLAGSHIP_EXCLUDED_SHIPS).toContain('solarSatellite');
-    expect(FLAGSHIP_EXCLUDED_SHIPS).toContain('explorer');
+    expect(FLAGSHIP_EXCLUDED_SHIPS).toContain('recuperateur');
     expect(FLAGSHIP_EXCLUDED_SHIPS).toHaveLength(3);
   });
 });

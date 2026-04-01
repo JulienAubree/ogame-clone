@@ -156,9 +156,9 @@ async function migrate() {
     await db.execute(sql`ALTER TABLE planets DROP COLUMN IF EXISTS storage_silicium_level`);
     await db.execute(sql`ALTER TABLE planets DROP COLUMN IF EXISTS storage_hydrogene_level`);
 
-    // Add prospector and explorer to planet_ships
+    // Add prospector and recuperateur to planet_ships
     await db.execute(sql`ALTER TABLE planet_ships ADD COLUMN IF NOT EXISTS prospector INTEGER NOT NULL DEFAULT 0`);
-    await db.execute(sql`ALTER TABLE planet_ships ADD COLUMN IF NOT EXISTS explorer INTEGER NOT NULL DEFAULT 0`);
+    await db.execute(sql`ALTER TABLE planet_ships ADD COLUMN IF NOT EXISTS recuperateur INTEGER NOT NULL DEFAULT 0`);
 
     await db.execute(sql`COMMIT`);
     console.log('Migration complete!');

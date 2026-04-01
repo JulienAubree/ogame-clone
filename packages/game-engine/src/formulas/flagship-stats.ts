@@ -1,4 +1,4 @@
-export const FLAGSHIP_EXCLUDED_SHIPS = ['espionageProbe', 'solarSatellite', 'explorer'] as const;
+export const FLAGSHIP_EXCLUDED_SHIPS = ['espionageProbe', 'solarSatellite', 'recuperateur'] as const;
 
 export const FLAGSHIP_DEFAULT_STATS = {
   weapons: 12,

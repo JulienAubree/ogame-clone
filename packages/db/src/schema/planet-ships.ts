@@ -15,6 +15,6 @@ export const planetShips = pgTable('planet_ships', {
   colonyShip: integer('colony_ship').notNull().default(0),
   recycler: integer('recycler').notNull().default(0),
   prospector: integer('prospector').notNull().default(0),
-  explorer: integer('explorer').notNull().default(0),
+  recuperateur: integer('recuperateur').notNull().default(0),
   solarSatellite: integer('solar_satellite').notNull().default(0),
 });
