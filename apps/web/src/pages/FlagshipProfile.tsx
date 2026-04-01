@@ -261,10 +261,10 @@ function HullCooldownButton({ hullChangeAvailableAt, disabled, onClick }: {
   );
 }
 
-const HULL_CARD_STYLES: Record<string, { border: string; glow: string }> = {
-  combat: { border: 'border-red-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(239,68,68,0.15)]' },
-  industrial: { border: 'border-amber-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(245,158,11,0.15)]' },
-  scientific: { border: 'border-cyan-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(6,182,212,0.15)]' },
+const HULL_CARD_STYLES: Record<string, { border: string; glow: string; badge: string; badgeText: string }> = {
+  combat: { border: 'border-red-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(239,68,68,0.15)]', badge: 'bg-red-500/15 border-red-500/30', badgeText: 'text-red-400' },
+  industrial: { border: 'border-amber-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(245,158,11,0.15)]', badge: 'bg-amber-500/15 border-amber-500/30', badgeText: 'text-amber-400' },
+  scientific: { border: 'border-cyan-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(6,182,212,0.15)]', badge: 'bg-cyan-500/15 border-cyan-500/30', badgeText: 'text-cyan-400' },
 };
 
 const STATUS_LABELS: Record<string, { label: string; color: string; dot: string }> = {
@@ -454,7 +454,16 @@ export default function FlagshipProfile() {
       )}
 
       {/* ===== Identity Card ===== */}
-      <div className={cn('glass-card p-4 lg:p-5 border', HULL_CARD_STYLES[flagship.hullId ?? 'industrial']?.border ?? '', HULL_CARD_STYLES[flagship.hullId ?? 'industrial']?.glow ?? '')}>
+      <div className={cn('glass-card p-4 lg:p-5 border relative', HULL_CARD_STYLES[flagship.hullId ?? 'industrial']?.border ?? '', HULL_CARD_STYLES[flagship.hullId ?? 'industrial']?.glow ?? '')}>
+        {hullConfig && (
+          <span className={cn(
+            'absolute top-3 right-3 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+            HULL_CARD_STYLES[flagship.hullId ?? 'industrial']?.badge ?? '',
+            HULL_CARD_STYLES[flagship.hullId ?? 'industrial']?.badgeText ?? '',
+          )}>
+            {hullConfig.name}
+          </span>
+        )}
         <div className="flex gap-4 lg:gap-5">
           {/* Image — fixed size */}
           <div className="relative flex-shrink-0">
@@ -516,14 +525,11 @@ export default function FlagshipProfile() {
                   </button>
                 </div>
                 {hullConfig && (
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-[11px] text-amber-400/70">{hullConfig.name}</p>
-                    <HullCooldownButton
-                      hullChangeAvailableAt={flagship.hullChangeAvailableAt}
-                      disabled={flagship.status !== 'active'}
-                      onClick={() => setShowHullChange(true)}
-                    />
-                  </div>
+                  <HullCooldownButton
+                    hullChangeAvailableAt={flagship.hullChangeAvailableAt}
+                    disabled={flagship.status !== 'active'}
+                    onClick={() => setShowHullChange(true)}
+                  />
                 )}
                 {flagship.description && (
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{flagship.description}</p>
