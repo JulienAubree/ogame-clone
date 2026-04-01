@@ -120,9 +120,10 @@ export default function Fleet() {
 
     if (config?.requiredShipRoles) {
       const preselect: Record<string, number> = {};
-      for (const shipId of config.requiredShipRoles) {
-        const ship = ships.find((s) => s.id === shipId);
-        if (ship && ship.count > 0) preselect[shipId] = ship.count;
+      for (const role of config.requiredShipRoles) {
+        // Match by id first, then by role
+        const ship = ships.find((s) => s.id === role) ?? ships.find((s) => s.role === role);
+        if (ship && ship.count > 0) preselect[ship.id] = ship.count;
       }
       setSelectedShips(preselect);
     }
@@ -184,9 +185,16 @@ export default function Fleet() {
     const selected = Object.entries(selectedShips).filter(([, c]) => c > 0);
     if (selected.length === 0) return 'Sélectionnez au moins un vaisseau';
 
+    // Helper: check if a ship id matches any required role (by id or by ship role)
+    const matchesRole = (shipId: string, roles: string[]) => {
+      if (roles.includes(shipId)) return true;
+      const ship = ships?.find((s) => s.id === shipId);
+      return ship?.role ? roles.includes(ship.role) : false;
+    };
+
     if (config?.requiredShipRoles && !config.recommendedShipRoles) {
       const hasFlagship = (selectedShips['flagship'] ?? 0) > 0;
-      const hasRequired = config.requiredShipRoles.some((id) => (selectedShips[id] ?? 0) > 0);
+      const hasRequired = selected.some(([id]) => matchesRole(id, config.requiredShipRoles!));
       if (!hasRequired && !hasFlagship) {
         const names = config.requiredShipRoles.map((id) => getShipName(id, gameConfig)).join(', ');
         return `Cette mission nécessite : ${names} ou le vaisseau amiral`;
@@ -194,7 +202,7 @@ export default function Fleet() {
     }
 
     if (config?.exclusive && config.requiredShipRoles) {
-      const hasDisallowed = selected.some(([id]) => id !== 'flagship' && !config.requiredShipRoles!.includes(id));
+      const hasDisallowed = selected.some(([id]) => id !== 'flagship' && !matchesRole(id, config.requiredShipRoles!));
       if (hasDisallowed) return `Cette mission n'autorise que : ${config.requiredShipRoles.map((id) => getShipName(id, gameConfig)).join(', ')}`;
     }
 
