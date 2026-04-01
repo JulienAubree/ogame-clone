@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { trpc } from '@/trpc';
 import { cn } from '@/lib/utils';
+import { useGameConfig } from '../../hooks/useGameConfig';
 
 interface FlagshipNamingModalProps {
   open: boolean;
@@ -9,41 +10,7 @@ interface FlagshipNamingModalProps {
 
 const NAME_REGEX = /^[\p{L}\p{N}\s\-']{2,32}$/u;
 
-type HullId = 'combat' | 'industrial' | 'scientific';
-
-const HULL_DATA: { id: HullId; name: string; description: string; bonuses: string[] }[] = [
-  {
-    id: 'combat',
-    name: 'Coque de combat',
-    description: 'Specialisee dans la guerre et la destruction.',
-    bonuses: [
-      '+6 blindage',
-      '+2 attaques',
-      '+8 armes',
-      '-20% temps construction vaisseaux militaires',
-    ],
-  },
-  {
-    id: 'industrial',
-    name: 'Coque industrielle',
-    description: 'Optimisee pour la production et la collecte de ressources.',
-    bonuses: [
-      '-20% temps construction vaisseaux industriels',
-      'Permet le minage et recyclage',
-    ],
-  },
-  {
-    id: 'scientific',
-    name: 'Coque scientifique',
-    description: 'Concue pour la recherche et le renseignement.',
-    bonuses: [
-      '-20% temps de recherche',
-      'Mission de scan (espionnage)',
-    ],
-  },
-];
-
-const HULL_STYLES: Record<HullId, { border: string; ring: string; icon: string; accent: string }> = {
+const HULL_STYLES: Record<string, { border: string; ring: string; icon: string; accent: string }> = {
   combat: { border: 'border-red-500/60', ring: 'ring-red-500/30', icon: 'text-red-400', accent: 'text-red-400' },
   industrial: { border: 'border-amber-500/60', ring: 'ring-amber-500/30', icon: 'text-amber-400', accent: 'text-amber-400' },
   scientific: { border: 'border-cyan-500/60', ring: 'ring-cyan-500/30', icon: 'text-cyan-400', accent: 'text-cyan-400' },
@@ -53,7 +20,10 @@ export function FlagshipNamingModal({ open, onClose }: FlagshipNamingModalProps)
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
-  const [selectedHull, setSelectedHull] = useState<HullId | null>(null);
+  const [selectedHull, setSelectedHull] = useState<string | null>(null);
+
+  const { data: config } = useGameConfig();
+  const hulls = config?.hulls ? Object.values(config.hulls) : [];
 
   const utils = trpc.useUtils();
   const createMutation = trpc.flagship.create.useMutation({
@@ -85,9 +55,9 @@ export function FlagshipNamingModal({ open, onClose }: FlagshipNamingModalProps)
             Type de coque <span className="text-destructive">*</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {HULL_DATA.map((hull) => {
+            {hulls.map((hull) => {
               const isSelected = selectedHull === hull.id;
-              const styles = HULL_STYLES[hull.id];
+              const styles = HULL_STYLES[hull.id] ?? HULL_STYLES.combat;
               return (
                 <button
                   key={hull.id}
@@ -105,7 +75,7 @@ export function FlagshipNamingModal({ open, onClose }: FlagshipNamingModalProps)
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground leading-snug">{hull.description}</p>
                   <ul className="mt-2 space-y-0.5">
-                    {hull.bonuses.map((bonus, i) => (
+                    {(hull.bonusLabels ?? []).map((bonus, i) => (
                       <li key={i} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
                         <span className={cn('mt-0.5 shrink-0', isSelected ? styles.icon : 'text-muted-foreground/60')}>+</span>
                         <span>{bonus}</span>

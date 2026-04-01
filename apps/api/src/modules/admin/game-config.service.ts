@@ -90,6 +90,7 @@ export interface HullConfig {
   };
   unavailabilitySeconds: number;
   cooldownSeconds: number;
+  bonusLabels: string[];
   scanCooldownSeconds?: number;
   scanEspionageBonus?: number;
 }
