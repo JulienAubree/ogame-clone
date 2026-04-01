@@ -9,9 +9,11 @@ import { findShipByRole } from '../../../lib/config-helpers.js';
 export class RecycleHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
     const config = await ctx.gameConfigService.getFullConfig();
-    const recyclerDef = findShipByRole(config, 'recycling');
+    const recyclerIds = new Set(
+      Object.values(config.ships).filter((s) => s.role === 'recycling').map((s) => s.id),
+    );
     for (const [shipType, count] of Object.entries(input.ships)) {
-      if (count > 0 && shipType !== recyclerDef.id && shipType !== 'flagship') {
+      if (count > 0 && !recyclerIds.has(shipType) && shipType !== 'flagship') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seuls les recycleurs peuvent être envoyés en mission recyclage' });
       }
     }
@@ -82,10 +84,14 @@ export class RecycleHandler implements MissionHandler {
     }
 
     const config = await ctx.gameConfigService.getFullConfig();
-    const recyclerDef = findShipByRole(config, 'recycling');
-    const recyclerCount = fleetEvent.ships[recyclerDef.id] ?? 0;
-    const cargoPerRecycler = recyclerDef.cargoCapacity ?? 20000;
-    const totalCargoCapacityValue = recyclerCount * cargoPerRecycler;
+    const recyclerDefs = Object.values(config.ships).filter((s) => s.role === 'recycling');
+    let totalCargoCapacityValue = 0;
+    let recyclerCount = 0;
+    for (const def of recyclerDefs) {
+      const count = fleetEvent.ships[def.id] ?? 0;
+      recyclerCount += count;
+      totalCargoCapacityValue += count * (def.cargoCapacity ?? 20000);
+    }
 
     let remainingCargo = totalCargoCapacityValue;
     const availableMinerai = Number(debris.minerai);
