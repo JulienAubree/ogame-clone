@@ -25,7 +25,6 @@ export function createUserRouter(userService: ReturnType<typeof createUserServic
       .input(z.object({
         bio: z.string().max(500).nullable().optional(),
         avatarId: z.string().max(128).nullable().optional(),
-        playstyle: z.enum(['miner', 'warrior', 'explorer']).nullable().optional(),
         seekingAlliance: z.boolean().optional(),
         profileVisibility: z.record(z.string(), z.boolean()).optional(),
       }))

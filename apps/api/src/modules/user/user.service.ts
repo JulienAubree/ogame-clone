@@ -69,7 +69,6 @@ export function createUserService(db: Database, assetsDir: string) {
     async updateProfile(userId: string, data: {
       bio?: string | null;
       avatarId?: string | null;
-      playstyle?: 'miner' | 'warrior' | 'explorer' | null;
       seekingAlliance?: boolean;
       theme?: string;
       profileVisibility?: Record<string, boolean>;
@@ -87,7 +86,6 @@ export function createUserService(db: Database, assetsDir: string) {
       const update: Record<string, unknown> = {};
       if (data.bio !== undefined) update.bio = data.bio;
       if (data.avatarId !== undefined) update.avatarId = data.avatarId;
-      if (data.playstyle !== undefined) update.playstyle = data.playstyle;
       if (data.seekingAlliance !== undefined) update.seekingAlliance = data.seekingAlliance;
       if (data.profileVisibility !== undefined) update.profileVisibility = data.profileVisibility;
 

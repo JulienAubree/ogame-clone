@@ -26,6 +26,7 @@ import { AttackHandler } from './handlers/attack.handler.js';
 import { PirateHandler } from './handlers/pirate.handler.js';
 import { MineHandler } from './handlers/mine.handler.js';
 import { TradeHandler } from './handlers/trade.handler.js';
+import { ScanHandler } from './handlers/scan.handler.js';
 import { buildShipStatsMap } from './fleet.types.js';
 import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
@@ -57,6 +58,7 @@ export function createFleetService(
     pirate: new PirateHandler(),
     mine: new MineHandler(),
     trade: new TradeHandler(),
+    scan: new ScanHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
@@ -165,6 +167,13 @@ export function createFleetService(
         }
         if (flagship.planetId !== input.originPlanetId) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre vaisseau amiral n\'est pas sur cette planete' });
+        }
+        // Hull-restricted missions: flagship can only mine/recycle with industrial hull
+        if ((input.mission === 'mine' || input.mission === 'recycle') && flagship.hullId !== 'industrial') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Seule la coque industrielle permet au vaisseau amiral de participer aux missions de minage et recyclage',
+          });
         }
         // Inject flagship stats into shipStatsMap for speed/fuel/cargo calculations
         shipStatsMap['flagship'] = {
@@ -320,8 +329,8 @@ export function createFleetService(
         { delay: duration * 1000, jobId: `fleet-arrive-${event.id}` },
       );
 
-      // Set flagship in mission if included
-      if (hasFlagship && flagshipService) {
+      // Set flagship in mission if included (scan: flagship stays home, only virtual probe travels)
+      if (hasFlagship && flagshipService && input.mission !== 'scan') {
         await flagshipService.setInMission(userId);
       }
 
