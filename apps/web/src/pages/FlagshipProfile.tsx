@@ -261,6 +261,162 @@ function HullCooldownButton({ hullChangeAvailableAt, disabled, onClick }: {
   );
 }
 
+// ── Hull Abilities Panel ──
+
+function HullAbilitiesPanel({ flagship, hullConfig, hullId }: {
+  flagship: any;
+  hullConfig: any;
+  hullId: string;
+}) {
+  const [scanTarget, setScanTarget] = useState({ galaxy: '', system: '', position: '' });
+  const [scanError, setScanError] = useState('');
+
+  const utils = trpc.useUtils();
+  const { data: talentData } = trpc.talent.list.useQuery();
+  const scanCooldown = talentData?.cooldowns?.['scan_mission'];
+  const scanOnCooldown = scanCooldown ? new Date(scanCooldown.cooldownEnds) > new Date() : false;
+  const scanCooldownEnd = scanCooldown ? new Date(scanCooldown.cooldownEnds) : null;
+  const scanSecondsLeft = useCountdown(scanOnCooldown ? scanCooldownEnd : null);
+
+  const sendMutation = trpc.fleet.send.useMutation({
+    onSuccess: () => {
+      setScanTarget({ galaxy: '', system: '', position: '' });
+      setScanError('');
+      utils.talent.list.invalidate();
+      utils.fleet.movements.invalidate();
+    },
+    onError: (err) => setScanError(err.message),
+  });
+
+  const handleScan = () => {
+    const g = parseInt(scanTarget.galaxy);
+    const s = parseInt(scanTarget.system);
+    const p = parseInt(scanTarget.position);
+    if (!g || !s || !p) { setScanError('Coordonnees invalides'); return; }
+    setScanError('');
+    sendMutation.mutate({
+      originPlanetId: flagship.planetId,
+      targetGalaxy: g,
+      targetSystem: s,
+      targetPosition: p,
+      mission: 'scan',
+      ships: { flagship: 1 },
+    });
+  };
+
+  const styles = HULL_CARD_STYLES[hullId] ?? HULL_CARD_STYLES.industrial;
+  const isActive = flagship.status === 'active';
+
+  return (
+    <div className={cn('glass-card p-4 lg:p-5 border', styles.border)}>
+      <SectionHeader
+        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>}
+        label="Effets & Pouvoirs"
+        color={styles.badgeText}
+      />
+
+      {/* Passive bonuses */}
+      <div className="mt-3 space-y-1.5">
+        {(hullConfig.bonusLabels ?? []).map((label: string, i: number) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <span className={cn('text-[10px]', styles.badgeText)}>●</span>
+            <span className={cn('font-medium', isActive ? 'text-slate-200' : 'text-slate-500')}>
+              {label}
+            </span>
+            {!isActive && <span className="text-[10px] text-slate-600">(inactif)</span>}
+          </div>
+        ))}
+      </div>
+
+      {/* Scan ability (scientific hull only) */}
+      {hullId === 'scientific' && (
+        <div className="mt-4 pt-3 border-t border-slate-700/50">
+          <div className="flex items-center gap-2 mb-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+            <span className="text-xs font-semibold text-cyan-300">Mission de scan</span>
+            {scanOnCooldown && (
+              <span className="text-[10px] text-slate-500 font-mono">
+                CD {Math.floor(scanSecondsLeft / 60)}min
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-400 mb-2">
+            Envoie une sonde ephemere (+2 espionnage) sur une planete cible. La sonde est detruite apres la mission.
+          </p>
+          <div className="flex items-end gap-2">
+            <div className="flex gap-1.5">
+              <input
+                type="number"
+                placeholder="G"
+                value={scanTarget.galaxy}
+                onChange={(e) => setScanTarget(t => ({ ...t, galaxy: e.target.value }))}
+                className="w-12 rounded border border-slate-600 bg-slate-900/80 px-2 py-1 text-xs text-center text-slate-200 placeholder-slate-600"
+              />
+              <span className="text-slate-600 self-center">:</span>
+              <input
+                type="number"
+                placeholder="S"
+                value={scanTarget.system}
+                onChange={(e) => setScanTarget(t => ({ ...t, system: e.target.value }))}
+                className="w-14 rounded border border-slate-600 bg-slate-900/80 px-2 py-1 text-xs text-center text-slate-200 placeholder-slate-600"
+              />
+              <span className="text-slate-600 self-center">:</span>
+              <input
+                type="number"
+                placeholder="P"
+                value={scanTarget.position}
+                onChange={(e) => setScanTarget(t => ({ ...t, position: e.target.value }))}
+                className="w-12 rounded border border-slate-600 bg-slate-900/80 px-2 py-1 text-xs text-center text-slate-200 placeholder-slate-600"
+              />
+            </div>
+            <button
+              onClick={handleScan}
+              disabled={!isActive || scanOnCooldown || sendMutation.isPending || !scanTarget.galaxy || !scanTarget.system || !scanTarget.position}
+              className="rounded bg-cyan-600 px-3 py-1 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {sendMutation.isPending ? 'Envoi...' : 'Scanner'}
+            </button>
+          </div>
+          {scanError && <p className="mt-1.5 text-[11px] text-red-400">{scanError}</p>}
+          {sendMutation.isSuccess && <p className="mt-1.5 text-[11px] text-emerald-400">Sonde envoyee !</p>}
+        </div>
+      )}
+
+      {/* Industrial abilities info */}
+      {hullId === 'industrial' && (
+        <div className="mt-4 pt-3 border-t border-slate-700/50">
+          <div className="flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
+              <path d="M2 20h20"/><path d="M5 20V8l7-5 7 5v12"/>
+            </svg>
+            <span className="text-xs font-semibold text-amber-300">Minage & Recyclage</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Votre vaisseau amiral peut participer aux missions de minage et recyclage. Son extraction est egale a sa soute.
+          </p>
+        </div>
+      )}
+
+      {/* Combat abilities info */}
+      {hullId === 'combat' && (
+        <div className="mt-4 pt-3 border-t border-slate-700/50">
+          <div className="flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span className="text-xs font-semibold text-red-300">Puissance brute</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Les bonus de stats de combat s'appliquent automatiquement quand le vaisseau amiral est stationne.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const HULL_CARD_STYLES: Record<string, { border: string; glow: string; badge: string; badgeText: string }> = {
   combat: { border: 'border-red-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(239,68,68,0.15)]', badge: 'bg-red-500/15 border-red-500/30', badgeText: 'text-red-400' },
   industrial: { border: 'border-amber-500/30', glow: 'shadow-[0_0_15px_-3px_rgba(245,158,11,0.15)]', badge: 'bg-amber-500/15 border-amber-500/30', badgeText: 'text-amber-400' },
@@ -577,6 +733,15 @@ export default function FlagshipProfile() {
           </div>
         </div>
       </div>
+
+      {/* ===== Hull Effects & Abilities ===== */}
+      {hullConfig && (
+        <HullAbilitiesPanel
+          flagship={flagship}
+          hullConfig={hullConfig}
+          hullId={flagship.hullId ?? 'industrial'}
+        />
+      )}
 
       {/* ===== Stats Card ===== */}
       <div className={cn('glass-card p-4 lg:p-5 space-y-4 border', HULL_CARD_STYLES[flagship.hullId ?? 'industrial']?.border ?? '')}>
