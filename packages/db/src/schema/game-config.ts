@@ -96,7 +96,7 @@ export const shipDefinitions = pgTable('ship_definitions', {
   isStationary: boolean('is_stationary').notNull().default(false),
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
-  role: varchar('role', { length: 64 }).unique(),
+  role: varchar('role', { length: 64 }),
   flavorText: text('flavor_text'),
 });
 
