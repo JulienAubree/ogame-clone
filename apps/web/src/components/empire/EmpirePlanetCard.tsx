@@ -31,7 +31,7 @@ interface EmpirePlanet {
   hasFlagship: boolean;
   activeBuild: { buildingId: string; level: number; endTime: string } | null;
   activeResearch: { researchId: string; level: number; endTime: string } | null;
-  activeShipyard: { shipId: string; quantity: number; endTime: string } | null;
+  activeShipyard: { shipId: string; quantity: number; endTime: string; facilityId: string | null } | null;
   activeDefense: { defenseId: string; quantity: number; endTime: string } | null;
   outboundFleets: { count: number; earliestArrival: string } | null;
   inboundFriendlyFleets: { count: number; earliestArrival: string } | null;
@@ -149,7 +149,7 @@ export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; is
           </button>
         )}
         {planet.activeShipyard && (
-          <button onClick={() => goTo('/shipyard')} className="flex items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-[11px] text-primary hover:bg-primary/20 transition-colors">
+          <button onClick={() => goTo(planet.activeShipyard!.facilityId === 'commandCenter' ? '/command-center' : '/shipyard')} className="flex items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-[11px] text-primary hover:bg-primary/20 transition-colors">
             <ShipyardIcon width={12} height={12} />
             <span>{getShipName(planet.activeShipyard.shipId, gameConfig)} x{planet.activeShipyard.quantity}</span>
             <Timer endTime={new Date(planet.activeShipyard.endTime)} className="inline [&>span]:text-primary" />

@@ -152,6 +152,7 @@ export function createPlanetService(
               quantity: buildQueue.quantity,
               endTime: buildQueue.endTime,
               status: buildQueue.status,
+              facilityId: buildQueue.facilityId,
             })
             .from(buildQueue)
             .where(and(eq(buildQueue.planetId, planet.id), inArray(buildQueue.status, ['active', 'queued'])));
@@ -241,7 +242,7 @@ export function createPlanetService(
               ? { researchId: activeResearch.itemId, level: activeResearch.quantity, endTime: activeResearch.endTime.toISOString() }
               : null,
             activeShipyard: activeShipyard
-              ? { shipId: activeShipyard.itemId, quantity: activeShipyard.quantity, endTime: activeShipyard.endTime.toISOString() }
+              ? { shipId: activeShipyard.itemId, quantity: activeShipyard.quantity, endTime: activeShipyard.endTime.toISOString(), facilityId: activeShipyard.facilityId }
               : null,
             activeDefense: activeDefense
               ? { defenseId: activeDefense.itemId, quantity: activeDefense.quantity, endTime: activeDefense.endTime.toISOString() }

@@ -25,7 +25,7 @@ interface EmpirePlanet {
   hasFlagship: boolean;
   activeBuild: { buildingId: string; level: number; endTime: string } | null;
   activeResearch: { researchId: string; level: number; endTime: string } | null;
-  activeShipyard: { shipId: string; quantity: number; endTime: string } | null;
+  activeShipyard: { shipId: string; quantity: number; endTime: string; facilityId: string | null } | null;
   activeDefense: { defenseId: string; quantity: number; endTime: string } | null;
   outboundFleets: { count: number; earliestArrival: string } | null;
   inboundFriendlyFleets: { count: number; earliestArrival: string } | null;
