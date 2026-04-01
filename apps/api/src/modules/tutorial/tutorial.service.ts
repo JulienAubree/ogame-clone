@@ -422,7 +422,7 @@ export function createTutorialService(
         })
         .where(eq(tutorialProgress.id, progress.id));
 
-      // Generate tutorial PvE mining mission when quest_14 (prospector built) is completed
+      // Generate tutorial PvE mining mission when quest_14 (recuperateur built) is completed
       if (quest.id === 'quest_14' && pveService && planet) {
         try {
           await pveService.generateDiscoveredMission(userId, planet.galaxy, planet.system, 1);
@@ -441,8 +441,8 @@ export function createTutorialService(
         }
       }
 
-      // Clean metadata when quest_15 is completed
-      if (quest.id === 'quest_15') {
+      // Clean metadata when quest_17 (mining mission) is completed
+      if (quest.id === 'quest_17') {
         await db
           .update(tutorialProgress)
           .set({ metadata: null })

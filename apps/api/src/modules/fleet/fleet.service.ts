@@ -1029,6 +1029,16 @@ export function createFleetService(
             })
             .where(eq(planets.id, event.originPlanetId));
         }
+
+        // Hook: daily quest — comptabiliser les ressources rapportees par la flotte
+        if (dailyQuestService) {
+          const totalCollected = mineraiCargo + siliciumCargo + hydrogeneCargo;
+          await dailyQuestService.processEvent({
+            type: 'resources:collected',
+            userId: event.userId,
+            payload: { totalCollected },
+          }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
+        }
       }
 
       await db
@@ -1078,6 +1088,7 @@ export function createFleetService(
         tutorialChecks: [
           { type: 'fleet_return', targetId: event.mission, targetValue: 1 },
           ...(event.mission === 'mine' ? [{ type: 'mission_complete' as const, targetId: 'mine', targetValue: 1 }] : []),
+          ...(event.mission === 'pirate' ? [{ type: 'mission_complete' as const, targetId: 'pirate', targetValue: 1 }] : []),
         ],
       };
     },

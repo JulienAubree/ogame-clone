@@ -180,6 +180,10 @@ export function useNotifications() {
         }
         break;
       }
+      case 'tutorial-quest-pending':
+        utils.tutorial.getCurrent.invalidate();
+        utils.resource.production.invalidate();
+        break;
       case 'tutorial-quest-complete':
         utils.tutorial.getCurrent.invalidate();
         utils.resource.production.invalidate();
