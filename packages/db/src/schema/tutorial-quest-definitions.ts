@@ -12,4 +12,7 @@ export const tutorialQuestDefinitions = pgTable('tutorial_quest_definitions', {
   rewardSilicium: integer('reward_silicium').notNull().default(0),
   rewardHydrogene: integer('reward_hydrogene').notNull().default(0),
   conditionLabel: varchar('condition_label', { length: 128 }),
+  chapterId: varchar('chapter_id', { length: 64 }).notNull().default('chapter_1'),
+  journalEntry: text('journal_entry').notNull().default(''),
+  objectiveLabel: varchar('objective_label', { length: 128 }).notNull().default(''),
 });

@@ -7,6 +7,7 @@ export const tutorialProgress = pgTable('tutorial_progress', {
   currentQuestId: varchar('current_quest_id', { length: 64 }).notNull().default('quest_1'),
   completedQuests: jsonb('completed_quests').notNull().default([]),
   isComplete: boolean('is_complete').notNull().default(false),
+  pendingCompletion: boolean('pending_completion').notNull().default(false),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
