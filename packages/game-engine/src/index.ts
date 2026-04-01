@@ -18,3 +18,4 @@ export * from './formulas/fp.js';
 export * from './formulas/flagship-stats.js';
 export * from './formulas/production-config.js';
 export * from './formulas/shield.js';
+export * from './formulas/armored-storage.js';

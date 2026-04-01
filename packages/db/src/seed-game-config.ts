@@ -44,6 +44,7 @@ const CATEGORIES = [
   { id: 'research_propulsion', entityType: 'research', name: 'Propulsion', sortOrder: 0 },
   { id: 'research_combat', entityType: 'research', name: 'Combat', sortOrder: 1 },
   { id: 'research_sciences', entityType: 'research', name: 'Sciences', sortOrder: 2 },
+  { id: 'research_defense', entityType: 'research', name: 'Défense', sortOrder: 3 },
   // Ships
   { id: 'ship_combat', entityType: 'ship', name: 'Combat', sortOrder: 0 },
   { id: 'ship_transport', entityType: 'ship', name: 'Transport', sortOrder: 1 },
@@ -110,6 +111,7 @@ const RESEARCH = [
   { id: 'sensorNetwork', name: 'Réseau de capteurs', description: "Deploie un reseau de capteurs en espace profond pour detecter les flottes hostiles en approche. Plus le niveau est eleve, plus la detection est precoce et detaillee.", baseCostMinerai: 10000, baseCostSilicium: 20000, baseCostHydrogene: 10000, costFactor: 2, levelColumn: 'sensorNetwork', categoryId: 'research_combat', sortOrder: 11, flavorText: "Un maillage de balises furtives parseme l'espace autour de vos colonies, detectant toute perturbation gravitationnelle causee par une flotte en approche.", effectDescription: "Chaque niveau ameliore le delai et le detail de detection des attaques entrantes.", prerequisites: { buildings: [{ buildingId: 'researchLab', level: 6 }], research: [{ researchId: 'espionageTech', level: 3 }] } },
   { id: 'stealthTech', name: 'Technologie furtive', description: "Developpe des systemes de brouillage et d'occultation pour reduire la detectabilite de vos flottes d'attaque. Contrecarre le reseau de capteurs ennemi.", baseCostMinerai: 15000, baseCostSilicium: 15000, baseCostHydrogene: 10000, costFactor: 2, levelColumn: 'stealthTech', categoryId: 'research_combat', sortOrder: 12, flavorText: "Des generateurs de champ holographique et des absorbeurs d'ondes rendent vos flottes quasi-invisibles aux capteurs ennemis.", effectDescription: "Chaque niveau reduit l'efficacite du reseau de capteurs ennemi, retardant la detection et masquant les informations.", prerequisites: { buildings: [{ buildingId: 'researchLab', level: 6 }], research: [{ researchId: 'espionageTech', level: 3 }] } },
   { id: 'semiconductors', name: 'Technologie de semi-conducteurs', description: "Ameliore l'efficacite des circuits de tous les systemes, reduisant leur consommation energetique de 2% par niveau.", baseCostMinerai: 800, baseCostSilicium: 400, baseCostHydrogene: 200, costFactor: 2, levelColumn: 'semiconductors', categoryId: 'research_sciences', sortOrder: 11, flavorText: "Des materiaux semi-conducteurs avances reduisent les pertes thermiques et ameliorent le rendement de tous les systemes energetiques de la colonie.", effectDescription: "Chaque niveau reduit la consommation d'energie de tous les batiments de 2%.", prerequisites: { buildings: [{ buildingId: 'researchLab', level: 3 }], research: [{ researchId: 'energyTech', level: 1 }] } },
+  { id: 'armoredStorage', name: 'Blindage des hangars', description: 'Renforce les hangars pour protéger une partie des ressources contre le pillage.', baseCostMinerai: 1000, baseCostSilicium: 1000, baseCostHydrogene: 0, costFactor: 2, levelColumn: 'armoredStorage', categoryId: 'research_defense', sortOrder: 50, flavorText: 'Un blindage moléculaire rend une partie du stockage totalement inaccessible aux pilleurs.', effectDescription: 'Chaque niveau augmente de 5% la capacité blindée des hangars, protégeant les ressources du pillage.', prerequisites: { buildings: [{ buildingId: 'storageMinerai', level: 2 }], research: [] } },
 ];
 
 // ── Ship data (merged: ships + combat-stats + ship-stats) ──
@@ -301,6 +303,7 @@ const BONUS_DEFINITIONS = [
   { id: 'espionageTech__spy_range', sourceType: 'research', sourceId: 'espionageTech', stat: 'spy_range', percentPerLevel: 100, category: null, statLabel: "Portée d'espionnage" },
   { id: 'energyTech__energy_production', sourceType: 'research', sourceId: 'energyTech', stat: 'energy_production', percentPerLevel: 2, category: null, statLabel: "Production d'énergie" },
   { id: 'semiconductors__energy_consumption', sourceType: 'research', sourceId: 'semiconductors', stat: 'energy_consumption', percentPerLevel: -2, category: null, statLabel: "Consommation d'énergie" },
+  { id: 'armoredStorage__armored_storage', sourceType: 'research', sourceId: 'armoredStorage', stat: 'armored_storage', percentPerLevel: 5, category: null, statLabel: 'Protection blindée' },
 ];
 
 // ── Mission definitions data ──
@@ -395,6 +398,7 @@ const UNIVERSE_CONFIG = [
   { key: 'combat_debris_ratio', value: 0.3 },
   { key: 'combat_defense_repair_rate', value: 0.7 },
   { key: 'combat_pillage_ratio', value: 0.33 },
+  { key: 'protected_storage_base_ratio', value: 0.05 },
   { key: 'combat_min_damage_per_hit', value: 1 },
   { key: 'combat_research_bonus_per_level', value: 0.1 },
 

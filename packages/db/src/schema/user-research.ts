@@ -17,4 +17,5 @@ export const userResearch = pgTable('user_research', {
   sensorNetwork: smallint('sensor_network').notNull().default(0),
   stealthTech: smallint('stealth_tech').notNull().default(0),
   semiconductors: smallint('semiconductors').notNull().default(0),
+  armoredStorage: smallint('armored_storage').notNull().default(0),
 });
