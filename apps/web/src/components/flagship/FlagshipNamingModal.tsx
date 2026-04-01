@@ -124,7 +124,7 @@ export function FlagshipNamingModal({ open, onClose }: FlagshipNamingModalProps)
         </div>
 
         <button
-          onClick={() => createMutation.mutate({ name, description: description || undefined, hullId: selectedHull! })}
+          onClick={() => createMutation.mutate({ name, description: description || undefined, hullId: selectedHull as 'combat' | 'industrial' | 'scientific' })}
           disabled={!isValid || createMutation.isPending}
           className="mt-4 w-full rounded bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-500 disabled:opacity-50"
         >
