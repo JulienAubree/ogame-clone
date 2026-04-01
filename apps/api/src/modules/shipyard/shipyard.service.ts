@@ -72,7 +72,11 @@ export function createShipyardService(
           const buildCategory = getShipBuildCategory(def, config.bonuses);
           const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
           const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
-          const time = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier;
+          const hullKey = buildCategory === 'build_military' ? 'hull_combat_build_time_reduction'
+            : buildCategory === 'build_industrial' ? 'hull_industrial_build_time_reduction'
+            : null;
+          const hullTimeMultiplier = hullKey ? 1 - (talentCtx[hullKey] ?? 0) : 1;
+          const time = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier * hullTimeMultiplier;
 
           return {
             id: def.id,
@@ -198,7 +202,11 @@ export function createShipyardService(
         const buildCategory = getShipBuildCategory(def as any, config.bonuses);
         const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
         const talentTimeMultiplier = 1 / (1 + (talentCtx['ship_build_time'] ?? 0));
-        unitTime = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier;
+        const hullKey = buildCategory === 'build_military' ? 'hull_combat_build_time_reduction'
+          : buildCategory === 'build_industrial' ? 'hull_industrial_build_time_reduction'
+          : null;
+        const hullTimeMultiplier = hullKey ? 1 - (talentCtx[hullKey] ?? 0) : 1;
+        unitTime = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier * hullTimeMultiplier;
       } else {
         const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
         const talentTimeMultiplier = 1 / (1 + (talentCtx['defense_build_time'] ?? 0));
@@ -346,7 +354,11 @@ export function createShipyardService(
           const buildCategory = getShipBuildCategory(def as any, config.bonuses);
           const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
           const talentTimeMultiplier = 1 / (1 + (talentCtx['ship_build_time'] ?? 0));
-          unitTime = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier;
+          const hullKey = buildCategory === 'build_military' ? 'hull_combat_build_time_reduction'
+            : buildCategory === 'build_industrial' ? 'hull_industrial_build_time_reduction'
+            : null;
+          const hullTimeMultiplier = hullKey ? 1 - (talentCtx[hullKey] ?? 0) : 1;
+          unitTime = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier * hullTimeMultiplier;
         } else {
           const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
           const talentTimeMultiplier = 1 / (1 + (talentCtx['defense_build_time'] ?? 0));
@@ -400,7 +412,11 @@ export function createShipyardService(
           const buildCategory = getShipBuildCategory(def as any, config.bonuses);
           const bonusMultiplier = resolveBonus('ship_build_time', buildCategory, buildingLevels, config.bonuses);
           const talentTimeMultiplier = 1 / (1 + (talentCtx['ship_build_time'] ?? 0));
-          unitTime = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier;
+          const hullKey = buildCategory === 'build_military' ? 'hull_combat_build_time_reduction'
+            : buildCategory === 'build_industrial' ? 'hull_industrial_build_time_reduction'
+            : null;
+          const hullTimeMultiplier = hullKey ? 1 - (talentCtx[hullKey] ?? 0) : 1;
+          unitTime = shipTime(def, bonusMultiplier, timeDivisor) * talentTimeMultiplier * hullTimeMultiplier;
         } else {
           const bonusMultiplier = resolveBonus('defense_build_time', null, buildingLevels, config.bonuses);
           const talentTimeMultiplier = 1 / (1 + (talentCtx['defense_build_time'] ?? 0));
