@@ -84,6 +84,7 @@ export function createShipyardService(
             prerequisitesMet: prereqCheck.met,
             missingPrerequisites: prereqCheck.missing,
             isStationary: def.isStationary,
+            role: def.role ?? null,
           };
         });
     },

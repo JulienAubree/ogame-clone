@@ -26,7 +26,7 @@ export function categorizeShip(
   shipId: string,
   shipCount: number,
   missionDef: MissionDef | undefined,
-  shipConfig?: { isStationary?: boolean },
+  shipConfig?: { isStationary?: boolean; role?: string | null },
 ): ShipCategory {
   if (shipConfig?.isStationary) return 'disabled';
   if (!missionDef) return 'disabled';
@@ -37,12 +37,19 @@ export function categorizeShip(
     return (missionDef.exclusive && missionDef.requiredShipRoles) ? 'disabled' : 'optional';
   }
 
+  const matchesRequired = missionDef.requiredShipRoles?.some(
+    (r) => r === shipId || (shipConfig?.role && r === shipConfig.role),
+  );
+  const matchesRecommended = missionDef.recommendedShipRoles?.some(
+    (r) => r === shipId || (shipConfig?.role && r === shipConfig.role),
+  );
+
   if (missionDef.exclusive && missionDef.requiredShipRoles) {
-    return missionDef.requiredShipRoles.includes(shipId) ? 'required' : 'disabled';
+    return matchesRequired ? 'required' : 'disabled';
   }
 
-  if (missionDef.requiredShipRoles?.includes(shipId)) return 'required';
-  if (missionDef.recommendedShipRoles?.includes(shipId)) return 'required';
+  if (matchesRequired) return 'required';
+  if (matchesRecommended) return 'required';
 
   return 'optional';
 }

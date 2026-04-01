@@ -10,6 +10,7 @@ interface Ship {
   name: string;
   count: number;
   isStationary?: boolean;
+  role?: string | null;
   flagshipImageIndex?: number;
 }
 
@@ -139,7 +140,7 @@ export function FleetComposition({ ships, mission, selectedShips, onChange, onTo
 
   for (const ship of ships) {
     if (ship.count === 0) continue;
-    const category = categorizeShip(ship.id, ship.count, gameConfig?.missions[mission], { isStationary: ship.isStationary });
+    const category = categorizeShip(ship.id, ship.count, gameConfig?.missions[mission], { isStationary: ship.isStationary, role: ship.role });
     categorized[category].push(ship);
   }
 
