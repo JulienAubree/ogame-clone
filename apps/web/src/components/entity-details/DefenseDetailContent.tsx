@@ -9,6 +9,7 @@ import {
   ShieldIcon, ArmorIcon, HullIcon, WeaponsIcon, ShotsIcon,
   StatCell, EffectiveStatCell, SectionHeader, CostPills,
 } from './stat-components';
+import { ARMOR_LABELS } from '@/config/ship-labels';
 
 interface Props {
   defenseId: string;
@@ -36,6 +37,9 @@ export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels
     };
   }, [researchLevels, details, gameConfig?.bonuses]);
 
+  const defenseDef = gameConfig?.defenses[defenseId] as { combatCategoryId?: string | null } | undefined;
+  const combatCategoryId = defenseDef?.combatCategoryId ?? null;
+
   const hasBuildingPrereqs = details.prerequisites.buildings && details.prerequisites.buildings.length > 0;
   const hasResearchPrereqs = details.prerequisites.research && details.prerequisites.research.length > 0;
 
@@ -54,6 +58,15 @@ export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels
 
       {/* Defense name */}
       <h3 className="text-lg font-semibold text-white">{details.name}</h3>
+
+      {/* Armor badge */}
+      {combatCategoryId && ARMOR_LABELS[combatCategoryId] && (
+        <div className="flex gap-1.5">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border/30">
+            {ARMOR_LABELS[combatCategoryId]}
+          </span>
+        </div>
+      )}
 
       {/* Flavor text */}
       {details.flavorText && (
