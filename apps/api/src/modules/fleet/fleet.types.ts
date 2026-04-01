@@ -161,7 +161,7 @@ export function buildShipStatsMap(config: GameConfig): Record<string, ShipStats>
 export function buildShipCombatConfigs(config: GameConfig): Record<string, ShipCombatConfig> {
   const configs: Record<string, ShipCombatConfig> = {};
   for (const [id, ship] of Object.entries(config.ships)) {
-    const isStationary = ship.role === 'stationary';
+    const isStationary = ship.isStationary ?? false;
     configs[id] = {
       shipType: id,
       categoryId: ship.combatCategoryId ?? 'support',

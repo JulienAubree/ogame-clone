@@ -9,7 +9,7 @@ import { findShipByRole } from '../../../lib/config-helpers.js';
 export class RecycleHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
     const config = await ctx.gameConfigService.getFullConfig();
-    const recyclerDef = findShipByRole(config, 'recycler');
+    const recyclerDef = findShipByRole(config, 'recycling');
     for (const [shipType, count] of Object.entries(input.ships)) {
       if (count > 0 && shipType !== recyclerDef.id && shipType !== 'flagship') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seuls les recycleurs peuvent être envoyés en mission recyclage' });
@@ -82,7 +82,7 @@ export class RecycleHandler implements MissionHandler {
     }
 
     const config = await ctx.gameConfigService.getFullConfig();
-    const recyclerDef = findShipByRole(config, 'recycler');
+    const recyclerDef = findShipByRole(config, 'recycling');
     const recyclerCount = fleetEvent.ships[recyclerDef.id] ?? 0;
     const cargoPerRecycler = recyclerDef.cargoCapacity ?? 20000;
     const totalCargoCapacityValue = recyclerCount * cargoPerRecycler;

@@ -44,7 +44,7 @@ export default function Galaxy() {
 
   const colonizerShipId = useMemo(() => {
     if (!gameConfig?.ships) return null;
-    const entry = Object.entries(gameConfig.ships).find(([, s]) => (s as any).role === 'colonizer');
+    const entry = Object.entries(gameConfig.ships).find(([, s]) => (s as any).role === 'colonization');
     return entry?.[0] ?? null;
   }, [gameConfig?.ships]);
   const hasColonizer = !!(colonizerShipId && ships?.find((s) => s.id === colonizerShipId && s.count > 0));

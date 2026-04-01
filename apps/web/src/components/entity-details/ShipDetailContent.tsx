@@ -12,6 +12,7 @@ import {
   SpeedIcon, PropulsionIcon, FuelIcon, CargoIcon,
   StatCell, EffectiveStatCell, SectionHeader, CostPills,
 } from './stat-components';
+import { ROLE_LABELS, ARMOR_LABELS } from '@/config/ship-labels';
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -53,6 +54,10 @@ export function ShipDetailContent({ shipId, researchLevels, buildingLevels, maxT
     };
   }, [researchLevels, details, gameConfig?.bonuses]);
 
+  const shipDef = gameConfig?.ships[shipId] as { role?: string | null; combatCategoryId?: string | null } | undefined;
+  const role = shipDef?.role ?? null;
+  const combatCategoryId = shipDef?.combatCategoryId ?? null;
+
   const hasBuildingPrereqs = details.prerequisites.buildings && details.prerequisites.buildings.length > 0;
   const hasResearchPrereqs = details.prerequisites.research && details.prerequisites.research.length > 0;
 
@@ -67,6 +72,18 @@ export function ShipDetailContent({ shipId, researchLevels, buildingLevels, maxT
           alt={details.name}
           className="w-full h-full object-cover"
         />
+        {/* Role badge - top left */}
+        {role && ROLE_LABELS[role] && (
+          <span className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded bg-black/60 text-foreground backdrop-blur-sm border border-white/10">
+            {ROLE_LABELS[role]}
+          </span>
+        )}
+        {/* Armor badge - top right */}
+        {combatCategoryId && ARMOR_LABELS[combatCategoryId] && (
+          <span className="absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded bg-black/60 text-foreground backdrop-blur-sm border border-white/10">
+            {ARMOR_LABELS[combatCategoryId]}
+          </span>
+        )}
       </div>
 
       {/* Ship name */}

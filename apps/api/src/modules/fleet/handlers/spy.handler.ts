@@ -26,7 +26,7 @@ import {
 export class SpyHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
     const config = await ctx.gameConfigService.getFullConfig();
-    const probeDef = findShipByRole(config, 'probe');
+    const probeDef = findShipByRole(config, 'espionage');
     for (const [shipType, count] of Object.entries(input.ships)) {
       if (count > 0 && shipType !== probeDef.id && shipType !== 'flagship') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seules les sondes d\'espionnage peuvent être envoyées en mission espionnage' });
@@ -38,7 +38,7 @@ export class SpyHandler implements MissionHandler {
     const ships = fleetEvent.ships;
     const config = await ctx.gameConfigService.getFullConfig();
     const shipStatsMap = buildShipStatsMap(config);
-    const probeDef = findShipByRole(config, 'probe');
+    const probeDef = findShipByRole(config, 'espionage');
     const probeCount = ships[probeDef.id] ?? 0;
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
 

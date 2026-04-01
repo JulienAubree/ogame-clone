@@ -9,7 +9,7 @@ import { findShipByRole } from '../../../lib/config-helpers.js';
 export class MineHandler implements PhasedMissionHandler {
   async validateFleet(input: SendFleetInput, config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
     const fullConfig = await ctx.gameConfigService.getFullConfig();
-    const prospectorDef = findShipByRole(fullConfig, 'prospector');
+    const prospectorDef = findShipByRole(fullConfig, 'mining');
     const prospectorCount = input.ships[prospectorDef.id] ?? 0;
     if (prospectorCount === 0) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'La mission Miner nécessite au moins 1 prospecteur' });

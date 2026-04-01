@@ -27,17 +27,17 @@ describe('findShipByRole', () => {
   it('returns the ship definition matching the role', () => {
     const config = makeConfig({
       ships: {
-        recycler: { id: 'recycler', name: 'Recycleur', role: 'recycler' } as any,
+        recycler: { id: 'recycler', name: 'Recycleur', role: 'recycling' } as any,
         smallCargo: { id: 'smallCargo', name: 'Petit transporteur', role: null } as any,
       },
     });
-    const result = findShipByRole(config, 'recycler');
+    const result = findShipByRole(config, 'recycling');
     expect(result.id).toBe('recycler');
   });
 
   it('throws if no ship has the requested role', () => {
     const config = makeConfig({ ships: {} });
-    expect(() => findShipByRole(config, 'recycler')).toThrow('No ship with role "recycler"');
+    expect(() => findShipByRole(config, 'recycling')).toThrow('No ship with role "recycling"');
   });
 });
 

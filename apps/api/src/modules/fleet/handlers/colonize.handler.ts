@@ -10,7 +10,7 @@ import { findShipByRole, findPlanetTypeByRole } from '../../../lib/config-helper
 export class ColonizeHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
     const config = await ctx.gameConfigService.getFullConfig();
-    const colonyShipDef = findShipByRole(config, 'colonizer');
+    const colonyShipDef = findShipByRole(config, 'colonization');
     for (const [shipType, count] of Object.entries(input.ships)) {
       if (count > 0 && shipType !== colonyShipDef.id) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seuls les vaisseaux de colonisation peuvent être envoyés en mission colonisation' });
@@ -27,7 +27,7 @@ export class ColonizeHandler implements MissionHandler {
 
     const config = await ctx.gameConfigService.getFullConfig();
     const shipStatsMap = buildShipStatsMap(config);
-    const colonyShipDef = findShipByRole(config, 'colonizer');
+    const colonyShipDef = findShipByRole(config, 'colonization');
     const homeworldType = findPlanetTypeByRole(config, 'homeworld');
     const beltPositions = (config.universe.belt_positions as number[]) ?? [8, 16];
     const maxPlanetsPerPlayer = Number(config.universe.maxPlanetsPerPlayer) || 9;
