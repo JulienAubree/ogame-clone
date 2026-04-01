@@ -16,6 +16,8 @@ import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent
 import { getShipName } from '@/lib/entity-names';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
+import { cn } from '@/lib/utils';
+import { useTutorialTargetId } from '@/hooks/useTutorialHighlight';
 
 
 export default function CommandCenter() {
@@ -27,6 +29,7 @@ export default function CommandCenter() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
   const { data: gameConfig } = useGameConfig();
+  const tutorialTargetId = useTutorialTargetId();
 
   const shipCategories = (gameConfig?.categories ?? [])
     .filter((c) => c.entityType === 'ship' && c.id === 'ship_combat')
@@ -93,6 +96,7 @@ export default function CommandCenter() {
       utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'commandCenter' });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
     },
   });
 
@@ -102,6 +106,7 @@ export default function CommandCenter() {
       utils.shipyard.ships.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
       setCancelConfirm(null);
     },
   });
@@ -113,6 +118,7 @@ export default function CommandCenter() {
       utils.shipyard.defenses.invalidate();
       utils.resource.production.invalidate();
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
     },
   });
 
@@ -273,12 +279,23 @@ export default function CommandCenter() {
                       resources.silicium >= totalCost.silicium &&
                       resources.hydrogene >= totalCost.hydrogene;
 
+                    const highlighted = tutorialTargetId === ship.id;
+
                     return (
                       <button
                         key={ship.id}
                         onClick={() => setDetailId(ship.id)}
-                        className={`flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors ${!ship.prerequisitesMet ? 'opacity-50' : ''}`}
+                        className={cn(
+                          'relative flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors',
+                          !ship.prerequisitesMet && 'opacity-50',
+                          highlighted && 'ring-2 ring-amber-500/60 shadow-lg shadow-amber-500/10',
+                        )}
                       >
+                        {highlighted && (
+                          <span className="absolute top-2 right-2 z-10 rounded bg-amber-500/20 border border-amber-500/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400">
+                            Objectif
+                          </span>
+                        )}
                         <GameImage category="ships" id={ship.id} size="icon" alt={ship.name} className="h-8 w-8 rounded" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
@@ -336,12 +353,23 @@ export default function CommandCenter() {
                       resources.silicium >= totalCost.silicium &&
                       resources.hydrogene >= totalCost.hydrogene;
 
+                    const highlighted = tutorialTargetId === ship.id;
+
                     return (
                       <button
                         key={ship.id}
                         onClick={() => setDetailId(ship.id)}
-                        className={`retro-card text-left cursor-pointer overflow-hidden flex flex-col ${!ship.prerequisitesMet ? 'opacity-50' : ''}`}
+                        className={cn(
+                          'retro-card relative text-left cursor-pointer overflow-hidden flex flex-col',
+                          !ship.prerequisitesMet && 'opacity-50',
+                          highlighted && 'ring-2 ring-amber-500/60 shadow-lg shadow-amber-500/10',
+                        )}
                       >
+                        {highlighted && (
+                          <span className="absolute top-2 right-2 z-10 rounded bg-amber-500/20 border border-amber-500/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400">
+                            Objectif
+                          </span>
+                        )}
                         <div className="relative h-[130px] overflow-hidden">
                           <GameImage
                             category="ships"

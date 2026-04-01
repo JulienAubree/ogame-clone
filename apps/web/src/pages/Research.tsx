@@ -15,6 +15,8 @@ import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { ResearchDetailContent } from '@/components/entity-details/ResearchDetailContent';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
+import { cn } from '@/lib/utils';
+import { useTutorialTargetId } from '@/hooks/useTutorialHighlight';
 
 
 export default function Research() {
@@ -24,6 +26,7 @@ export default function Research() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: gameConfig } = useGameConfig();
+  const tutorialTargetId = useTutorialTargetId();
 
   const researchCategories = (gameConfig?.categories ?? [])
     .filter((c) => c.entityType === 'research')
@@ -67,6 +70,7 @@ export default function Research() {
       utils.research.list.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
     },
   });
 
@@ -75,6 +79,7 @@ export default function Research() {
       utils.research.list.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
       setCancelConfirm(false);
     },
   });
@@ -136,7 +141,10 @@ export default function Research() {
               <Timer
                 endTime={new Date(researchingTech.researchEndTime!)}
                 totalDuration={researchingTech.nextLevelTime}
-                onComplete={() => utils.research.list.invalidate()}
+                onComplete={() => {
+                  utils.research.list.invalidate();
+                  utils.tutorial.getCurrent.invalidate();
+                }}
               />
             </div>
             <button
@@ -187,12 +195,23 @@ export default function Research() {
                       resources.silicium >= tech.nextLevelCost.silicium &&
                       resources.hydrogene >= tech.nextLevelCost.hydrogene;
 
+                    const highlighted = tutorialTargetId === tech.id;
+
                     return (
                       <button
                         key={tech.id}
                         onClick={() => setDetailId(tech.id)}
-                        className={`flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors ${!tech.prerequisitesMet ? 'opacity-50' : ''}`}
+                        className={cn(
+                          'relative flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors',
+                          !tech.prerequisitesMet && 'opacity-50',
+                          highlighted && 'ring-2 ring-amber-500/60 shadow-lg shadow-amber-500/10',
+                        )}
                       >
+                        {highlighted && (
+                          <span className="absolute top-2 right-2 z-10 rounded bg-amber-500/20 border border-amber-500/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400">
+                            Objectif
+                          </span>
+                        )}
                         <GameImage category="research" id={tech.id} size="icon" alt={tech.name} className="h-8 w-8 rounded" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
@@ -204,7 +223,10 @@ export default function Research() {
                               <Timer
                                 endTime={new Date(tech.researchEndTime)}
                                 totalDuration={tech.nextLevelTime}
-                                onComplete={() => utils.research.list.invalidate({ planetId: planetId! })}
+                                onComplete={() => {
+                                  utils.research.list.invalidate({ planetId: planetId! });
+                                  utils.tutorial.getCurrent.invalidate();
+                                }}
                               />
                             </div>
                           ) : (
@@ -244,12 +266,23 @@ export default function Research() {
                       resources.silicium >= tech.nextLevelCost.silicium &&
                       resources.hydrogene >= tech.nextLevelCost.hydrogene;
 
+                    const highlighted = tutorialTargetId === tech.id;
+
                     return (
                       <button
                         key={tech.id}
                         onClick={() => setDetailId(tech.id)}
-                        className={`retro-card text-left cursor-pointer overflow-hidden flex flex-col ${!tech.prerequisitesMet ? 'opacity-50' : ''}`}
+                        className={cn(
+                          'retro-card relative text-left cursor-pointer overflow-hidden flex flex-col',
+                          !tech.prerequisitesMet && 'opacity-50',
+                          highlighted && 'ring-2 ring-amber-500/60 shadow-lg shadow-amber-500/10',
+                        )}
                       >
+                        {highlighted && (
+                          <span className="absolute top-2 right-2 z-10 rounded bg-amber-500/20 border border-amber-500/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400">
+                            Objectif
+                          </span>
+                        )}
                         <div className="relative h-[130px] overflow-hidden">
                           <GameImage
                             category="research"
@@ -276,6 +309,7 @@ export default function Research() {
                               totalDuration={tech.nextLevelTime}
                               onComplete={() => {
                                 utils.research.list.invalidate({ planetId: planetId! });
+                                utils.tutorial.getCurrent.invalidate();
                               }}
                             />
                           ) : (

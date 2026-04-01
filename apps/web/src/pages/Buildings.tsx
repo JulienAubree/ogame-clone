@@ -16,6 +16,7 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
 import { buildProductionConfig } from '../lib/production-config';
 import { cn } from '@/lib/utils';
+import { useTutorialTargetId } from '@/hooks/useTutorialHighlight';
 import {
   mineraiProduction, siliciumProduction, hydrogeneProduction,
   solarPlantEnergy, mineraiMineEnergy, siliciumMineEnergy, hydrogeneSynthEnergy,
@@ -148,6 +149,7 @@ export default function Buildings() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: gameConfig } = useGameConfig();
+  const tutorialTargetId = useTutorialTargetId();
 
   const { data: buildings, isLoading } = trpc.building.list.useQuery(
     { planetId: planetId! },
@@ -187,6 +189,7 @@ export default function Buildings() {
       utils.building.list.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
     },
   });
 
@@ -195,6 +198,7 @@ export default function Buildings() {
       utils.building.list.invalidate({ planetId: planetId! });
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
       setCancelConfirm(false);
     },
   });
@@ -235,7 +239,10 @@ export default function Buildings() {
               <Timer
                 endTime={new Date(upgradingBuilding.upgradeEndTime!)}
                 totalDuration={upgradingBuilding.nextLevelTime}
-                onComplete={() => utils.building.list.invalidate({ planetId: planetId! })}
+                onComplete={() => {
+                  utils.building.list.invalidate({ planetId: planetId! });
+                  utils.tutorial.getCurrent.invalidate();
+                }}
               />
             </div>
             <button
@@ -292,12 +299,22 @@ export default function Buildings() {
                       return pb && pb.currentLevel >= p.level;
                     });
 
+                    const highlighted = tutorialTargetId === building.id;
+
                     return (
                       <button
                         key={building.id}
                         onClick={() => setDetailId(building.id)}
-                        className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors"
+                        className={cn(
+                          'relative flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/50 transition-colors',
+                          highlighted && 'ring-2 ring-amber-500/60 shadow-lg shadow-amber-500/10',
+                        )}
                       >
+                        {highlighted && (
+                          <span className="absolute top-2 right-2 z-10 rounded bg-amber-500/20 border border-amber-500/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400">
+                            Objectif
+                          </span>
+                        )}
                         <GameImage
                           category="buildings"
                           id={building.id}
@@ -320,6 +337,7 @@ export default function Buildings() {
                                 onComplete={() => {
                                   utils.building.list.invalidate({ planetId: planetId! });
                                   utils.resource.production.invalidate({ planetId: planetId! });
+                                  utils.tutorial.getCurrent.invalidate();
                                 }}
                               />
                             </div>
@@ -397,16 +415,24 @@ export default function Buildings() {
                       prodConfig,
                     );
 
+                    const highlighted = tutorialTargetId === building.id;
+
                     return (
                       <button
                         key={building.id}
                         onClick={() => setDetailId(building.id)}
                         className={cn(
-                          'retro-card text-left cursor-pointer overflow-hidden flex flex-col',
+                          'retro-card relative text-left cursor-pointer overflow-hidden flex flex-col',
                           getResourceGlowClass(building.id),
                           !prereqsMet && 'opacity-50',
+                          highlighted && 'ring-2 ring-amber-500/60 shadow-lg shadow-amber-500/10',
                         )}
                       >
+                        {highlighted && (
+                          <span className="absolute top-2 right-2 z-10 rounded bg-amber-500/20 border border-amber-500/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400">
+                            Objectif
+                          </span>
+                        )}
                         {/* Image area with gradient background */}
                         <div className="relative h-[130px] overflow-hidden">
                           <GameImage
@@ -451,6 +477,7 @@ export default function Buildings() {
                                 onComplete={() => {
                                   utils.building.list.invalidate({ planetId: planetId! });
                                   utils.resource.production.invalidate({ planetId: planetId! });
+                                  utils.tutorial.getCurrent.invalidate();
                                 }}
                               />
                               <Button

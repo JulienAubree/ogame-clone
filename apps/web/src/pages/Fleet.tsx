@@ -139,6 +139,7 @@ export default function Fleet() {
       utils.resource.production.invalidate({ planetId: planetId! });
       utils.fleet.slots.invalidate();
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
       await utils.fleet.movements.invalidate();
       navigate('/fleet/movements');
     },

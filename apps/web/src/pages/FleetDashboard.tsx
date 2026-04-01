@@ -50,6 +50,7 @@ export default function FleetDashboard() {
     onSuccess: () => {
       utils.fleet.movements.invalidate();
       utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
       setRecallConfirm(null);
     },
   });
