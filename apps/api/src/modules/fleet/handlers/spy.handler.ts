@@ -42,7 +42,13 @@ export class SpyHandler implements MissionHandler {
     const probeCount = ships[probeDef.id] ?? 0;
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
 
-    const attackerTech = await this.getEspionageTech(ctx.db, fleetEvent.userId);
+    let attackerTech = await this.getEspionageTech(ctx.db, fleetEvent.userId);
+
+    // Scan mission bonus: scientific hull probe gets +N espionage
+    const meta = fleetEvent.metadata as Record<string, unknown> | null;
+    if (meta?.scanMission && typeof meta.espionageBonus === 'number') {
+      attackerTech += meta.espionageBonus;
+    }
 
     const [targetPlanet] = await ctx.db
       .select()
