@@ -41,6 +41,14 @@ export function ChatOverlayWindow({ userId: otherUserId, username, threadId, all
     { enabled: !isAlliance && !!threadId },
   );
 
+  // Backend marks messages as read on fetch — invalidate unread counts
+  useEffect(() => {
+    if (thread) {
+      utils.message.unreadCount.invalidate();
+      utils.message.conversations.invalidate();
+    }
+  }, [threadId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const replyMutation = trpc.message.reply.useMutation({
     onSuccess: () => {
       utils.message.thread.invalidate({ threadId: threadId! });

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { trpc } from '@/trpc';
 import { useAuthStore } from '@/stores/auth.store';
@@ -22,6 +23,14 @@ export function ChatView({ threadId, otherUsername, otherUserId, onBack, onThrea
     { threadId: threadId! },
     { enabled: !!threadId },
   );
+
+  // Backend marks messages as read on fetch — invalidate unread counts
+  useEffect(() => {
+    if (thread) {
+      utils.message.unreadCount.invalidate();
+      utils.message.conversations.invalidate();
+    }
+  }, [threadId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const replyMutation = trpc.message.reply.useMutation({
     onSuccess: () => {

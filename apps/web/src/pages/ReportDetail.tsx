@@ -1,4 +1,5 @@
 // apps/web/src/pages/ReportDetail.tsx
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,14 @@ export default function ReportDetail() {
     { id: reportId! },
     { enabled: !!reportId },
   );
+
+  // When report is loaded, the backend marks it as read — invalidate unread counts
+  useEffect(() => {
+    if (report) {
+      utils.report.unreadCount.invalidate();
+      utils.report.list.invalidate();
+    }
+  }, [report?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteMutation = trpc.report.delete.useMutation({
     onSuccess: () => {
