@@ -49,6 +49,7 @@ function createMockDb() {
       const chain: any = {};
       chain.from = vi.fn().mockImplementation(() => chain);
       chain.where = vi.fn().mockImplementation(() => chain);
+      chain.orderBy = vi.fn().mockImplementation(() => chain);
       chain.limit = vi.fn().mockImplementation(() => {
         const result = selectResults.shift() ?? [];
         chain.then = (resolve: any) => resolve(result);
@@ -141,6 +142,11 @@ function createMockGameConfigService(overrides: Record<string, unknown> = {}) {
       bonuses: [],
       missions: {},
       labels: {},
+      hulls: {
+        combat: { id: 'combat', name: 'Combat', playstyle: 'warrior', changeCost: { baseMultiplier: 0.1, resourceRatio: { minerai: 1, silicium: 1, hydrogene: 1 } }, unavailabilitySeconds: 3600, cooldownSeconds: 86400 },
+        industrial: { id: 'industrial', name: 'Industrial', playstyle: 'miner', changeCost: { baseMultiplier: 0.1, resourceRatio: { minerai: 1, silicium: 1, hydrogene: 1 } }, unavailabilitySeconds: 3600, cooldownSeconds: 86400 },
+        scientific: { id: 'scientific', name: 'Scientific', playstyle: 'explorer', changeCost: { baseMultiplier: 0.1, resourceRatio: { minerai: 1, silicium: 1, hydrogene: 1 } }, unavailabilitySeconds: 3600, cooldownSeconds: 86400 },
+      },
     }),
   } as any;
 }
@@ -208,7 +214,7 @@ describe('FlagshipService', () => {
       // create() does 2 selects: flagships (existing check), planets (home planet)
       db._setSelectResults([[], [{ id: 'planet-1' }]]);
 
-      const result = await service.create('user-1', 'Mon Vaisseau');
+      const result = await service.create('user-1', 'Mon Vaisseau', 'combat');
       expect(result).not.toBeNull();
       expect(result.name).toBe('Mon Vaisseau');
       expect(result.planetId).toBe('planet-1');
@@ -218,7 +224,7 @@ describe('FlagshipService', () => {
     it('cree un flagship avec une description', async () => {
       db._setSelectResults([[], [{ id: 'planet-1' }]]);
 
-      const result = await service.create('user-1', 'Mon Vaisseau', 'Un vaisseau puissant');
+      const result = await service.create('user-1', 'Mon Vaisseau', 'combat', 'Un vaisseau puissant');
       expect(result.description).toBe('Un vaisseau puissant');
     });
 
@@ -226,21 +232,21 @@ describe('FlagshipService', () => {
       // create() 1st select returns existing flagship
       db._setSelectResults([[{ id: 'flagship-1' }]]);
 
-      await expect(service.create('user-1', 'Nouveau')).rejects.toThrow('Vous avez deja un vaisseau amiral');
+      await expect(service.create('user-1', 'Nouveau', 'combat')).rejects.toThrow('Vous avez deja un vaisseau amiral');
     });
 
     it('throw BAD_REQUEST avec un nom invalide (trop court)', async () => {
-      await expect(service.create('user-1', 'A')).rejects.toThrow(TRPCError);
+      await expect(service.create('user-1', 'A', 'combat')).rejects.toThrow(TRPCError);
     });
 
     it('throw BAD_REQUEST avec un nom contenant des caracteres speciaux', async () => {
-      await expect(service.create('user-1', '<script>')).rejects.toThrow(TRPCError);
+      await expect(service.create('user-1', '<script>', 'combat')).rejects.toThrow(TRPCError);
     });
 
     it('accepte les noms avec accents et tirets', async () => {
       db._setSelectResults([[], [{ id: 'planet-1' }]]);
 
-      const result = await service.create('user-1', "L'Etoile-Noire");
+      const result = await service.create('user-1', "L'Etoile-Noire", 'combat');
       expect(result.name).toBe("L&#x27;Etoile-Noire");
     });
 
@@ -248,7 +254,7 @@ describe('FlagshipService', () => {
       // 1st select: no existing flagship, 2nd select: no planet
       db._setSelectResults([[], []]);
 
-      await expect(service.create('user-1', 'Mon Vaisseau')).rejects.toThrow('Aucune planete trouvee');
+      await expect(service.create('user-1', 'Mon Vaisseau', 'combat')).rejects.toThrow('Aucune planete trouvee');
     });
   });
 

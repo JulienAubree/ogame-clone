@@ -91,8 +91,11 @@ export async function processFlagshipImage(
   buffer: Buffer,
   imageIndex: number,
   assetsDir: string,
+  hullId?: string,
 ): Promise<string[]> {
-  const outputDir = path.join(assetsDir, 'flagships');
+  const outputDir = hullId
+    ? path.join(assetsDir, 'flagships', hullId)
+    : path.join(assetsDir, 'flagships');
   fs.mkdirSync(outputDir, { recursive: true });
 
   const files: string[] = [];

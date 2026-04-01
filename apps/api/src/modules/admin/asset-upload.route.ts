@@ -49,8 +49,8 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     if (!category || !isValidCategory(category)) {
       return reply.status(400).send({ error: 'Invalid category. Must be: buildings, research, ships, defenses, planets, flagships' });
     }
-    if (!entityId && category !== 'flagships') {
-      return reply.status(400).send({ error: 'entityId is required' });
+    if (!entityId) {
+      return reply.status(400).send({ error: 'entityId is required (hullId for flagships)' });
     }
     if (!ALLOWED_MIMES.includes(data.mimetype)) {
       return reply.status(400).send({ error: 'Invalid file type. Must be PNG, JPEG, or WebP' });
@@ -70,8 +70,9 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
         const nextIndex = getNextPlanetImageIndex(planetClassId, env.ASSETS_DIR);
         files = await processPlanetImage(buffer, planetClassId, nextIndex, env.ASSETS_DIR);
       } else if (category === 'flagships') {
-        const nextIndex = getNextFlagshipImageIndex(env.ASSETS_DIR);
-        files = await processFlagshipImage(buffer, nextIndex, env.ASSETS_DIR);
+        const hullId = entityId!;
+        const nextIndex = getNextFlagshipImageIndex(hullId, env.ASSETS_DIR);
+        files = await processFlagshipImage(buffer, nextIndex, env.ASSETS_DIR, hullId);
       } else {
         files = await processImage(buffer, category, entityId!, env.ASSETS_DIR);
       }
@@ -115,7 +116,7 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     return reply.send({ images });
   });
 
-  server.get('/admin/flagship-images', async (request, reply) => {
+  server.get('/admin/flagship-images/:hullId', async (request, reply) => {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       return reply.status(401).send({ error: 'Unauthorized' });
@@ -138,10 +139,11 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
       return reply.status(403).send({ error: 'Admin access required' });
     }
 
-    const indexes = listFlagshipImageIndexes(env.ASSETS_DIR);
+    const { hullId } = request.params as { hullId: string };
+    const indexes = listFlagshipImageIndexes(hullId, env.ASSETS_DIR);
     const images = indexes.map((index) => ({
       index,
-      thumbUrl: `/assets/flagships/${index}-thumb.webp`,
+      thumbUrl: `/assets/flagships/${hullId}/${index}-thumb.webp`,
     }));
 
     return reply.send({ images });

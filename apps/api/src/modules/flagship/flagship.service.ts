@@ -1,10 +1,11 @@
 import { eq, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { flagships, planets } from '@exilium/db';
+import { flagships, planets, users, userExilium } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { createTalentService } from './talent.service.js';
+import type { createResourceService } from '../resource/resource.service.js';
 import { listFlagshipImageIndexes, getRandomFlagshipImageIndex } from '../../lib/flagship-image.util.js';
 import { computeBaseStatsFromShips, FLAGSHIP_EXCLUDED_SHIPS } from '@exilium/game-engine';
 
@@ -17,6 +18,7 @@ export function createFlagshipService(
   gameConfigService: GameConfigService,
   talentService?: ReturnType<typeof createTalentService>,
   assetsDir?: string,
+  resourceService?: ReturnType<typeof createResourceService>,
 ) {
   function validateName(name: string) {
     if (!NAME_REGEX.test(name)) {
@@ -70,6 +72,19 @@ export function createFlagshipService(
         }
       }
 
+      // Lazy refit completion
+      if (flagship.status === 'hull_refit' && flagship.refitEndsAt && flagship.refitEndsAt <= new Date()) {
+        await db
+          .update(flagships)
+          .set({
+            status: 'active',
+            refitEndsAt: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(flagships.id, flagship.id));
+        Object.assign(flagship, { status: 'active', refitEndsAt: null });
+      }
+
       // Appliquer les bonus de talents si le service est disponible
       if (talentService) {
         const config = await gameConfigService.getFullConfig();
@@ -107,8 +122,14 @@ export function createFlagshipService(
       return flagship;
     },
 
-    async create(userId: string, name: string, description?: string) {
+    async create(userId: string, name: string, hullId: string, description?: string) {
       validateName(name);
+
+      const config = await gameConfigService.getFullConfig();
+      const hullConfig = config.hulls[hullId];
+      if (!hullConfig) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Coque inconnue' });
+      }
 
       // Verifier qu'il n'y a pas deja un flagship
       const [existing] = await db
@@ -135,7 +156,7 @@ export function createFlagshipService(
 
       const sanitizedDesc = description ? sanitizeText(description).slice(0, 256) : '';
 
-      const randomImage = assetsDir ? getRandomFlagshipImageIndex(assetsDir) : null;
+      const randomImage = assetsDir ? getRandomFlagshipImageIndex(hullId, assetsDir) : null;
 
       const [created] = await db
         .insert(flagships)
@@ -145,8 +166,11 @@ export function createFlagshipService(
           name: sanitizeText(name),
           description: sanitizedDesc,
           flagshipImageIndex: randomImage,
+          hullId,
         })
         .returning();
+
+      await db.update(users).set({ playstyle: hullConfig.playstyle }).where(eq(users.id, userId));
 
       return created;
     },
@@ -259,15 +283,27 @@ export function createFlagshipService(
         .where(eq(flagships.userId, userId));
     },
 
-    listImages(): number[] {
+    listImages(hullId: string): number[] {
       if (!assetsDir) return [];
-      return listFlagshipImageIndexes(assetsDir);
+      return listFlagshipImageIndexes(hullId, assetsDir);
     },
 
     async updateImage(userId: string, imageIndex: number) {
-      const available = this.listImages();
-      if (!available.includes(imageIndex)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Image invalide' });
+      const [flagship] = await db
+        .select({ id: flagships.id, hullId: flagships.hullId })
+        .from(flagships)
+        .where(eq(flagships.userId, userId))
+        .limit(1);
+
+      if (!flagship) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Vaisseau amiral introuvable' });
+      }
+
+      if (flagship.hullId && assetsDir) {
+        const available = listFlagshipImageIndexes(flagship.hullId, assetsDir);
+        if (!available.includes(imageIndex)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Image non disponible pour cette coque' });
+        }
       }
 
       const [updated] = await db
@@ -276,11 +312,58 @@ export function createFlagshipService(
         .where(eq(flagships.userId, userId))
         .returning();
 
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Aucun vaisseau amiral' });
+      return updated;
+    },
+
+    async changeHull(userId: string, newHullId: string) {
+      const config = await gameConfigService.getFullConfig();
+      const hullConfig = config.hulls[newHullId];
+      if (!hullConfig) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Coque inconnue' });
+
+      const [flagship] = await db.select().from(flagships).where(eq(flagships.userId, userId)).limit(1);
+      if (!flagship) throw new TRPCError({ code: 'NOT_FOUND', message: 'Vaisseau amiral introuvable' });
+      if (flagship.hullId === newHullId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vous avez deja cette coque' });
+      if (flagship.status !== 'active') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Le vaisseau amiral doit etre stationne' });
+
+      const now = new Date();
+      const isFirstChange = !flagship.hullChangedAt;
+
+      if (!isFirstChange && flagship.hullChangeAvailableAt && now < flagship.hullChangeAvailableAt) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Changement de coque en cooldown' });
       }
 
-      return updated;
+      // Cost (skip if first change — free for migrated players)
+      if (!isFirstChange && resourceService) {
+        const [exiliumRecord] = await db.select({ totalEarned: userExilium.totalEarned })
+          .from(userExilium).where(eq(userExilium.userId, userId)).limit(1);
+        const totalEarned = Number(exiliumRecord?.totalEarned ?? 0);
+        const totalCost = totalEarned * hullConfig.changeCost.baseMultiplier;
+        const ratioSum = hullConfig.changeCost.resourceRatio.minerai + hullConfig.changeCost.resourceRatio.silicium + hullConfig.changeCost.resourceRatio.hydrogene;
+        const cost = {
+          minerai: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.minerai / ratioSum),
+          silicium: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.silicium / ratioSum),
+          hydrogene: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.hydrogene / ratioSum),
+        };
+        await resourceService.spendResources(flagship.planetId, userId, cost);
+      }
+
+      const refitEnd = new Date(now.getTime() + hullConfig.unavailabilitySeconds * 1000);
+      const cooldownEnd = new Date(refitEnd.getTime() + hullConfig.cooldownSeconds * 1000);
+      const newImage = assetsDir ? getRandomFlagshipImageIndex(newHullId, assetsDir) : null;
+
+      await db.update(flagships).set({
+        hullId: newHullId,
+        status: 'hull_refit',
+        refitEndsAt: refitEnd,
+        hullChangedAt: now,
+        hullChangeAvailableAt: cooldownEnd,
+        flagshipImageIndex: newImage,
+        updatedAt: now,
+      }).where(eq(flagships.id, flagship.id));
+
+      await db.update(users).set({ playstyle: hullConfig.playstyle }).where(eq(users.id, userId));
+
+      return { newHullId, refitEndsAt: refitEnd, cooldownEndsAt: cooldownEnd };
     },
 
     async recalculateBaseStats(userId: string) {
