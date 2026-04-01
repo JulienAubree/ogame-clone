@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { cn } from '@/lib/utils';
 import { getFlagshipImageUrl, getPlanetImageUrl } from '@/lib/assets';
 import { TalentTree } from '@/components/flagship/TalentTree';
+import { HullChangeModal } from '@/components/flagship/HullChangeModal';
 import {
   ShieldIcon, ArmorIcon, HullIcon, WeaponsIcon, ShotsIcon,
   SpeedIcon, PropulsionIcon, FuelIcon, CargoIcon,
@@ -328,6 +329,7 @@ export default function FlagshipProfile() {
   const balance = exiliumData?.balance ?? 0;
 
   const [showImagePicker, setShowImagePicker] = useState(false);
+  const [showHullChange, setShowHullChange] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -481,7 +483,23 @@ export default function FlagshipProfile() {
                   </button>
                 </div>
                 {hullConfig && (
-                  <p className="text-[11px] text-amber-400/70 mt-0.5">{hullConfig.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-[11px] text-amber-400/70">{hullConfig.name}</p>
+                    <button
+                      onClick={() => setShowHullChange(true)}
+                      disabled={flagship.status !== 'active' || (flagship.hullChangeAvailableAt != null && new Date(flagship.hullChangeAvailableAt) > new Date())}
+                      className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      {flagship.hullChangeAvailableAt != null && new Date(flagship.hullChangeAvailableAt) > new Date()
+                        ? (() => {
+                            const secs = Math.max(0, Math.floor((new Date(flagship.hullChangeAvailableAt!).getTime() - Date.now()) / 1000));
+                            const d = Math.floor(secs / 86400);
+                            const h = Math.floor((secs % 86400) / 3600);
+                            return `Changement dans ${d}j ${h}h`;
+                          })()
+                        : 'Changer de coque'}
+                    </button>
+                  </div>
                 )}
                 {flagship.description && (
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{flagship.description}</p>
@@ -684,6 +702,12 @@ export default function FlagshipProfile() {
           </div>
         </div>
       )}
+
+      <HullChangeModal
+        open={showHullChange}
+        onClose={() => setShowHullChange(false)}
+        flagship={flagship}
+      />
     </div>
   );
 }
