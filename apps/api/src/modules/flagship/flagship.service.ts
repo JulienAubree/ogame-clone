@@ -338,26 +338,25 @@ export function createFlagshipService(
       if (flagship.status !== 'active') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Le vaisseau amiral doit etre stationne' });
 
       const now = new Date();
-      const isFirstChange = !flagship.hullChangedAt;
 
-      if (!isFirstChange && flagship.hullChangeAvailableAt && now < flagship.hullChangeAvailableAt) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Changement de coque en cooldown' });
-      }
-
-      // Cost (skip if first change — free for migrated players)
-      if (!isFirstChange && resourceService) {
-        const [exiliumRecord] = await db.select({ totalEarned: userExilium.totalEarned })
-          .from(userExilium).where(eq(userExilium.userId, userId)).limit(1);
-        const totalEarned = Number(exiliumRecord?.totalEarned ?? 0);
-        const totalCost = totalEarned * hullConfig.changeCost.baseMultiplier;
-        const ratioSum = hullConfig.changeCost.resourceRatio.minerai + hullConfig.changeCost.resourceRatio.silicium + hullConfig.changeCost.resourceRatio.hydrogene;
-        const cost = {
-          minerai: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.minerai / ratioSum),
-          silicium: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.silicium / ratioSum),
-          hydrogene: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.hydrogene / ratioSum),
-        };
-        await resourceService.spendResources(flagship.planetId, userId, cost);
-      }
+      // TODO: re-enable cooldown and cost after testing
+      // const isFirstChange = !flagship.hullChangedAt;
+      // if (!isFirstChange && flagship.hullChangeAvailableAt && now < flagship.hullChangeAvailableAt) {
+      //   throw new TRPCError({ code: 'BAD_REQUEST', message: 'Changement de coque en cooldown' });
+      // }
+      // if (!isFirstChange && resourceService) {
+      //   const [exiliumRecord] = await db.select({ totalEarned: userExilium.totalEarned })
+      //     .from(userExilium).where(eq(userExilium.userId, userId)).limit(1);
+      //   const totalEarned = Number(exiliumRecord?.totalEarned ?? 0);
+      //   const totalCost = totalEarned * hullConfig.changeCost.baseMultiplier;
+      //   const ratioSum = hullConfig.changeCost.resourceRatio.minerai + hullConfig.changeCost.resourceRatio.silicium + hullConfig.changeCost.resourceRatio.hydrogene;
+      //   const cost = {
+      //     minerai: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.minerai / ratioSum),
+      //     silicium: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.silicium / ratioSum),
+      //     hydrogene: Math.floor(totalCost * hullConfig.changeCost.resourceRatio.hydrogene / ratioSum),
+      //   };
+      //   await resourceService.spendResources(flagship.planetId, userId, cost);
+      // }
 
       const refitEnd = new Date(now.getTime() + hullConfig.unavailabilitySeconds * 1000);
       const cooldownEnd = new Date(refitEnd.getTime() + hullConfig.cooldownSeconds * 1000);
