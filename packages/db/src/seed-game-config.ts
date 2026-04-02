@@ -819,7 +819,9 @@ async function seed() {
   console.log(`  ✓ ${TALENT_BRANCHES.length} talent branches`);
 
   // 17. Talent definitions
-  await db.insert(talentDefinitions).values(TALENT_DEFINITIONS);
+  if (TALENT_DEFINITIONS.length > 0) {
+    await db.insert(talentDefinitions).values(TALENT_DEFINITIONS);
+  }
   console.log(`  ✓ ${TALENT_DEFINITIONS.length} talent definitions`);
 
   // 18. Hull definitions (stored as JSON in universe_config)
