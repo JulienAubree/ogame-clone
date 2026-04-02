@@ -610,6 +610,8 @@ const TALENT_DEFINITIONS: any[] = [
   { id: 'mil_weapons', branchId: 'militaire', tier: 1, position: 'left', name: 'Armes renforcees', description: '+2 armes par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'weapons', perRank: 2 }, sortOrder: 0 },
   { id: 'mil_armor', branchId: 'militaire', tier: 1, position: 'center', name: 'Blindage reactif', description: '+2 blindage par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'baseArmor', perRank: 2 }, sortOrder: 1 },
   { id: 'mil_shield', branchId: 'militaire', tier: 1, position: 'right', name: 'Boucliers amplifies', description: '+3 bouclier par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'shield', perRank: 3 }, sortOrder: 2 },
+  // Tier 2
+  { id: 'mil_build_time', branchId: 'militaire', tier: 2, position: 'center', name: 'Chaine de production', description: '-20% temps de construction vaisseaux militaires', maxRanks: 1, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'military_build_time', perRank: 0.20 }, sortOrder: 3 },
 
   // === INDUSTRIEL === (production, minage, commerce)
   // Tier 1
