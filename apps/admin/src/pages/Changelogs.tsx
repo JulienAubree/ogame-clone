@@ -1,8 +1,141 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { trpc } from '@/trpc';
 import { PageSkeleton } from '@/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Pencil, Trash2, Eye, EyeOff, Sparkles, X } from 'lucide-react';
+import { Pencil, Trash2, Eye, EyeOff, Sparkles, X, Bold, Heading3, List, Minus } from 'lucide-react';
+
+// ── Simple Markdown Preview ──
+function MarkdownPreview({ content }: { content: string }) {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let listItems: string[] = [];
+  let key = 0;
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={key++} className="space-y-0.5 mb-2 ml-1">
+          {listItems.map((item, i) => (
+            <li key={i} className="text-sm text-gray-300 flex gap-2">
+              <span className="text-gray-500 shrink-0">•</span>
+              <span dangerouslySetInnerHTML={{ __html: inlineBold(item) }} />
+            </li>
+          ))}
+        </ul>
+      );
+      listItems = [];
+    }
+  };
+
+  for (const line of lines) {
+    if (line.startsWith('### ')) {
+      flushList();
+      elements.push(<h3 key={key++} className="text-sm font-semibold text-gray-100 mt-3 mb-1">{line.slice(4)}</h3>);
+    } else if (line.startsWith('- ')) {
+      listItems.push(line.slice(2));
+    } else if (line.trim() === '') {
+      flushList();
+    } else {
+      flushList();
+      elements.push(<p key={key++} className="text-sm text-gray-300 mb-1" dangerouslySetInnerHTML={{ __html: inlineBold(line) }} />);
+    }
+  }
+  flushList();
+  return <>{elements}</>;
+}
+
+function inlineBold(text: string): string {
+  return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-gray-100 font-semibold">$1</strong>');
+}
+
+// ── Markdown Editor with toolbar ──
+function MarkdownEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const [tab, setTab] = useState<'edit' | 'preview'>('edit');
+
+  const insertAt = useCallback((before: string, after: string = '') => {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = value.slice(start, end);
+    const replacement = before + (selected || 'texte') + after;
+    const newValue = value.slice(0, start) + replacement + value.slice(end);
+    onChange(newValue);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const cursorPos = start + before.length;
+      ta.setSelectionRange(cursorPos, cursorPos + (selected || 'texte').length);
+    });
+  }, [value, onChange]);
+
+  const insertLine = useCallback((prefix: string) => {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    // Find start of current line
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const newValue = value.slice(0, lineStart) + prefix + value.slice(lineStart);
+    onChange(newValue);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + prefix.length, start + prefix.length);
+    });
+  }, [value, onChange]);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between border-b border-gray-700 mb-0">
+        {/* Toolbar */}
+        <div className="flex items-center gap-0.5 p-1">
+          <button type="button" onClick={() => insertAt('**', '**')} className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200" title="Gras">
+            <Bold className="w-3.5 h-3.5" />
+          </button>
+          <button type="button" onClick={() => insertLine('### ')} className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200" title="Titre">
+            <Heading3 className="w-3.5 h-3.5" />
+          </button>
+          <button type="button" onClick={() => insertLine('- ')} className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200" title="Liste">
+            <List className="w-3.5 h-3.5" />
+          </button>
+          <button type="button" onClick={() => insertLine('---\n')} className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200" title="Separateur">
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {/* Tabs */}
+        <div className="flex items-center gap-0.5 p-1">
+          <button
+            type="button"
+            onClick={() => setTab('edit')}
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${tab === 'edit' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            Editeur
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('preview')}
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${tab === 'preview' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            Apercu
+          </button>
+        </div>
+      </div>
+
+      {tab === 'edit' ? (
+        <textarea
+          ref={ref}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="admin-input font-mono text-sm min-h-[350px] resize-y rounded-t-none border-t-0"
+          rows={18}
+        />
+      ) : (
+        <div className="admin-input min-h-[350px] rounded-t-none border-t-0 overflow-y-auto">
+          {value.trim() ? <MarkdownPreview content={value} /> : <p className="text-gray-500 text-sm italic">Rien a afficher</p>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function formatDate(date: string | Date): string {
   const d = new Date(date);
@@ -163,12 +296,10 @@ export default function Changelogs() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Contenu (Markdown)</label>
-                <textarea
+                <label className="block text-xs font-medium text-gray-500 mb-1">Contenu</label>
+                <MarkdownEditor
                   value={editForm.content}
-                  onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                  className="admin-input font-mono text-sm min-h-[300px] resize-y"
-                  rows={15}
+                  onChange={(v) => setEditForm({ ...editForm, content: v })}
                 />
               </div>
               <div className="flex items-center gap-2">
