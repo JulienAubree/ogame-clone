@@ -538,8 +538,8 @@ const HULLS = [
       '-20% temps construction vaisseaux militaires',
     ],
     changeCost: { baseMultiplier: 500, resourceRatio: { minerai: 3, silicium: 2, hydrogene: 1 } },
-    unavailabilitySeconds: 7200,
-    cooldownSeconds: 604800,
+    unavailabilitySeconds: 300,
+    cooldownSeconds: 300,
   },
   {
     id: 'industrial',
@@ -571,8 +571,8 @@ const HULLS = [
       'Permet le minage et recyclage',
     ],
     changeCost: { baseMultiplier: 500, resourceRatio: { minerai: 3, silicium: 2, hydrogene: 1 } },
-    unavailabilitySeconds: 7200,
-    cooldownSeconds: 604800,
+    unavailabilitySeconds: 300,
+    cooldownSeconds: 300,
   },
   {
     id: 'scientific',
@@ -597,8 +597,8 @@ const HULLS = [
       'Mission de scan (espionnage)',
     ],
     changeCost: { baseMultiplier: 500, resourceRatio: { minerai: 3, silicium: 2, hydrogene: 1 } },
-    unavailabilitySeconds: 7200,
-    cooldownSeconds: 604800,
+    unavailabilitySeconds: 300,
+    cooldownSeconds: 300,
   },
 ];
 
