@@ -174,21 +174,21 @@ const PIRATE_TEMPLATES = [
     name: 'Patrouille pirate',
     tier: 'easy',
     ships: { interceptor: 5 },
-    rewards: { minerai: 3000, silicium: 1500, hydrogene: 500, bonusShips: [] },
+    rewards: { minerai: 300, silicium: 150, hydrogene: 50, bonusShips: [] },
   },
   {
     id: 'raider_squad_easy',
     name: 'Escouade de pillards',
     tier: 'easy',
     ships: { interceptor: 4, frigate: 1 },
-    rewards: { minerai: 5000, silicium: 2500, hydrogene: 1000, bonusShips: [] },
+    rewards: { minerai: 500, silicium: 250, hydrogene: 100, bonusShips: [] },
   },
   {
     id: 'smuggler_convoy_easy',
     name: 'Convoi de contrebandiers',
     tier: 'easy',
     ships: { interceptor: 3, smallCargo: 5 },
-    rewards: { minerai: 6000, silicium: 4000, hydrogene: 1500, bonusShips: [] },
+    rewards: { minerai: 600, silicium: 400, hydrogene: 150, bonusShips: [] },
   },
   // ── Medium tier ──
   {
@@ -197,7 +197,7 @@ const PIRATE_TEMPLATES = [
     tier: 'medium',
     ships: { interceptor: 4, frigate: 1 },
     rewards: {
-      minerai: 10000, silicium: 5000, hydrogene: 2000,
+      minerai: 1000, silicium: 500, hydrogene: 200,
       bonusShips: [{ shipId: 'interceptor', count: 2, chance: 0.3 }],
     },
   },
@@ -207,7 +207,7 @@ const PIRATE_TEMPLATES = [
     tier: 'medium',
     ships: { interceptor: 3, frigate: 1 },
     rewards: {
-      minerai: 15000, silicium: 8000, hydrogene: 3000,
+      minerai: 1500, silicium: 800, hydrogene: 300,
       bonusShips: [{ shipId: 'interceptor', count: 2, chance: 0.3 }],
     },
   },
@@ -217,7 +217,7 @@ const PIRATE_TEMPLATES = [
     tier: 'medium',
     ships: { frigate: 8, cruiser: 1 },
     rewards: {
-      minerai: 18000, silicium: 10000, hydrogene: 4000,
+      minerai: 1800, silicium: 1000, hydrogene: 400,
       bonusShips: [{ shipId: 'interceptor', count: 3, chance: 0.3 }],
     },
   },
@@ -227,7 +227,7 @@ const PIRATE_TEMPLATES = [
     tier: 'medium',
     ships: { interceptor: 4, frigate: 1 },
     rewards: {
-      minerai: 20000, silicium: 12000, hydrogene: 5000,
+      minerai: 2000, silicium: 1200, hydrogene: 500,
       bonusShips: [{ shipId: 'interceptor', count: 3, chance: 0.3 }],
     },
   },
@@ -238,7 +238,7 @@ const PIRATE_TEMPLATES = [
     tier: 'hard',
     ships: { frigate: 5, cruiser: 3, battlecruiser: 1 },
     rewards: {
-      minerai: 50000, silicium: 30000, hydrogene: 15000,
+      minerai: 5000, silicium: 3000, hydrogene: 1500,
       bonusShips: [{ shipId: 'cruiser', count: 1, chance: 0.2 }],
     },
   },
@@ -248,7 +248,7 @@ const PIRATE_TEMPLATES = [
     tier: 'hard',
     ships: { cruiser: 2, battlecruiser: 1 },
     rewards: {
-      minerai: 70000, silicium: 40000, hydrogene: 20000,
+      minerai: 7000, silicium: 4000, hydrogene: 2000,
       bonusShips: [{ shipId: 'cruiser', count: 2, chance: 0.2 }],
     },
   },
@@ -258,7 +258,7 @@ const PIRATE_TEMPLATES = [
     tier: 'hard',
     ships: { frigate: 4, cruiser: 3, battlecruiser: 2 },
     rewards: {
-      minerai: 100000, silicium: 60000, hydrogene: 30000,
+      minerai: 10000, silicium: 6000, hydrogene: 3000,
       bonusShips: [{ shipId: 'battlecruiser', count: 1, chance: 0.2 }],
     },
   },
