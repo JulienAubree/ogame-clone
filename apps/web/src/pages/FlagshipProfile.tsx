@@ -263,6 +263,53 @@ function HullCooldownButton({ hullChangeAvailableAt, disabled, onClick }: {
   );
 }
 
+// ── Cooldown Icon (WoW-style radial sweep) ──
+
+function CooldownIcon({ secondsLeft, totalSeconds, size = 32, icon }: {
+  secondsLeft: number;
+  totalSeconds: number;
+  size?: number;
+  icon: React.ReactNode;
+}) {
+  const progress = totalSeconds > 0 ? Math.max(0, Math.min(1, secondsLeft / totalSeconds)) : 0;
+  const r = (size - 4) / 2;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - progress);
+
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      {/* Background circle */}
+      <svg width={size} height={size} className="absolute inset-0 -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-700/50" />
+        {/* Sweep overlay */}
+        {progress > 0 && (
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            fill="none" stroke="currentColor" strokeWidth="2.5"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="text-cyan-400/80 transition-[stroke-dashoffset] duration-1000 ease-linear"
+          />
+        )}
+      </svg>
+      {/* Dark overlay when on cooldown */}
+      {progress > 0 && (
+        <div
+          className="absolute inset-0 rounded-full bg-slate-900/60"
+          style={{
+            background: `conic-gradient(transparent ${(1 - progress) * 360}deg, rgba(15,23,42,0.7) ${(1 - progress) * 360}deg)`,
+          }}
+        />
+      )}
+      {/* Icon */}
+      <div className={cn('relative z-10', progress > 0 ? 'opacity-50' : '')}>
+        {icon}
+      </div>
+    </div>
+  );
+}
+
 // ── Hull Abilities Panel ──
 
 function HullAbilitiesPanel({ flagship, hullConfig, hullId }: {
@@ -333,42 +380,54 @@ function HullAbilitiesPanel({ flagship, hullConfig, hullId }: {
       {/* Scan ability (scientific hull only) */}
       {hullId === 'scientific' && (
         <div className="mt-4 pt-3 border-t border-slate-700/50">
-          <div className="flex items-center gap-2 mb-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-            </svg>
-            <span className="text-xs font-semibold text-cyan-300">Mission de scan</span>
-            {scanOnCooldown && (
-              <span className="text-[10px] text-slate-500 font-mono">
-                CD {Math.floor(scanSecondsLeft / 60)}min
-              </span>
-            )}
-          </div>
-          <p className="text-[11px] text-slate-400 mb-3">
-            Scan instantane d'une planete cible (+2 espionnage). Genere un rapport d'espionnage sans etre detecte.
-          </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <CoordinateInput
-              galaxy={scanTarget.galaxy}
-              system={scanTarget.system}
-              position={scanTarget.position}
-              onChange={setScanTarget}
-              disabled={!isActive || scanOnCooldown}
+          <div className="flex items-start gap-3">
+            {/* Cooldown icon */}
+            <CooldownIcon
+              secondsLeft={scanSecondsLeft}
+              totalSeconds={hullConfig.scanCooldownSeconds ?? 1800}
+              size={40}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+              }
             />
-            <TargetContactsDropdown
-              onSelect={setScanTarget}
-              disabled={!isActive || scanOnCooldown}
-            />
-            <button
-              onClick={handleScan}
-              disabled={!isActive || scanOnCooldown || scanMutation.isPending || !scanTarget.galaxy || !scanTarget.system || !scanTarget.position}
-              className="rounded-lg bg-cyan-600 px-4 py-2 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {scanMutation.isPending ? 'Scan...' : 'Scanner'}
-            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-semibold text-cyan-300">Mission de scan</span>
+                {scanOnCooldown && (
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {Math.floor(scanSecondsLeft / 60)}:{String(scanSecondsLeft % 60).padStart(2, '0')}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 mb-3">
+                Scan instantane (+{hullConfig.scanEspionageBonus ?? 5} espionnage). Genere un rapport sans etre detecte.
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <CoordinateInput
+                  galaxy={scanTarget.galaxy}
+                  system={scanTarget.system}
+                  position={scanTarget.position}
+                  onChange={setScanTarget}
+                  disabled={!isActive || scanOnCooldown}
+                />
+                <TargetContactsDropdown
+                  onSelect={setScanTarget}
+                  disabled={!isActive || scanOnCooldown}
+                />
+                <button
+                  onClick={handleScan}
+                  disabled={!isActive || scanOnCooldown || scanMutation.isPending || !scanTarget.galaxy || !scanTarget.system || !scanTarget.position}
+                  className="rounded-lg bg-cyan-600 px-4 py-2 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {scanMutation.isPending ? 'Scan...' : 'Scanner'}
+                </button>
+              </div>
+              {scanError && <p className="mt-1.5 text-[11px] text-red-400">{scanError}</p>}
+              {scanMutation.isSuccess && <p className="mt-1.5 text-[11px] text-emerald-400">Scan termine !</p>}
+            </div>
           </div>
-          {scanError && <p className="mt-1.5 text-[11px] text-red-400">{scanError}</p>}
-          {scanMutation.isSuccess && <p className="mt-1.5 text-[11px] text-emerald-400">Scan termine !</p>}
         </div>
       )}
 
