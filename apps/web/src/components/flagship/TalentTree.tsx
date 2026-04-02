@@ -3,10 +3,10 @@ import { trpc } from '@/trpc';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { cn } from '@/lib/utils';
 
-const BRANCH_COLORS: Record<string, { border: string; text: string; bg: string; tab: string; tabActive: string }> = {
-  militaire: { border: 'border-red-500/30', text: 'text-red-400', bg: 'bg-red-950/20', tab: 'text-red-400/60 hover:text-red-400', tabActive: 'text-red-400 border-red-500 bg-red-500/10' },
-  scientifique: { border: 'border-cyan-500/30', text: 'text-cyan-400', bg: 'bg-cyan-950/20', tab: 'text-cyan-400/60 hover:text-cyan-400', tabActive: 'text-cyan-400 border-cyan-500 bg-cyan-500/10' },
-  industriel: { border: 'border-amber-500/30', text: 'text-amber-400', bg: 'bg-amber-950/20', tab: 'text-amber-400/60 hover:text-amber-400', tabActive: 'text-amber-400 border-amber-500 bg-amber-500/10' },
+const BRANCH_COLORS: Record<string, { border: string; text: string; bg: string; tab: string; tabActive: string; btn: string }> = {
+  militaire: { border: 'border-red-500/30', text: 'text-red-400', bg: 'bg-red-950/20', tab: 'text-red-400/60 hover:text-red-400', tabActive: 'text-red-400 border-red-500 bg-red-500/10', btn: 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30' },
+  scientifique: { border: 'border-cyan-500/30', text: 'text-cyan-400', bg: 'bg-cyan-950/20', tab: 'text-cyan-400/60 hover:text-cyan-400', tabActive: 'text-cyan-400 border-cyan-500 bg-cyan-500/10', btn: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/30' },
+  industriel: { border: 'border-amber-500/30', text: 'text-amber-400', bg: 'bg-amber-950/20', tab: 'text-amber-400/60 hover:text-amber-400', tabActive: 'text-amber-400 border-amber-500 bg-amber-500/10', btn: 'bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30' },
 };
 
 const EFFECT_LABELS: Record<string, { label: string; color: string }> = {
@@ -34,8 +34,6 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
   const balance = exiliumData?.balance ?? 0;
 
   const [activeBranch, setActiveBranch] = useState<string | null>(null);
-  const [confirmInvest, setConfirmInvest] = useState<string | null>(null);
-  const [confirmRespec, setConfirmRespec] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
 
@@ -44,16 +42,6 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
       utils.talent.list.invalidate();
       utils.flagship.get.invalidate();
       utils.exilium.getBalance.invalidate();
-      setConfirmInvest(null);
-    },
-  });
-
-  const respecMutation = trpc.talent.respec.useMutation({
-    onSuccess: () => {
-      utils.talent.list.invalidate();
-      utils.flagship.get.invalidate();
-      utils.exilium.getBalance.invalidate();
-      setConfirmRespec(null);
     },
   });
 
@@ -63,6 +51,14 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
       utils.flagship.get.invalidate();
       utils.exilium.getBalance.invalidate();
       setConfirmReset(false);
+    },
+  });
+
+  const respecMutation = trpc.talent.respec.useMutation({
+    onSuccess: () => {
+      utils.talent.list.invalidate();
+      utils.flagship.get.invalidate();
+      utils.exilium.getBalance.invalidate();
     },
   });
 
@@ -85,14 +81,27 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
     });
   }, [talentTree]);
 
-  // Default to first branch
   const currentBranchId = activeBranch ?? branchData[0]?.branch.id ?? null;
   const currentBranch = branchData.find(b => b.branch.id === currentBranchId);
 
   if (!talentTree) return null;
 
-  function getInvestBlockReason(talentId: string): string | null {
-    if (!talentTree) return 'Chargement…';
+  function canInvest(talentId: string): boolean {
+    if (!talentTree) return false;
+    const def = talentTree.talents[talentId];
+    if (!def) return false;
+    const rank = talentTree.ranks[talentId] ?? 0;
+    if (rank >= def.maxRanks) return false;
+    const bp = branchData.find(b => b.branch.id === def.branchId);
+    const needed = TIER_THRESHOLDS[def.tier] ?? 0;
+    if ((bp?.totalPoints ?? 0) < needed) return false;
+    if (def.prerequisiteId && (talentTree.ranks[def.prerequisiteId] ?? 0) < 1) return false;
+    if (balance < getTierCost(def.tier)) return false;
+    return true;
+  }
+
+  function getBlockReason(talentId: string): string | null {
+    if (!talentTree) return null;
     const def = talentTree.talents[talentId];
     if (!def) return null;
     const rank = talentTree.ranks[talentId] ?? 0;
@@ -117,9 +126,9 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold">Arbre de talents</h3>
-          <span className="text-[10px] text-muted-foreground font-mono">{totalAllPoints} pts investis</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{totalAllPoints} pts — {balance} Exilium</span>
         </div>
-        {showResetButton && (
+        {showResetButton && totalAllPoints > 0 && (
           <button
             onClick={() => setConfirmReset(true)}
             className="text-xs text-red-400 hover:text-red-300 transition-colors"
@@ -147,12 +156,9 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
           {guideOpen && (
             <div className="px-4 pb-4 text-xs text-muted-foreground/80 space-y-2 border-t border-white/[0.04] pt-3">
               <p>
-                Votre vaisseau amiral possede un arbre de talents reparti en <strong className="text-foreground">3 branches de specialisation</strong> :
-                Militaire, Scientifique et Industriel. Chaque branche correspond a un type de coque.
-              </p>
-              <p>
-                Les talents sont repartis en <strong className="text-foreground">5 tiers</strong>. Pour debloquer un tier superieur,
-                vous devez investir un certain nombre de points dans la branche. Le cout en Exilium augmente avec le tier.
+                Investissez des points dans les talents avec les boutons <strong className="text-foreground">+</strong> et <strong className="text-foreground">-</strong>.
+                Le cout en Exilium augmente avec le tier (1 au tier 1, 5 au tier 5).
+                Pour debloquer un tier superieur, investissez assez de points dans la branche.
               </p>
               <div className="flex gap-3 pt-1">
                 {Object.entries(EFFECT_LABELS).map(([key, { label, color }]) => (
@@ -199,13 +205,11 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
 
         return (
           <div className={cn('rounded-lg border p-4 space-y-4', colors.border, colors.bg)}>
-            {/* Branch header */}
             <div className="text-center">
               <p className="text-[11px] text-muted-foreground">{branch.description}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">Points investis : <span className={cn('font-semibold', colors.text)}>{totalPoints}</span></p>
             </div>
 
-            {/* Tiers */}
             {[1, 2, 3, 4, 5].map(tier => {
               const tierTalents = tiers[tier] ?? [];
               if (tierTalents.length === 0) return null;
@@ -229,8 +233,9 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
                     {tierTalents.map(talent => {
                       const rank = talentTree.ranks[talent.id] ?? 0;
                       const maxed = rank >= talent.maxRanks;
-                      const blockReason = !maxed ? getInvestBlockReason(talent.id) : null;
-                      const available = !maxed && !blockReason;
+                      const canAdd = canInvest(talent.id);
+                      const canRemove = rank > 0;
+                      const blockReason = !maxed ? getBlockReason(talent.id) : null;
                       const effectInfo = EFFECT_LABELS[talent.effectType];
 
                       return (
@@ -247,61 +252,61 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
                             !unlocked && 'opacity-40',
                           )}
                         >
-                          {/* Name */}
                           <div className="text-[11px] font-semibold leading-tight">{talent.name}</div>
 
-                          {/* Effect type badge */}
                           <div className={cn('inline-block text-[8px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full', effectInfo?.color, 'bg-current/10')}>
                             <span className={effectInfo?.color}>{effectInfo?.label}</span>
                           </div>
 
-                          {/* Description */}
                           <div className="text-muted-foreground text-[10px] leading-snug">{talent.description}</div>
 
-                          {/* Rank display */}
-                          <div className="flex items-center justify-center gap-1">
-                            {Array.from({ length: talent.maxRanks }, (_, i) => (
-                              <div
-                                key={i}
-                                className={cn(
-                                  'w-2.5 h-2.5 rounded-sm border transition-colors',
-                                  i < rank
-                                    ? cn(colors.border.replace('border', 'bg').replace('/30', ''), colors.border)
-                                    : 'bg-transparent border-border/40',
-                                )}
-                              />
-                            ))}
-                            <span className="text-[9px] font-mono text-muted-foreground ml-1">{rank}/{talent.maxRanks}</span>
+                          {/* +/- controls with rank display */}
+                          <div className="flex items-center justify-center gap-2 pt-1">
+                            <button
+                              onClick={() => respecMutation.mutate({ talentId: talent.id })}
+                              disabled={!canRemove || respecMutation.isPending}
+                              className={cn(
+                                'w-7 h-7 rounded-md border text-sm font-bold transition-colors flex items-center justify-center',
+                                canRemove
+                                  ? 'border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20'
+                                  : 'border-border/30 text-muted-foreground/30 cursor-not-allowed',
+                              )}
+                            >
+                              -
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: talent.maxRanks }, (_, i) => (
+                                <div
+                                  key={i}
+                                  className={cn(
+                                    'w-2.5 h-2.5 rounded-sm border transition-colors',
+                                    i < rank
+                                      ? cn(colors.border.replace('border', 'bg').replace('/30', ''), colors.border)
+                                      : 'bg-transparent border-border/40',
+                                  )}
+                                />
+                              ))}
+                              <span className="text-[9px] font-mono text-muted-foreground ml-0.5">{rank}/{talent.maxRanks}</span>
+                            </div>
+
+                            <button
+                              onClick={() => investMutation.mutate({ talentId: talent.id })}
+                              disabled={!canAdd || investMutation.isPending}
+                              className={cn(
+                                'w-7 h-7 rounded-md border text-sm font-bold transition-colors flex items-center justify-center',
+                                canAdd
+                                  ? cn(colors.btn)
+                                  : 'border-border/30 text-muted-foreground/30 cursor-not-allowed',
+                              )}
+                            >
+                              +
+                            </button>
                           </div>
 
-                          {/* Block reason */}
                           {blockReason && (
                             <div className="text-[9px] text-orange-400/80">{blockReason}</div>
                           )}
-
-                          {/* Actions */}
-                          <div className="flex gap-1.5 justify-center">
-                            {available && (
-                              <button
-                                onClick={() => setConfirmInvest(talent.id)}
-                                className={cn(
-                                  'text-[9px] px-2.5 py-1 rounded-md font-medium transition-colors',
-                                  colors.bg, colors.text, 'border', colors.border,
-                                  'hover:brightness-125',
-                                )}
-                              >
-                                + Investir
-                              </button>
-                            )}
-                            {rank > 0 && (
-                              <button
-                                onClick={() => setConfirmRespec(talent.id)}
-                                className="text-[9px] px-2 py-1 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
-                              >
-                                Respec
-                              </button>
-                            )}
-                          </div>
                         </div>
                       );
                     })}
@@ -313,26 +318,7 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
         );
       })()}
 
-      {/* Confirm dialogs */}
-      <ConfirmDialog
-        open={!!confirmInvest}
-        onConfirm={() => { if (confirmInvest) investMutation.mutate({ talentId: confirmInvest }); }}
-        onCancel={() => setConfirmInvest(null)}
-        title="Investir dans ce talent ?"
-        description={`Cout : ${confirmInvest && talentTree ? getTierCost(talentTree.talents[confirmInvest]?.tier ?? 1) : 0} Exilium`}
-        confirmLabel="Investir"
-      />
-
-      <ConfirmDialog
-        open={!!confirmRespec}
-        onConfirm={() => { if (confirmRespec) respecMutation.mutate({ talentId: confirmRespec }); }}
-        onCancel={() => setConfirmRespec(null)}
-        title="Reinitialiser ce talent ?"
-        description="Les talents dependants seront aussi reinitialises. Gratuit pendant la phase de developpement."
-        variant="destructive"
-        confirmLabel="Reinitialiser"
-      />
-
+      {/* Reset confirmation — only dialog remaining */}
       <ConfirmDialog
         open={confirmReset}
         onConfirm={() => resetMutation.mutate()}
