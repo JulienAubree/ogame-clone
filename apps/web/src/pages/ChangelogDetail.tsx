@@ -17,6 +17,16 @@ function formatDate(date: string | Date): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function inlineBold(text: string) {
+  const parts = text.split(/(\*\*.+?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
 function renderMarkdown(content: string) {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
@@ -29,7 +39,7 @@ function renderMarkdown(content: string) {
           {listItems.map((item, i) => (
             <li key={i} className="text-sm text-foreground/80 flex gap-2">
               <span className="text-muted-foreground shrink-0">•</span>
-              <span>{item}</span>
+              <span>{inlineBold(item)}</span>
             </li>
           ))}
         </ul>
@@ -53,7 +63,7 @@ function renderMarkdown(content: string) {
     } else {
       flushList();
       elements.push(
-        <p key={`p-${elements.length}`} className="text-sm text-foreground/80 mb-1">{line}</p>
+        <p key={`p-${elements.length}`} className="text-sm text-foreground/80 mb-1">{inlineBold(line)}</p>
       );
     }
   }

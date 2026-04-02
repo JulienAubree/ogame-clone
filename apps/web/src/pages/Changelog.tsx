@@ -57,7 +57,7 @@ export default function Changelog() {
               <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(item.createdAt)}</span>
             </div>
             <p className="text-xs text-foreground/70 line-clamp-3">
-              {item.content?.replace(/^###\s+/gm, '').replace(/^-\s+/gm, '• ').slice(0, 200)}...
+              {item.content?.replace(/^###\s+/gm, '').replace(/^-\s+/gm, '• ').replace(/\*\*(.+?)\*\*/g, '$1').slice(0, 200)}...
             </p>
             {item.commentCount > 0 && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
