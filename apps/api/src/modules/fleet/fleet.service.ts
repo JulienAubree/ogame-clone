@@ -168,24 +168,28 @@ export function createFleetService(
         if (flagship.planetId !== input.originPlanetId) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre vaisseau amiral n\'est pas sur cette planete' });
         }
-        // Hull-restricted missions: flagship can only mine/recycle with industrial hull
-        if ((input.mission === 'mine' || input.mission === 'recycle') && flagship.hullId !== 'industrial') {
+        // Hull-restricted missions: check abilities from config
+        const hullConfig = flagship.hullConfig ?? (('hullConfig' in flagship && flagship.hullConfig) ? flagship.hullConfig : null);
+        const hullAbilities = (hullConfig?.abilities ?? []) as Array<{ id: string; type: string; unlockedMissions?: string[]; miningExtractionEqualsCargo?: boolean }>;
+        const unlockedMissions = hullAbilities.filter(a => a.type === 'fleet_unlock').flatMap(a => a.unlockedMissions ?? []);
+        const missionNeedsUnlock = ['mine', 'recycle'].includes(input.mission);
+        if (missionNeedsUnlock && !unlockedMissions.includes(input.mission)) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Seule la coque industrielle permet au vaisseau amiral de participer aux missions de minage et recyclage',
+            message: `La coque de votre vaisseau amiral ne permet pas les missions de ${input.mission}`,
           });
         }
         // Inject flagship stats into shipStatsMap for speed/fuel/cargo calculations
         // Use effective stats (after talent + hull bonuses) when available
         const efs = 'effectiveStats' in flagship ? flagship.effectiveStats : null;
         const effectiveCargo = efs?.cargoCapacity ?? flagship.cargoCapacity;
+        const hasMiningExtraction = hullAbilities.some(a => a.miningExtractionEqualsCargo);
         shipStatsMap['flagship'] = {
           baseSpeed: efs?.baseSpeed ?? flagship.baseSpeed,
           fuelConsumption: efs?.fuelConsumption ?? flagship.fuelConsumption,
           cargoCapacity: effectiveCargo,
           driveType: (efs?.driveType ?? flagship.driveType) as ShipStats['driveType'],
-          // Industrial hull: mining extraction equals cargo capacity
-          miningExtraction: flagship.hullId === 'industrial' ? effectiveCargo : 0,
+          miningExtraction: hasMiningExtraction ? effectiveCargo : 0,
         };
       }
 

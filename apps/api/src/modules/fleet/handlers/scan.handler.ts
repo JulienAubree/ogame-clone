@@ -17,11 +17,16 @@ export class ScanHandler implements MissionHandler {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'La mission de scan necessite le vaisseau amiral' });
     }
 
-    // Verify hull is scientific
+    // Verify hull has scan ability
     const [flagship] = await ctx.db.select({ id: flagships.id, hullId: flagships.hullId, status: flagships.status })
       .from(flagships).where(eq(flagships.userId, userId)).limit(1);
-    if (!flagship || flagship.hullId !== 'scientific') {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seule la coque scientifique permet les missions de scan' });
+    if (!flagship) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vaisseau amiral introuvable' });
+
+    const fullConfig = await ctx.gameConfigService.getFullConfig();
+    const hullConfig = flagship.hullId ? fullConfig.hulls[flagship.hullId] : null;
+    const scanAbility = (hullConfig?.abilities ?? []).find((a: any) => a.id === 'scan_mission' && a.type === 'active');
+    if (!scanAbility) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre coque ne dispose pas de la capacite de scan' });
     }
 
     // Check cooldown
@@ -35,10 +40,8 @@ export class ScanHandler implements MissionHandler {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Scan en cooldown' });
     }
 
-    // Start cooldown
-    const fullConfig = await ctx.gameConfigService.getFullConfig();
-    const hullConfig = fullConfig.hulls['scientific'];
-    const cooldownSeconds = hullConfig?.scanCooldownSeconds ?? 3600;
+    // Start cooldown from ability config
+    const cooldownSeconds = (scanAbility as any).cooldownSeconds ?? 1800;
     const now = new Date();
     const cooldownEnds = new Date(now.getTime() + cooldownSeconds * 1000);
 

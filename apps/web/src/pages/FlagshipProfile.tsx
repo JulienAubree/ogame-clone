@@ -322,10 +322,6 @@ function HullAbilitiesPanel({ flagship, hullConfig, hullId }: {
 
   const utils = trpc.useUtils();
   const { data: talentData } = trpc.talent.list.useQuery();
-  const scanCooldown = talentData?.cooldowns?.['scan_mission'];
-  const scanOnCooldown = scanCooldown ? new Date(scanCooldown.cooldownEnds) > new Date() : false;
-  const scanCooldownEnd = scanCooldown ? new Date(scanCooldown.cooldownEnds) : null;
-  const scanSecondsLeft = useCountdown(scanOnCooldown ? scanCooldownEnd : null);
 
   const navigate = useNavigate();
   const scanMutation = trpc.flagship.scan.useMutation({
@@ -356,7 +352,8 @@ function HullAbilitiesPanel({ flagship, hullConfig, hullId }: {
   const styles = HULL_CARD_STYLES[hullId] ?? HULL_CARD_STYLES.industrial;
   const isActive = flagship.status === 'active';
 
-  const hasActiveAbilities = hullId === 'scientific';
+  const activeAbilities = (hullConfig.abilities ?? []).filter((a: any) => a.type === 'active');
+  const hasActiveAbilities = activeAbilities.length > 0;
 
   return (
     <div className="space-y-4">
@@ -390,83 +387,85 @@ function HullAbilitiesPanel({ flagship, hullConfig, hullId }: {
             <span className={cn('text-xs font-semibold uppercase tracking-wider', styles.badgeText)}>Capacites actives</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {/* Scan card */}
-            {hullId === 'scientific' && (
-              <div className={cn(
-                'retro-card relative overflow-hidden flex flex-col',
-                scanOnCooldown && 'opacity-80',
-              )}>
-                {/* Hero zone — icon placeholder (admin can upload later) */}
-                <div className="relative h-[100px] overflow-hidden bg-gradient-to-br from-cyan-950/60 to-slate-900 flex items-center justify-center">
-                  <CooldownIcon
-                    secondsLeft={scanSecondsLeft}
-                    totalSeconds={hullConfig.scanCooldownSeconds ?? 1800}
-                    size={56}
-                    icon={
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
-                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-                      </svg>
-                    }
-                  />
-                  {/* Cooldown sweep overlay on hero */}
-                  {scanOnCooldown && (
-                    <div
-                      className="absolute inset-0 bg-slate-900/60 pointer-events-none"
-                      style={{
-                        clipPath: `inset(0 ${((hullConfig.scanCooldownSeconds ?? 1800) - scanSecondsLeft) / (hullConfig.scanCooldownSeconds ?? 1800) * 100}% 0 0)`,
-                      }}
-                    />
-                  )}
-                  {/* Timer badge */}
-                  {scanOnCooldown && (
-                    <span className="absolute top-2 right-2 bg-slate-800/90 text-slate-400 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border border-slate-700/50">
-                      {Math.floor(scanSecondsLeft / 60)}:{String(scanSecondsLeft % 60).padStart(2, '0')}
-                    </span>
-                  )}
-                  {!scanOnCooldown && (
-                    <span className="absolute top-2 right-2 bg-cyan-500/20 text-cyan-400 text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-cyan-500/30">
-                      Pret
-                    </span>
-                  )}
-                </div>
+            {activeAbilities.map((ability: any) => {
+              const abilityCooldown = talentData?.cooldowns?.[ability.id];
+              const abilityOnCooldown = abilityCooldown ? new Date(abilityCooldown.cooldownEnds) > new Date() : false;
+              const abilityCooldownEnd = abilityCooldown ? new Date(abilityCooldown.cooldownEnds) : null;
+              const abilitySecondsLeft = useCountdown(abilityOnCooldown ? abilityCooldownEnd : null);
+              const abilityCooldownTotal = ability.cooldownSeconds ?? 1800;
+              const isScan = ability.id === 'scan_mission';
 
-                {/* Content */}
-                <div className="p-3 flex flex-col flex-1 gap-2">
-                  <div className="text-[13px] font-semibold text-foreground">Scan</div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Espionnage instantane (+{hullConfig.scanEspionageBonus ?? 5}), indetectable
-                  </p>
-
-                  <div className="flex-1" />
-
-                  {/* Target input */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <CoordinateInput
-                      galaxy={scanTarget.galaxy}
-                      system={scanTarget.system}
-                      position={scanTarget.position}
-                      onChange={setScanTarget}
-                      disabled={!isActive || scanOnCooldown}
+              return (
+                <div key={ability.id} className={cn(
+                  'retro-card relative overflow-hidden flex flex-col',
+                  abilityOnCooldown && 'opacity-80',
+                )}>
+                  {/* Hero zone */}
+                  <div className="relative h-[100px] overflow-hidden bg-gradient-to-br from-cyan-950/60 to-slate-900 flex items-center justify-center">
+                    <CooldownIcon
+                      secondsLeft={abilitySecondsLeft}
+                      totalSeconds={abilityCooldownTotal}
+                      size={56}
+                      icon={
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={styles.badgeText}>
+                          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                        </svg>
+                      }
                     />
-                    <TargetContactsDropdown
-                      onSelect={setScanTarget}
-                      disabled={!isActive || scanOnCooldown}
-                    />
+                    {abilityOnCooldown && (
+                      <div
+                        className="absolute inset-0 bg-slate-900/60 pointer-events-none"
+                        style={{ clipPath: `inset(0 ${(abilityCooldownTotal - abilitySecondsLeft) / abilityCooldownTotal * 100}% 0 0)` }}
+                      />
+                    )}
+                    {abilityOnCooldown ? (
+                      <span className="absolute top-2 right-2 bg-slate-800/90 text-slate-400 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border border-slate-700/50">
+                        {Math.floor(abilitySecondsLeft / 60)}:{String(abilitySecondsLeft % 60).padStart(2, '0')}
+                      </span>
+                    ) : (
+                      <span className={cn('absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border', styles.badge, styles.badgeText)}>
+                        Pret
+                      </span>
+                    )}
                   </div>
-                  <button
-                    onClick={handleScan}
-                    disabled={!isActive || scanOnCooldown || scanMutation.isPending || !scanTarget.galaxy || !scanTarget.system || !scanTarget.position}
-                    className="w-full rounded-md bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {scanMutation.isPending ? 'Scan en cours...' : 'Scanner'}
-                  </button>
-                  {scanError && <p className="text-[11px] text-red-400">{scanError}</p>}
-                  {scanMutation.isSuccess && <p className="text-[11px] text-emerald-400">Scan termine !</p>}
-                </div>
-              </div>
-            )}
 
-            {/* Future active abilities added here as additional retro-cards */}
+                  {/* Content */}
+                  <div className="p-3 flex flex-col flex-1 gap-2">
+                    <div className="text-[13px] font-semibold text-foreground">{ability.name}</div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">{ability.description}</p>
+                    <div className="flex-1" />
+
+                    {/* Scan-specific UI */}
+                    {isScan && (
+                      <>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CoordinateInput
+                            galaxy={scanTarget.galaxy}
+                            system={scanTarget.system}
+                            position={scanTarget.position}
+                            onChange={setScanTarget}
+                            disabled={!isActive || abilityOnCooldown}
+                          />
+                          <TargetContactsDropdown
+                            onSelect={setScanTarget}
+                            disabled={!isActive || abilityOnCooldown}
+                          />
+                        </div>
+                        <button
+                          onClick={handleScan}
+                          disabled={!isActive || abilityOnCooldown || scanMutation.isPending || !scanTarget.galaxy || !scanTarget.system || !scanTarget.position}
+                          className={cn('w-full rounded-md px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed', 'bg-cyan-600 hover:bg-cyan-500')}
+                        >
+                          {scanMutation.isPending ? 'Scan en cours...' : 'Scanner'}
+                        </button>
+                        {scanError && <p className="text-[11px] text-red-400">{scanError}</p>}
+                        {scanMutation.isSuccess && <p className="text-[11px] text-emerald-400">Scan termine !</p>}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

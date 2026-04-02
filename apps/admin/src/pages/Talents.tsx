@@ -292,24 +292,86 @@ function HullEditModal({ hull, open, onClose, onSave, saving }: {
 
           {/* Abilities */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Capacites (separees par virgule)</label>
-            <input value={(form.abilities ?? []).join(', ')} onChange={e => setField('abilities', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))}
-              className="admin-input" />
-          </div>
-
-          {/* Scan params */}
-          {form.id === 'scientific' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Scan cooldown (secondes)</label>
-                <input type="number" value={form.scanCooldownSeconds ?? ''} onChange={e => setField('scanCooldownSeconds', Number(e.target.value))} className="admin-input" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Scan bonus espionnage</label>
-                <input type="number" value={form.scanEspionageBonus ?? ''} onChange={e => setField('scanEspionageBonus', Number(e.target.value))} className="admin-input" />
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Capacites</span>
+              <button type="button" onClick={() => {
+                const newAbility = { id: '', name: '', description: '', type: 'active', cooldownSeconds: 3600, params: {} };
+                setField('abilities', [...(form.abilities ?? []), newAbility]);
+              }} className="text-[10px] text-cyan-400 hover:text-cyan-300">+ Ajouter</button>
             </div>
-          )}
+            <div className="space-y-3">
+              {(form.abilities ?? []).map((ability: any, i: number) => {
+                const setAbilityField = (key: string, val: any) => {
+                  const abilities = [...(form.abilities ?? [])];
+                  abilities[i] = { ...abilities[i], [key]: val };
+                  setField('abilities', abilities);
+                };
+                const setParam = (key: string, val: any) => {
+                  const abilities = [...(form.abilities ?? [])];
+                  abilities[i] = { ...abilities[i], params: { ...(abilities[i].params ?? {}), [key]: val } };
+                  setField('abilities', abilities);
+                };
+                const removeAbility = () => {
+                  setField('abilities', (form.abilities ?? []).filter((_: any, idx: number) => idx !== i));
+                };
+                return (
+                  <div key={i} className="border border-gray-700/50 rounded-lg p-3 space-y-2 bg-gray-800/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-cyan-400 font-mono">{ability.id || '(nouveau)'}</span>
+                      <button type="button" onClick={removeAbility} className="text-red-400 hover:text-red-300"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-gray-500 mb-0.5">ID</label>
+                        <input value={ability.id ?? ''} onChange={e => setAbilityField('id', e.target.value)} className="admin-input text-xs" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-500 mb-0.5">Type</label>
+                        <select value={ability.type ?? 'active'} onChange={e => setAbilityField('type', e.target.value)} className="admin-input text-xs">
+                          <option value="active">active (pouvoir activable)</option>
+                          <option value="fleet_unlock">fleet_unlock (debloque mission)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-gray-500 mb-0.5">Nom</label>
+                        <input value={ability.name ?? ''} onChange={e => setAbilityField('name', e.target.value)} className="admin-input text-xs" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-500 mb-0.5">Description</label>
+                        <input value={ability.description ?? ''} onChange={e => setAbilityField('description', e.target.value)} className="admin-input text-xs" />
+                      </div>
+                    </div>
+                    {ability.type === 'fleet_unlock' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Missions debloquees (virgule)</label>
+                          <input value={(ability.unlockedMissions ?? []).join(', ')} onChange={e => setAbilityField('unlockedMissions', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} className="admin-input text-xs" />
+                        </div>
+                        <div className="flex items-center gap-2 pt-4">
+                          <input type="checkbox" checked={ability.miningExtractionEqualsCargo ?? false} onChange={e => setAbilityField('miningExtractionEqualsCargo', e.target.checked)} />
+                          <label className="text-[10px] text-gray-400">Extraction = soute</label>
+                        </div>
+                      </div>
+                    )}
+                    {ability.type === 'active' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Cooldown (secondes)</label>
+                          <input type="number" value={ability.cooldownSeconds ?? ''} onChange={e => setAbilityField('cooldownSeconds', Number(e.target.value))} className="admin-input text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Bonus espionnage</label>
+                          <input type="number" value={ability.params?.espionageBonus ?? ''} onChange={e => setParam('espionageBonus', Number(e.target.value))} className="admin-input text-xs" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Change cost */}
           <div>
@@ -434,21 +496,19 @@ function HullConfigSection({ hulls, onUpdated }: { hulls: Record<string, any>; o
               {hull.abilities && hull.abilities.length > 0 && (
                 <div>
                   <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider mb-1">Capacites</div>
-                  <div className="flex gap-2">
-                    {hull.abilities.map((a: string) => (
-                      <span key={a} className="text-[11px] px-2 py-1 rounded bg-cyan-900/30 border border-cyan-800/30 text-cyan-400 font-mono">{a}</span>
+                  <div className="space-y-1.5">
+                    {hull.abilities.map((a: any) => (
+                      <div key={a.id ?? a} className="flex items-center gap-2 text-[11px]">
+                        <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-bold uppercase', a.type === 'active' ? 'bg-cyan-900/40 text-cyan-400' : 'bg-amber-900/40 text-amber-400')}>
+                          {a.type === 'active' ? 'Actif' : 'Fleet'}
+                        </span>
+                        <span className="text-gray-200 font-medium">{a.name ?? a.id ?? a}</span>
+                        <span className="text-gray-500">{a.description ?? ''}</span>
+                        {a.cooldownSeconds && <span className="text-gray-500 font-mono">CD:{a.cooldownSeconds}s</span>}
+                        {a.unlockedMissions && <span className="text-gray-500 font-mono">[{a.unlockedMissions.join(',')}]</span>}
+                        {a.params?.espionageBonus && <span className="text-cyan-400 font-mono">+{a.params.espionageBonus} esp</span>}
+                      </div>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Scan params */}
-              {hull.scanCooldownSeconds != null && (
-                <div>
-                  <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider mb-1">Parametres scan</div>
-                  <div className="flex gap-3 text-[11px] text-gray-400">
-                    <span>Cooldown: <span className="text-gray-200 font-semibold">{hull.scanCooldownSeconds}s</span> ({Math.round(hull.scanCooldownSeconds / 60)}min)</span>
-                    <span>Bonus espionnage: <span className="text-gray-200 font-semibold">+{hull.scanEspionageBonus ?? 0}</span></span>
                   </div>
                 </div>
               )}

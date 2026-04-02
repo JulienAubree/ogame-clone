@@ -451,8 +451,13 @@ export function createFlagshipService(
       // 1. Validate flagship
       const [flagship] = await db.select().from(flagships).where(eq(flagships.userId, userId)).limit(1);
       if (!flagship) throw new TRPCError({ code: 'NOT_FOUND', message: 'Vaisseau amiral introuvable' });
-      if (flagship.hullId !== 'scientific') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Seule la coque scientifique permet les missions de scan' });
       if (flagship.status !== 'active') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Le vaisseau amiral doit etre stationne' });
+
+      // 1b. Check scan ability from hull config
+      const config = await gameConfigService.getFullConfig();
+      const hullConfig = flagship.hullId ? config.hulls[flagship.hullId] : null;
+      const scanAbility = (hullConfig?.abilities ?? []).find((a: any) => a.id === 'scan_mission' && a.type === 'active');
+      if (!scanAbility) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre coque ne dispose pas de la capacite de scan' });
 
       // 2. Check cooldown
       const SCAN_COOLDOWN_ID = 'scan_mission';
@@ -463,10 +468,8 @@ export function createFlagshipService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Scan en cooldown' });
       }
 
-      // 3. Get config
-      const config = await gameConfigService.getFullConfig();
-      const hullConfig = config.hulls['scientific'];
-      const espionageBonus = hullConfig?.scanEspionageBonus ?? 2;
+      // 3. Get scan params from ability config
+      const espionageBonus = Number((scanAbility as any).params?.espionageBonus ?? 5);
 
       // 4. Get attacker tech
       const [research] = await db.select().from(userResearch).where(eq(userResearch.userId, userId)).limit(1);
@@ -586,7 +589,7 @@ export function createFlagshipService(
 
       // 11. Set cooldown
       const now = new Date();
-      const cooldownSeconds = hullConfig?.scanCooldownSeconds ?? 3600;
+      const cooldownSeconds = (scanAbility as any).cooldownSeconds ?? 1800;
       const cooldownEnds = new Date(now.getTime() + cooldownSeconds * 1000);
       await db.insert(flagshipCooldowns).values({
         flagshipId: flagship.id,

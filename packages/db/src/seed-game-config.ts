@@ -549,7 +549,23 @@ const HULLS = [
     passiveBonuses: {
       industrial_build_time_reduction: 0.20,
     },
-    abilities: ['mine_mission', 'recycle_mission'],
+    abilities: [
+      {
+        id: 'mine_mission',
+        name: 'Minage',
+        description: 'Le vaisseau amiral peut participer aux missions de minage. Son extraction est egale a sa soute.',
+        type: 'fleet_unlock',
+        unlockedMissions: ['mine'],
+        miningExtractionEqualsCargo: true,
+      },
+      {
+        id: 'recycle_mission',
+        name: 'Recyclage',
+        description: 'Le vaisseau amiral peut participer aux missions de recyclage.',
+        type: 'fleet_unlock',
+        unlockedMissions: ['recycle'],
+      },
+    ],
     bonusLabels: [
       '-20% temps construction vaisseaux industriels',
       'Permet le minage et recyclage',
@@ -566,7 +582,16 @@ const HULLS = [
     passiveBonuses: {
       research_time_reduction: 0.20,
     },
-    abilities: ['scan_mission'],
+    abilities: [
+      {
+        id: 'scan_mission',
+        name: 'Scan',
+        description: 'Espionnage instantane, indetectable. Genere un rapport sans envoyer de sonde.',
+        type: 'active',
+        cooldownSeconds: 1800,
+        params: { espionageBonus: 5 },
+      },
+    ],
     bonusLabels: [
       '-20% temps de recherche',
       'Mission de scan (espionnage)',
@@ -574,8 +599,6 @@ const HULLS = [
     changeCost: { baseMultiplier: 500, resourceRatio: { minerai: 3, silicium: 2, hydrogene: 1 } },
     unavailabilitySeconds: 7200,
     cooldownSeconds: 604800,
-    scanCooldownSeconds: 1800,
-    scanEspionageBonus: 5,
   },
 ];
 

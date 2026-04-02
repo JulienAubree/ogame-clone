@@ -77,13 +77,28 @@ export interface TalentConfig {
   sortOrder: number;
 }
 
+export interface HullAbility {
+  id: string;
+  name: string;
+  description: string;
+  type: 'fleet_unlock' | 'active';
+  /** Missions que le flagship peut rejoindre (type fleet_unlock) */
+  unlockedMissions?: string[];
+  /** L'extraction miniere du flagship = sa soute (type fleet_unlock) */
+  miningExtractionEqualsCargo?: boolean;
+  /** Cooldown en secondes (type active) */
+  cooldownSeconds?: number;
+  /** Parametres specifiques a la capacite */
+  params?: Record<string, unknown>;
+}
+
 export interface HullConfig {
   id: string;
   name: string;
   description: string;
   playstyle: 'warrior' | 'miner' | 'explorer';
   passiveBonuses: Record<string, number>;
-  abilities: string[];
+  abilities: HullAbility[];
   changeCost: {
     baseMultiplier: number;
     resourceRatio: { minerai: number; silicium: number; hydrogene: number };
@@ -91,8 +106,6 @@ export interface HullConfig {
   unavailabilitySeconds: number;
   cooldownSeconds: number;
   bonusLabels: string[];
-  scanCooldownSeconds?: number;
-  scanEspionageBonus?: number;
 }
 
 export interface GameConfig {
