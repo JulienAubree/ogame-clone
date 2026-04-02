@@ -511,9 +511,9 @@ const UNIVERSE_CONFIG = [
 // ── Talent Branches ──
 
 const TALENT_BRANCHES = [
-  { id: 'combattant', name: 'Combattant', description: 'Puissance de feu & domination militaire', color: '#ff6b6b', sortOrder: 0 },
-  { id: 'explorateur', name: 'Explorateur', description: 'Vitesse, mobilité & découverte', color: '#4ecdc4', sortOrder: 1 },
-  { id: 'negociant', name: 'Négociant', description: 'Cargo, commerce & économie', color: '#ffd93d', sortOrder: 2 },
+  { id: 'militaire', name: 'Militaire', description: 'Combat, attaque & defense', color: '#ff6b6b', sortOrder: 0 },
+  { id: 'scientifique', name: 'Scientifique', description: 'Recherche, espionnage & information', color: '#4ecdc4', sortOrder: 1 },
+  { id: 'industriel', name: 'Industriel', description: 'Production, minage & commerce', color: '#ffd93d', sortOrder: 2 },
 ];
 
 // ── Hull Definitions ──
@@ -604,63 +604,9 @@ const HULLS = [
 
 // ── Talent Definitions ──
 
-const TALENT_DEFINITIONS = [
-  // === COMBATTANT ===
-  // Tier 1
-  { id: 'combat_weapons', branchId: 'combattant', tier: 1, position: 'left', name: 'Armes renforcées', description: '+2 armes par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'weapons', perRank: 2 }, sortOrder: 0 },
-  { id: 'combat_armor', branchId: 'combattant', tier: 1, position: 'center', name: 'Blindage réactif', description: '+2 blindage par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'baseArmor', perRank: 2 }, sortOrder: 1 },
-  { id: 'combat_shield', branchId: 'combattant', tier: 1, position: 'right', name: 'Boucliers amplifiés', description: '+3 bouclier par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'shield', perRank: 3 }, sortOrder: 2 },
-  // Tier 2
-  { id: 'combat_shots', branchId: 'combattant', tier: 2, position: 'left', name: 'Tirs multiples', description: '+1 tir par rang', maxRanks: 2, prerequisiteId: 'combat_weapons', effectType: 'modify_stat', effectParams: { stat: 'shotCount', perRank: 1 }, sortOrder: 3 },
-  { id: 'combat_war_march', branchId: 'combattant', tier: 2, position: 'center', name: 'Marche de guerre', description: '+1 vaisseau militaire en construction simultanée', maxRanks: 1, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'military_parallel_build', perRank: 1 }, sortOrder: 4 },
-  { id: 'combat_hull', branchId: 'combattant', tier: 2, position: 'right', name: 'Coque renforcée', description: '+5 coque par rang', maxRanks: 3, prerequisiteId: 'combat_shield', effectType: 'modify_stat', effectParams: { stat: 'hull', perRank: 5 }, sortOrder: 5 },
-  // Tier 3
-  { id: 'combat_garrison', branchId: 'combattant', tier: 3, position: 'left', name: 'Garnison', description: '+10% défense planétaire par rang', maxRanks: 2, prerequisiteId: null, effectType: 'planet_bonus', effectParams: { key: 'defense_strength', perRank: 0.10 }, sortOrder: 6 },
-  { id: 'combat_assault', branchId: 'combattant', tier: 3, position: 'center', name: 'Assaut coordonné', description: '+25% dégâts des flottes depuis cette planète pendant 1h', maxRanks: 1, prerequisiteId: null, effectType: 'timed_buff', effectParams: { key: 'fleet_damage_boost', multiplier: 1.25, durationSeconds: 3600, cooldownSeconds: 86400 }, sortOrder: 7 },
-  { id: 'combat_fury', branchId: 'combattant', tier: 3, position: 'right', name: 'Furie', description: 'x1.25 dégâts du flagship par rang', maxRanks: 2, prerequisiteId: 'combat_shots', effectType: 'modify_stat', effectParams: { stat: 'damageMultiplier', perRank: 0.25 }, sortOrder: 8 },
-  // Tier 4
-  { id: 'combat_master', branchId: 'combattant', tier: 4, position: 'left', name: "Maître d'armes", description: '-15% temps de construction vaisseaux militaires', maxRanks: 1, prerequisiteId: 'combat_garrison', effectType: 'global_bonus', effectParams: { key: 'ship_build_time', perRank: 0.15 }, sortOrder: 9 },
-  { id: 'combat_arsenal', branchId: 'combattant', tier: 4, position: 'right', name: 'Arsenal avancé', description: '+20% puissance des défenses planétaires', maxRanks: 1, prerequisiteId: null, effectType: 'planet_bonus', effectParams: { key: 'defense_strength', perRank: 0.20 }, sortOrder: 10 },
-  // Tier 5 — Capstone
-  { id: 'combat_supremacy', branchId: 'combattant', tier: 5, position: 'center', name: 'Suprématie', description: '+10% stats combat du flagship par type de vaisseau différent dans la flotte', maxRanks: 1, prerequisiteId: 'combat_master', effectType: 'modify_stat', effectParams: { stat: 'combatBonusPerShipType', perRank: 0.10 }, sortOrder: 11 },
-
-  // === EXPLORATEUR ===
-  // Tier 1
-  { id: 'explore_speed', branchId: 'explorateur', tier: 1, position: 'left', name: 'Réacteurs optimisés', description: '+10% vitesse flagship par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'speedPercent', perRank: 0.10 }, sortOrder: 0 },
-  { id: 'explore_fuel', branchId: 'explorateur', tier: 1, position: 'center', name: 'Économiseur', description: '-1 consommation carburant par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'fuelConsumption', perRank: -1 }, sortOrder: 1 },
-  { id: 'explore_scanners', branchId: 'explorateur', tier: 1, position: 'right', name: 'Scanners longue portée', description: '+1 sonde d\'espionnage par rang', maxRanks: 2, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'spy_probe_bonus', perRank: 1 }, sortOrder: 2 },
-  // Tier 2
-  { id: 'explore_impulse', branchId: 'explorateur', tier: 2, position: 'left', name: 'Propulsion impulsion', description: 'Change la propulsion du flagship en impulsion', maxRanks: 1, prerequisiteId: 'explore_speed', effectType: 'unlock', effectParams: { key: 'drive_impulse' }, sortOrder: 3 },
-  { id: 'explore_navigation', branchId: 'explorateur', tier: 2, position: 'center', name: 'Navigation stellaire', description: '-5% temps de trajet toutes flottes par rang', maxRanks: 3, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'fleet_speed', perRank: 0.05 }, sortOrder: 4 },
-  { id: 'explore_control', branchId: 'explorateur', tier: 2, position: 'right', name: 'Centre de contrôle', description: '+1 slot flotte depuis cette planète', maxRanks: 1, prerequisiteId: null, effectType: 'planet_bonus', effectParams: { key: 'fleet_slot_bonus', perRank: 1 }, sortOrder: 5 },
-  // Tier 3
-  { id: 'explore_cartographer', branchId: 'explorateur', tier: 3, position: 'left', name: 'Cartographe', description: '+10% réussite expéditions par rang', maxRanks: 2, prerequisiteId: 'explore_impulse', effectType: 'global_bonus', effectParams: { key: 'expedition_success_bonus', perRank: 0.10 }, sortOrder: 6 },
-  { id: 'explore_hyperscan', branchId: 'explorateur', tier: 3, position: 'center', name: 'Hyperscan', description: 'Révèle les flottes en approche pendant 4h', maxRanks: 1, prerequisiteId: null, effectType: 'timed_buff', effectParams: { key: 'reveal_incoming_fleets', multiplier: 1, durationSeconds: 14400, cooldownSeconds: 43200 }, sortOrder: 7 },
-  { id: 'explore_scout', branchId: 'explorateur', tier: 3, position: 'right', name: 'Éclaireur', description: '+1 slot de flotte global', maxRanks: 1, prerequisiteId: 'explore_control', effectType: 'global_bonus', effectParams: { key: 'fleet_slot_global', perRank: 1 }, sortOrder: 8 },
-  // Tier 4
-  { id: 'explore_hyperdrive', branchId: 'explorateur', tier: 4, position: 'left', name: 'Hyperdrive', description: 'Change la propulsion en hyperespace', maxRanks: 1, prerequisiteId: 'explore_cartographer', effectType: 'unlock', effectParams: { key: 'drive_hyperspace' }, sortOrder: 9 },
-  { id: 'explore_emergency', branchId: 'explorateur', tier: 4, position: 'right', name: "Saut d'urgence", description: 'Rappel instantané d\'une flotte en cours', maxRanks: 1, prerequisiteId: null, effectType: 'timed_buff', effectParams: { key: 'instant_fleet_recall', multiplier: 1, durationSeconds: 1, cooldownSeconds: 86400 }, sortOrder: 10 },
-  // Tier 5 — Capstone
-  { id: 'explore_legendary', branchId: 'explorateur', tier: 5, position: 'center', name: 'Navigateur légendaire', description: 'Toutes les flottes partant de la planète du flagship +15% vitesse', maxRanks: 1, prerequisiteId: 'explore_hyperdrive', effectType: 'planet_bonus', effectParams: { key: 'fleet_speed', perRank: 0.15 }, sortOrder: 11 },
-
-  // === NEGOCIANT ===
-  // Tier 1
-  { id: 'trade_cargo', branchId: 'negociant', tier: 1, position: 'left', name: 'Soute étendue', description: '+100 cargo flagship par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'cargoCapacity', perRank: 100 }, sortOrder: 0 },
-  { id: 'trade_negotiator', branchId: 'negociant', tier: 1, position: 'center', name: 'Négociateur', description: '-5% frais marché par rang', maxRanks: 2, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'market_fee_reduction', perRank: 0.05 }, sortOrder: 1 },
-  { id: 'trade_logistics', branchId: 'negociant', tier: 1, position: 'right', name: 'Logisticien', description: '+5% capacité stockage par rang', maxRanks: 3, prerequisiteId: null, effectType: 'planet_bonus', effectParams: { key: 'storage_capacity_bonus', perRank: 0.05 }, sortOrder: 2 },
-  // Tier 2
-  { id: 'trade_armored', branchId: 'negociant', tier: 2, position: 'left', name: 'Convoi blindé', description: '+5 coque flagship par rang', maxRanks: 2, prerequisiteId: 'trade_cargo', effectType: 'modify_stat', effectParams: { stat: 'hull', perRank: 5 }, sortOrder: 3 },
-  { id: 'trade_network', branchId: 'negociant', tier: 2, position: 'center', name: 'Réseau commercial', description: '+1 offre simultanée marché', maxRanks: 1, prerequisiteId: 'trade_negotiator', effectType: 'global_bonus', effectParams: { key: 'market_offer_slots', perRank: 1 }, sortOrder: 4 },
-  { id: 'trade_prospector', branchId: 'negociant', tier: 2, position: 'right', name: 'Prospecteur', description: '+3% production mines par rang', maxRanks: 3, prerequisiteId: 'trade_logistics', effectType: 'planet_bonus', effectParams: { key: 'mine_production_bonus', perRank: 0.03 }, sortOrder: 5 },
-  // Tier 3
-  { id: 'trade_smuggler', branchId: 'negociant', tier: 3, position: 'left', name: 'Contrebandier', description: '30% du cargo de toutes les flottes protégé du pillage', maxRanks: 1, prerequisiteId: 'trade_armored', effectType: 'global_bonus', effectParams: { key: 'pillage_protection', perRank: 0.30 }, sortOrder: 6 },
-  { id: 'trade_overclock', branchId: 'negociant', tier: 3, position: 'center', name: 'Overclock minier', description: '+50% production mines pendant 2h', maxRanks: 1, prerequisiteId: 'trade_prospector', effectType: 'timed_buff', effectParams: { key: 'mine_overclock', multiplier: 1.5, durationSeconds: 7200, cooldownSeconds: 86400 }, sortOrder: 7 },
-  { id: 'trade_hangars', branchId: 'negociant', tier: 3, position: 'right', name: 'Maître des hangars', description: '+10% cargo toutes flottes par rang', maxRanks: 2, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'fleet_cargo', perRank: 0.10 }, sortOrder: 8 },
-  // Tier 4
-  { id: 'trade_boom', branchId: 'negociant', tier: 4, position: 'left', name: 'Boom économique', description: '+25% production ressources planète pendant 4h', maxRanks: 1, prerequisiteId: 'trade_overclock', effectType: 'timed_buff', effectParams: { key: 'resource_production_boost', multiplier: 1.25, durationSeconds: 14400, cooldownSeconds: 172800 }, sortOrder: 9 },
-  { id: 'trade_mogul', branchId: 'negociant', tier: 4, position: 'right', name: 'Magnat', description: 'Transactions marché sans frais', maxRanks: 1, prerequisiteId: 'trade_network', effectType: 'global_bonus', effectParams: { key: 'market_fee_reduction', perRank: 1.0 }, sortOrder: 10 },
-  // Tier 5 — Capstone
-  { id: 'trade_empire', branchId: 'negociant', tier: 5, position: 'center', name: 'Empire commercial', description: '+5% production ressources sur toutes les planètes', maxRanks: 1, prerequisiteId: 'trade_boom', effectType: 'global_bonus', effectParams: { key: 'global_production_bonus', perRank: 0.05 }, sortOrder: 11 },
+const TALENT_DEFINITIONS: any[] = [
+  // Talents will be rebuilt tier by tier using /creating-flagship-talents process
+  // Branches: militaire, scientifique, industriel
 ];
 
 async function seed() {
