@@ -5,7 +5,7 @@ import { PageSkeleton } from '@/components/ui/LoadingSpinner';
 import { EditModal } from '@/components/ui/EditModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AdminImageUpload } from '@/components/ui/AdminImageUpload';
-import { Plus, Pencil, Trash2, Sparkles, ChevronDown, ChevronRight, Ship, Shield, Zap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Sparkles, ChevronDown, ChevronRight, Ship, Shield, Zap, X } from 'lucide-react';
 
 // ── Branch CRUD ──
 
