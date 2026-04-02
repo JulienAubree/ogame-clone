@@ -379,13 +379,14 @@ export function createPveService(
       const baseFP = computeFleetFP(templateShips, shipStats, fpConfig);
       const rewardRatio = baseFP > 0 ? pirateFP / baseFP : 1;
 
-      // Apply talent pve_loot bonus to resource rewards (not bonus ships)
+      // Apply pve_loot_multiplier + talent bonus at generation time so stored rewards = what the player sees
+      const pveLootMultiplier = Number(config.universe['pve_loot_multiplier'] ?? 0.1);
       const pirateTalentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
-      const pirateLootMultiplier = 1 + (pirateTalentCtx['pve_loot'] ?? 0);
+      const pirateLootBonus = 1 + (pirateTalentCtx['pve_loot'] ?? 0);
       const scaledRewards = {
-        minerai: Math.floor(templateRewards.minerai * rewardRatio * pirateLootMultiplier),
-        silicium: Math.floor(templateRewards.silicium * rewardRatio * pirateLootMultiplier),
-        hydrogene: Math.floor(templateRewards.hydrogene * rewardRatio * pirateLootMultiplier),
+        minerai: Math.floor(templateRewards.minerai * rewardRatio * pveLootMultiplier * pirateLootBonus),
+        silicium: Math.floor(templateRewards.silicium * rewardRatio * pveLootMultiplier * pirateLootBonus),
+        hydrogene: Math.floor(templateRewards.hydrogene * rewardRatio * pveLootMultiplier * pirateLootBonus),
         bonusShips: templateRewards.bonusShips,
       };
 

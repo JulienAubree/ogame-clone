@@ -161,19 +161,14 @@ export function createPirateService(db: Database, gameConfigService: GameConfigS
       const bonusShips: Record<string, number> = {};
 
       if (result.outcome === 'attacker') {
-        // Apply PvE loot multiplier (configurable, default 0.1 = 10%)
-        const lootMultiplier = Number(config.universe.pve_loot_multiplier ?? 0.1);
-        const scaledMinerai = Math.floor(rewards.minerai * lootMultiplier);
-        const scaledSilicium = Math.floor(rewards.silicium * lootMultiplier);
-        const scaledHydrogene = Math.floor(rewards.hydrogene * lootMultiplier);
-
-        // Cap loot to cargo capacity
-        const totalLoot = scaledMinerai + scaledSilicium + scaledHydrogene;
+        // Rewards are already scaled (pve_loot_multiplier applied at mission generation)
+        // Only cap to cargo capacity
+        const totalLoot = rewards.minerai + rewards.silicium + rewards.hydrogene;
         const ratio = totalLoot > fleetCargoCapacity ? fleetCargoCapacity / totalLoot : 1;
         loot = {
-          minerai: Math.floor(scaledMinerai * ratio),
-          silicium: Math.floor(scaledSilicium * ratio),
-          hydrogene: Math.floor(scaledHydrogene * ratio),
+          minerai: Math.floor(rewards.minerai * ratio),
+          silicium: Math.floor(rewards.silicium * ratio),
+          hydrogene: Math.floor(rewards.hydrogene * ratio),
         };
 
         // Roll for bonus ships
