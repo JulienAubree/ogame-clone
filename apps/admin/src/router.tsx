@@ -39,6 +39,7 @@ export const router = createBrowserRouter([
       { path: 'labels', lazy: () => import('./pages/Labels').then((m) => ({ Component: m.default })) },
       { path: 'talents', lazy: () => import('./pages/Talents').then((m) => ({ Component: m.default })) },
       { path: 'hull-abilities', lazy: () => import('./pages/HullAbilities').then((m) => ({ Component: m.default })) },
+      { path: 'gameplay-keys', lazy: () => import('./pages/GameplayKeys').then((m) => ({ Component: m.default })) },
       { path: 'feedbacks', lazy: () => import('./pages/Feedbacks').then((m) => ({ Component: m.default })) },
       { path: 'changelogs', lazy: () => import('./pages/Changelogs').then((m) => ({ Component: m.default })) },
     ],
