@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import {
   Building2, FlaskConical, Rocket, Shield, Zap,
   Factory, Globe, Users, LogOut, LayoutGrid, Orbit,
-  Skull, GraduationCap, Compass, Tag, Sparkles, MessageSquare,
+  Skull, GraduationCap, Compass, Tag, Sparkles, MessageSquare, FileText,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -35,6 +35,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/players', label: 'Gestion joueurs', icon: Users },
       { to: '/feedbacks', label: 'Feedback', icon: MessageSquare },
+      { to: '/changelogs', label: 'Changelogs', icon: FileText },
     ],
   },
 ];
