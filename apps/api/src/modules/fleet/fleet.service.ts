@@ -169,10 +169,15 @@ export function createFleetService(
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre vaisseau amiral n\'est pas sur cette planete' });
         }
         // Hull-restricted missions: check abilities from config
-        const hullConfig = flagship.hullConfig ?? (('hullConfig' in flagship && flagship.hullConfig) ? flagship.hullConfig : null);
-        const hullAbilities = (hullConfig?.abilities ?? []) as Array<{ id: string; type: string; unlockedMissions?: string[]; miningExtractionEqualsCargo?: boolean }>;
+        const fullConfig = await gameConfigService.getFullConfig();
+        const flagshipHullConfig = flagship.hullId ? fullConfig.hulls[flagship.hullId] : null;
+        const hullAbilities = (flagshipHullConfig?.abilities ?? []) as Array<{ id: string; type: string; unlockedMissions?: string[]; miningExtractionEqualsCargo?: boolean }>;
         const unlockedMissions = hullAbilities.filter(a => a.type === 'fleet_unlock').flatMap(a => a.unlockedMissions ?? []);
-        const missionNeedsUnlock = ['mine', 'recycle'].includes(input.mission);
+        // A mission needs unlock if any hull in the game defines it as a fleet_unlock
+        const allUnlockableMissions = new Set(
+          Object.values(fullConfig.hulls).flatMap(h => (h.abilities ?? []).filter((a: any) => a.type === 'fleet_unlock').flatMap((a: any) => a.unlockedMissions ?? []))
+        );
+        const missionNeedsUnlock = allUnlockableMissions.has(input.mission);
         if (missionNeedsUnlock && !unlockedMissions.includes(input.mission)) {
           throw new TRPCError({
             code: 'BAD_REQUEST',

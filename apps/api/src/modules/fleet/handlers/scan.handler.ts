@@ -58,6 +58,13 @@ export class ScanHandler implements MissionHandler {
   }
 
   async processArrival(fleetEvent: FleetEvent, ctx: MissionHandlerContext): Promise<ArrivalResult> {
+    // Read espionage bonus from hull config ability
+    const fullConfig = await ctx.gameConfigService.getFullConfig();
+    const [flagship] = await ctx.db.select({ hullId: flagships.hullId }).from(flagships).where(eq(flagships.userId, fleetEvent.userId)).limit(1);
+    const hullConfig = flagship?.hullId ? fullConfig.hulls[flagship.hullId] : null;
+    const scanAbility = (hullConfig?.abilities ?? []).find((a: any) => a.id === 'scan_mission');
+    const espionageBonus = Number((scanAbility as any)?.params?.espionageBonus ?? 5);
+
     // Create a modified event with a virtual spy probe
     const modifiedEvent = {
       ...fleetEvent,
@@ -65,7 +72,7 @@ export class ScanHandler implements MissionHandler {
       metadata: {
         ...(fleetEvent.metadata as Record<string, unknown> ?? {}),
         scanMission: true,
-        espionageBonus: 2,
+        espionageBonus,
       },
     };
 

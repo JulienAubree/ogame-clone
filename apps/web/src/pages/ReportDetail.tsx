@@ -143,7 +143,7 @@ export default function ReportDetail() {
             <div>
               <div className="text-sm font-semibold text-cyan-300">{result.scanner.name}</div>
               <div className="text-[11px] text-muted-foreground">
-                Coque scientifique — Scan instantane (+{result.scanner.espionageBonus ?? 2} espionnage)
+                Scan instantane (+{result.scanner.espionageBonus ?? 5} espionnage)
               </div>
             </div>
           </div>
