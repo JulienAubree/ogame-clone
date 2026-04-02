@@ -161,7 +161,7 @@ export default function ReportDetail() {
       {report.missionType === 'mine' && (
         <MineReportDetail result={result} fleet={fleet} gameConfig={gameConfig} />
       )}
-      {report.missionType === 'spy' && (
+      {(report.missionType === 'spy' || report.missionType === 'scan') && (
         <SpyReportDetail result={result} gameConfig={gameConfig} coordinates={coords} />
       )}
       {report.missionType === 'recycle' && (

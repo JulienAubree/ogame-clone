@@ -11,7 +11,7 @@ const FILTER_OPTIONS = [
   { label: 'Combat', types: ['attack', 'pirate'] },
   { label: 'Mine', types: ['mine'] },
   { label: 'Recyclage', types: ['recycle'] },
-  { label: 'Espionnage', types: ['spy'] },
+  { label: 'Espionnage', types: ['spy', 'scan'] },
 ];
 
 export default function Reports() {

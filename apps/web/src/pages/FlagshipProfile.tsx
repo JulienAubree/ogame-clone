@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { trpc } from '@/trpc';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Skeleton } from '@/components/common/Skeleton';
@@ -280,11 +280,15 @@ function HullAbilitiesPanel({ flagship, hullConfig, hullId }: {
   const scanCooldownEnd = scanCooldown ? new Date(scanCooldown.cooldownEnds) : null;
   const scanSecondsLeft = useCountdown(scanOnCooldown ? scanCooldownEnd : null);
 
+  const navigate = useNavigate();
   const scanMutation = trpc.flagship.scan.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setScanTarget({ galaxy: 0, system: 0, position: 0 });
       setScanError('');
       utils.talent.list.invalidate();
+      if (data.reportId) {
+        navigate(`/reports/${data.reportId}`);
+      }
     },
     onError: (err) => setScanError(err.message),
   });
