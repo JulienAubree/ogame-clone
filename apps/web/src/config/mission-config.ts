@@ -32,9 +32,9 @@ export function categorizeShip(
   if (!missionDef) return 'disabled';
   if (shipCount === 0) return 'disabled';
 
-  // Flagship can join any non-exclusive mission
+  // Flagship can join any mission as companion
   if (shipId === 'flagship') {
-    return (missionDef.exclusive && missionDef.requiredShipRoles) ? 'disabled' : 'optional';
+    return 'optional';
   }
 
   const matchesRequired = missionDef.requiredShipRoles?.some(
