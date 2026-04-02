@@ -236,29 +236,19 @@ function HullRefitBanner({
   );
 }
 
-function HullCooldownButton({ hullChangeAvailableAt, disabled, onClick }: {
-  hullChangeAvailableAt: string | Date | null;
+function HullCooldownButton({ disabled, onClick }: {
+  hullChangeAvailableAt?: string | Date | null;
   disabled: boolean;
   onClick: () => void;
 }) {
-  const endTime = hullChangeAvailableAt ? new Date(hullChangeAvailableAt) : null;
-  const secondsLeft = useCountdown(endTime);
-  const onCooldown = secondsLeft > 0;
-
-  let label = 'Changer de coque';
-  if (onCooldown) {
-    const d = Math.floor(secondsLeft / 86400);
-    const h = Math.floor((secondsLeft % 86400) / 3600);
-    label = `Changement dans ${d}j ${h}h`;
-  }
-
+  // TODO: re-enable cooldown check after testing
   return (
     <button
       onClick={onClick}
-      disabled={disabled || onCooldown}
+      disabled={disabled}
       className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
     >
-      {label}
+      Changer de coque
     </button>
   );
 }
