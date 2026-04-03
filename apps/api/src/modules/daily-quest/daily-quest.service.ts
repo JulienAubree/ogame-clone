@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { userExilium } from '@exilium/db';
+import { userExilium, tutorialProgress } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -14,6 +14,7 @@ interface DailyQuestState {
     id: string;
     status: 'pending' | 'completed' | 'expired';
     completed_at?: string;
+    progress?: number;
   }>;
 }
 
@@ -44,6 +45,13 @@ export function createDailyQuestService(
      * Genere les quetes si elles n'existent pas encore.
      */
     async getQuests(userId: string): Promise<DailyQuestState> {
+      // Block daily quest generation during onboarding
+      const [progress] = await db.select({ isComplete: tutorialProgress.isComplete })
+        .from(tutorialProgress).where(eq(tutorialProgress.userId, userId)).limit(1);
+      if (!progress || !progress.isComplete) {
+        return { generated_at: new Date().toISOString(), quests: [] };
+      }
+
       const record = await exiliumService.getOrCreate(userId);
       const dayStart = getUtcDayStart();
 
@@ -102,8 +110,31 @@ export function createDailyQuestService(
         // L'evenement correspond-il a cette quete ?
         if (!def.events.includes(event.type)) continue;
 
+        // Accumulation : additionner le champ au progress de la journee
+        let checkEvent = event;
+        if (def.accumulate) {
+          const increment = Number(event.payload[def.accumulate]) || 0;
+          quest.progress = (quest.progress || 0) + increment;
+          checkEvent = { ...event, payload: { ...event.payload, [def.accumulate]: quest.progress } };
+        }
+
         // La condition est-elle remplie ?
-        if (!def.check(event, config.universe)) continue;
+        if (!def.check(checkEvent, config.universe)) {
+          // Persister le progress meme si le seuil n'est pas atteint
+          if (def.accumulate) {
+            const progressState: DailyQuestState = {
+              ...state,
+              quests: state.quests.map(q =>
+                q.id === quest.id ? { ...q, progress: quest.progress } : q,
+              ),
+            };
+            await db
+              .update(userExilium)
+              .set({ dailyQuests: progressState, updatedAt: new Date() })
+              .where(eq(userExilium.userId, event.userId));
+          }
+          continue;
+        }
 
         // Completion ! Transaction atomique
         const reward = Number(config.universe['exilium_daily_quest_reward']) || 1;
