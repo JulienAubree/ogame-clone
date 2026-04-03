@@ -8,7 +8,6 @@ import { Toaster } from '@/components/ui/Toaster';
 import { UpdatePrompt } from '@/components/pwa/UpdatePrompt';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { ChatOverlay } from '@/components/chat/ChatOverlay';
-import { TutorialPanel } from '@/components/tutorial/TutorialPanel';
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
 import { trpc } from '@/trpc';
 import { usePlanetStore } from '@/stores/planet.store';
@@ -63,9 +62,6 @@ export function Layout() {
       </div>
 
       <FloatingFeedbackButton />
-
-      {/* Tutorial panel */}
-      <TutorialPanel />
 
       {/* Mobile/tablet bottom navigation */}
       <BottomTabBar />
