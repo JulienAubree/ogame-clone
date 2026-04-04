@@ -431,6 +431,7 @@ export function createShipyardService(
 
       const activeCount = sameType.filter(e => e.status === 'active').length;
       const freeSlots = Math.max(0, maxSlots - activeCount);
+      console.log(`[activateNextBatch] facilityId=${facilityId} maxSlots=${maxSlots} activeCount=${activeCount} freeSlots=${freeSlots} queuedCount=${sameType.filter(e => e.status === 'queued').length}`);
 
       for (let i = 0; i < freeSlots; i++) {
         // Find next queued entry
