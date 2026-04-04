@@ -332,7 +332,7 @@ export function createShipyardService(
           .set({ completedCount: newCompletedCount, status: 'completed' })
           .where(eq(buildQueue.id, buildQueueId));
 
-        await this.activateNextBatch(entry.planetId, entry.type as 'ship' | 'defense', entry.facilityId);
+        await this.activateNextBatch(entry.planetId, entry.type as 'ship' | 'defense', entry.facilityId, entry.userId);
 
         const unitName = config.ships[entry.itemId]?.name
           ?? config.defenses[entry.itemId]?.name
@@ -413,25 +413,25 @@ export function createShipyardService(
       return null;
     },
 
-    async activateNextBatch(planetId: string, type: 'ship' | 'defense', facilityId?: string | null) {
+    async activateNextBatch(planetId: string, type: 'ship' | 'defense', facilityId?: string | null, userId?: string) {
       // Get current state to compute free slots
       const queue = await this.getShipyardQueue(planetId, facilityId ?? undefined);
       const sameType = queue.filter(e =>
         e.type === type && (!facilityId || e.facilityId === facilityId)
       );
 
-      // Compute max slots
+      // Compute max slots — use provided userId or fall back to first queue entry
       let maxSlots = 1;
-      const anyEntry = sameType[0];
-      if (anyEntry && talentService) {
-        const talentCtx = await talentService.computeTalentContext(anyEntry.userId, planetId);
+      const resolvedUserId = userId ?? sameType[0]?.userId;
+      if (resolvedUserId && talentService) {
+        const talentCtx = await talentService.computeTalentContext(resolvedUserId, planetId);
         if (facilityId === 'shipyard') maxSlots += Math.floor(talentCtx['industrial_parallel_build'] ?? 0);
         if (facilityId === 'commandCenter') maxSlots += Math.floor(talentCtx['military_parallel_build'] ?? 0);
       }
 
       const activeCount = sameType.filter(e => e.status === 'active').length;
       const freeSlots = Math.max(0, maxSlots - activeCount);
-      console.log(`[activateNextBatch] facilityId=${facilityId} maxSlots=${maxSlots} activeCount=${activeCount} freeSlots=${freeSlots} queuedCount=${sameType.filter(e => e.status === 'queued').length}`);
+      console.log(`[activateNextBatch] facilityId=${facilityId} userId=${resolvedUserId} maxSlots=${maxSlots} activeCount=${activeCount} freeSlots=${freeSlots} queuedCount=${sameType.filter(e => e.status === 'queued').length}`);
 
       for (let i = 0; i < freeSlots; i++) {
         // Find next queued entry
@@ -601,7 +601,7 @@ export function createShipyardService(
 
       // Activate next queued batch if we cancelled the active one
       if (entry.status === 'active') {
-        await this.activateNextBatch(planetId, entry.type as 'ship' | 'defense', entry.facilityId);
+        await this.activateNextBatch(planetId, entry.type as 'ship' | 'defense', entry.facilityId, entry.userId);
       }
 
       return { cancelled: true, refund };
