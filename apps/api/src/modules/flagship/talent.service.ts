@@ -405,7 +405,7 @@ export function createTalentService(
         }
       }
 
-      const isPlanetBonusActive = flagship.status === 'active' && flagship.planetId === planetId;
+      const isPlanetBonusActive = flagship.planetId === planetId;
 
       // 5. Build context
       const ctx: Record<string, number> = {};
