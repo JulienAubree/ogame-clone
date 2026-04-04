@@ -41,7 +41,9 @@ export class MineHandler implements PhasedMissionHandler {
     const depositTotal = deposit
       ? Number(deposit.mineraiTotal) + Number(deposit.siliciumTotal) + Number(deposit.hydrogeneTotal)
       : 0;
-    const prospectMins = prospectionDuration(depositTotal);
+    const talentCtxProspect = ctx.talentService ? await ctx.talentService.computeTalentContext(fleetEvent.userId) : {};
+    const prospectBonus = 1 + (talentCtxProspect['prospection_speed'] ?? 0);
+    const prospectMins = prospectionDuration(depositTotal) / prospectBonus;
     const prospectMs = prospectMins * 60 * 1000;
 
     const now = new Date();

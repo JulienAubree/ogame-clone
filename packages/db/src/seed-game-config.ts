@@ -623,8 +623,9 @@ const TALENT_DEFINITIONS: any[] = [
   // Tier 2
   { id: 'ind_build_time', branchId: 'industriel', tier: 2, position: 'center', name: 'Chaine de montage', description: '-10% temps de construction vaisseaux industriels', maxRanks: 1, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'industrial_build_time', perRank: 0.10 }, sortOrder: 3 },
   { id: 'ind_mining_speed', branchId: 'industriel', tier: 2, position: 'left', name: 'Forage accelere', description: '+15% vitesse de minage par rang', maxRanks: 3, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'mining_speed', perRank: 0.15 }, sortOrder: 4 },
+  { id: 'ind_prospect_speed', branchId: 'industriel', tier: 2, position: 'right', name: 'Prospection avancee', description: '+15% vitesse de prospection par rang', maxRanks: 3, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'prospection_speed', perRank: 0.15 }, sortOrder: 5 },
   // Tier 3
-  { id: 'ind_parallel_build', branchId: 'industriel', tier: 3, position: 'center', name: 'Production parallele', description: '+1 slot de construction industrielle parallele (planete du flagship)', maxRanks: 1, prerequisiteId: 'ind_build_time', effectType: 'planet_bonus', effectParams: { key: 'industrial_parallel_build', perRank: 1 }, sortOrder: 5 },
+  { id: 'ind_parallel_build', branchId: 'industriel', tier: 3, position: 'center', name: 'Production parallele', description: '+1 slot de construction industrielle parallele (planete du flagship)', maxRanks: 1, prerequisiteId: 'ind_build_time', effectType: 'planet_bonus', effectParams: { key: 'industrial_parallel_build', perRank: 1 }, sortOrder: 6 },
 
   // === SCIENTIFIQUE === (recherche, espionnage, information)
   // Tier 1
