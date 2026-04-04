@@ -253,7 +253,12 @@ export function createFlagshipService(
 
     async incapacitate(userId: string) {
       const config = await gameConfigService.getFullConfig();
-      const repairSeconds = Number(config.universe['flagship_repair_duration_seconds']) || 7200;
+      const baseRepairSeconds = Number(config.universe['flagship_repair_duration_seconds']) || 7200;
+
+      // Talent: reduction du temps de reparation
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
+      const repairBonus = talentCtx['flagship_repair_time'] ?? 0;
+      const repairSeconds = Math.round(baseRepairSeconds / (1 + repairBonus));
 
       // Recuperer la planete mere
       const [homePlanet] = await db

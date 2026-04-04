@@ -611,8 +611,9 @@ const TALENT_DEFINITIONS: any[] = [
   { id: 'mil_shield', branchId: 'militaire', tier: 1, position: 'right', name: 'Boucliers amplifies', description: '+3 bouclier par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'shield', perRank: 3 }, sortOrder: 2 },
   // Tier 2
   { id: 'mil_build_time', branchId: 'militaire', tier: 2, position: 'center', name: 'Chaine de production', description: '-10% temps de construction vaisseaux militaires', maxRanks: 1, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'military_build_time', perRank: 0.10 }, sortOrder: 3 },
+  { id: 'mil_repair', branchId: 'militaire', tier: 2, position: 'left', name: 'Reparation rapide', description: '-15% temps de reparation par rang', maxRanks: 3, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'flagship_repair_time', perRank: 0.15 }, sortOrder: 4 },
   // Tier 3
-  { id: 'mil_parallel_build', branchId: 'militaire', tier: 3, position: 'center', name: 'Production militaire parallele', description: '+1 slot de construction militaire parallele (planete du flagship)', maxRanks: 1, prerequisiteId: 'mil_build_time', effectType: 'planet_bonus', effectParams: { key: 'military_parallel_build', perRank: 1 }, sortOrder: 4 },
+  { id: 'mil_parallel_build', branchId: 'militaire', tier: 3, position: 'center', name: 'Production militaire parallele', description: '+1 slot de construction militaire parallele (planete du flagship)', maxRanks: 1, prerequisiteId: 'mil_build_time', effectType: 'planet_bonus', effectParams: { key: 'military_parallel_build', perRank: 1 }, sortOrder: 5 },
 
   // === INDUSTRIEL === (production, minage, commerce)
   // Tier 1
