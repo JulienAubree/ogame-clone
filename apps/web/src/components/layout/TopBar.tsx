@@ -384,8 +384,17 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
 
           {bellOpen && (
             <div className="fixed right-2 left-2 top-12 z-50 mt-1 sm:absolute sm:left-auto sm:top-full sm:right-0 sm:w-80 rounded-md border border-white/10 bg-card/95 backdrop-blur-lg shadow-lg animate-slide-up">
-              <div className="border-b border-border/30 px-3 py-2">
+              <div className="flex items-center justify-between border-b border-border/30 px-3 py-2">
                 <span className="text-xs font-semibold text-muted-foreground">Notifications</span>
+                <button
+                  onClick={() => setBellOpen(false)}
+                  className="rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  aria-label="Fermer"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {recentEvents && recentEvents.length > 0 ? (
