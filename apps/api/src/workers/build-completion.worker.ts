@@ -45,6 +45,19 @@ export function startBuildCompletionWorker(db: Database, redis: Redis, services:
       const result = await handler(buildQueueId);
       if (!result) {
         console.log(`[build-completion] Entry ${buildQueueId} not found or already completed`);
+        // Safety net: try to fill parallel slots even if entry was already completed
+        if (job.name === 'shipyard-unit') {
+          try {
+            const { buildQueue: bq } = await import('@exilium/db');
+            const { eq } = await import('drizzle-orm');
+            const [entry] = await db.select().from(bq).where(eq(bq.id, buildQueueId)).limit(1);
+            if (entry) {
+              await shipyardService.activateNextBatch(entry.planetId, entry.type as 'ship' | 'defense', entry.facilityId);
+            }
+          } catch (e) {
+            console.warn('[build-completion] Safety activateNextBatch failed:', e);
+          }
+        }
         return;
       }
 
