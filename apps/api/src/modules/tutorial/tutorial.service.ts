@@ -422,8 +422,8 @@ export function createTutorialService(
         })
         .where(eq(tutorialProgress.id, progress.id));
 
-      // Generate tutorial PvE mining mission when quest_14 (recuperateur built) is completed
-      if (quest.id === 'quest_14' && pveService && planet) {
+      // Generate tutorial PvE mining mission when quest_16 (prospector built) is completed
+      if (quest.id === 'quest_16' && pveService && planet) {
         try {
           await pveService.generateDiscoveredMission(userId, planet.galaxy, planet.system, 1);
           const missions = await pveService.getMissions(userId);
