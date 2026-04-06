@@ -1,4 +1,4 @@
-import { eq, asc, and, sql, inArray } from 'drizzle-orm';
+import { eq, asc, desc, and, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetBuildings, planetShips, planetDefenses, planetTypes, buildQueue, fleetEvents, flagships } from '@exilium/db';
 import type { Database } from '@exilium/db';
@@ -29,11 +29,19 @@ export function createPlanetService(
       const homeworldType = findPlanetTypeByRole(config, 'homeworld');
       const universe = config.universe;
 
-      const galaxies = Number(universe.galaxies) || 9;
       const systems = Number(universe.systems) || 499;
+      const spawnRadius = Number(universe.spawn_radius) || 10;
 
-      const galaxy = randomInt(1, galaxies);
-      const system = randomInt(1, systems);
+      // Spawn near the most recently created planet (cluster new players together)
+      const [lastPlanet] = await db
+        .select({ galaxy: planets.galaxy, system: planets.system })
+        .from(planets)
+        .orderBy(desc(planets.createdAt))
+        .limit(1);
+
+      const anchor = lastPlanet ?? { galaxy: 1, system: 5 };
+      const galaxy = anchor.galaxy;
+      const system = Math.max(1, Math.min(systems, anchor.system + randomInt(-spawnRadius, spawnRadius)));
       const posMin = Number(universe.home_planet_position_min) || 4;
       const posMax = Number(universe.home_planet_position_max) || 12;
       const position = randomInt(posMin, posMax);
