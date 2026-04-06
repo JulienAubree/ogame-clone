@@ -6,11 +6,31 @@ import { useToastStore } from '@/stores/toast.store';
 import { useChatStore } from '@/stores/chat.store';
 import { getEntityName } from '@/lib/entity-names';
 
-function showBrowserNotification(title: string, body: string) {
-  if (typeof Notification === 'undefined') return;
-  if (Notification.permission === 'granted' && document.hidden) {
-    new Notification(title, { body, icon: '/favicon.ico' });
+let pushSubscriptionActive: boolean | null = null;
+
+async function hasPushSubscription(): Promise<boolean> {
+  if (pushSubscriptionActive !== null) return pushSubscriptionActive;
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      pushSubscriptionActive = false;
+      return false;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    pushSubscriptionActive = !!sub;
+    return pushSubscriptionActive;
+  } catch {
+    pushSubscriptionActive = false;
+    return false;
   }
+}
+
+async function showBrowserNotification(title: string, body: string) {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission !== 'granted' || !document.hidden) return;
+  // Skip if push notifications are active — service worker handles it
+  if (await hasPushSubscription()) return;
+  new Notification(title, { body, icon: '/favicon.ico' });
 }
 
 function requestNotificationPermission() {
