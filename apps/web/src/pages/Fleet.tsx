@@ -106,13 +106,13 @@ export default function Fleet() {
     }
   }, []); // Run once on mount
 
-  // Default target to current planet coordinates (when no PvE params)
+  // Default target to current planet coordinates (when no PvE params and coords not locked)
   useEffect(() => {
-    if (pveMode || tradeMode || prefillRef.current) return;
+    if (pveMode || tradeMode || coordsLocked || prefillRef.current) return;
     if (planet) {
       setTarget({ galaxy: planet.galaxy, system: planet.system, position: planet.position });
     }
-  }, [planet, pveMode]);
+  }, [planet, pveMode, coordsLocked]);
 
   // Auto-select ships when data loads (PvE prefill)
   useEffect(() => {
