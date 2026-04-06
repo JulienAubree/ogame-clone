@@ -37,7 +37,7 @@ export default function Players() {
         <span className="text-sm text-gray-500">{total} joueur{total > 1 ? 's' : ''}</span>
       </div>
 
-      <div className="relative mb-4 max-w-sm">
+      <div className="relative mb-4 max-w-full sm:max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
         <input
           type="text"
@@ -56,9 +56,9 @@ export default function Players() {
           <thead>
             <tr>
               <th>Joueur</th>
-              <th>Email</th>
-              <th>Planetes</th>
-              <th>Points</th>
+              <th className="hidden sm:table-cell">Email</th>
+              <th className="hidden md:table-cell">Planetes</th>
+              <th className="hidden md:table-cell">Points</th>
               <th>Statut</th>
               <th>Actions</th>
             </tr>
@@ -67,9 +67,9 @@ export default function Players() {
             {players.map((p: any) => (
               <tr key={p.id}>
                 <td className="font-medium">{p.username}</td>
-                <td className="text-sm text-gray-400">{p.email}</td>
-                <td className="font-mono text-sm">{p.planetsCount ?? '-'}</td>
-                <td className="font-mono text-sm">{p.totalPoints ?? 0}</td>
+                <td className="text-sm text-gray-400 hidden sm:table-cell">{p.email}</td>
+                <td className="font-mono text-sm hidden md:table-cell">{p.planetsCount ?? '-'}</td>
+                <td className="font-mono text-sm hidden md:table-cell">{p.totalPoints ?? 0}</td>
                 <td>
                   {p.bannedAt ? (
                     <span className="admin-badge-danger">Banni</span>

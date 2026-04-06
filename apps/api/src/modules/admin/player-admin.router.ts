@@ -121,6 +121,18 @@ export function createPlayerAdminRouter(
         return { success: true };
       }),
 
+    updatePlanetCoordinates: adminProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        galaxy: z.number().int().min(1),
+        system: z.number().int().min(1),
+        position: z.number().int().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.updatePlanetCoordinates(input.planetId, input.galaxy, input.system, input.position);
+        return { success: true };
+      }),
+
     resetFlagshipTalents: adminProcedure
       .input(z.object({ flagshipId: z.string().uuid() }))
       .mutation(async ({ input }) => {

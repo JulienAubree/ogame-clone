@@ -82,10 +82,27 @@
     @apply admin-badge bg-red-900/40 text-red-400 border border-red-800/40;
   }
 
+  .admin-table th {
+    @apply max-md:px-2 max-md:py-2 max-md:text-[10px];
+  }
+
+  .admin-table td {
+    @apply max-md:px-2 max-md:py-2 max-md:text-xs;
+  }
+
   .grid-bg {
     background-image:
       linear-gradient(rgba(30, 42, 54, 0.3) 1px, transparent 1px),
       linear-gradient(90deg, rgba(30, 42, 54, 0.3) 1px, transparent 1px);
     background-size: 40px 40px;
+  }
+
+  @keyframes slide-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 0.2s ease-out;
   }
 }

@@ -133,6 +133,10 @@ export function createPlayerAdminService(db: Database) {
       await db.update(userExilium).set({ balance, updatedAt: new Date() }).where(eq(userExilium.userId, userId));
     },
 
+    async updatePlanetCoordinates(planetId: string, galaxy: number, system: number, position: number) {
+      await db.update(planets).set({ galaxy, system, position }).where(eq(planets.id, planetId));
+    },
+
     async resetFlagshipTalents(flagshipId: string) {
       await db.delete(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagshipId));
     },

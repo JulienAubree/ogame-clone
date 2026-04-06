@@ -6,6 +6,61 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ArrowLeft, Ship, Gem, Sparkles, Wrench, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
+function CoordinateEditor({
+  planetId,
+  galaxy,
+  system,
+  position,
+  onSaved,
+}: {
+  planetId: string;
+  galaxy: number;
+  system: number;
+  position: number;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({ galaxy, system, position });
+  const mutation = trpc.playerAdmin.updatePlanetCoordinates.useMutation({ onSuccess: onSaved });
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        value={form.galaxy}
+        onChange={(e) => setForm({ ...form, galaxy: Number(e.target.value) })}
+        className="admin-input w-16 py-1 text-xs font-mono"
+        title="Galaxie"
+        min={1}
+      />
+      <span className="text-gray-500">:</span>
+      <input
+        type="number"
+        value={form.system}
+        onChange={(e) => setForm({ ...form, system: Number(e.target.value) })}
+        className="admin-input w-16 py-1 text-xs font-mono"
+        title="Systeme"
+        min={1}
+      />
+      <span className="text-gray-500">:</span>
+      <input
+        type="number"
+        value={form.position}
+        onChange={(e) => setForm({ ...form, position: Number(e.target.value) })}
+        className="admin-input w-16 py-1 text-xs font-mono"
+        title="Position"
+        min={1}
+      />
+      <button
+        onClick={() => mutation.mutate({ planetId, ...form })}
+        disabled={mutation.isPending}
+        className="admin-btn-primary py-1 px-3 text-xs"
+      >
+        {mutation.isPending ? '...' : 'Sauver'}
+      </button>
+    </div>
+  );
+}
+
 function ResourceEditor({
   planetId,
   minerai,
@@ -23,26 +78,26 @@ function ResourceEditor({
   const mutation = trpc.playerAdmin.updateResources.useMutation({ onSuccess: onSaved });
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <input
         type="text"
         value={form.minerai}
         onChange={(e) => setForm({ ...form, minerai: e.target.value })}
-        className="admin-input w-28 py-1 text-xs"
+        className="admin-input w-24 sm:w-28 py-1 text-xs"
         title="Minerai"
       />
       <input
         type="text"
         value={form.silicium}
         onChange={(e) => setForm({ ...form, silicium: e.target.value })}
-        className="admin-input w-28 py-1 text-xs"
+        className="admin-input w-24 sm:w-28 py-1 text-xs"
         title="Silicium"
       />
       <input
         type="text"
         value={form.hydrogene}
         onChange={(e) => setForm({ ...form, hydrogene: e.target.value })}
-        className="admin-input w-28 py-1 text-xs"
+        className="admin-input w-24 sm:w-28 py-1 text-xs"
         title="Hydrogène"
       />
       <button
@@ -113,10 +168,10 @@ function FlagshipSection({ flagship, userId, onSaved }: { flagship: any; userId:
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         {FLAGSHIP_STATS.map(({ key, label }) => (
           <div key={key} className="flex items-center gap-2">
-            <label className="text-xs text-gray-400 w-16 text-right">{label}</label>
+            <label className="text-xs text-gray-400 w-16 text-right shrink-0">{label}</label>
             <input
               type="number"
               value={stats[key]}
@@ -256,9 +311,9 @@ export default function PlayerDetail() {
         <ArrowLeft className="w-4 h-4" /> Retour
       </Link>
 
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6">
         <h1 className="text-lg font-semibold text-gray-100">{data.user.username}</h1>
-        <span className="text-sm text-gray-500">{data.user.email}</span>
+        <span className="text-sm text-gray-500 break-all">{data.user.email}</span>
         {data.user.bannedAt && <span className="admin-badge-danger">Banni</span>}
       </div>
 
@@ -271,12 +326,18 @@ export default function PlayerDetail() {
         {data.planets?.map((planet: any) => (
           <div key={planet.id} className="admin-card p-4">
             <div className="flex items-center justify-between mb-3">
-              <div>
-                <span className="font-medium text-gray-200">{planet.name}</span>
-                <span className="ml-2 font-mono text-xs text-gray-500">
-                  [{planet.galaxy}:{planet.system}:{planet.position}]
-                </span>
-              </div>
+              <span className="font-medium text-gray-200">{planet.name}</span>
+            </div>
+
+            <div className="mb-3">
+              <div className="text-xs text-gray-500 mb-1">Coordonnees (Galaxie : Systeme : Position)</div>
+              <CoordinateEditor
+                planetId={planet.id}
+                galaxy={planet.galaxy}
+                system={planet.system}
+                position={planet.position}
+                onSaved={refetch}
+              />
             </div>
 
             <div className="mb-3">
