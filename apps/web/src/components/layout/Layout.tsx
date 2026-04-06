@@ -53,8 +53,8 @@ export function Layout() {
         <ResourceBar planetId={resolvedPlanetId} />
         <HostileAlertBanner hostileFleets={hostileFleets} fixed />
 
-        {/* Page content - pb-14 for bottom tab bar on mobile */}
-        <main className="flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+        {/* Page content - bottom padding for mobile tab bar (~80px + safe area) */}
+        <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
           <div className="mx-auto lg:max-w-6xl">
             <Outlet context={{ planetId: resolvedPlanetId }} />
           </div>

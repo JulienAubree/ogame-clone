@@ -119,7 +119,7 @@ export function BottomTabBar() {
         </BottomSheet>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-white/10 bg-card/95 backdrop-blur-lg pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-white/10 bg-card backdrop-blur-lg pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab || tab.id === activeSheet;
           return (
