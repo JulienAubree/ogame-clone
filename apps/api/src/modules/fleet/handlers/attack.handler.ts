@@ -151,6 +151,7 @@ export class AttackHandler implements MissionHandler {
 
     const defenderFleet = parseUnitRow(defShipsRow);
     const defenderDefenses = parseUnitRow(defDefsRow);
+    console.log(`[attack] planet=${targetPlanet.id} defDefsRow=${defDefsRow ? JSON.stringify(defDefsRow) : 'MISSING'} defenderDefenses=${JSON.stringify(defenderDefenses)}`);
 
     const [shieldBuilding] = await ctx.db
       .select({ level: planetBuildings.level })
