@@ -1,6 +1,6 @@
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, planetBuildings, userResearch, flagships } from '@exilium/db';
+import { planets, planetShips, planetDefenses, planetBuildings, userResearch, flagships, flagshipTalents } from '@exilium/db';
 import { calculateSpyReport, calculateDetectionChance, totalCargoCapacity, simulateCombat } from '@exilium/game-engine';
 import type { Database } from '@exilium/db';
 import type { CombatInput } from '@exilium/game-engine';
@@ -139,16 +139,9 @@ export class SpyHandler implements MissionHandler {
       }
       reportResult.fleet = fleetData;
 
-      // Check if defender's flagship is stationed on this planet
+      // Check if defender's flagship is stationed on this planet (with talent bonuses)
       const [defenderFlagship] = await ctx.db
-        .select({
-          name: flagships.name,
-          status: flagships.status,
-          weapons: flagships.weapons,
-          shield: flagships.shield,
-          hull: flagships.hull,
-          cargoCapacity: flagships.cargoCapacity,
-        })
+        .select()
         .from(flagships)
         .where(
           and(
@@ -160,12 +153,41 @@ export class SpyHandler implements MissionHandler {
         .limit(1);
 
       if (defenderFlagship) {
+        // Compute talent stat bonuses
+        const talentRows = await ctx.db
+          .select({ talentId: flagshipTalents.talentId, currentRank: flagshipTalents.currentRank })
+          .from(flagshipTalents)
+          .where(eq(flagshipTalents.flagshipId, defenderFlagship.id));
+
+        let bonusWeapons = 0, bonusShield = 0, bonusHull = 0, bonusCargo = 0, bonusArmor = 0, bonusShotCount = 0;
+        for (const row of talentRows) {
+          if (row.currentRank <= 0) continue;
+          const def = config.talents[row.talentId];
+          if (!def || def.effectType !== 'modify_stat') continue;
+          const params = def.effectParams as { stat: string; perRank: number };
+          const bonus = params.perRank * row.currentRank;
+          if (params.stat === 'weapons') bonusWeapons += bonus;
+          else if (params.stat === 'shield') bonusShield += bonus;
+          else if (params.stat === 'hull') bonusHull += bonus;
+          else if (params.stat === 'cargoCapacity') bonusCargo += bonus;
+          else if (params.stat === 'baseArmor') bonusArmor += bonus;
+          else if (params.stat === 'shotCount') bonusShotCount += bonus;
+        }
+
+        // Apply hull passive bonuses
+        const hullConfig = defenderFlagship.hullId ? (config.hulls?.[defenderFlagship.hullId] ?? null) : null;
+        if (hullConfig) {
+          bonusWeapons += (hullConfig.passiveBonuses?.bonus_weapons ?? 0);
+          bonusArmor += (hullConfig.passiveBonuses?.bonus_armor ?? 0);
+          bonusShotCount += (hullConfig.passiveBonuses?.bonus_shot_count ?? 0);
+        }
+
         reportResult.flagship = {
           name: defenderFlagship.name,
-          weapons: defenderFlagship.weapons,
-          shield: defenderFlagship.shield,
-          hull: defenderFlagship.hull,
-          cargoCapacity: defenderFlagship.cargoCapacity,
+          weapons: defenderFlagship.weapons + bonusWeapons,
+          shield: defenderFlagship.shield + bonusShield,
+          hull: defenderFlagship.hull + bonusHull,
+          cargoCapacity: defenderFlagship.cargoCapacity + bonusCargo,
         };
       }
     }
