@@ -450,8 +450,6 @@ export function createFleetService(
       }
 
       const now = new Date();
-      const elapsed = now.getTime() - event.departureTime.getTime();
-      const returnTime = new Date(now.getTime() + elapsed);
 
       // Cancel the pending job for the current phase
       const jobIdMap: Record<string, string> = {
@@ -469,6 +467,32 @@ export function createFleetService(
       if (event.pveMissionId && pveService) {
         await pveService.releaseMission(event.pveMissionId);
       }
+
+      // PvE missions (mine, pirate) in outbound phase: instant cancellation
+      const instantCancel = (event.mission === 'mine' || event.mission === 'pirate') && event.phase === 'outbound';
+
+      if (instantCancel) {
+        // Trigger return immediately (delay 0)
+        await db
+          .update(fleetEvents)
+          .set({
+            phase: 'return',
+            departureTime: now,
+            arrivalTime: now,
+          })
+          .where(eq(fleetEvents.id, event.id));
+
+        await fleetQueue.add(
+          'return',
+          { fleetEventId: event.id },
+          { delay: 0, jobId: `fleet-return-${event.id}` },
+        );
+
+        return { recalled: true, returnTime: now.toISOString() };
+      }
+
+      const elapsed = now.getTime() - event.departureTime.getTime();
+      const returnTime = new Date(now.getTime() + elapsed);
 
       await db
         .update(fleetEvents)
