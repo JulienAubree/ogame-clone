@@ -176,6 +176,8 @@ export default function Energy() {
       <PlanetCard
         name={data.planetName}
         planetTypeName={data.planetTypeName}
+        planetClassId={data.planetClassId}
+        planetImageIndex={data.planetImageIndex}
         maxTemp={data.maxTemp}
         bonus={data.planetTypeBonus}
       />

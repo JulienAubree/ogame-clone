@@ -92,6 +92,7 @@ export function createResourceRouter(
           protectedHydrogene: protectedRes.hydrogene,
           maxTemp: planet.maxTemp,
           planetClassId: planet.planetClassId,
+          planetImageIndex: planet.planetImageIndex,
           planetName: planet.name,
           planetTypeName,
           planetTypeBonus: bonus,

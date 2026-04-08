@@ -1,6 +1,10 @@
+import { getPlanetImageUrl } from '@/lib/assets';
+
 interface PlanetCardProps {
   name: string;
   planetTypeName?: string;
+  planetClassId?: string | null;
+  planetImageIndex?: number | null;
   maxTemp: number;
   bonus?: {
     mineraiBonus: number;
@@ -27,15 +31,23 @@ function bonusTag(label: string, value: number) {
   );
 }
 
-export function PlanetCard({ name, planetTypeName, maxTemp, bonus }: PlanetCardProps) {
+export function PlanetCard({ name, planetTypeName, planetClassId, planetImageIndex, maxTemp, bonus }: PlanetCardProps) {
   return (
     <div className="glass-card flex items-center gap-4 p-4">
-      <div
-        className="size-14 shrink-0 rounded-full shadow-lg shadow-primary/20"
-        style={{
-          background: 'radial-gradient(circle at 35% 35%, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.2), hsl(var(--background)))',
-        }}
-      />
+      {planetClassId && planetImageIndex != null ? (
+        <img
+          src={getPlanetImageUrl(planetClassId, planetImageIndex, 'thumb')}
+          alt={name}
+          className="size-14 shrink-0 rounded-full object-cover border-2 border-border/50"
+        />
+      ) : (
+        <div
+          className="size-14 shrink-0 rounded-full shadow-lg shadow-primary/20"
+          style={{
+            background: 'radial-gradient(circle at 35% 35%, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.2), hsl(var(--background)))',
+          }}
+        />
+      )}
       <div className="flex-1 min-w-0">
         <h2 className="font-bold text-foreground tracking-wide truncate">{name}</h2>
         <p className="text-xs text-muted-foreground">
