@@ -19,6 +19,7 @@ import {
   talentDefinitions,
 } from './schema/game-config.js';
 import { pirateTemplates } from './schema/pve-missions.js';
+import { biomeDefinitions } from './schema/biomes.js';
 import { tutorialQuestDefinitions } from './schema/tutorial-quest-definitions.js';
 import { tutorialChapters } from './schema/tutorial-chapters.js';
 import { missionDefinitions } from './schema/mission-definitions.js';
@@ -163,6 +164,55 @@ const PLANET_TYPES = [
   { id: 'glacial', name: 'Glaciale', description: "Planète glaciale propice à la synthèse d'hydrogène.", positions: [10, 11, 12], mineraiBonus: 0.8, siliciumBonus: 1.0, hydrogeneBonus: 1.3, diameterMin: 7500, diameterMax: 12200, sortOrder: 3, role: null },
   { id: 'gaseous', name: 'Gazeuse', description: "Géante gazeuse avec d'abondantes ressources en hydrogène.", positions: [13, 14, 15], mineraiBonus: 0.9, siliciumBonus: 0.9, hydrogeneBonus: 1.1, diameterMin: 8000, diameterMax: 14000, sortOrder: 4, role: null },
   { id: 'homeworld', name: 'Planète mère', description: 'Planète de départ neutre.', positions: [], mineraiBonus: 1.0, siliciumBonus: 1.0, hydrogeneBonus: 1.0, diameterMin: 12000, diameterMax: 12000, sortOrder: 5, role: 'homeworld' },
+];
+
+// ── Biome definitions data ──
+
+const BIOME_DEFINITIONS = [
+  // ── Universal biomes (all planet types) ──
+  { id: 'fertile_plains', name: 'Plaines fertiles', description: 'De vastes étendues de terres riches en nutriments minéraux.', rarity: 'common' as const, compatiblePlanetTypes: [], effects: [{ stat: 'production_silicium', modifier: 0.08 }] },
+  { id: 'surface_deposits', name: 'Gisements de surface', description: 'Des filons de minerai affleurent partout à la surface.', rarity: 'common' as const, compatiblePlanetTypes: [], effects: [{ stat: 'production_minerai', modifier: 0.08 }] },
+  { id: 'deep_caverns', name: 'Cavernes profondes', description: 'Un réseau souterrain immense offrant un stockage naturel.', rarity: 'common' as const, compatiblePlanetTypes: [], effects: [{ stat: 'storage_minerai', modifier: 0.10 }] },
+  { id: 'underground_reserves', name: 'Nappes souterraines', description: 'Des poches de gaz pressurisé piégées dans la croûte.', rarity: 'uncommon' as const, compatiblePlanetTypes: [], effects: [{ stat: 'storage_hydrogene', modifier: 0.10 }] },
+  { id: 'stable_orbit', name: 'Orbite stable', description: "Une orbite parfaitement régulière maximisant l'exposition solaire.", rarity: 'rare' as const, compatiblePlanetTypes: [], effects: [{ stat: 'energy_production', modifier: 0.08 }] },
+  { id: 'active_core', name: 'Noyau actif', description: "Un noyau planétaire en fusion alimentant toute l'activité géologique.", rarity: 'rare' as const, compatiblePlanetTypes: [], effects: [{ stat: 'production_minerai', modifier: 0.12 }, { stat: 'production_silicium', modifier: 0.12 }, { stat: 'production_hydrogene', modifier: 0.12 }] },
+  { id: 'precursor_relics', name: 'Reliques précurseurs', description: "Des artefacts d'une civilisation disparue accélèrent les découvertes.", rarity: 'epic' as const, compatiblePlanetTypes: [], effects: [{ stat: 'production_minerai', modifier: 0.05 }, { stat: 'production_silicium', modifier: 0.05 }, { stat: 'production_hydrogene', modifier: 0.05 }, { stat: 'energy_production', modifier: 0.10 }] },
+  { id: 'gravitational_nexus', name: 'Nexus gravitationnel', description: 'Une anomalie gravitationnelle qui facilite toutes les opérations planétaires.', rarity: 'legendary' as const, compatiblePlanetTypes: [], effects: [{ stat: 'production_minerai', modifier: 0.08 }, { stat: 'production_silicium', modifier: 0.08 }, { stat: 'production_hydrogene', modifier: 0.08 }, { stat: 'storage_minerai', modifier: 0.10 }, { stat: 'storage_silicium', modifier: 0.10 }, { stat: 'storage_hydrogene', modifier: 0.10 }] },
+
+  // ── Volcanic biomes (positions 1-3) ──
+  { id: 'lava_flows', name: 'Coulées de lave', description: 'Des rivières de lave charrient des cristaux de silicium en fusion.', rarity: 'common' as const, compatiblePlanetTypes: ['volcanic'], effects: [{ stat: 'production_silicium', modifier: 0.10 }] },
+  { id: 'volcanic_vents', name: 'Cheminées volcaniques', description: "Des colonnes de chaleur intense exploitables pour la production d'énergie.", rarity: 'uncommon' as const, compatiblePlanetTypes: ['volcanic'], effects: [{ stat: 'energy_production', modifier: 0.12 }] },
+  { id: 'natural_forges', name: 'Forges naturelles', description: 'Des cavités de magma à température constante, parfaites pour la métallurgie.', rarity: 'rare' as const, compatiblePlanetTypes: ['volcanic'], effects: [{ stat: 'production_minerai', modifier: 0.15 }] },
+  { id: 'primordial_magma', name: 'Lac de magma primordial', description: "Un lac de magma ancien riche en éléments lourds.", rarity: 'epic' as const, compatiblePlanetTypes: ['volcanic'], effects: [{ stat: 'production_minerai', modifier: 0.20 }] },
+  { id: 'plasma_core', name: 'Coeur de plasma', description: 'Le noyau de la planète émet une énergie phénoménale.', rarity: 'legendary' as const, compatiblePlanetTypes: ['volcanic'], effects: [{ stat: 'energy_production', modifier: 0.25 }] },
+
+  // ── Arid biomes (positions 4-6) ──
+  { id: 'metallic_dunes', name: 'Dunes métalliques', description: 'Des dunes de sable chargées de particules métalliques.', rarity: 'common' as const, compatiblePlanetTypes: ['arid'], effects: [{ stat: 'production_minerai', modifier: 0.10 }] },
+  { id: 'deep_canyons', name: 'Canyons profonds', description: "D'immenses canyons offrant un espace de stockage naturel.", rarity: 'uncommon' as const, compatiblePlanetTypes: ['arid'], effects: [{ stat: 'storage_silicium', modifier: 0.15 }] },
+  { id: 'underground_oasis', name: 'Oasis souterraine', description: 'Des sources souterraines riches en composés hydrogénés.', rarity: 'rare' as const, compatiblePlanetTypes: ['arid'], effects: [{ stat: 'production_hydrogene', modifier: 0.15 }] },
+  { id: 'crystal_desert', name: 'Désert de cristaux', description: 'Une étendue de cristaux de silicium naturellement formés.', rarity: 'epic' as const, compatiblePlanetTypes: ['arid'], effects: [{ stat: 'production_silicium', modifier: 0.18 }] },
+  { id: 'permanent_sandstorm', name: 'Tempête de sable permanente', description: 'Une tempête éternelle qui érode la roche et expose des gisements.', rarity: 'legendary' as const, compatiblePlanetTypes: ['arid'], effects: [{ stat: 'production_minerai', modifier: 0.15 }, { stat: 'production_silicium', modifier: 0.15 }] },
+
+  // ── Temperate biomes (positions 7, 9) ──
+  { id: 'dense_forests', name: 'Forêts denses', description: 'Une biomasse luxuriante convertissant la lumière en énergie.', rarity: 'common' as const, compatiblePlanetTypes: ['temperate'], effects: [{ stat: 'energy_production', modifier: 0.08 }] },
+  { id: 'mineral_plateaus', name: 'Plateaux minéraux', description: "Des hauts plateaux où les filons sont faciles d'accès.", rarity: 'uncommon' as const, compatiblePlanetTypes: ['temperate'], effects: [{ stat: 'production_minerai', modifier: 0.12 }] },
+  { id: 'symbiotic_ecosystem', name: 'Écosystème symbiotique', description: "Un écosystème en équilibre parfait qui amplifie toute activité.", rarity: 'rare' as const, compatiblePlanetTypes: ['temperate'], effects: [{ stat: 'production_minerai', modifier: 0.10 }, { stat: 'production_silicium', modifier: 0.10 }, { stat: 'production_hydrogene', modifier: 0.10 }] },
+  { id: 'exposed_rare_earths', name: 'Terres rares exposées', description: 'Des gisements de terres rares affleurant en surface.', rarity: 'epic' as const, compatiblePlanetTypes: ['temperate'], effects: [{ stat: 'production_silicium', modifier: 0.20 }] },
+  { id: 'harmonic_biosphere', name: 'Biosphère harmonique', description: "La vie de cette planète vibre à une fréquence qui amplifie tout.", rarity: 'legendary' as const, compatiblePlanetTypes: ['temperate'], effects: [{ stat: 'production_minerai', modifier: 0.10 }, { stat: 'production_silicium', modifier: 0.10 }, { stat: 'production_hydrogene', modifier: 0.10 }, { stat: 'energy_production', modifier: 0.10 }] },
+
+  // ── Glacial biomes (positions 10-12) ──
+  { id: 'hydrogen_glaciers', name: "Glaciers d'hydrogène", description: "D'immenses glaciers d'hydrogène solide prêts à être exploités.", rarity: 'common' as const, compatiblePlanetTypes: ['glacial'], effects: [{ stat: 'production_hydrogene', modifier: 0.10 }] },
+  { id: 'rich_permafrost', name: 'Permafrost riche', description: 'Un sol gelé emprisonnant des ressources parfaitement conservées.', rarity: 'uncommon' as const, compatiblePlanetTypes: ['glacial'], effects: [{ stat: 'storage_minerai', modifier: 0.12 }, { stat: 'storage_silicium', modifier: 0.12 }, { stat: 'storage_hydrogene', modifier: 0.12 }] },
+  { id: 'cryogenic_geysers', name: 'Geysers cryogéniques', description: "Des geysers projetant de l'hydrogène liquide depuis les profondeurs.", rarity: 'rare' as const, compatiblePlanetTypes: ['glacial'], effects: [{ stat: 'production_hydrogene', modifier: 0.15 }] },
+  { id: 'antimatter_crystals', name: "Cristaux d'antimatière", description: 'Des formations cristallines émettant une énergie exotique.', rarity: 'epic' as const, compatiblePlanetTypes: ['glacial'], effects: [{ stat: 'production_hydrogene', modifier: 0.22 }] },
+  { id: 'eternal_cryovolcano', name: 'Cryovolcan éternel', description: "Un volcan de glace en éruption permanente, source inépuisable.", rarity: 'legendary' as const, compatiblePlanetTypes: ['glacial'], effects: [{ stat: 'production_hydrogene', modifier: 0.20 }, { stat: 'energy_production', modifier: 0.15 }] },
+
+  // ── Gaseous biomes (positions 13-15) ──
+  { id: 'noble_gas_layers', name: 'Couches de gaz nobles', description: 'Des strates atmosphériques riches en gaz exploitables.', rarity: 'common' as const, compatiblePlanetTypes: ['gaseous'], effects: [{ stat: 'production_hydrogene', modifier: 0.10 }] },
+  { id: 'atmospheric_vortex', name: 'Vortex atmosphérique', description: 'Un cyclone permanent comprimant les ressources gazeuses.', rarity: 'uncommon' as const, compatiblePlanetTypes: ['gaseous'], effects: [{ stat: 'production_hydrogene', modifier: 0.08 }, { stat: 'storage_hydrogene', modifier: 0.10 }] },
+  { id: 'deuterium_clouds', name: 'Nuages de deutérium', description: 'Des nuages denses de deutérium prêts pour la synthèse.', rarity: 'rare' as const, compatiblePlanetTypes: ['gaseous'], effects: [{ stat: 'production_hydrogene', modifier: 0.15 }] },
+  { id: 'ionic_storm', name: 'Tempête ionique', description: "Une tempête électrique permanente convertible en énergie pure.", rarity: 'epic' as const, compatiblePlanetTypes: ['gaseous'], effects: [{ stat: 'energy_production', modifier: 0.20 }] },
+  { id: 'spatial_anomaly', name: 'Anomalie spatiale', description: "Une distorsion de l'espace-temps aux propriétés inexplicables.", rarity: 'legendary' as const, compatiblePlanetTypes: ['gaseous'], effects: [{ stat: 'production_hydrogene', modifier: 0.15 }, { stat: 'production_minerai', modifier: 0.10 }, { stat: 'production_silicium', modifier: 0.10 }] },
 ];
 
 // ── Pirate templates data ──
@@ -772,6 +822,13 @@ async function seed() {
       .onConflictDoUpdate({ target: planetTypes.id, set: { ...pt } });
   }
   console.log(`  ✓ ${PLANET_TYPES.length} planet types`);
+
+  // Biome definitions
+  for (const biome of BIOME_DEFINITIONS) {
+    await db.insert(biomeDefinitions).values(biome)
+      .onConflictDoUpdate({ target: biomeDefinitions.id, set: { ...biome } });
+  }
+  console.log(`  ✓ ${BIOME_DEFINITIONS.length} biome definitions`);
 
   // 12. Universe config
   for (const u of UNIVERSE_CONFIG) {
