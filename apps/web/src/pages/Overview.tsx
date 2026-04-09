@@ -69,6 +69,7 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
   return (
     <div
       className="relative"
+      style={isOpen ? { zIndex: 9999 } : undefined}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
@@ -87,7 +88,7 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
         {biome.name}
       </span>
       {isOpen && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 w-56 rounded-lg border border-border bg-popover p-3 shadow-xl pointer-events-none">
+        <div className="absolute left-0 top-full mt-1.5 w-56 rounded-lg border border-border bg-popover p-3 shadow-xl pointer-events-none" style={{ zIndex: 9999 }}>
           <div className="flex items-center gap-2 mb-2">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
             <span className="text-sm font-semibold" style={{ color }}>{biome.name}</span>
@@ -361,8 +362,8 @@ export default function Overview() {
       <PageHeader title="Vue d'ensemble" />
 
       {/* ════ HERO ════ */}
-      <section className="glass-card overflow-hidden rounded-xl">
-        <div className="relative h-40 lg:h-56 w-full overflow-hidden">
+      <section className="glass-card rounded-xl">
+        <div className="relative h-40 lg:h-56 w-full overflow-hidden rounded-t-xl">
           {planet.planetClassId && planet.planetImageIndex != null ? (
             <img
               src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)}
