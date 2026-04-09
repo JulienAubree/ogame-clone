@@ -95,11 +95,43 @@ export function createPlanetService(
     },
 
     async listPlanets(userId: string) {
-      return db
+      const planetList = await db
         .select()
         .from(planets)
         .where(eq(planets.userId, userId))
         .orderBy(asc(planets.sortOrder), asc(planets.createdAt));
+
+      if (planetList.length === 0) return [];
+
+      const planetIds = planetList.map((p) => p.id);
+      const biomeRows = await db
+        .select({
+          planetId: planetBiomes.planetId,
+          id: biomeDefinitions.id,
+          name: biomeDefinitions.name,
+          rarity: biomeDefinitions.rarity,
+          effects: biomeDefinitions.effects,
+        })
+        .from(planetBiomes)
+        .innerJoin(biomeDefinitions, eq(biomeDefinitions.id, planetBiomes.biomeId))
+        .where(inArray(planetBiomes.planetId, planetIds));
+
+      const biomesByPlanet = new Map<string, typeof biomeRows>();
+      for (const row of biomeRows) {
+        const list = biomesByPlanet.get(row.planetId) ?? [];
+        list.push(row);
+        biomesByPlanet.set(row.planetId, list);
+      }
+
+      return planetList.map((p) => ({
+        ...p,
+        biomes: (biomesByPlanet.get(p.id) ?? []).map((b) => ({
+          id: b.id,
+          name: b.name,
+          rarity: b.rarity,
+          effects: b.effects,
+        })),
+      }));
     },
 
     async getPlanet(userId: string, planetId: string) {
