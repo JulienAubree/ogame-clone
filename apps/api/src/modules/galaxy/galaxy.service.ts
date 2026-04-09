@@ -1,5 +1,5 @@
 import { eq, and, inArray } from 'drizzle-orm';
-import { planets, users, debrisFields, allianceMembers, alliances, planetBiomes, biomeDefinitions } from '@exilium/db';
+import { planets, users, debrisFields, allianceMembers, alliances, planetBiomes, biomeDefinitions, discoveredBiomes } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import { seededRandom, coordinateSeed, generateBiomeCount, pickBiomes } from '@exilium/game-engine';
@@ -11,6 +11,22 @@ export function createGalaxyService(db: Database, gameConfigService: GameConfigS
       const positions = Number(config.universe.positions) || 16;
       const beltPositions = (config.universe.belt_positions as number[]) ?? [8, 16];
       const biomeCatalogue = config.biomes;
+
+      // Load player's discovered biomes for this system
+      const playerDiscoveries = _currentUserId
+        ? await db
+            .select({ position: discoveredBiomes.position, biomeId: discoveredBiomes.biomeId })
+            .from(discoveredBiomes)
+            .where(
+              and(
+                eq(discoveredBiomes.userId, _currentUserId),
+                eq(discoveredBiomes.galaxy, galaxy),
+                eq(discoveredBiomes.system, system),
+              ),
+            )
+        : [];
+
+      const discoverySet = new Set(playerDiscoveries.map((d) => `${d.position}:${d.biomeId}`));
 
       const systemPlanets = await db
         .select({
@@ -68,7 +84,7 @@ export function createGalaxyService(db: Database, gameConfigService: GameConfigS
 
       type PlanetSlot = typeof systemPlanets[number] & { biomes: Array<{ id: string; name: string; rarity: string; effects: unknown }> };
       type BeltSlot = { type: 'belt'; position: number };
-      type EmptySlot = { type: 'empty'; position: number; planetClassId: string | null; biomes: Array<{ id: string; name: string; rarity: string; effects: unknown }> };
+      type EmptySlot = { type: 'empty'; position: number; planetClassId: string | null; biomes: Array<{ id: string; name: string; rarity: string; effects: unknown }>; totalBiomeCount: number; undiscoveredCount: number };
 
       const slots: (PlanetSlot | BeltSlot | EmptySlot | null)[] = Array(positions).fill(null);
 
@@ -99,18 +115,27 @@ export function createGalaxyService(db: Database, gameConfigService: GameConfigS
         // Generate biomes deterministically
         const rng = seededRandom(coordinateSeed(galaxy, system, i));
         const count = generateBiomeCount(rng);
-        const pickedBiomes = planetClassId
+        const biomes = planetClassId
           ? pickBiomes(biomeCatalogue, planetClassId, count, rng)
           : [];
 
+        const pos = i;
+        const discoveredForPos = biomes.filter((b) =>
+          discoverySet.has(`${pos}:${b.id}`),
+        );
+        const totalBiomeCount = biomes.length;
+        const undiscoveredCount = totalBiomeCount - discoveredForPos.length;
+
         slots[i - 1] = {
           type: 'empty',
-          position: i,
+          position: pos,
           planetClassId,
-          biomes: pickedBiomes.map(b => {
-          const full = biomeCatalogue.find(c => c.id === b.id);
-          return { id: b.id, name: full?.name ?? b.id, rarity: b.rarity, effects: b.effects };
-        }),
+          biomes: discoveredForPos.map((b) => {
+            const full = biomeCatalogue.find((bc: any) => bc.id === b.id);
+            return { id: b.id, name: (full as any)?.name ?? b.id, rarity: b.rarity, effects: b.effects };
+          }),
+          totalBiomeCount,
+          undiscoveredCount,
         };
       }
 
