@@ -874,50 +874,34 @@ export default function Overview() {
                 <span className="text-foreground font-medium">{planet.minTemp}&deg;C a {planet.maxTemp}&deg;C</span>
               </div>
             </div>
-          </section>
-
-          {/* Biomes */}
-          {(planet as any).biomes && (planet as any).biomes.length > 0 && (
-            <section className="glass-card p-4">
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
-                  <path d="M2 22V12a10 10 0 0 1 10-10 10 10 0 0 1 10 10v10" />
-                  <path d="M7 22V16a5 5 0 0 1 5-5 5 5 0 0 1 5 5v6" />
-                </svg>
-                Biomes
-              </h2>
-              <div className="space-y-2">
-                {(planet as any).biomes.map((biome: any) => (
-                  <div key={biome.id} className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
+            {(planet as any).biomes && (planet as any).biomes.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <span className="text-xs text-muted-foreground font-medium">Biomes</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {(planet as any).biomes.map((biome: any) => (
+                    <span
+                      key={biome.id}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border"
+                      style={{
+                        color: RARITY_COLORS[biome.rarity] ?? '#9ca3af',
+                        borderColor: `${RARITY_COLORS[biome.rarity] ?? '#9ca3af'}33`,
+                        backgroundColor: `${RARITY_COLORS[biome.rarity] ?? '#9ca3af'}15`,
+                      }}
+                      title={biome.effects?.map((e: any) =>
+                        `${e.modifier > 0 ? '+' : ''}${Math.round(e.modifier * 100)}% ${STAT_LABELS[e.stat] ?? e.stat}`
+                      ).join(', ')}
+                    >
                       <span
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        className="w-1.5 h-1.5 rounded-full"
                         style={{ backgroundColor: RARITY_COLORS[biome.rarity] ?? '#9ca3af' }}
                       />
-                      <div className="min-w-0">
-                        <span className="text-sm" style={{ color: RARITY_COLORS[biome.rarity] ?? '#9ca3af' }}>
-                          {biome.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-1.5">
-                          {RARITY_LABELS[biome.rarity] ?? biome.rarity}
-                        </span>
-                      </div>
-                    </div>
-                    {biome.effects && biome.effects.length > 0 && (
-                      <div className="text-xs text-right flex-shrink-0">
-                        {biome.effects.map((e: any, i: number) => (
-                          <span key={i} className={e.modifier > 0 ? 'text-emerald-400' : 'text-red-400'}>
-                            {e.modifier > 0 ? '+' : ''}{Math.round(e.modifier * 100)}% {STAT_LABELS[e.stat] ?? e.stat}
-                            {i < biome.effects.length - 1 ? ', ' : ''}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      {biome.name}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
           {/* Vaisseau amiral */}
           {flagship && (
