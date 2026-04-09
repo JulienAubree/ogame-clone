@@ -9,7 +9,7 @@ interface MissionSelectorProps {
   locked: boolean;
 }
 
-const SELECTABLE_MISSIONS: Mission[] = ['transport', 'station', 'spy', 'attack', 'colonize', 'recycle'];
+const SELECTABLE_MISSIONS: Mission[] = ['transport', 'station', 'spy', 'attack', 'colonize', 'recycle', 'explore'];
 
 export function MissionSelector({ selected, onChange, locked }: MissionSelectorProps) {
   const { data: gameConfig } = useGameConfig();
