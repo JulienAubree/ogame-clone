@@ -109,6 +109,7 @@ export function createPlanetService(
           planetId: planetBiomes.planetId,
           id: biomeDefinitions.id,
           name: biomeDefinitions.name,
+          description: biomeDefinitions.description,
           rarity: biomeDefinitions.rarity,
           effects: biomeDefinitions.effects,
         })
@@ -128,6 +129,7 @@ export function createPlanetService(
         biomes: (biomesByPlanet.get(p.id) ?? []).map((b) => ({
           id: b.id,
           name: b.name,
+          description: b.description,
           rarity: b.rarity,
           effects: b.effects,
         })),

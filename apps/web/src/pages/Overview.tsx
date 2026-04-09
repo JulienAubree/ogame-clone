@@ -57,6 +57,86 @@ const STAT_LABELS: Record<string, string> = {
   storage_hydrogene: 'Stockage hydrogene',
 };
 
+// ── Biome badges with popover ──
+
+function BiomeBadges({ biomes }: { biomes: any[] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border/30">
+      <span className="text-xs text-muted-foreground font-medium">Biomes</span>
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
+        {biomes.map((biome: any) => {
+          const color = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
+          const isOpen = openId === biome.id;
+          return (
+            <div key={biome.id} className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenId(isOpen ? null : biome.id)}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border transition-colors"
+                style={{
+                  color,
+                  borderColor: `${color}33`,
+                  backgroundColor: isOpen ? `${color}25` : `${color}15`,
+                }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+                {biome.name}
+              </button>
+              {isOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenId(null)} />
+                  <div
+                    className="absolute left-0 top-full mt-1.5 z-50 w-56 rounded-lg border border-border bg-popover p-3 shadow-xl"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-sm font-semibold" style={{ color }}>
+                        {biome.name}
+                      </span>
+                    </div>
+                    <span
+                      className="inline-block rounded-full px-1.5 py-px text-[10px] font-medium mb-2"
+                      style={{
+                        color,
+                        backgroundColor: `${color}20`,
+                      }}
+                    >
+                      {RARITY_LABELS[biome.rarity] ?? biome.rarity}
+                    </span>
+                    {biome.description && (
+                      <p className="text-xs text-muted-foreground mb-2 italic">{biome.description}</p>
+                    )}
+                    {biome.effects && biome.effects.length > 0 && (
+                      <div className="space-y-1">
+                        {biome.effects.map((e: any, i: number) => (
+                          <div key={i} className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">{STAT_LABELS[e.stat] ?? e.stat}</span>
+                            <span className={e.modifier > 0 ? 'text-emerald-400 font-medium' : 'text-red-400 font-medium'}>
+                              {e.modifier > 0 ? '+' : ''}{Math.round(e.modifier * 100)}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Circular gauge (inline, used only here) ──
 
 function ResourceGauge({ current, capacity, rate, label, color, protectedAmount }: {
@@ -875,31 +955,7 @@ export default function Overview() {
               </div>
             </div>
             {(planet as any).biomes && (planet as any).biomes.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/30">
-                <span className="text-xs text-muted-foreground font-medium">Biomes</span>
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {(planet as any).biomes.map((biome: any) => (
-                    <span
-                      key={biome.id}
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border"
-                      style={{
-                        color: RARITY_COLORS[biome.rarity] ?? '#9ca3af',
-                        borderColor: `${RARITY_COLORS[biome.rarity] ?? '#9ca3af'}33`,
-                        backgroundColor: `${RARITY_COLORS[biome.rarity] ?? '#9ca3af'}15`,
-                      }}
-                      title={biome.effects?.map((e: any) =>
-                        `${e.modifier > 0 ? '+' : ''}${Math.round(e.modifier * 100)}% ${STAT_LABELS[e.stat] ?? e.stat}`
-                      ).join(', ')}
-                    >
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: RARITY_COLORS[biome.rarity] ?? '#9ca3af' }}
-                      />
-                      {biome.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <BiomeBadges biomes={(planet as any).biomes} />
             )}
           </section>
 
