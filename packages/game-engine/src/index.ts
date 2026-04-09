@@ -20,3 +20,4 @@ export * from './formulas/production-config.js';
 export * from './formulas/shield.js';
 export * from './formulas/armored-storage.js';
 export * from './formulas/biomes.js';
+export * from './formulas/exploration.js';
