@@ -276,18 +276,9 @@ export default function Galaxy() {
                           </Button>
                         )}
                       </div>
-                      {emptySlot.totalBiomeCount > 0 && (
+                      {emptySlot.biomes && emptySlot.biomes.length > 0 && (
                         <div className="pl-9">
-                          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                            {emptySlot.biomes && emptySlot.biomes.length > 0 && (
-                              <BiomeSummary biomes={emptySlot.biomes} />
-                            )}
-                            {emptySlot.undiscoveredCount > 0 && (
-                              <span className="text-[11px] text-muted-foreground">
-                                {emptySlot.biomes?.length > 0 ? '+ ' : ''}{emptySlot.undiscoveredCount} inconnu{emptySlot.undiscoveredCount > 1 ? 's' : ''}
-                              </span>
-                            )}
-                          </div>
+                          <BiomeSummary biomes={emptySlot.biomes} />
                         </div>
                       )}
                     </div>
@@ -446,17 +437,8 @@ export default function Galaxy() {
                               {planetTypeName2}
                             </td>
                             <td className="px-2 py-2">
-                              {emptySlot2.totalBiomeCount > 0 && (
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {hasBiomes2 && (
-                                    <BiomeToggle count={emptySlot2.biomes.length} expanded={isExpanded2} onToggle={() => setExpandedBiomeSlot(isExpanded2 ? null : i)} />
-                                  )}
-                                  {emptySlot2.undiscoveredCount > 0 && (
-                                    <span className="text-[11px] text-muted-foreground">
-                                      {hasBiomes2 ? '+ ' : ''}{emptySlot2.undiscoveredCount} inconnu{emptySlot2.undiscoveredCount > 1 ? 's' : ''}
-                                    </span>
-                                  )}
-                                </div>
+                              {hasBiomes2 && (
+                                <BiomeToggle count={emptySlot2.biomes.length} expanded={isExpanded2} onToggle={() => setExpandedBiomeSlot(isExpanded2 ? null : i)} />
                               )}
                             </td>
                             <td className="px-2 py-2">
