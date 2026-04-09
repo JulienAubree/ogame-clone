@@ -126,6 +126,13 @@ export default function Galaxy() {
   }, [gameConfig?.ships]);
   const hasColonizer = !!(colonizerShipId && ships?.find((s) => s.id === colonizerShipId && s.count > 0));
 
+  const hasExplorer = useMemo(() => {
+    if (!ships || !gameConfig?.ships) return false;
+    const explorerDef = Object.values(gameConfig.ships).find((s: any) => s.role === 'exploration');
+    if (!explorerDef) return false;
+    return (ships as any)[(explorerDef as any).countColumn] > 0;
+  }, [ships, gameConfig]);
+
   // Map position → mission for current galaxy:system
   const missionByPosition = useMemo(() => {
     const map = new Map<number, { id: string }>();
@@ -258,10 +265,29 @@ export default function Galaxy() {
                             Coloniser
                           </Button>
                         )}
+                        {hasExplorer && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs h-6 px-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20"
+                            onClick={() => navigate(`/fleet/send?mission=explore&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                          >
+                            Explorer
+                          </Button>
+                        )}
                       </div>
-                      {emptySlot.biomes && emptySlot.biomes.length > 0 && (
+                      {emptySlot.totalBiomeCount > 0 && (
                         <div className="pl-9">
-                          <BiomeSummary biomes={emptySlot.biomes} />
+                          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                            {emptySlot.biomes && emptySlot.biomes.length > 0 && (
+                              <BiomeSummary biomes={emptySlot.biomes} />
+                            )}
+                            {emptySlot.undiscoveredCount > 0 && (
+                              <span className="text-[11px] text-muted-foreground">
+                                {emptySlot.biomes?.length > 0 ? '+ ' : ''}{emptySlot.undiscoveredCount} inconnu{emptySlot.undiscoveredCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -420,22 +446,44 @@ export default function Galaxy() {
                               {planetTypeName2}
                             </td>
                             <td className="px-2 py-2">
-                              {hasBiomes2 && (
-                                <BiomeToggle count={emptySlot2.biomes.length} expanded={isExpanded2} onToggle={() => setExpandedBiomeSlot(isExpanded2 ? null : i)} />
+                              {emptySlot2.totalBiomeCount > 0 && (
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {hasBiomes2 && (
+                                    <BiomeToggle count={emptySlot2.biomes.length} expanded={isExpanded2} onToggle={() => setExpandedBiomeSlot(isExpanded2 ? null : i)} />
+                                  )}
+                                  {emptySlot2.undiscoveredCount > 0 && (
+                                    <span className="text-[11px] text-muted-foreground">
+                                      {hasBiomes2 ? '+ ' : ''}{emptySlot2.undiscoveredCount} inconnu{emptySlot2.undiscoveredCount > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </td>
                             <td className="px-2 py-2">
-                              {hasColonizer && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-xs h-6 px-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20"
-                                  onClick={() => navigate(`/fleet/send?mission=colonize&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
-                                  title="Coloniser"
-                                >
-                                  Coloniser
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {hasColonizer && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-xs h-6 px-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20"
+                                    onClick={() => navigate(`/fleet/send?mission=colonize&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                                    title="Coloniser"
+                                  >
+                                    Coloniser
+                                  </Button>
+                                )}
+                                {hasExplorer && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-xs h-6 px-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20"
+                                    onClick={() => navigate(`/fleet/send?mission=explore&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                                    title="Explorer"
+                                  >
+                                    Explorer
+                                  </Button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                           {isExpanded2 && hasBiomes2 && (
