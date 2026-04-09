@@ -1,5 +1,6 @@
-import { pgTable, varchar, text, real, jsonb, uuid, primaryKey, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, text, real, jsonb, uuid, primaryKey, pgEnum, smallint } from 'drizzle-orm/pg-core';
 import { planets } from './planets.js';
+import { users } from './users.js';
 
 export const biomeRarityEnum = pgEnum('biome_rarity', ['common', 'uncommon', 'rare', 'epic', 'legendary']);
 
@@ -17,4 +18,14 @@ export const planetBiomes = pgTable('planet_biomes', {
   biomeId: varchar('biome_id', { length: 64 }).notNull().references(() => biomeDefinitions.id, { onDelete: 'cascade' }),
 }, (t) => [
   primaryKey({ columns: [t.planetId, t.biomeId] }),
+]);
+
+export const discoveredBiomes = pgTable('discovered_biomes', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  galaxy: smallint('galaxy').notNull(),
+  system: smallint('system').notNull(),
+  position: smallint('position').notNull(),
+  biomeId: varchar('biome_id', { length: 64 }).notNull().references(() => biomeDefinitions.id, { onDelete: 'cascade' }),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.galaxy, t.system, t.position, t.biomeId] }),
 ]);

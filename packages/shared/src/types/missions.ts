@@ -9,4 +9,5 @@ export enum MissionType {
   Pirate = 'pirate',
   Trade = 'trade',
   Scan = 'scan',
+  Explore = 'explore',
 }
