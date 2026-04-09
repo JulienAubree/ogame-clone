@@ -32,3 +32,4 @@ export * from './flagship-cooldowns.js';
 export * from './feedbacks.js';
 export * from './changelogs.js';
 export * from './notification-preferences.js';
+export * from './biomes.js';
