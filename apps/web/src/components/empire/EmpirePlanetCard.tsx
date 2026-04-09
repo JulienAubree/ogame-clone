@@ -20,14 +20,14 @@ interface EmpirePlanet {
   minerai: number;
   silicium: number;
   hydrogene: number;
-  mineraiPerHour: number;
-  siliciumPerHour: number;
-  hydrogenePerHour: number;
-  storageMineraiCapacity: number;
-  storageSiliciumCapacity: number;
-  storageHydrogeneCapacity: number;
-  energyProduced: number;
-  energyConsumed: number;
+  mineraiPerHour?: number;
+  siliciumPerHour?: number;
+  hydrogenePerHour?: number;
+  storageMineraiCapacity?: number;
+  storageSiliciumCapacity?: number;
+  storageHydrogeneCapacity?: number;
+  energyProduced?: number;
+  energyConsumed?: number;
   hasFlagship: boolean;
   activeBuild: { buildingId: string; level: number; endTime: string } | null;
   activeResearch: { researchId: string; level: number; endTime: string } | null;
@@ -36,6 +36,7 @@ interface EmpirePlanet {
   outboundFleets: { count: number; earliestArrival: string } | null;
   inboundFriendlyFleets: { count: number; earliestArrival: string } | null;
   inboundAttack: { arrivalTime: string } | null;
+  biomes?: { id: string; name: string; rarity: string; effects?: unknown }[];
 }
 
 function formatRate(value: number): string {
@@ -56,9 +57,9 @@ export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; is
   };
 
   const resources = [
-    { label: 'Fe', value: planet.minerai, max: planet.storageMineraiCapacity, rate: planet.mineraiPerHour, color: 'text-minerai', fill: 'bg-minerai' },
-    { label: 'Si', value: planet.silicium, max: planet.storageSiliciumCapacity, rate: planet.siliciumPerHour, color: 'text-silicium', fill: 'bg-silicium' },
-    { label: 'H', value: planet.hydrogene, max: planet.storageHydrogeneCapacity, rate: planet.hydrogenePerHour, color: 'text-hydrogene', fill: 'bg-hydrogene' },
+    { label: 'Fe', value: planet.minerai, max: planet.storageMineraiCapacity ?? 0, rate: planet.mineraiPerHour ?? 0, color: 'text-minerai', fill: 'bg-minerai' },
+    { label: 'Si', value: planet.silicium, max: planet.storageSiliciumCapacity ?? 0, rate: planet.siliciumPerHour ?? 0, color: 'text-silicium', fill: 'bg-silicium' },
+    { label: 'H', value: planet.hydrogene, max: planet.storageHydrogeneCapacity ?? 0, rate: planet.hydrogenePerHour ?? 0, color: 'text-hydrogene', fill: 'bg-hydrogene' },
   ];
 
   const hasActivity = planet.activeBuild || planet.activeResearch || planet.activeShipyard || planet.activeDefense || planet.outboundFleets || planet.inboundFriendlyFleets || hasAttack;
@@ -183,12 +184,12 @@ export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; is
             <Timer endTime={new Date(planet.inboundAttack!.arrivalTime)} className="inline [&>span]:text-destructive" />
           </button>
         )}
-        {planet.energyConsumed > planet.energyProduced && !hasAttack && (
+        {(planet.energyConsumed ?? 0) > (planet.energyProduced ?? 0) && !hasAttack && (
           <button onClick={() => goTo('/energy')} className="flex items-center gap-1 rounded-md border border-energy/20 bg-energy/10 px-2 py-1 text-[11px] text-energy hover:bg-energy/20 transition-colors">
             ⚡ Deficit energie
           </button>
         )}
-        {!hasActivity && planet.energyConsumed <= planet.energyProduced && (
+        {!hasActivity && (planet.energyConsumed ?? 0) <= (planet.energyProduced ?? 0) && (
           <div className="flex items-center gap-1 rounded-md border border-green-500/20 bg-green-500/10 px-2 py-1 text-[11px] text-green-500">
             <Check className="h-3 w-3" />
             <span>Aucune activite</span>

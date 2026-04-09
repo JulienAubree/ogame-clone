@@ -19,9 +19,9 @@ interface EmpirePlanet {
   minerai: number;
   silicium: number;
   hydrogene: number;
-  mineraiPerHour: number;
-  siliciumPerHour: number;
-  hydrogenePerHour: number;
+  mineraiPerHour?: number;
+  siliciumPerHour?: number;
+  hydrogenePerHour?: number;
   hasFlagship: boolean;
   activeBuild: { buildingId: string; level: number; endTime: string } | null;
   activeResearch: { researchId: string; level: number; endTime: string } | null;
@@ -30,6 +30,7 @@ interface EmpirePlanet {
   outboundFleets: { count: number; earliestArrival: string } | null;
   inboundFriendlyFleets: { count: number; earliestArrival: string } | null;
   inboundAttack: { arrivalTime: string } | null;
+  biomes?: { id: string; name: string; rarity: string; effects?: unknown }[];
 }
 
 function formatRate(value: number): string {
