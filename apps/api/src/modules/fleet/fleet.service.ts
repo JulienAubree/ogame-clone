@@ -27,6 +27,7 @@ import { PirateHandler } from './handlers/pirate.handler.js';
 import { MineHandler } from './handlers/mine.handler.js';
 import { TradeHandler } from './handlers/trade.handler.js';
 import { ScanHandler } from './handlers/scan.handler.js';
+import { ExploreHandler } from './handlers/explore.handler.js';
 import { buildShipStatsMap } from './fleet.types.js';
 import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
@@ -59,6 +60,7 @@ export function createFleetService(
     mine: new MineHandler(),
     trade: new TradeHandler(),
     scan: new ScanHandler(),
+    explore: new ExploreHandler(),
   };
 
   const handlerCtx: MissionHandlerContext = {
