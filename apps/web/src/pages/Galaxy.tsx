@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
@@ -37,42 +37,52 @@ const STAT_LABELS: Record<string, string> = {
   storage_hydrogene: 'Stockage hydrogène',
 };
 
+function BiomeToggle({ count, expanded, onToggle }: { count: number; expanded: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onToggle(); }}
+      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+    >
+      <span>{count} biome{count > 1 ? 's' : ''}</span>
+      <svg width={10} height={10} viewBox="0 0 10 10" className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>
+        <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+function BiomeDetails({ biomes }: { biomes: any[] }) {
+  return (
+    <div className="space-y-1 py-1">
+      {biomes.map((biome: any) => {
+        const color = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
+        return (
+          <div key={biome.id} className="flex items-center gap-1.5 text-xs">
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+            <span style={{ color }} className="flex-shrink-0">{biome.name}</span>
+            {biome.effects && biome.effects.length > 0 && (
+              <span className="text-muted-foreground">
+                {biome.effects.map((e: any) =>
+                  `${e.modifier > 0 ? '+' : ''}${Math.round(e.modifier * 100)}% ${STAT_LABELS[e.stat] ?? e.stat}`
+                ).join(', ')}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Mobile-only: inline toggle + detail */
 function BiomeSummary({ biomes }: { biomes: any[] }) {
   const [expanded, setExpanded] = useState(false);
   if (!biomes || biomes.length === 0) return null;
-
   return (
     <div className="mt-1">
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-        className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-      >
-        <span>{biomes.length} biome{biomes.length > 1 ? 's' : ''}</span>
-        <svg width={10} height={10} viewBox="0 0 10 10" className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>
-          <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      {expanded && (
-        <div className="mt-1.5 space-y-1">
-          {biomes.map((biome: any) => {
-            const color = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
-            return (
-              <div key={biome.id} className="flex items-center gap-1.5 text-xs">
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                <span style={{ color }} className="flex-shrink-0">{biome.name}</span>
-                {biome.effects && biome.effects.length > 0 && (
-                  <span className="text-muted-foreground">
-                    {biome.effects.map((e: any) =>
-                      `${e.modifier > 0 ? '+' : ''}${Math.round(e.modifier * 100)}% ${STAT_LABELS[e.stat] ?? e.stat}`
-                    ).join(', ')}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <BiomeToggle count={biomes.length} expanded={expanded} onToggle={() => setExpanded(!expanded)} />
+      {expanded && <BiomeDetails biomes={biomes} />}
     </div>
   );
 }
@@ -89,6 +99,7 @@ export default function Galaxy() {
   const [galaxy, setGalaxy] = useState(activePlanet?.galaxy ?? 1);
   const [system, setSystem] = useState(activePlanet?.system ?? 1);
   const [initialized, setInitialized] = useState(false);
+  const [expandedBiomeSlot, setExpandedBiomeSlot] = useState<number | null>(null);
 
   useEffect(() => {
     if (!initialized && activePlanet) {
@@ -393,118 +404,26 @@ export default function Galaxy() {
                       const planetTypeName2 = emptySlot2.planetClassId
                         ? gameConfig?.planetTypes?.find((t) => t.id === emptySlot2.planetClassId)?.name ?? ''
                         : '';
+                      const hasBiomes2 = emptySlot2.biomes && emptySlot2.biomes.length > 0;
+                      const isExpanded2 = expandedBiomeSlot === i;
                       return (
-                        <tr key={i} className="border-b border-border/50 align-top">
-                          <td className="px-2 py-2 text-muted-foreground">{i + 1}</td>
-                          <td className="px-2 py-2">
-                            <span className="inline-flex items-center gap-2">
-                              <PlanetDot planetClassId={emptySlot2.planetClassId} size={18} />
-                              <span className="text-muted-foreground">Vide</span>
-                            </span>
-                          </td>
-                          <td className="px-2 py-2 text-xs text-muted-foreground">
-                            {planetTypeName2}
-                          </td>
-                          <td className="px-2 py-2">
-                            {emptySlot2.biomes && emptySlot2.biomes.length > 0 && (
-                              <BiomeSummary biomes={emptySlot2.biomes} />
-                            )}
-                          </td>
-                          <td className="px-2 py-2">
-                            {hasColonizer && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-xs h-6 px-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20"
-                                onClick={() => navigate(`/fleet/send?mission=colonize&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
-                                title="Coloniser"
-                              >
-                                Coloniser
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    }
-
-                    return (
-                      <tr key={i} className={`border-b border-border/50 align-top ${!slot ? 'opacity-40' : ''}`}>
-                        <td className="px-2 py-2 text-muted-foreground">{i + 1}</td>
-                        {slot ? (
-                          <>
+                        <React.Fragment key={i}>
+                          <tr className={`${isExpanded2 ? '' : 'border-b border-border/50'}`}>
+                            <td className="px-2 py-2 text-muted-foreground">{i + 1}</td>
                             <td className="px-2 py-2">
                               <span className="inline-flex items-center gap-2">
-                                <PlanetDot planetClassId={(slot as any).planetClassId} size={18} />
-                                {(slot as any).planetName}
+                                <PlanetDot planetClassId={emptySlot2.planetClassId} size={18} />
+                                <span className="text-muted-foreground">Vide</span>
                               </span>
                             </td>
                             <td className="px-2 py-2 text-xs text-muted-foreground">
-                              {(slot as any).planetClassId
-                                ? gameConfig?.planetTypes?.find((t) => t.id === (slot as any).planetClassId)?.name ?? ''
-                                : ''}
+                              {planetTypeName2}
                             </td>
                             <td className="px-2 py-2">
-                              <div>
-                                {(slot as any).allianceTag && <span className="text-xs text-primary mr-1">[{(slot as any).allianceTag}]</span>}
-                                {(slot as any).username}
-                                {(slot as any).debris && ((slot as any).debris.minerai > 0 || (slot as any).debris.silicium > 0) && (
-                                  <Link
-                                    to={`/fleet/send?mission=recycle&galaxy=${galaxy}&system=${system}&position=${i + 1}`}
-                                    className="text-xs text-orange-400 ml-2 hover:underline cursor-pointer"
-                                    title={`Débris: ${(slot as any).debris.minerai.toLocaleString('fr-FR')} minerai, ${(slot as any).debris.silicium.toLocaleString('fr-FR')} silicium`}
-                                  >
-                                    DF
-                                  </Link>
-                                )}
-                              </div>
-                              {!isOtherPlayer2 && (slot as any).biomes && (slot as any).biomes.length > 0 && (
-                                <BiomeSummary biomes={(slot as any).biomes} />
+                              {hasBiomes2 && (
+                                <BiomeToggle count={emptySlot2.biomes.length} expanded={isExpanded2} onToggle={() => setExpandedBiomeSlot(isExpanded2 ? null : i)} />
                               )}
                             </td>
-                            <td className="px-2 py-2">
-                              {isOtherPlayer2 && (
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-xs h-6 px-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                                    onClick={() => navigate(`/fleet/send?mission=spy&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
-                                    title="Espionner"
-                                  >
-                                    Espionner
-                                  </Button>
-                                  {canAttack2 && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-xs h-6 px-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                                      onClick={() => navigate(`/fleet/send?mission=attack&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
-                                      title="Attaquer"
-                                    >
-                                      Attaquer
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-xs h-6 px-1.5"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openChat((slot as any).userId, (slot as any).username);
-                                    }}
-                                    title="Message"
-                                  >
-                                    Message
-                                  </Button>
-                                </div>
-                              )}
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="px-2 py-2 text-muted-foreground">-</td>
-                            <td className="px-2 py-2 text-muted-foreground">-</td>
-                            <td className="px-2 py-2 text-muted-foreground">-</td>
                             <td className="px-2 py-2">
                               {hasColonizer && (
                                 <Button
@@ -518,9 +437,124 @@ export default function Galaxy() {
                                 </Button>
                               )}
                             </td>
-                          </>
+                          </tr>
+                          {isExpanded2 && hasBiomes2 && (
+                            <tr className="border-b border-border/50">
+                              <td colSpan={5} className="px-4 py-1 bg-accent/30">
+                                <BiomeDetails biomes={emptySlot2.biomes} />
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    }
+
+                    const showBiomes3 = !isOtherPlayer2 && (slot as any)?.biomes && (slot as any).biomes.length > 0;
+                    const isExpanded3 = expandedBiomeSlot === i;
+
+                    return (
+                      <React.Fragment key={i}>
+                        <tr className={`${isExpanded3 ? '' : 'border-b border-border/50'} ${!slot ? 'opacity-40' : ''}`}>
+                          <td className="px-2 py-2 text-muted-foreground">{i + 1}</td>
+                          {slot ? (
+                            <>
+                              <td className="px-2 py-2">
+                                <span className="inline-flex items-center gap-2">
+                                  <PlanetDot planetClassId={(slot as any).planetClassId} size={18} />
+                                  {(slot as any).planetName}
+                                </span>
+                              </td>
+                              <td className="px-2 py-2 text-xs text-muted-foreground">
+                                {(slot as any).planetClassId
+                                  ? gameConfig?.planetTypes?.find((t) => t.id === (slot as any).planetClassId)?.name ?? ''
+                                  : ''}
+                              </td>
+                              <td className="px-2 py-2">
+                                <div>
+                                  {(slot as any).allianceTag && <span className="text-xs text-primary mr-1">[{(slot as any).allianceTag}]</span>}
+                                  {(slot as any).username}
+                                  {(slot as any).debris && ((slot as any).debris.minerai > 0 || (slot as any).debris.silicium > 0) && (
+                                    <Link
+                                      to={`/fleet/send?mission=recycle&galaxy=${galaxy}&system=${system}&position=${i + 1}`}
+                                      className="text-xs text-orange-400 ml-2 hover:underline cursor-pointer"
+                                      title={`Débris: ${(slot as any).debris.minerai.toLocaleString('fr-FR')} minerai, ${(slot as any).debris.silicium.toLocaleString('fr-FR')} silicium`}
+                                    >
+                                      DF
+                                    </Link>
+                                  )}
+                                </div>
+                                {showBiomes3 && (
+                                  <BiomeToggle count={(slot as any).biomes.length} expanded={isExpanded3} onToggle={() => setExpandedBiomeSlot(isExpanded3 ? null : i)} />
+                                )}
+                              </td>
+                              <td className="px-2 py-2">
+                                {isOtherPlayer2 && (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-xs h-6 px-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
+                                      onClick={() => navigate(`/fleet/send?mission=spy&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                                      title="Espionner"
+                                    >
+                                      Espionner
+                                    </Button>
+                                    {canAttack2 && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-xs h-6 px-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                                        onClick={() => navigate(`/fleet/send?mission=attack&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                                        title="Attaquer"
+                                      >
+                                        Attaquer
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-xs h-6 px-1.5"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openChat((slot as any).userId, (slot as any).username);
+                                      }}
+                                      title="Message"
+                                    >
+                                      Message
+                                    </Button>
+                                  </div>
+                                )}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-2 py-2 text-muted-foreground">-</td>
+                              <td className="px-2 py-2 text-muted-foreground">-</td>
+                              <td className="px-2 py-2 text-muted-foreground">-</td>
+                              <td className="px-2 py-2">
+                                {hasColonizer && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-xs h-6 px-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20"
+                                    onClick={() => navigate(`/fleet/send?mission=colonize&galaxy=${galaxy}&system=${system}&position=${i + 1}`)}
+                                    title="Coloniser"
+                                  >
+                                    Coloniser
+                                  </Button>
+                                )}
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                        {isExpanded3 && showBiomes3 && (
+                          <tr className="border-b border-border/50">
+                            <td colSpan={5} className="px-4 py-1 bg-accent/30">
+                              <BiomeDetails biomes={(slot as any).biomes} />
+                            </td>
+                          </tr>
                         )}
-                      </tr>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
