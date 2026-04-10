@@ -17,28 +17,86 @@ function formatDate(date: string | Date): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function inlineFormat(text: string) {
-  const parts = text.split(/(\*\*.+?\*\*|\*.+?\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>;
+function inlineFormat(text: string): React.ReactNode {
+  // Order matters: longer/more specific patterns first
+  // Process in passes to handle nested formats
+  const tokens: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    // Bold **text**
+    let match = remaining.match(/^\*\*(.+?)\*\*/);
+    if (match) {
+      tokens.push(<strong key={key++} className="text-foreground font-semibold">{match[1]}</strong>);
+      remaining = remaining.slice(match[0].length);
+      continue;
     }
-    if (part.startsWith('*') && part.endsWith('*')) {
-      return <em key={i} className="text-foreground/70 italic">{part.slice(1, -1)}</em>;
+    // Italic *text*
+    match = remaining.match(/^\*(.+?)\*/);
+    if (match) {
+      tokens.push(<em key={key++} className="text-foreground/70 italic">{match[1]}</em>);
+      remaining = remaining.slice(match[0].length);
+      continue;
     }
-    return part;
-  });
+    // Inline code `code`
+    match = remaining.match(/^`([^`]+)`/);
+    if (match) {
+      tokens.push(
+        <code key={key++} className="rounded bg-muted/60 px-1 py-px text-[0.85em] font-mono text-primary">
+          {match[1]}
+        </code>
+      );
+      remaining = remaining.slice(match[0].length);
+      continue;
+    }
+    // Link [text](url)
+    match = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+    if (match) {
+      tokens.push(
+        <a
+          key={key++}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:text-primary/80"
+        >
+          {match[1]}
+        </a>
+      );
+      remaining = remaining.slice(match[0].length);
+      continue;
+    }
+    // Find next special char or end
+    const nextSpecial = remaining.search(/[\*`\[]/);
+    if (nextSpecial === -1) {
+      tokens.push(<span key={key++}>{remaining}</span>);
+      break;
+    }
+    if (nextSpecial > 0) {
+      tokens.push(<span key={key++}>{remaining.slice(0, nextSpecial)}</span>);
+      remaining = remaining.slice(nextSpecial);
+    } else {
+      // Special char that didn't match a pattern — emit as text
+      tokens.push(<span key={key++}>{remaining[0]}</span>);
+      remaining = remaining.slice(1);
+    }
+  }
+  return tokens;
 }
 
 function renderMarkdown(content: string) {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   let listItems: string[] = [];
+  let orderedListItems: string[] = [];
+  let codeBlockLines: string[] = [];
+  let inCodeBlock = false;
 
   const flushList = () => {
     if (listItems.length > 0) {
       elements.push(
-        <ul key={`ul-${elements.length}`} className="space-y-1 mb-3">
+        <ul key={`ul-${elements.length}`} className="space-y-1 mb-3 ml-1">
           {listItems.map((item, i) => (
             <li key={i} className="text-sm text-foreground/80 flex gap-2">
               <span className="text-muted-foreground shrink-0">•</span>
@@ -49,9 +107,44 @@ function renderMarkdown(content: string) {
       );
       listItems = [];
     }
+    if (orderedListItems.length > 0) {
+      elements.push(
+        <ol key={`ol-${elements.length}`} className="space-y-1 mb-3 ml-1">
+          {orderedListItems.map((item, i) => (
+            <li key={i} className="text-sm text-foreground/80 flex gap-2">
+              <span className="text-muted-foreground shrink-0 tabular-nums">{i + 1}.</span>
+              <span>{inlineFormat(item)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+      orderedListItems = [];
+    }
   };
 
   for (const line of lines) {
+    // Code block fence
+    if (line.startsWith('```')) {
+      if (inCodeBlock) {
+        elements.push(
+          <pre key={`pre-${elements.length}`} className="rounded-md bg-muted/50 border border-border/50 p-3 mb-3 overflow-x-auto">
+            <code className="text-xs font-mono text-foreground/90">{codeBlockLines.join('\n')}</code>
+          </pre>
+        );
+        codeBlockLines = [];
+        inCodeBlock = false;
+      } else {
+        flushList();
+        inCodeBlock = true;
+      }
+      continue;
+    }
+    if (inCodeBlock) {
+      codeBlockLines.push(line);
+      continue;
+    }
+
+    // Headings — check longest prefix first
     if (line.startsWith('##### ')) {
       flushList();
       elements.push(
@@ -69,12 +162,44 @@ function renderMarkdown(content: string) {
     } else if (line.startsWith('### ')) {
       flushList();
       elements.push(
-        <h3 key={`h-${elements.length}`} className="text-sm font-semibold text-foreground mt-3 mb-1">
+        <h3 key={`h3-${elements.length}`} className="text-sm font-semibold text-foreground mt-3 mb-1">
           {inlineFormat(line.slice(4))}
         </h3>
       );
-    } else if (line.startsWith('- ')) {
+    } else if (line.startsWith('## ')) {
+      flushList();
+      elements.push(
+        <h2 key={`h2-${elements.length}`} className="text-base font-semibold text-foreground mt-4 mb-1.5 border-b border-border/30 pb-1">
+          {inlineFormat(line.slice(3))}
+        </h2>
+      );
+    } else if (line.startsWith('# ')) {
+      flushList();
+      elements.push(
+        <h1 key={`h1-${elements.length}`} className="text-lg font-bold text-foreground mt-4 mb-2 border-b border-border/40 pb-1.5">
+          {inlineFormat(line.slice(2))}
+        </h1>
+      );
+    } else if (line.startsWith('> ')) {
+      flushList();
+      elements.push(
+        <blockquote key={`bq-${elements.length}`} className="border-l-2 border-primary/40 bg-primary/5 pl-3 py-1 mb-3 text-sm text-foreground/80 italic">
+          {inlineFormat(line.slice(2))}
+        </blockquote>
+      );
+    } else if (line.trim() === '---' || line.trim() === '***') {
+      flushList();
+      elements.push(
+        <hr key={`hr-${elements.length}`} className="border-border/40 my-3" />
+      );
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      // Flush ordered list if we were in one
+      if (orderedListItems.length > 0) flushList();
       listItems.push(line.slice(2));
+    } else if (/^\d+\.\s/.test(line)) {
+      // Flush unordered list if we were in one
+      if (listItems.length > 0) flushList();
+      orderedListItems.push(line.replace(/^\d+\.\s/, ''));
     } else if (line.trim() === '') {
       flushList();
     } else {
@@ -85,6 +210,14 @@ function renderMarkdown(content: string) {
     }
   }
   flushList();
+  // Close any unterminated code block
+  if (inCodeBlock && codeBlockLines.length > 0) {
+    elements.push(
+      <pre key={`pre-${elements.length}`} className="rounded-md bg-muted/50 border border-border/50 p-3 mb-3 overflow-x-auto">
+        <code className="text-xs font-mono text-foreground/90">{codeBlockLines.join('\n')}</code>
+      </pre>
+    );
+  }
   return elements;
 }
 
