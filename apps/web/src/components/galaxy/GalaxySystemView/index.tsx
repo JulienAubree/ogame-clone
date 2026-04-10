@@ -22,6 +22,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactElement,
 } from 'react';
@@ -81,6 +82,7 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
     if (posParam == null) return { kind: 'system' };
     const parsed = parseInt(posParam, 10);
     if (!Number.isFinite(parsed)) return { kind: 'system' };
+    if (parsed < 1 || parsed > TOTAL_POSITIONS) return { kind: 'system' };
     return { kind: 'slot', position: parsed };
   }, [posParam]);
 
@@ -142,7 +144,13 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
 
   // Reset selection when the system coordinates change — the ?pos param
   // from the previous system is no longer meaningful in the new one.
+  // Skip the initial mount so deep links (?pos=N) survive.
+  const hasMountedRef = useRef(false);
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
     setSelection({ kind: 'system' });
   }, [galaxy, system, setSelection]);
 
