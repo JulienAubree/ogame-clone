@@ -1,6 +1,6 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, fleetEvents, planetBiomes, discoveredBiomes } from '@exilium/db';
+import { planets, planetShips, planetDefenses, fleetEvents, planetBiomes, discoveredBiomes, discoveredPositions } from '@exilium/db';
 import { calculateMaxTemp, calculateMinTemp, calculateDiameter, totalCargoCapacity, seededRandom, coordinateSeed, generateBiomeCount, pickBiomes, type BiomeDefinition } from '@exilium/game-engine';
 import { getRandomPlanetImageIndex } from '../../../lib/planet-image.util.js';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
@@ -194,6 +194,14 @@ export class ColonizeHandler implements MissionHandler {
         })),
       ).onConflictDoNothing();
     }
+
+    // Mark the colonized position as discovered for the colonizer
+    await ctx.db.insert(discoveredPositions).values({
+      userId: fleetEvent.userId,
+      galaxy: fleetEvent.targetGalaxy,
+      system: fleetEvent.targetSystem,
+      position: fleetEvent.targetPosition,
+    }).onConflictDoNothing();
 
     // Transfer cargo to the new planet
     if (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0) {
