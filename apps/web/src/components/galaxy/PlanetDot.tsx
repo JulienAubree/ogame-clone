@@ -5,12 +5,11 @@ const TYPE_COLORS: Record<string, { from: string; to: string; accent: string }> 
   glacial:   { from: '#93c5fd', to: '#e0f2fe', accent: '#ffffff' },
   gaseous:   { from: '#a855f7', to: '#ec4899', accent: '#e879f9' },
   homeworld: { from: '#22d3ee', to: '#10b981', accent: '#a7f3d0' },
+  unknown:   { from: '#52525b', to: '#27272a', accent: '#a1a1aa' },
 };
 
-const DEFAULT_COLORS = { from: '#6b7280', to: '#9ca3af', accent: '#d1d5db' };
-
 export function PlanetDot({ planetClassId, size = 20 }: { planetClassId: string | null; size?: number }) {
-  const colors = (planetClassId && TYPE_COLORS[planetClassId]) || DEFAULT_COLORS;
+  const colors = TYPE_COLORS[planetClassId ?? 'unknown'] ?? TYPE_COLORS.unknown;
   const id = `planet-${planetClassId ?? 'unknown'}-${Math.random().toString(36).slice(2, 6)}`;
 
   return (
