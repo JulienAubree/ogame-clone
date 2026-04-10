@@ -56,6 +56,18 @@ interface PlacedSlot {
   cy: number;
 }
 
+interface TooltipDescriptor {
+  tooltipX: number;
+  tooltipY: number;
+  line1: string;
+  line1Class: string;
+  line2?: string;
+  line2Class?: string;
+}
+
+const TOOLTIP_WIDTH = 180;
+const TOOLTIP_HEIGHT = 48;
+
 export function OrbitalCanvas({
   views,
   galaxy,
@@ -95,6 +107,63 @@ export function OrbitalCanvas({
     }
     return placed;
   }, [views, galaxy, system]);
+
+  // Hover tooltip — renders near the hovered slot. Belts are skipped because
+  // SlotMarker returns null for them, so no hover events fire.
+  const tooltip = useMemo<TooltipDescriptor | null>(() => {
+    if (hoveredPosition == null) return null;
+    const hit = placedSlots.find((s) => s.view.position === hoveredPosition);
+    if (!hit) return null;
+    const { view, cx, cy } = hit;
+
+    let line1: string;
+    let line1Class: string;
+    let line2: string | undefined;
+    let line2Class: string | undefined;
+
+    switch (view.kind) {
+      case 'planet': {
+        line1 = view.planetName;
+        line1Class = 'text-foreground';
+        const username = view.username ?? 'Joueur';
+        const tagPrefix = view.allianceTag ? `[${view.allianceTag}] ` : '';
+        if (view.relation === 'mine') {
+          line2 = 'Vous';
+          line2Class = 'text-cyan-400';
+        } else if (view.relation === 'ally') {
+          line2 = `${tagPrefix}${username}`;
+          line2Class = 'text-blue-400';
+        } else {
+          line2 = `${tagPrefix}${username}`;
+          line2Class = 'text-red-400';
+        }
+        break;
+      }
+      case 'empty-discovered': {
+        line1 = `Position ${view.position} · Vide`;
+        line1Class = 'text-muted-foreground';
+        break;
+      }
+      case 'undiscovered': {
+        line1 = `Position ${view.position} · Inconnu`;
+        line1Class = 'text-muted-foreground italic';
+        break;
+      }
+      case 'belt':
+        return null;
+    }
+
+    let tooltipX = cx + 14;
+    let tooltipY = cy - 30;
+    if (tooltipX + TOOLTIP_WIDTH > CANVAS_SIZE) {
+      tooltipX = cx - 14 - TOOLTIP_WIDTH;
+    }
+    if (tooltipY < 0) {
+      tooltipY = cy + 14;
+    }
+
+    return { tooltipX, tooltipY, line1, line1Class, line2, line2Class };
+  }, [hoveredPosition, placedSlots]);
 
   // Accessibility summary.
   const discoveredCount = views.filter(
@@ -237,6 +306,28 @@ export function OrbitalCanvas({
           onHoverChange={onHoverPosition}
         />
       ))}
+
+      {/* Hover tooltip — sits on top of slot markers. */}
+      {tooltip && (
+        <foreignObject
+          x={tooltip.tooltipX}
+          y={tooltip.tooltipY}
+          width={TOOLTIP_WIDTH}
+          height={TOOLTIP_HEIGHT}
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="w-full h-full rounded-md bg-black/85 border border-cyan-500/30 px-2 py-1 text-[10px] leading-tight backdrop-blur-sm">
+            <div className={`font-semibold truncate ${tooltip.line1Class}`}>
+              {tooltip.line1}
+            </div>
+            {tooltip.line2 && (
+              <div className={`truncate ${tooltip.line2Class ?? ''}`}>
+                {tooltip.line2}
+              </div>
+            )}
+          </div>
+        </foreignObject>
+      )}
     </svg>
   );
 }

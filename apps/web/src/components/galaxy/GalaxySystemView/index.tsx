@@ -113,24 +113,27 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
     ],
   );
 
-  const setSelection = useCallback(
-    (next: DetailSelection) => {
-      setSearchParams(
-        (prev) => {
-          const params = new URLSearchParams(prev);
-          if (next.kind === 'slot') {
-            params.set('pos', String(next.position));
-          } else {
-            params.delete('pos');
-          }
-          return params;
-        },
-        // replace: so browser Back navigates between systems, not selections.
-        { replace: true },
-      );
-    },
-    [setSearchParams],
-  );
+  // Stabilize setSelection identity so effects do not thrash when
+  // setSearchParams churns (react-router v7 reallocates it on every URL
+  // change — its internal useCallback depends on [navigate, searchParams]).
+  const setSearchParamsRef = useRef(setSearchParams);
+  setSearchParamsRef.current = setSearchParams;
+
+  const setSelection = useCallback((next: DetailSelection) => {
+    setSearchParamsRef.current(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next.kind === 'slot') {
+          params.set('pos', String(next.position));
+        } else {
+          params.delete('pos');
+        }
+        return params;
+      },
+      // replace: so browser Back navigates between systems, not selections.
+      { replace: true },
+    );
+  }, []);
 
   const selectPosition = useCallback(
     (position: number) => setSelection({ kind: 'slot', position }),

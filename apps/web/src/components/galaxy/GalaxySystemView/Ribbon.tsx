@@ -56,7 +56,7 @@ export function Ribbon({
     selectedPosition != null ? `ribbon-slot-${selectedPosition}` : undefined;
 
   return (
-    <aside className="w-[72px] flex-shrink-0 flex flex-col bg-black/30 border-r border-cyan-500/10">
+    <aside className="w-[168px] flex-shrink-0 flex flex-col bg-black/30 border-r border-cyan-500/10">
       <div className="px-2 py-2 border-b border-cyan-500/10">
         <div className="text-[10px] uppercase tracking-wider text-cyan-500/70">Slots</div>
         <div className="text-[11px] font-mono text-muted-foreground">
@@ -74,13 +74,32 @@ export function Ribbon({
           const isSelected = selectedPosition === position;
           const isHovered = hoveredPosition === position;
 
-          const baseClasses =
-            'flex flex-col items-center justify-center gap-0.5 py-1.5 cursor-pointer transition-colors';
           const stateClasses = isSelected
             ? 'bg-cyan-500/20 border-l-2 border-cyan-400'
             : isHovered
               ? 'bg-cyan-500/10 border-l-2 border-transparent'
               : 'bg-transparent border-l-2 border-transparent hover:bg-cyan-500/10';
+
+          let displayName: string;
+          let textClasses: string;
+          switch (view.kind) {
+            case 'planet':
+              displayName = view.planetName;
+              textClasses = 'text-foreground';
+              break;
+            case 'empty-discovered':
+              displayName = 'Vide';
+              textClasses = 'text-muted-foreground';
+              break;
+            case 'undiscovered':
+              displayName = 'Inconnu';
+              textClasses = 'text-muted-foreground italic';
+              break;
+            case 'belt':
+              displayName = 'Ceinture';
+              textClasses = 'text-orange-400/80';
+              break;
+          }
 
           return (
             <li
@@ -88,15 +107,20 @@ export function Ribbon({
               id={`ribbon-slot-${position}`}
               role="option"
               aria-selected={isSelected}
-              className={`${baseClasses} ${stateClasses}`}
+              className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors ${stateClasses}`}
               onClick={() => onSelectPosition(position)}
               onMouseEnter={() => onHoverPosition(position)}
               onMouseLeave={() => onHoverPosition(null)}
             >
-              <div className="text-[10px] font-mono text-muted-foreground">
+              <div className="w-5 text-[10px] font-mono text-muted-foreground flex-shrink-0">
                 {position.toString().padStart(2, '0')}
               </div>
-              <MiniMarker view={view} />
+              <div className="flex-shrink-0">
+                <MiniMarker view={view} />
+              </div>
+              <div className={`min-w-0 flex-1 text-xs truncate ${textClasses}`}>
+                {displayName}
+              </div>
             </li>
           );
         })}
