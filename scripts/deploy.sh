@@ -39,8 +39,8 @@ for cat in planets flagships; do
   fi
 done
 
-echo "==> Pushing database schema..."
-pnpm --filter @exilium/db db:push
+echo "==> Applying pending database migrations..."
+"$PROJECT_DIR/scripts/apply-migrations.sh"
 
 echo "==> Seeding game config..."
 pnpm --filter @exilium/db db:seed
