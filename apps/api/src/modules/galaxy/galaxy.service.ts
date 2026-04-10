@@ -1,8 +1,8 @@
 import { eq, and, inArray } from 'drizzle-orm';
-import { planets, users, debrisFields, allianceMembers, alliances, planetBiomes, biomeDefinitions, discoveredBiomes } from '@exilium/db';
+import { planets, users, debrisFields, allianceMembers, alliances, planetBiomes, biomeDefinitions, discoveredBiomes, discoveredPositions } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { GameConfigService } from '../admin/game-config.service.js';
-import { seededRandom, coordinateSeed, generateBiomeCount, pickBiomes } from '@exilium/game-engine';
+import { seededRandom, coordinateSeed, generateBiomeCount, pickBiomes, pickPlanetTypeForPosition, calculateMaxTemp } from '@exilium/game-engine';
 
 export function createGalaxyService(db: Database, gameConfigService: GameConfigService) {
   return {
@@ -27,6 +27,22 @@ export function createGalaxyService(db: Database, gameConfigService: GameConfigS
         : [];
 
       const discoverySet = new Set(playerDiscoveries.map((d) => `${d.position}:${d.biomeId}`));
+
+      // Load player's discovered positions for this system
+      const discoveredPositionRows = _currentUserId
+        ? await db
+            .select({ position: discoveredPositions.position })
+            .from(discoveredPositions)
+            .where(
+              and(
+                eq(discoveredPositions.userId, _currentUserId),
+                eq(discoveredPositions.galaxy, galaxy),
+                eq(discoveredPositions.system, system),
+              ),
+            )
+        : [];
+
+      const discoveredPositionSet = new Set(discoveredPositionRows.map((r) => r.position));
 
       const systemPlanets = await db
         .select({
@@ -84,7 +100,15 @@ export function createGalaxyService(db: Database, gameConfigService: GameConfigS
 
       type PlanetSlot = typeof systemPlanets[number] & { biomes: Array<{ id: string; name: string; rarity: string; effects: unknown }> };
       type BeltSlot = { type: 'belt'; position: number };
-      type EmptySlot = { type: 'empty'; position: number; planetClassId: string | null; biomes: Array<{ id: string; name: string; rarity: string; effects: unknown }>; totalBiomeCount: number; undiscoveredCount: number };
+      type EmptySlot = {
+        type: 'empty';
+        position: number;
+        planetClassId: string | null;
+        isDiscovered: boolean;
+        biomes: Array<{ id: string; name: string; rarity: string; effects: unknown }>;
+        totalBiomeCount: number;
+        undiscoveredCount: number;
+      };
 
       const slots: (PlanetSlot | BeltSlot | EmptySlot | null)[] = Array(positions).fill(null);
 
@@ -108,35 +132,49 @@ export function createGalaxyService(db: Database, gameConfigService: GameConfigS
       for (let i = 1; i <= positions; i++) {
         if (beltSet.has(i) || occupiedPositions.has(i)) continue;
 
-        // Determine planet class for this position based on config
-        const planetTypeForPos = config.planetTypes.find(pt => pt.positions.includes(i));
-        const planetClassId = planetTypeForPos?.id ?? null;
+        const isDiscovered = discoveredPositionSet.has(i);
 
-        // Generate biomes deterministically
+        // Compute deterministic max temperature for the position (zero offset for stability)
+        const maxTemp = calculateMaxTemp(i, 0);
+
+        // Pick the planet type using a temperature-weighted distribution
+        // Use a separate seed namespace from biomes (XOR with a constant)
+        const typeRng = seededRandom(coordinateSeed(galaxy, system, i) ^ 0x9E3779B9);
+        const planetClassId = pickPlanetTypeForPosition(maxTemp, typeRng);
+
+        // Compute biomes deterministically
         const rng = seededRandom(coordinateSeed(galaxy, system, i));
         const count = generateBiomeCount(rng);
-        const biomes = planetClassId
-          ? pickBiomes(biomeCatalogue, planetClassId, count, rng)
-          : [];
+        const biomes = pickBiomes(biomeCatalogue, planetClassId, count, rng);
 
-        const pos = i;
         const discoveredForPos = biomes.filter((b) =>
-          discoverySet.has(`${pos}:${b.id}`),
+          discoverySet.has(`${i}:${b.id}`),
         );
         const totalBiomeCount = biomes.length;
         const undiscoveredCount = totalBiomeCount - discoveredForPos.length;
 
-        slots[i - 1] = {
-          type: 'empty',
-          position: pos,
-          planetClassId,
-          biomes: discoveredForPos.map((b) => {
-            const full = biomeCatalogue.find((bc: any) => bc.id === b.id);
-            return { id: b.id, name: (full as any)?.name ?? b.id, rarity: b.rarity, effects: b.effects };
-          }),
-          totalBiomeCount,
-          undiscoveredCount,
-        };
+        slots[i - 1] = isDiscovered
+          ? {
+              type: 'empty',
+              position: i,
+              planetClassId,
+              isDiscovered: true,
+              biomes: discoveredForPos.map((b) => {
+                const full = biomeCatalogue.find((bc: any) => bc.id === b.id);
+                return { id: b.id, name: (full as any)?.name ?? b.id, rarity: b.rarity, effects: b.effects };
+              }),
+              totalBiomeCount,
+              undiscoveredCount,
+            }
+          : {
+              type: 'empty',
+              position: i,
+              planetClassId: null,
+              isDiscovered: false,
+              biomes: [],
+              totalBiomeCount: 0,
+              undiscoveredCount: 0,
+            };
       }
 
       const debris = await db
