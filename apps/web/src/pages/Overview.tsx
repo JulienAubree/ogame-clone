@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
@@ -61,19 +62,39 @@ const STAT_LABELS: Record<string, string> = {
 
 function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLSpanElement>(null);
   const color = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
   const textSize = size === 'xs' ? 'text-[10px]' : 'text-[11px]';
-  const dotSize = size === 'xs' ? 'w-1.5 h-1.5' : 'w-1.5 h-1.5';
+  const dotSize = 'w-1.5 h-1.5';
   const padding = size === 'xs' ? 'px-1.5 py-px' : 'px-2 py-0.5';
 
+  const handleEnter = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const popoverWidth = 224; // w-56 = 14rem = 224px
+      const viewportWidth = window.innerWidth;
+      // Default: align left edge with badge; flip right if it would overflow
+      let left = rect.left;
+      if (left + popoverWidth > viewportWidth - 8) {
+        left = Math.max(8, viewportWidth - popoverWidth - 8);
+      }
+      setCoords({ top: rect.bottom + 6, left });
+    }
+    setIsOpen(true);
+  };
+
+  const handleLeave = () => {
+    setIsOpen(false);
+    setCoords(null);
+  };
+
   return (
-    <div
-      className="relative"
-      style={isOpen ? { zIndex: 9999 } : undefined}
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
-    >
+    <>
       <span
+        ref={triggerRef}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
         className={`inline-flex items-center gap-1 rounded-full ${padding} ${textSize} font-medium border cursor-default transition-colors`}
         style={{
           color,
@@ -87,8 +108,11 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
         />
         {biome.name}
       </span>
-      {isOpen && (
-        <div className="absolute left-0 top-full mt-1.5 w-56 rounded-lg border border-border bg-popover p-3 shadow-xl pointer-events-none" style={{ zIndex: 9999 }}>
+      {isOpen && coords && createPortal(
+        <div
+          className="fixed w-56 rounded-lg border border-border bg-popover p-3 shadow-xl pointer-events-none"
+          style={{ top: coords.top, left: coords.left, zIndex: 9999 }}
+        >
           <div className="flex items-center gap-2 mb-2">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
             <span className="text-sm font-semibold" style={{ color }}>{biome.name}</span>
@@ -114,9 +138,10 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
 
