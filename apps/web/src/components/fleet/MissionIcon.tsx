@@ -1,23 +1,8 @@
 import type { SVGProps } from 'react';
 import { type Mission } from '@/config/mission-config';
+import { useGameConfig } from '@/hooks/useGameConfig';
 
-const MISSION_COLORS: Record<Mission, string> = {
-  transport: '#3b82f6',   // blue-500
-  station:   '#10b981',   // emerald-500
-  spy:       '#8b5cf6',   // violet-500
-  attack:    '#ef4444',   // red-500
-  colonize:  '#f97316',   // orange-500
-  recycle:   '#06b6d4',   // cyan-500
-  mine:      '#f59e0b',   // amber-500
-  pirate:    '#e11d48',   // rose-600
-  trade:     '#a78bfa',   // violet-400
-  scan:      '#22d3ee',   // cyan-400
-  explore:   '#06b6d4',   // cyan-500
-};
-
-export function getMissionColor(mission: Mission): string {
-  return MISSION_COLORS[mission];
-}
+const FALLBACK_COLOR = '#888888';
 
 interface MissionIconProps extends SVGProps<SVGSVGElement> {
   mission: Mission;
@@ -26,7 +11,8 @@ interface MissionIconProps extends SVGProps<SVGSVGElement> {
 }
 
 export function MissionIcon({ mission, size = 16, className, ...props }: MissionIconProps) {
-  const color = getMissionColor(mission);
+  const { data: gameConfig } = useGameConfig();
+  const color = gameConfig?.missions?.[mission]?.color ?? FALLBACK_COLOR;
   const svgProps = {
     width: size,
     height: size,

@@ -60,13 +60,8 @@ export default function Missions() {
     }
   }
 
-  const PHASE_LABELS: Record<string, string> = {
-    outbound: 'En vol',
-    prospecting: 'Prospection',
-    mining: 'Extraction',
-    exploring: 'Exploration',
-    return: 'Retour',
-  };
+  const phaseLabel = (phase: string): string =>
+    gameConfig?.labels?.[`phase.${phase}`] ?? phase;
 
   if (centerLevel === 0) {
     return (
@@ -174,7 +169,7 @@ export default function Missions() {
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
                       <span className="text-[11px] text-blue-300">
-                        {PHASE_LABELS[fleet.phase] ?? fleet.phase}
+                        {phaseLabel(fleet.phase)}
                       </span>
                       <Timer
                         endTime={new Date(fleet.arrivalTime)}
@@ -326,7 +321,7 @@ export default function Missions() {
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse shrink-0" />
                       <span className="text-[11px] text-rose-300">
-                        {PHASE_LABELS[fleet.phase] ?? fleet.phase}
+                        {phaseLabel(fleet.phase)}
                       </span>
                       <Timer
                         endTime={new Date(fleet.arrivalTime)}

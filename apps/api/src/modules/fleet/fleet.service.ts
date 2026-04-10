@@ -1,6 +1,6 @@
 import { eq, and, inArray, count as dbCount, sql, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, fleetEvents, userResearch, pveMissions, users, allianceMembers, alliances, marketOffers } from '@exilium/db';
+import { planets, planetShips, fleetEvents, userResearch, pveMissions, users, allianceMembers, alliances, marketOffers, fleetPhaseEnum } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import { fleetSpeed, travelTime, distance, fuelConsumption, totalCargoCapacity, resolveBonus, calculateAttackDetection, detectionDelay } from '@exilium/game-engine';
 import type { BonusDefinition, ShipStats, FleetConfig } from '@exilium/game-engine';
@@ -941,7 +941,7 @@ export function createFleetService(
       return null;
     },
 
-    async processPhaseDispatch(fleetEventId: string, phaseName: string, expectedPhase: 'outbound' | 'prospecting' | 'mining' | 'exploring' | 'return') {
+    async processPhaseDispatch(fleetEventId: string, phaseName: string, expectedPhase: typeof fleetPhaseEnum.enumValues[number]) {
       const [event] = await db
         .select()
         .from(fleetEvents)
