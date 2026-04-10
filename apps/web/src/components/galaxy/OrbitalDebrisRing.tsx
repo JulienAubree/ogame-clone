@@ -9,6 +9,8 @@
  * same belt looks identical.
  */
 
+import { hash01 } from './GalaxySystemView/geometry';
+
 export interface OrbitalDebrisRingProps {
   cx: number;
   cy: number;
@@ -16,16 +18,6 @@ export interface OrbitalDebrisRingProps {
   count?: number;
   color?: string;
   seed?: number;
-}
-
-/** Tiny inline xorshift-ish hash → float in [0, 1). Deterministic. */
-function hash01(seed: number, i: number): number {
-  let h = Math.imul(seed | 0, 0x27d4eb2d) ^ 0x9e3779b9;
-  h = Math.imul(h ^ (i | 0), 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  h ^= h >>> 16;
-  return ((h >>> 0) % 1_000_000) / 1_000_000;
 }
 
 export function OrbitalDebrisRing({
@@ -39,7 +31,7 @@ export function OrbitalDebrisRing({
   const dots = [];
   for (let i = 0; i < count; i++) {
     const baseAngleDeg = (360 / count) * i;
-    // ±~3° angular jitter, ±2px radial jitter, r in [0.6, 0.9].
+    // ±~3° angular jitter, ±2px radial jitter, r in [0.6, 0.9).
     const angleJitter = (hash01(seed, i * 3 + 1) - 0.5) * 6;
     const radiusJitter = (hash01(seed, i * 3 + 2) - 0.5) * 4;
     const rDot = 0.6 + hash01(seed, i * 3 + 3) * 0.3;

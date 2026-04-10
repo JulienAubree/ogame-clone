@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 const TYPE_COLORS: Record<string, { from: string; to: string; accent: string }> = {
   volcanic:  { from: '#ef4444', to: '#f97316', accent: '#fbbf24' },
   arid:      { from: '#d97706', to: '#92400e', accent: '#fbbf24' },
@@ -26,10 +28,10 @@ export function PlanetDot({
   aura?: PlanetAura;
 }) {
   const colors = TYPE_COLORS[planetClassId ?? 'unknown'] ?? TYPE_COLORS.unknown;
-  // Keep unique gradient ids across instances.
-  const uid = Math.random().toString(36).slice(2, 6);
-  const planetGradId = `planet-${planetClassId ?? 'unknown'}-${uid}`;
-  const auraGradId = `aura-${planetClassId ?? 'unknown'}-${uid}`;
+  // Stable, unique gradient ids per instance (SSR-safe, survives re-renders).
+  const reactId = useId();
+  const planetGradId = `planet-${planetClassId ?? 'unknown'}-${reactId}`;
+  const auraGradId = `aura-${planetClassId ?? 'unknown'}-${reactId}`;
   const auraColor = aura ? AURA_COLORS[aura] : null;
 
   // Design choice: keep the viewBox at 20x20 even when an aura is rendered.
