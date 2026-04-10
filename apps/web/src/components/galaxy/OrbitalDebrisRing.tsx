@@ -19,6 +19,10 @@ export interface OrbitalDebrisRingProps {
   count?: number;
   color?: string;
   seed?: number;
+  /** Start angle (degrees) of the arc where debris should be rendered. Default 0. */
+  angleStart?: number;
+  /** End angle (degrees) of the arc where debris should be rendered. Default 360. */
+  angleEnd?: number;
 }
 
 export function OrbitalDebrisRing({
@@ -28,6 +32,8 @@ export function OrbitalDebrisRing({
   count = 22,
   color = BELT_DEBRIS_COLOR,
   seed = 1,
+  angleStart = 0,
+  angleEnd = 360,
 }: OrbitalDebrisRingProps) {
   const dots = [];
   for (let i = 0; i < count; i++) {
@@ -37,7 +43,11 @@ export function OrbitalDebrisRing({
     const radiusJitter = (hash01(seed, i * 3 + 2) - 0.5) * 4;
     const rDot = 0.6 + hash01(seed, i * 3 + 3) * 0.3;
 
-    const angleRad = ((baseAngleDeg + angleJitter) * Math.PI) / 180;
+    const finalAngle = baseAngleDeg + angleJitter;
+    // Clip to the requested arc range.
+    if (finalAngle < angleStart || finalAngle > angleEnd) continue;
+
+    const angleRad = (finalAngle * Math.PI) / 180;
     const r = radius + radiusJitter;
     const x = cx + r * Math.cos(angleRad);
     const y = cy + r * Math.sin(angleRad);

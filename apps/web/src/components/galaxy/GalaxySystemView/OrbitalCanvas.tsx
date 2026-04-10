@@ -1,16 +1,21 @@
 /**
  * OrbitalCanvas — central SVG composer for the galaxy system view.
  *
- * Renders a fixed 600x600 viewBox that auto-scales to its container via
+ * Renders a fixed 600x420 viewBox that auto-scales to its container via
  * `preserveAspectRatio="xMidYMid meet"`. No DOM measuring, no ResizeObserver.
  *
  * Composition order (back → front):
  *   1. <defs> for the star corona gradient.
  *   2. Deterministic decorative starfield background.
- *   3. 16 concentric orbit circles, stroke depending on slot kind.
- *   4. Belt debris rings (one per 'belt' view) sized to their orbit.
- *   5. Central clickable star (button: Enter / Space / click → onSelectStar).
- *   6. SlotMarker per non-belt slot at hash-derived angles.
+ *   3. 16 concentric half-arc orbits, stroke depending on slot kind.
+ *   4. Belt debris rings (one per 'belt' view) clipped to the half-circle arc.
+ *   5. Top-center clickable star (button: Enter / Space / click → onSelectStar).
+ *   6. SlotMarker per non-belt slot at hash-derived angles, fanning downward.
+ *
+ * The layout is a downward-opening half-circle: the star sits at top-center
+ * and each orbit is a half-arc sweeping below it. Planet angles are mapped
+ * deterministically into [30°, 150°] so the sequence from the star outward
+ * reads cleanly.
  *
  * The `SlotMarker` already owns its gradients and selection overlay, so this
  * file intentionally stays small (no per-slot gradient defs here).
@@ -20,12 +25,14 @@ import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { BELT_DEBRIS_COLOR, type PlanetAura } from '../planetPalette';
 import { OrbitalDebrisRing } from '../OrbitalDebrisRing';
 import { PlanetVisual } from '../PlanetVisual';
-import { hash01, orbitRadius, polarToCartesian, slotAngle } from './geometry';
+import { hash01, slotAngle } from './geometry';
 import type { SlotView } from './slotView';
 import { SlotMarker } from './SlotMarker';
 
-const CANVAS_SIZE = 600;
-const CENTER = CANVAS_SIZE / 2;
+const CANVAS_WIDTH = 600;
+const CANVAS_HEIGHT = 420;
+const STAR_X = CANVAS_WIDTH / 2; // 300
+const STAR_Y = 60;
 const STAR_OUTER_RADIUS = 26;
 const STAR_CORE_RADIUS = 9;
 const STARFIELD_COUNT = 60;
@@ -33,6 +40,40 @@ const TOTAL_POSITIONS = 16;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
 const DRAG_THRESHOLD_PX = 5;
+
+// Half-circle orbit band. R_MIN clears the star corona (radius 26); R_MAX
+// keeps slots at the widest useful angle (30°/150°) within the viewBox with
+// a small margin — see comment block at top of file.
+const R_MIN = 55;
+const R_MAX = 310;
+
+// Angular range (degrees) where slots may land. The half-circle opens
+// downward: 0° is east of the star, 90° directly below, 180° west.
+// Clamping to [30°, 150°] avoids slots crowding the star's horizontal band.
+const MIN_ANGLE = 30;
+const MAX_ANGLE = 150;
+
+// Default pan center sits at the midpoint of the visible arc region so that
+// a reset feels naturally centered on the planet fan, not on the star alone.
+const PAN_DEFAULT = { x: STAR_X, y: STAR_Y + (R_MAX - R_MIN) / 2 + R_MIN };
+
+/**
+ * Radius of the orbit for a given position in the half-circle layout.
+ * Linear spacing feels right in the narrower radial band; no power easing
+ * like the full-circle version had.
+ */
+function halfCircleOrbitRadius(position: number, total: number): number {
+  const t = (position - 1) / Math.max(1, total - 1);
+  return R_MIN + (R_MAX - R_MIN) * t;
+}
+
+/**
+ * Map the deterministic full-circle slot angle into the half-circle range.
+ */
+function halfCircleSlotAngle(galaxy: number, system: number, position: number): number {
+  const rawAngle = slotAngle(galaxy, system, position);
+  return MIN_ANGLE + (rawAngle / 360) * (MAX_ANGLE - MIN_ANGLE);
+}
 
 export interface OrbitalCanvasProps {
   views: SlotView[];
@@ -96,8 +137,8 @@ export function OrbitalCanvas({
     const seed = (galaxy * 7919) ^ (system * 104729);
     const dots: StarfieldDot[] = [];
     for (let i = 0; i < STARFIELD_COUNT; i++) {
-      const cx = hash01(seed, i * 4 + 1) * CANVAS_SIZE;
-      const cy = hash01(seed, i * 4 + 2) * CANVAS_SIZE;
+      const cx = hash01(seed, i * 4 + 1) * CANVAS_WIDTH;
+      const cy = hash01(seed, i * 4 + 2) * CANVAS_HEIGHT;
       const r = 0.4 + hash01(seed, i * 4 + 3) * 0.5; // [0.4, 0.9]
       const opacity = 0.4 + hash01(seed, i * 4 + 4) * 0.6; // [0.4, 1.0]
       dots.push({ cx, cy, r, opacity });
@@ -111,9 +152,14 @@ export function OrbitalCanvas({
     const placed: PlacedSlot[] = [];
     for (const view of views) {
       if (view.kind === 'belt') continue;
-      const angle = slotAngle(galaxy, system, view.position);
-      const radius = orbitRadius(view.position, TOTAL_POSITIONS, CANVAS_SIZE);
-      const { x, y } = polarToCartesian(CENTER, CENTER, radius, angle);
+      const angle = halfCircleSlotAngle(galaxy, system, view.position);
+      const radius = halfCircleOrbitRadius(view.position, TOTAL_POSITIONS);
+      // Inline cartesian to be explicit about the y-down SVG convention:
+      // positive sin puts the slot below the star, which is exactly what
+      // we want for a downward-opening half-circle.
+      const rad = (angle * Math.PI) / 180;
+      const x = STAR_X + radius * Math.cos(rad);
+      const y = STAR_Y + radius * Math.sin(rad);
       placed.push({ view, cx: x, cy: y });
     }
     return placed;
@@ -137,13 +183,14 @@ export function OrbitalCanvas({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [zoom, setZoom] = useState(1);
   const [panCenter, setPanCenter] = useState<{ x: number; y: number }>({
-    x: CENTER,
-    y: CENTER,
+    x: PAN_DEFAULT.x,
+    y: PAN_DEFAULT.y,
   });
 
-  const viewBoxSize = CANVAS_SIZE / zoom;
-  const viewBoxX = panCenter.x - viewBoxSize / 2;
-  const viewBoxY = panCenter.y - viewBoxSize / 2;
+  const viewBoxWidth = CANVAS_WIDTH / zoom;
+  const viewBoxHeight = CANVAS_HEIGHT / zoom;
+  const viewBoxX = panCenter.x - viewBoxWidth / 2;
+  const viewBoxY = panCenter.y - viewBoxHeight / 2;
 
   // Hover tooltip — renders near the hovered slot. Belts are skipped because
   // SlotMarker returns null for them, so no hover events fire. The descriptor
@@ -215,8 +262,7 @@ export function OrbitalCanvas({
     let offsetY = -(TOOLTIP_HEIGHT + 8);
 
     // Edge-flip using the CURRENT visible viewBox (not the hardcoded canvas).
-    const visibleSize = CANVAS_SIZE / zoom;
-    const visibleTop = panCenter.y - visibleSize / 2;
+    const visibleTop = panCenter.y - viewBoxHeight / 2;
 
     // Flip horizontally if the slot is in the right half of the visible area.
     if (anchorX > panCenter.x) {
@@ -302,19 +348,24 @@ export function OrbitalCanvas({
     let moved = false;
 
     // Cache viewBox-per-pixel once per drag so we don't re-measure on every move.
+    // Non-square viewBox → per-axis conversion. (Note: with
+    // preserveAspectRatio="xMidYMid meet" the rendered SVG is letterboxed
+    // uniformly, so the two ratios coincide on the tight axis; using each
+    // axis separately is still correct as long as the container respects
+    // the aspect ratio.)
     const rect = svg.getBoundingClientRect();
-    const minSide = Math.min(rect.width, rect.height);
-    const viewPerPixel = minSide > 0 ? CANVAS_SIZE / zoom / minSide : 0;
+    const viewPerPixelX = rect.width > 0 ? viewBoxWidth / rect.width : 0;
+    const viewPerPixelY = rect.height > 0 ? viewBoxHeight / rect.height : 0;
 
     const onMove = (ev: PointerEvent) => {
       const dx = ev.clientX - startClientX;
       const dy = ev.clientY - startClientY;
       if (!moved && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
       moved = true;
-      if (viewPerPixel === 0) return;
+      if (viewPerPixelX === 0 || viewPerPixelY === 0) return;
       setPanCenter({
-        x: startCenterX - dx * viewPerPixel,
-        y: startCenterY - dy * viewPerPixel,
+        x: startCenterX - dx * viewPerPixelX,
+        y: startCenterY - dy * viewPerPixelY,
       });
     };
 
@@ -345,7 +396,7 @@ export function OrbitalCanvas({
 
   function handleReset() {
     setZoom(1);
-    setPanCenter({ x: CENTER, y: CENTER });
+    setPanCenter({ x: PAN_DEFAULT.x, y: PAN_DEFAULT.y });
   }
 
   function zoomBy(factor: number) {
@@ -356,7 +407,7 @@ export function OrbitalCanvas({
     <div className="relative w-full h-full">
     <svg
       ref={svgRef}
-      viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxSize} ${viewBoxSize}`}
+      viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`}
       preserveAspectRatio="xMidYMid meet"
       className="w-full h-full block"
       role="img"
@@ -393,11 +444,15 @@ export function OrbitalCanvas({
         ))}
       </g>
 
-      {/* 16 concentric orbits, styled by slot kind. */}
+      {/* 16 concentric half-arcs, styled by slot kind. Each arc sweeps from
+          (STAR_X - r, STAR_Y) around to (STAR_X + r, STAR_Y) via the bottom.
+          In SVG's y-down coordinate system, sweep-flag=0 corresponds to the
+          counter-clockwise-on-screen direction, which is the downward bulge
+          we want for a half-circle opening below the star. */}
       <g aria-hidden="true">
         {Array.from({ length: TOTAL_POSITIONS }, (_, i) => {
           const position = i + 1;
-          const radius = orbitRadius(position, TOTAL_POSITIONS, CANVAS_SIZE);
+          const radius = halfCircleOrbitRadius(position, TOTAL_POSITIONS);
           const view = views[i];
           const kind = view?.kind ?? 'undiscovered';
 
@@ -423,12 +478,12 @@ export function OrbitalCanvas({
             strokeWidth = 0.7;
           }
 
+          const d = `M ${STAR_X - radius} ${STAR_Y} A ${radius} ${radius} 0 0 0 ${STAR_X + radius} ${STAR_Y}`;
+
           return (
-            <circle
+            <path
               key={position}
-              cx={CENTER}
-              cy={CENTER}
-              r={radius}
+              d={d}
               fill="none"
               stroke={stroke}
               strokeWidth={strokeWidth}
@@ -439,22 +494,25 @@ export function OrbitalCanvas({
         })}
       </g>
 
-      {/* Belt debris rings — underneath slot markers so selection sits on top. */}
+      {/* Belt debris rings — clipped to the half-circle arc, underneath slot
+          markers so selection sits on top. */}
       <g aria-hidden="true">
         {views
           .filter((v): v is Extract<SlotView, { kind: 'belt' }> => v.kind === 'belt')
           .map((view) => (
             <OrbitalDebrisRing
               key={`belt-${view.position}`}
-              cx={CENTER}
-              cy={CENTER}
-              radius={orbitRadius(view.position, TOTAL_POSITIONS, CANVAS_SIZE)}
+              cx={STAR_X}
+              cy={STAR_Y}
+              radius={halfCircleOrbitRadius(view.position, TOTAL_POSITIONS)}
+              angleStart={MIN_ANGLE}
+              angleEnd={MAX_ANGLE}
               seed={Math.floor(hash01(galaxy, view.position) * 1_000_000)}
             />
           ))}
       </g>
 
-      {/* Central star — clickable button that resets to system view (mode A). */}
+      {/* Top-center star — clickable button that resets to system view (mode A). */}
       <g
         role="button"
         tabIndex={0}
@@ -464,13 +522,13 @@ export function OrbitalCanvas({
         style={{ cursor: 'pointer' }}
       >
         <circle
-          cx={CENTER}
-          cy={CENTER}
+          cx={STAR_X}
+          cy={STAR_Y}
           r={STAR_OUTER_RADIUS}
           fill="url(#starCorona)"
           className="animate-star-breathe"
         />
-        <circle cx={CENTER} cy={CENTER} r={STAR_CORE_RADIUS} fill="#fffbe8" />
+        <circle cx={STAR_X} cy={STAR_Y} r={STAR_CORE_RADIUS} fill="#fffbe8" />
       </g>
 
       {/* Slot markers — one per non-belt slot. */}
