@@ -49,3 +49,40 @@
 .asteroid-glow {
   animation: pulseGlow 6s ease-in-out infinite;
 }
+
+/* --- Galaxy system view (redesign) --- */
+
+@keyframes star-breathe {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1;    }
+}
+
+@keyframes aura-breathe {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 0.8; }
+}
+
+@keyframes selection-rotate {
+  from { stroke-dashoffset: 0;  }
+  to   { stroke-dashoffset: 64; }
+}
+
+.animate-star-breathe {
+  animation: star-breathe 4s ease-in-out infinite;
+}
+
+.animate-aura-breathe {
+  animation: aura-breathe 5s ease-in-out infinite;
+}
+
+.animate-selection-rotate {
+  animation: selection-rotate 12s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-star-breathe,
+  .animate-aura-breathe,
+  .animate-selection-rotate {
+    animation: none;
+  }
+}

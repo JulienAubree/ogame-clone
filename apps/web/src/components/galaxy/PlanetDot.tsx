@@ -8,25 +8,58 @@ const TYPE_COLORS: Record<string, { from: string; to: string; accent: string }> 
   unknown:   { from: '#52525b', to: '#27272a', accent: '#a1a1aa' },
 };
 
-export function PlanetDot({ planetClassId, size = 20 }: { planetClassId: string | null; size?: number }) {
-  const colors = TYPE_COLORS[planetClassId ?? 'unknown'] ?? TYPE_COLORS.unknown;
-  const id = `planet-${planetClassId ?? 'unknown'}-${Math.random().toString(36).slice(2, 6)}`;
+const AURA_COLORS: Record<'mine' | 'ally' | 'enemy', string> = {
+  mine:  '#67e8f9', // cyan
+  ally:  '#60a5fa', // blue
+  enemy: '#f87171', // red
+};
 
+export type PlanetAura = 'mine' | 'ally' | 'enemy' | null;
+
+export function PlanetDot({
+  planetClassId,
+  size = 20,
+  aura = null,
+}: {
+  planetClassId: string | null;
+  size?: number;
+  aura?: PlanetAura;
+}) {
+  const colors = TYPE_COLORS[planetClassId ?? 'unknown'] ?? TYPE_COLORS.unknown;
+  // Keep unique gradient ids across instances.
+  const uid = Math.random().toString(36).slice(2, 6);
+  const planetGradId = `planet-${planetClassId ?? 'unknown'}-${uid}`;
+  const auraGradId = `aura-${planetClassId ?? 'unknown'}-${uid}`;
+  const auraColor = aura ? AURA_COLORS[aura] : null;
+
+  // Design choice: keep the viewBox at 20x20 even when an aura is rendered.
+  // The halo sits at r=11 (vs. planet r=9) with its radial gradient fading
+  // to fully transparent at 100%, so the visible glow stays inside the box.
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 20 20"
-      className="planet-dot"
-    >
+    <svg width={size} height={size} viewBox="0 0 20 20" className="planet-dot">
       <defs>
-        <radialGradient id={id} cx="35%" cy="35%" r="65%">
+        <radialGradient id={planetGradId} cx="35%" cy="35%" r="65%">
           <stop offset="0%" stopColor={colors.accent} />
           <stop offset="50%" stopColor={colors.from} />
           <stop offset="100%" stopColor={colors.to} />
         </radialGradient>
+        {auraColor && (
+          <radialGradient id={auraGradId} cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor={auraColor} stopOpacity={0.7} />
+            <stop offset="100%" stopColor={auraColor} stopOpacity={0} />
+          </radialGradient>
+        )}
       </defs>
-      <circle cx="10" cy="10" r="9" fill={`url(#${id})`} />
+      {auraColor && (
+        <circle
+          cx="10"
+          cy="10"
+          r="11"
+          fill={`url(#${auraGradId})`}
+          className="animate-aura-breathe"
+        />
+      )}
+      <circle cx="10" cy="10" r="9" fill={`url(#${planetGradId})`} />
       <circle cx="10" cy="10" r="9" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="0.5" />
     </svg>
   );
