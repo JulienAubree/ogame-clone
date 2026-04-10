@@ -38,6 +38,11 @@ const BTN_EMERALD = `${BTN_BASE} bg-emerald-500/15 text-emerald-300 border-emera
 const BTN_RED = `${BTN_BASE} bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25`;
 const BTN_BLUE = `${BTN_BASE} bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25`;
 const BTN_NEUTRAL = `${BTN_BASE} bg-white/5 text-foreground border-white/10 hover:bg-white/10`;
+const BTN_ORANGE = `${BTN_BASE} bg-orange-500/15 text-orange-300 border-orange-500/30 hover:bg-orange-500/25`;
+
+function hasDebris(view: Extract<SlotView, { kind: 'planet' }>): boolean {
+  return !!view.debris && (view.debris.minerai > 0 || view.debris.silicium > 0);
+}
 
 const RELATION_BANNER: Record<'mine' | 'ally' | 'enemy', string> = {
   mine: 'bg-cyan-500/10 border border-cyan-500/30',
@@ -135,7 +140,7 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
             </div>
           )}
 
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {view.relation === 'mine' && (
             <button
               type="button"
@@ -145,7 +150,28 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
               Gérer la planète
             </button>
           )}
-          {view.relation === 'ally' && (
+
+          {view.relation !== 'mine' && (
+            <button
+              type="button"
+              className={BTN_BLUE}
+              onClick={() => actions.onSpy(view.position)}
+            >
+              Espionner
+            </button>
+          )}
+
+          {view.relation === 'enemy' && (
+            <button
+              type="button"
+              className={BTN_RED}
+              onClick={() => actions.onAttack(view.position)}
+            >
+              Attaquer
+            </button>
+          )}
+
+          {view.relation !== 'mine' && (
             <button
               type="button"
               className={BTN_NEUTRAL}
@@ -154,30 +180,15 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
               Message
             </button>
           )}
-          {view.relation === 'enemy' && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className={BTN_BLUE}
-                onClick={() => actions.onSpy(view.position)}
-              >
-                Espionner
-              </button>
-              <button
-                type="button"
-                className={BTN_RED}
-                onClick={() => actions.onAttack(view.position)}
-              >
-                Attaquer
-              </button>
-              <button
-                type="button"
-                className={BTN_NEUTRAL}
-                onClick={() => actions.onMessage(view.userId, displayName)}
-              >
-                Message
-              </button>
-            </div>
+
+          {hasDebris(view) && (
+            <button
+              type="button"
+              className={BTN_ORANGE}
+              onClick={() => actions.onRecycle(view.position)}
+            >
+              Recycler débris
+            </button>
           )}
         </div>
       </div>

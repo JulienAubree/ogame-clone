@@ -198,6 +198,10 @@ export default function Galaxy() {
       navigate(`/fleet/send?mission=attack&galaxy=${galaxy}&system=${system}&position=${position}`),
     onMine: (position, missionId) =>
       navigate(`/fleet/send?mission=mine&galaxy=${galaxy}&system=${system}&position=${position}&pveMissionId=${missionId}`),
+    onRecycle: (position) =>
+      navigate(
+        `/fleet/send?mission=recycle&galaxy=${galaxy}&system=${system}&position=${position}`,
+      ),
     onMessage: (userId, username) => openChat(userId, username),
     onCenterCapital: () => {
       if (myCapitalPosition !== null) {

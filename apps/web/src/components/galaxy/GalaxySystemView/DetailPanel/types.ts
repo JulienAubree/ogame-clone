@@ -34,6 +34,7 @@ export interface DetailPanelActions {
   onSpy: (position: number) => void;
   onAttack: (position: number) => void;
   onMine: (position: number, missionId: string) => void;
+  onRecycle: (position: number) => void;
   onMessage: (userId: string, username: string) => void;
   onCenterCapital: () => void;
   onManagePlanet: (planetId: string) => void;
