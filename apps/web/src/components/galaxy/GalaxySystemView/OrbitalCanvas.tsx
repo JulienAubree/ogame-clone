@@ -61,8 +61,12 @@ interface PlacedSlot {
 }
 
 interface TooltipDescriptor {
-  tooltipX: number;
-  tooltipY: number;
+  // Anchor in viewBox coordinates — where the slot actually is.
+  anchorX: number;
+  anchorY: number;
+  // Offset in post-scale (screen-pixel) units, applied after translate.
+  offsetX: number;
+  offsetY: number;
   planetClassId: string | null;
   planetImageIndex: number | null;
   aura: PlanetAura | null;
@@ -115,8 +119,37 @@ export function OrbitalCanvas({
     return placed;
   }, [views, galaxy, system]);
 
+  // Accessibility summary.
+  const discoveredCount = views.filter(
+    (v) => v.kind === 'planet' || v.kind === 'empty-discovered',
+  ).length;
+  const myCount = views.filter((v) => v.kind === 'planet' && v.relation === 'mine').length;
+  const ariaLabel = `Système ${galaxy}:${system}, ${discoveredCount} positions sur ${views.length} découvertes, ${myCount} vous appartiennent`;
+
+  const handleStarKeyDown = (e: React.KeyboardEvent<SVGGElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelectStar();
+    }
+  };
+
+  // ── Zoom & pan state ─────────────────────────────────────────────────────
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [panCenter, setPanCenter] = useState<{ x: number; y: number }>({
+    x: CENTER,
+    y: CENTER,
+  });
+
+  const viewBoxSize = CANVAS_SIZE / zoom;
+  const viewBoxX = panCenter.x - viewBoxSize / 2;
+  const viewBoxY = panCenter.y - viewBoxSize / 2;
+
   // Hover tooltip — renders near the hovered slot. Belts are skipped because
-  // SlotMarker returns null for them, so no hover events fire.
+  // SlotMarker returns null for them, so no hover events fire. The descriptor
+  // carries the anchor in viewBox coords plus an offset in post-scale units
+  // (≈ screen pixels) so a counter-scale transform at render time keeps the
+  // tooltip at constant screen size regardless of zoom.
   const tooltip = useMemo<TooltipDescriptor | null>(() => {
     if (hoveredPosition == null) return null;
     const hit = placedSlots.find((s) => s.view.position === hoveredPosition);
@@ -174,18 +207,32 @@ export function OrbitalCanvas({
         return null;
     }
 
-    let tooltipX = cx + 14;
-    let tooltipY = cy - 30;
-    if (tooltipX + TOOLTIP_WIDTH > CANVAS_SIZE) {
-      tooltipX = cx - 14 - TOOLTIP_WIDTH;
+    const anchorX = cx;
+    const anchorY = cy;
+
+    // Default: tooltip sits above-right of the slot.
+    let offsetX = 14;
+    let offsetY = -(TOOLTIP_HEIGHT + 8);
+
+    // Edge-flip using the CURRENT visible viewBox (not the hardcoded canvas).
+    const visibleSize = CANVAS_SIZE / zoom;
+    const visibleTop = panCenter.y - visibleSize / 2;
+
+    // Flip horizontally if the slot is in the right half of the visible area.
+    if (anchorX > panCenter.x) {
+      offsetX = -14 - TOOLTIP_WIDTH;
     }
-    if (tooltipY < 0) {
-      tooltipY = cy + 14;
+    // Flip vertically if placing above would push above the visible top.
+    // The offset is in post-scale units, so 1 unit ≈ 1/zoom viewBox units.
+    if (anchorY - (TOOLTIP_HEIGHT + 8) / zoom < visibleTop) {
+      offsetY = 14;
     }
 
     return {
-      tooltipX,
-      tooltipY,
+      anchorX,
+      anchorY,
+      offsetX,
+      offsetY,
       planetClassId,
       planetImageIndex,
       aura,
@@ -194,33 +241,7 @@ export function OrbitalCanvas({
       line2,
       line2Class,
     };
-  }, [hoveredPosition, placedSlots]);
-
-  // Accessibility summary.
-  const discoveredCount = views.filter(
-    (v) => v.kind === 'planet' || v.kind === 'empty-discovered',
-  ).length;
-  const myCount = views.filter((v) => v.kind === 'planet' && v.relation === 'mine').length;
-  const ariaLabel = `Système ${galaxy}:${system}, ${discoveredCount} positions sur ${views.length} découvertes, ${myCount} vous appartiennent`;
-
-  const handleStarKeyDown = (e: React.KeyboardEvent<SVGGElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelectStar();
-    }
-  };
-
-  // ── Zoom & pan state ─────────────────────────────────────────────────────
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [panCenter, setPanCenter] = useState<{ x: number; y: number }>({
-    x: CENTER,
-    y: CENTER,
-  });
-
-  const viewBoxSize = CANVAS_SIZE / zoom;
-  const viewBoxX = panCenter.x - viewBoxSize / 2;
-  const viewBoxY = panCenter.y - viewBoxSize / 2;
+  }, [hoveredPosition, placedSlots, zoom, panCenter]);
 
   const dragStateRef = useRef<{
     startClientX: number;
@@ -474,41 +495,49 @@ export function OrbitalCanvas({
         />
       ))}
 
-      {/* Hover tooltip — sits on top of slot markers. */}
+      {/* Hover tooltip — sits on top of slot markers. The outer <g> first
+          translates to the slot anchor (in viewBox coords) then scales by
+          1/zoom to cancel the viewBox zoom, so the foreignObject renders at
+          a constant screen size. Inside the scaled coordinate system, the
+          foreignObject's x/y are post-scale offsets (≈ screen pixels). */}
       {tooltip && (
-        <foreignObject
-          x={tooltip.tooltipX}
-          y={tooltip.tooltipY}
-          width={TOOLTIP_WIDTH}
-          height={TOOLTIP_HEIGHT}
+        <g
+          transform={`translate(${tooltip.anchorX}, ${tooltip.anchorY}) scale(${1 / zoom})`}
           style={{ pointerEvents: 'none' }}
         >
-          <div className="w-full h-full rounded-md bg-black/85 border border-cyan-500/30 px-2 py-1 flex items-center gap-2 backdrop-blur-sm">
-            <div className="flex-shrink-0">
-              <PlanetVisual
-                planetClassId={tooltip.planetClassId}
-                planetImageIndex={tooltip.planetImageIndex}
-                size={32}
-                aura={tooltip.aura ?? undefined}
-                variant="icon"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div
-                className={`text-[10px] leading-tight font-semibold truncate ${tooltip.line1Class}`}
-              >
-                {tooltip.line1}
+          <foreignObject
+            x={tooltip.offsetX}
+            y={tooltip.offsetY}
+            width={TOOLTIP_WIDTH}
+            height={TOOLTIP_HEIGHT}
+          >
+            <div className="w-full h-full rounded-md bg-black/85 border border-cyan-500/30 px-2 py-1 flex items-center gap-2 backdrop-blur-sm">
+              <div className="flex-shrink-0">
+                <PlanetVisual
+                  planetClassId={tooltip.planetClassId}
+                  planetImageIndex={tooltip.planetImageIndex}
+                  size={32}
+                  aura={tooltip.aura ?? undefined}
+                  variant="icon"
+                />
               </div>
-              {tooltip.line2 && (
+              <div className="min-w-0 flex-1">
                 <div
-                  className={`text-[10px] leading-tight truncate ${tooltip.line2Class ?? ''}`}
+                  className={`text-[10px] leading-tight font-semibold truncate ${tooltip.line1Class}`}
                 >
-                  {tooltip.line2}
+                  {tooltip.line1}
                 </div>
-              )}
+                {tooltip.line2 && (
+                  <div
+                    className={`text-[10px] leading-tight truncate ${tooltip.line2Class ?? ''}`}
+                  >
+                    {tooltip.line2}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </foreignObject>
+          </foreignObject>
+        </g>
       )}
     </svg>
       <div className="absolute top-2 right-2 flex flex-col gap-1 bg-black/60 border border-cyan-500/20 rounded-md p-1 backdrop-blur-sm">
