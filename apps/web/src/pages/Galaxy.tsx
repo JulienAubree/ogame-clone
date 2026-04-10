@@ -126,12 +126,12 @@ export default function Galaxy() {
   }, [gameConfig?.ships]);
   const hasColonizer = !!(colonizerShipId && ships?.find((s) => s.id === colonizerShipId && s.count > 0));
 
-  const hasExplorer = useMemo(() => {
-    if (!ships || !gameConfig?.ships) return false;
-    const explorerDef = Object.values(gameConfig.ships).find((s: any) => s.role === 'exploration');
-    if (!explorerDef) return false;
-    return (ships as any)[(explorerDef as any).countColumn] > 0;
-  }, [ships, gameConfig]);
+  const explorerShipId = useMemo(() => {
+    if (!gameConfig?.ships) return null;
+    const entry = Object.entries(gameConfig.ships).find(([, s]) => (s as any).role === 'exploration');
+    return entry?.[0] ?? null;
+  }, [gameConfig?.ships]);
+  const hasExplorer = !!(explorerShipId && ships?.find((s) => s.id === explorerShipId && s.count > 0));
 
   // Map position → mission for current galaxy:system
   const missionByPosition = useMemo(() => {
