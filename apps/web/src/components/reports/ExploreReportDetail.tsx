@@ -93,6 +93,15 @@ function generateReport(opts: {
   const hasEpic = opts.rarities.includes('epic');
   const hasRare = opts.rarities.includes('rare');
 
+  // Nothing new + nothing left: the mission was redundant, the planet was
+  // already fully mapped before this flight.
+  if (opts.discoveredCount === 0 && opts.isComplete) {
+    return {
+      title: "Rapport d'exploration — planète déjà cartographiée",
+      body: `Cette planète a déjà été entièrement cartographiée. Elle ne recèle plus aucun secret. Nos équipes confirment l'état des biomes précédemment identifiés.`,
+    };
+  }
+
   if (opts.discoveredCount === 0 && !opts.isComplete) {
     return {
       title: "Rapport d'exploration — sans découverte",
@@ -154,6 +163,14 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
       ? ((targetSlot as any).planetClassId ?? null)
       : null;
 
+  // Biomes the player currently knows about this position, from the live
+  // galaxy state. Used when the exploration is complete so the report
+  // displays the full picture (not just what this specific mission found).
+  const targetBiomes: BiomeDiscovery[] =
+    targetSlot && typeof targetSlot === 'object' && 'biomes' in targetSlot && Array.isArray((targetSlot as any).biomes)
+      ? ((targetSlot as any).biomes as BiomeDiscovery[])
+      : [];
+
   const planetTypeName = planetClassId
     ? (gameConfig?.planetTypes?.find((t: any) => t.id === planetClassId)?.name ?? 'Inconnue')
     : 'Inconnue';
@@ -180,6 +197,16 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
   const hasExplorer = !!(
     explorerShipId && ships?.find((s: any) => s.id === explorerShipId && s.count > 0)
   );
+
+  // When the planet is fully mapped, show all known biomes (full state).
+  // Otherwise surface only the ones this specific mission turned up.
+  const biomesToShow = isComplete ? targetBiomes : discovered;
+  const biomesSectionTitle =
+    isComplete && discoveredCount === 0
+      ? 'État actuel des biomes'
+      : isComplete
+        ? 'Biomes cartographiés'
+        : 'Nouveaux biomes';
 
   const rarities = discovered.map((b) => b.rarity);
   const report = generateReport({
@@ -259,13 +286,13 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
       </div>
 
       {/* Biomes section */}
-      {discovered.length > 0 && (
+      {biomesToShow.length > 0 && (
         <div className="mt-4">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Biomes cartographiés
+            {biomesSectionTitle}
           </h3>
           <div className="space-y-3">
-            {discovered.map((biome) => {
+            {biomesToShow.map((biome) => {
               const color = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
               return (
                 <div
