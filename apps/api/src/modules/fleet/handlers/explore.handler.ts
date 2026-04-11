@@ -1,7 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { fleetEvents, planets, userResearch, discoveredBiomes, discoveredPositions } from '@exilium/db';
-import { biomeDiscoveryProbability, scanDuration, seededRandom, coordinateSeed, generateBiomeCount, pickBiomes, type BiomeDefinition } from '@exilium/game-engine';
+import { biomeDiscoveryProbability, scanDuration, seededRandom, coordinateSeed, generateBiomeCount, pickBiomes, pickPlanetTypeForPosition, calculateMaxTemp, type BiomeDefinition } from '@exilium/game-engine';
 import type { PhasedMissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult, PhaseResult } from '../fleet.types.js';
 import { findShipsByRole } from '../../../lib/config-helpers.js';
 
@@ -90,18 +90,17 @@ export class ExploreHandler implements PhasedMissionHandler {
       effects: b.effects as Array<{ stat: string; modifier: number }>,
     }));
 
-    const planetType = config.planetTypes.find(
-      (pt: any) => pt.role !== 'homeworld' && (pt.positions as number[]).includes(fleetEvent.targetPosition),
-    );
-
-    if (!planetType || biomeCatalogue.length === 0) {
+    if (biomeCatalogue.length === 0) {
       return this.createResult(fleetEvent, ctx, [], 0);
     }
 
-    const seed = coordinateSeed(fleetEvent.targetGalaxy, fleetEvent.targetSystem, fleetEvent.targetPosition);
-    const rng = seededRandom(seed);
+    const maxTemp = calculateMaxTemp(fleetEvent.targetPosition, 0);
+    const typeRng = seededRandom(coordinateSeed(fleetEvent.targetGalaxy, fleetEvent.targetSystem, fleetEvent.targetPosition) ^ 0x9E3779B9);
+    const planetClassId = pickPlanetTypeForPosition(maxTemp, typeRng);
+
+    const rng = seededRandom(coordinateSeed(fleetEvent.targetGalaxy, fleetEvent.targetSystem, fleetEvent.targetPosition));
     const biomeCount = generateBiomeCount(rng);
-    const allBiomes = pickBiomes(biomeCatalogue, planetType.id, biomeCount, rng);
+    const allBiomes = pickBiomes(biomeCatalogue, planetClassId, biomeCount, rng);
 
     const alreadyDiscovered = await ctx.db
       .select({ biomeId: discoveredBiomes.biomeId })
