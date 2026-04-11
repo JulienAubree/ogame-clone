@@ -23,6 +23,10 @@ export interface DetailPanelContext {
   planetTypes: PlanetTypeMeta[];
   hasColonizer: boolean;
   hasExplorer: boolean;
+  hasSpy: boolean;
+  hasCombatShip: boolean;
+  hasRecycler: boolean;
+  hasMiner: boolean;
   /** Mining mission keyed by belt position. */
   beltMissions: Record<number, { id: string }>;
   myCapitalPosition: number | null;

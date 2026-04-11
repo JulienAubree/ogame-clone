@@ -49,6 +49,10 @@ export interface GalaxySystemViewProps {
   planetTypes: PlanetTypeMeta[];
   hasColonizer: boolean;
   hasExplorer: boolean;
+  hasSpy: boolean;
+  hasCombatShip: boolean;
+  hasRecycler: boolean;
+  hasMiner: boolean;
   beltMissions: Record<number, { id: string }>;
   myCapitalPosition: number | null;
   onSystemPrev: () => void;
@@ -66,6 +70,10 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
     planetTypes,
     hasColonizer,
     hasExplorer,
+    hasSpy,
+    hasCombatShip,
+    hasRecycler,
+    hasMiner,
     beltMissions,
     myCapitalPosition,
     onSystemPrev,
@@ -99,6 +107,10 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
       planetTypes,
       hasColonizer,
       hasExplorer,
+      hasSpy,
+      hasCombatShip,
+      hasRecycler,
+      hasMiner,
       beltMissions,
       myCapitalPosition,
     }),
@@ -108,6 +120,10 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
       planetTypes,
       hasColonizer,
       hasExplorer,
+      hasSpy,
+      hasCombatShip,
+      hasRecycler,
+      hasMiner,
       beltMissions,
       myCapitalPosition,
     ],

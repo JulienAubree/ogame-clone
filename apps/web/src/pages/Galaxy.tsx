@@ -140,6 +140,40 @@ export default function Galaxy() {
   }, [gameConfig?.ships]);
   const hasExplorer = !!(explorerShipId && ships?.find((s) => s.id === explorerShipId && s.count > 0));
 
+  const spyShipId = useMemo(() => {
+    if (!gameConfig?.ships) return null;
+    const entry = Object.entries(gameConfig.ships).find(([, s]) => (s as any).role === 'espionage');
+    return entry?.[0] ?? null;
+  }, [gameConfig?.ships]);
+  const hasSpy = !!(spyShipId && ships?.find((s) => s.id === spyShipId && s.count > 0));
+
+  const combatShipIds = useMemo(
+    () =>
+      Object.entries(gameConfig?.ships ?? {})
+        .filter(([, s]) => (s as any).role === 'combat')
+        .map(([id]) => id),
+    [gameConfig?.ships],
+  );
+  const hasCombatShip = !!ships?.some((s) => combatShipIds.includes(s.id) && s.count > 0);
+
+  const recyclerShipIds = useMemo(
+    () =>
+      Object.entries(gameConfig?.ships ?? {})
+        .filter(([, s]) => (s as any).role === 'recycling')
+        .map(([id]) => id),
+    [gameConfig?.ships],
+  );
+  const hasRecycler = !!ships?.some((s) => recyclerShipIds.includes(s.id) && s.count > 0);
+
+  const minerShipIds = useMemo(
+    () =>
+      Object.entries(gameConfig?.ships ?? {})
+        .filter(([, s]) => (s as any).role === 'mining')
+        .map(([id]) => id),
+    [gameConfig?.ships],
+  );
+  const hasMiner = !!ships?.some((s) => minerShipIds.includes(s.id) && s.count > 0);
+
   // Map position → mission for current galaxy:system
   const missionByPosition = useMemo(() => {
     const map = new Map<number, { id: string }>();
@@ -450,6 +484,10 @@ export default function Galaxy() {
                 planetTypes={planetTypesList}
                 hasColonizer={hasColonizer}
                 hasExplorer={hasExplorer}
+                hasSpy={hasSpy}
+                hasCombatShip={hasCombatShip}
+                hasRecycler={hasRecycler}
+                hasMiner={hasMiner}
                 beltMissions={beltMissionsRecord}
                 myCapitalPosition={myCapitalPosition}
                 onSystemPrev={handleSystemPrev}

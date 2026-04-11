@@ -11,7 +11,7 @@
  * effects beyond the click handlers wired to the caller.
  */
 
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { SlotView } from '../slotView';
 import type { DetailPanelActions, DetailPanelContext } from './types';
 import { BiomeChips } from './BiomeChips';
@@ -39,6 +39,35 @@ const BTN_RED = `${BTN_BASE} bg-red-500/15 text-red-300 border-red-500/30 hover:
 const BTN_BLUE = `${BTN_BASE} bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25`;
 const BTN_NEUTRAL = `${BTN_BASE} bg-white/5 text-foreground border-white/10 hover:bg-white/10`;
 const BTN_ORANGE = `${BTN_BASE} bg-orange-500/15 text-orange-300 border-orange-500/30 hover:bg-orange-500/25`;
+const BTN_DISABLED = `${BTN_BASE} bg-white/5 text-muted-foreground border-white/5 cursor-not-allowed opacity-50`;
+
+function ActionButton({
+  enabled,
+  enabledClassName,
+  disabledTitle,
+  enabledTitle,
+  onClick,
+  children,
+}: {
+  enabled: boolean;
+  enabledClassName: string;
+  disabledTitle: string;
+  enabledTitle?: string;
+  onClick: () => void;
+  children: ReactNode;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      disabled={!enabled}
+      title={enabled ? enabledTitle : disabledTitle}
+      className={enabled ? enabledClassName : BTN_DISABLED}
+      onClick={enabled ? onClick : undefined}
+    >
+      {children}
+    </button>
+  );
+}
 
 function hasDebris(view: Extract<SlotView, { kind: 'planet' }>): boolean {
   return !!view.debris && (view.debris.minerai > 0 || view.debris.silicium > 0);
@@ -159,23 +188,25 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
           )}
 
           {view.relation !== 'mine' && (
-            <button
-              type="button"
-              className={BTN_BLUE}
+            <ActionButton
+              enabled={ctx.hasSpy}
+              enabledClassName={BTN_BLUE}
+              disabledTitle="Aucun vaisseau d'espionnage disponible"
               onClick={() => actions.onSpy(view.position)}
             >
               Espionner
-            </button>
+            </ActionButton>
           )}
 
           {view.relation === 'enemy' && (
-            <button
-              type="button"
-              className={BTN_RED}
+            <ActionButton
+              enabled={ctx.hasCombatShip}
+              enabledClassName={BTN_RED}
+              disabledTitle="Aucun vaisseau de combat disponible"
               onClick={() => actions.onAttack(view.position)}
             >
               Attaquer
-            </button>
+            </ActionButton>
           )}
 
           {view.relation !== 'mine' && (
@@ -189,13 +220,14 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
           )}
 
           {hasDebris(view) && (
-            <button
-              type="button"
-              className={BTN_ORANGE}
+            <ActionButton
+              enabled={ctx.hasRecycler}
+              enabledClassName={BTN_ORANGE}
+              disabledTitle="Aucun recycleur disponible"
               onClick={() => actions.onRecycle(view.position)}
             >
               Recycler débris
-            </button>
+            </ActionButton>
           )}
         </div>
       </div>
@@ -245,24 +277,26 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
         )}
 
         <div className="mt-4 flex flex-col gap-2">
-          {ctx.hasColonizer && (
-            <button
-              type="button"
-              className={BTN_EMERALD}
-              onClick={() => actions.onColonize(view.position)}
-            >
-              Coloniser
-            </button>
-          )}
-          {ctx.hasExplorer && view.undiscoveredCount > 0 && (
-            <button
-              type="button"
-              className={BTN_CYAN}
-              onClick={() => actions.onExplore(view.position)}
-            >
-              Explorer
-            </button>
-          )}
+          <ActionButton
+            enabled={ctx.hasColonizer}
+            enabledClassName={BTN_EMERALD}
+            disabledTitle="Aucun vaisseau de colonisation disponible"
+            onClick={() => actions.onColonize(view.position)}
+          >
+            Coloniser
+          </ActionButton>
+          <ActionButton
+            enabled={ctx.hasExplorer && view.undiscoveredCount > 0}
+            enabledClassName={BTN_CYAN}
+            disabledTitle={
+              !ctx.hasExplorer
+                ? "Aucun vaisseau d'exploration disponible"
+                : 'Tous les biomes sont déjà découverts'
+            }
+            onClick={() => actions.onExplore(view.position)}
+          >
+            Explorer
+          </ActionButton>
         </div>
       </div>
     );
@@ -285,17 +319,16 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
         position.
       </p>
 
-      {ctx.hasExplorer && (
-        <div className="mt-4 flex flex-col gap-2">
-          <button
-            type="button"
-            className={BTN_CYAN}
-            onClick={() => actions.onExplore(view.position)}
-          >
-            Envoyer un explorateur
-          </button>
-        </div>
-      )}
+      <div className="mt-4 flex flex-col gap-2">
+        <ActionButton
+          enabled={ctx.hasExplorer}
+          enabledClassName={BTN_CYAN}
+          disabledTitle="Aucun vaisseau d'exploration disponible"
+          onClick={() => actions.onExplore(view.position)}
+        >
+          Envoyer un explorateur
+        </ActionButton>
+      </div>
     </div>
   );
 }

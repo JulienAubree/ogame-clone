@@ -1,10 +1,45 @@
 // apps/web/src/components/reports/ExploreReportDetail.tsx
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { Button } from '@/components/ui/button';
 import { PlanetVisual } from '@/components/galaxy/PlanetVisual';
+
+// Button styles — mirrors ModePlanet.tsx so enabled/disabled states
+// stay consistent between the galaxy detail panel and the report view.
+const BTN_BASE =
+  'inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs border transition-colors';
+const BTN_EMERALD = `${BTN_BASE} bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25`;
+const BTN_CYAN = `${BTN_BASE} bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25`;
+const BTN_DISABLED = `${BTN_BASE} bg-white/5 text-muted-foreground border-white/5 cursor-not-allowed opacity-50`;
+
+function ActionButton({
+  enabled,
+  enabledClassName,
+  disabledTitle,
+  enabledTitle,
+  onClick,
+  children,
+}: {
+  enabled: boolean;
+  enabledClassName: string;
+  disabledTitle: string;
+  enabledTitle?: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={!enabled}
+      title={enabled ? enabledTitle : disabledTitle}
+      className={enabled ? enabledClassName : BTN_DISABLED}
+      onClick={enabled ? onClick : undefined}
+    >
+      {children}
+    </button>
+  );
+}
 
 const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',
@@ -160,9 +195,6 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
     ? { label: 'Cartographie complète', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' }
     : { label: 'Exploration incomplète', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
 
-  const showColonize = hasColonizer;
-  const showExplore = !isComplete && hasExplorer;
-
   return (
     <div className="glass-card p-4 lg:p-5 border border-cyan-500/20">
       {/* Header row: planet visual + target info */}
@@ -286,42 +318,36 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
 
       {/* Action buttons row */}
       <div className="mt-5 pt-4 border-t border-border/50">
-        {showColonize || showExplore ? (
-          <div className="flex flex-wrap gap-2">
-            {showColonize && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30"
-                onClick={() =>
-                  navigate(
-                    `/fleet/send?mission=colonize&galaxy=${coordinates.galaxy}&system=${coordinates.system}&position=${coordinates.position}`,
-                  )
-                }
-              >
-                Coloniser
-              </Button>
-            )}
-            {showExplore && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 border border-cyan-500/30"
-                onClick={() =>
-                  navigate(
-                    `/fleet/send?mission=explore&galaxy=${coordinates.galaxy}&system=${coordinates.system}&position=${coordinates.position}`,
-                  )
-                }
-              >
-                Explorer à nouveau
-              </Button>
-            )}
-          </div>
-        ) : (
-          <p className="text-xs italic text-muted-foreground">
-            Aucun vaisseau disponible pour agir sur cette position.
-          </p>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <ActionButton
+            enabled={hasColonizer}
+            enabledClassName={BTN_EMERALD}
+            disabledTitle="Aucun vaisseau de colonisation disponible"
+            onClick={() =>
+              navigate(
+                `/fleet/send?mission=colonize&galaxy=${coordinates.galaxy}&system=${coordinates.system}&position=${coordinates.position}`,
+              )
+            }
+          >
+            Coloniser
+          </ActionButton>
+          <ActionButton
+            enabled={hasExplorer && !isComplete}
+            enabledClassName={BTN_CYAN}
+            disabledTitle={
+              !hasExplorer
+                ? "Aucun vaisseau d'exploration disponible"
+                : "L'exploration de cette planète est terminée"
+            }
+            onClick={() =>
+              navigate(
+                `/fleet/send?mission=explore&galaxy=${coordinates.galaxy}&system=${coordinates.system}&position=${coordinates.position}`,
+              )
+            }
+          >
+            Explorer à nouveau
+          </ActionButton>
+        </div>
       </div>
     </div>
   );

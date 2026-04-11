@@ -12,12 +12,14 @@ import type { DetailPanelActions, DetailPanelContext } from './types';
 
 interface ModeBeltProps {
   view: Extract<SlotView, { kind: 'belt' }>;
-  ctx: Pick<DetailPanelContext, 'beltMissions'>;
+  ctx: Pick<DetailPanelContext, 'beltMissions' | 'hasMiner'>;
   actions: Pick<DetailPanelActions, 'onMine'>;
 }
 
-const BTN_ORANGE =
-  'inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs border transition-colors bg-orange-500/15 text-orange-300 border-orange-500/30 hover:bg-orange-500/25';
+const BTN_BASE =
+  'inline-flex items-center justify-center px-3 py-1.5 rounded-md text-xs border transition-colors';
+const BTN_ORANGE = `${BTN_BASE} bg-orange-500/15 text-orange-300 border-orange-500/30 hover:bg-orange-500/25`;
+const BTN_DISABLED = `${BTN_BASE} bg-white/5 text-muted-foreground border-white/5 cursor-not-allowed opacity-50`;
 
 export function ModeBelt({ view, ctx, actions }: ModeBeltProps): ReactElement {
   const mission = ctx.beltMissions[view.position];
@@ -35,8 +37,14 @@ export function ModeBelt({ view, ctx, actions }: ModeBeltProps): ReactElement {
         {mission ? (
           <button
             type="button"
-            className={BTN_ORANGE}
-            onClick={() => actions.onMine(view.position, mission.id)}
+            disabled={!ctx.hasMiner}
+            title={ctx.hasMiner ? undefined : 'Aucun prospecteur disponible'}
+            className={ctx.hasMiner ? BTN_ORANGE : BTN_DISABLED}
+            onClick={
+              ctx.hasMiner
+                ? () => actions.onMine(view.position, mission.id)
+                : undefined
+            }
           >
             Lancer une mission de minage
           </button>
