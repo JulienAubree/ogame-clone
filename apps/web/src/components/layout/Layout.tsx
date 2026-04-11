@@ -47,24 +47,27 @@ export function Layout() {
       <Sidebar />
 
       {/* Main area */}
-      <div className="flex flex-1 flex-col lg:ml-56">
+      <div className="flex flex-1 flex-col min-h-0 lg:ml-56">
         <TopBar planetId={resolvedPlanetId} planets={planets ?? []} />
         <OfflineBanner />
         <ResourceBar planetId={resolvedPlanetId} />
         <HostileAlertBanner hostileFleets={hostileFleets} fixed />
 
-        {/* Page content - bottom padding for mobile tab bar (~80px + safe area) */}
-        <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        {/* Page content — scrolls independently; the mobile BottomTabBar
+            below is a flex sibling, so it is anchored naturally at the
+            bottom of the viewport without position:fixed. */}
+        <main className="flex-1 overflow-y-auto min-h-0">
           <div className="mx-auto lg:max-w-6xl">
             <Outlet context={{ planetId: resolvedPlanetId }} />
           </div>
         </main>
+
+        {/* Mobile/tablet bottom navigation (flex sibling, not fixed) */}
+        <BottomTabBar />
       </div>
 
       <FloatingFeedbackButton />
 
-      {/* Mobile/tablet bottom navigation */}
-      <BottomTabBar />
       <ChatOverlay />
       <Toaster />
       <UpdatePrompt />

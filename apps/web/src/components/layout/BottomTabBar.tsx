@@ -1,4 +1,3 @@
-import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router';
 import {
   OverviewIcon,
@@ -97,42 +96,12 @@ export function BottomTabBar() {
     { id: 'social' as const, label: 'Social', icon: MessagesIcon, action: () => toggleSheet('social'), badge: unreadCount ?? 0 },
   ];
 
-  // Render the bar via a portal to document.body to escape any parent that
-  // might create a containing block (transform, filter, contain, etc.) and
-  // to keep it stable on iOS Safari during scrolls.
-  const navBar = (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-white/10 bg-card backdrop-blur-lg pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
-      style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
-    >
-      {tabs.map((tab) => {
-        const isActive = tab.id === activeTab || tab.id === activeSheet;
-        return (
-          <button
-            key={tab.id}
-            onClick={tab.action}
-            className={`flex flex-1 flex-col items-center justify-center gap-1 py-2 touch-feedback transition-colors ${
-              isActive ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <div className="relative">
-              <tab.icon width={24} height={24} />
-              {'badge' in tab && (tab as any).badge > 0 && (
-                <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
-                  {(tab as any).badge}
-                </span>
-              )}
-            </div>
-            <span className="text-xs font-medium">{tab.label}</span>
-            {isActive && (
-              <div className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--accent-glow))]" />
-            )}
-          </button>
-        );
-      })}
-    </nav>
-  );
-
+  // The bar is rendered as a normal flex sibling of <main> in Layout.tsx,
+  // NOT via portal or position:fixed. This avoids iOS Safari glitches where
+  // fixed + backdrop-filter + nested scroll containers make the bar jump
+  // or flicker during scrolls, and removes the need for main-content bottom
+  // padding hacks. The flex column in Layout keeps this bar anchored to the
+  // bottom of the viewport naturally.
   return (
     <>
       {activeSheet && (
@@ -156,7 +125,33 @@ export function BottomTabBar() {
         </BottomSheet>
       )}
 
-      {createPortal(navBar, document.body)}
+      <nav className="flex-shrink-0 flex items-center justify-around border-t border-white/10 bg-card pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
+        {tabs.map((tab) => {
+          const isActive = tab.id === activeTab || tab.id === activeSheet;
+          return (
+            <button
+              key={tab.id}
+              onClick={tab.action}
+              className={`relative flex flex-1 flex-col items-center justify-center gap-1 py-2 touch-feedback transition-colors ${
+                isActive ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <div className="relative">
+                <tab.icon width={24} height={24} />
+                {'badge' in tab && (tab as any).badge > 0 && (
+                  <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                    {(tab as any).badge}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-medium">{tab.label}</span>
+              {isActive && (
+                <div className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--accent-glow))]" />
+              )}
+            </button>
+          );
+        })}
+      </nav>
     </>
   );
 }
