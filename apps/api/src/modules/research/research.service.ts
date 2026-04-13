@@ -1,8 +1,8 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, userResearch, buildQueue, planetBuildings } from '@exilium/db';
+import { planets, userResearch, buildQueue, planetBuildings, discoveredBiomes } from '@exilium/db';
 import type { Database } from '@exilium/db';
-import { researchCost, researchTime, checkResearchPrerequisites, resolveBonus } from '@exilium/game-engine';
+import { researchCost, researchTime, checkResearchPrerequisites, resolveBonus, researchAnnexBonus, researchBiomeBonus } from '@exilium/game-engine';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { Queue } from 'bullmq';
@@ -19,6 +19,54 @@ async function getBuildingLevels(db: Database, planetId: string): Promise<Record
     levels[row.buildingId] = row.level;
   }
   return levels;
+}
+
+const ANNEX_BUILDING_IDS = ['labVolcanic', 'labArid', 'labTemperate', 'labGlacial', 'labGaseous'];
+
+async function getAnnexLevelsSum(db: Database, userId: string): Promise<number> {
+  const userPlanets = db
+    .select({ id: planets.id })
+    .from(planets)
+    .where(eq(planets.userId, userId));
+
+  const [result] = await db
+    .select({ total: sql<number>`coalesce(sum(${planetBuildings.level}), 0)` })
+    .from(planetBuildings)
+    .where(
+      and(
+        inArray(planetBuildings.planetId, userPlanets),
+        inArray(planetBuildings.buildingId, ANNEX_BUILDING_IDS),
+      ),
+    );
+  return Number(result?.total ?? 0);
+}
+
+async function getDiscoveredBiomesCount(db: Database, userId: string): Promise<number> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(discoveredBiomes)
+    .where(eq(discoveredBiomes.userId, userId));
+  return Number(result?.count ?? 0);
+}
+
+async function hasAnnexOfType(db: Database, userId: string, annexType: string): Promise<boolean> {
+  const annexBuildingId = `lab${annexType.charAt(0).toUpperCase()}${annexType.slice(1)}`;
+  const userPlanets = db
+    .select({ id: planets.id })
+    .from(planets)
+    .where(eq(planets.userId, userId));
+
+  const [result] = await db
+    .select({ level: planetBuildings.level })
+    .from(planetBuildings)
+    .where(
+      and(
+        inArray(planetBuildings.planetId, userPlanets),
+        eq(planetBuildings.buildingId, annexBuildingId),
+      ),
+    )
+    .limit(1);
+  return (result?.level ?? 0) >= 1;
 }
 
 export function createResearchService(
@@ -56,34 +104,53 @@ export function createResearchService(
       const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
       const hullTimeMultiplier = 1 - (talentCtx['hull_research_time_reduction'] ?? 0);
 
-      return Object.values(config.research)
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((def) => {
-          const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
-          const nextLevel = currentLevel + 1;
-          const cost = researchCost(def, nextLevel, phaseMap);
-          const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
-          const time = Math.max(1, Math.floor(researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier * hullTimeMultiplier));
+      const annexLevelsSum = await getAnnexLevelsSum(db, userId);
+      const annexBonusMultiplier = researchAnnexBonus(annexLevelsSum);
+      const discoveredBiomesCount = await getDiscoveredBiomesCount(db, userId);
+      const biomeBonusMultiplier = researchBiomeBonus(discoveredBiomesCount);
 
-          const researchLevels: Record<string, number> = {};
-          for (const [key, rDef] of Object.entries(config.research)) {
-            researchLevels[key] = (research[rDef.levelColumn as keyof typeof research] ?? 0) as number;
-          }
-          const prereqCheck = checkResearchPrerequisites(def.prerequisites, buildingLevels, researchLevels);
+      const results = await Promise.all(
+        Object.values(config.research)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map(async (def) => {
+            const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
+            const nextLevel = currentLevel + 1;
+            const cost = researchCost(def, nextLevel, phaseMap);
+            const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
+            const time = Math.max(1, Math.floor(researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier * hullTimeMultiplier * annexBonusMultiplier * biomeBonusMultiplier));
 
-          return {
-            id: def.id,
-            name: def.name,
-            description: def.description,
-            currentLevel,
-            nextLevelCost: cost,
-            nextLevelTime: time,
-            prerequisitesMet: prereqCheck.met,
-            missingPrerequisites: prereqCheck.missing,
-            isResearching: activeResearch?.itemId === def.id,
-            researchEndTime: activeResearch?.itemId === def.id ? activeResearch.endTime.toISOString() : null,
-          };
-        });
+            const researchLevels: Record<string, number> = {};
+            for (const [key, rDef] of Object.entries(config.research)) {
+              researchLevels[key] = (research[rDef.levelColumn as keyof typeof research] ?? 0) as number;
+            }
+            const prereqCheck = checkResearchPrerequisites(def.prerequisites, buildingLevels, researchLevels);
+
+            // Check annex prerequisite if required
+            const requiredAnnex = (def as { requiredAnnexType?: string | null }).requiredAnnexType;
+            let annexMet = true;
+            if (requiredAnnex) {
+              annexMet = await hasAnnexOfType(db, userId, requiredAnnex);
+            }
+
+            return {
+              id: def.id,
+              name: def.name,
+              description: def.description,
+              currentLevel,
+              nextLevelCost: cost,
+              nextLevelTime: time,
+              prerequisitesMet: prereqCheck.met && annexMet,
+              missingPrerequisites: [
+                ...prereqCheck.missing,
+                ...(requiredAnnex && !annexMet ? [`Requires annex: ${requiredAnnex}`] : []),
+              ],
+              requiredAnnexType: requiredAnnex ?? null,
+              isResearching: activeResearch?.itemId === def.id,
+              researchEndTime: activeResearch?.itemId === def.id ? activeResearch.endTime.toISOString() : null,
+            };
+          }),
+      );
+      return results;
     },
 
     async startResearch(userId: string, planetId: string, researchId: string) {
@@ -119,6 +186,15 @@ export function createResearchService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: `Prérequis non remplis: ${prereqCheck.missing.join(', ')}` });
       }
 
+      // Check annex prerequisite
+      const requiredAnnex = (def as { requiredAnnexType?: string | null }).requiredAnnexType;
+      if (requiredAnnex) {
+        const hasAnnex = await hasAnnexOfType(db, userId, requiredAnnex);
+        if (!hasAnnex) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: `Annexe requise : ${requiredAnnex}` });
+        }
+      }
+
       const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
       const nextLevel = currentLevel + 1;
       if (def.maxLevel != null && nextLevel > def.maxLevel) {
@@ -133,7 +209,11 @@ export function createResearchService(
       const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
       const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
       const hullTimeMultiplier = 1 - (talentCtx['hull_research_time_reduction'] ?? 0);
-      const time = Math.max(1, Math.floor(researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier * hullTimeMultiplier));
+      const annexLevelsSum = await getAnnexLevelsSum(db, userId);
+      const annexBonusMultiplier = researchAnnexBonus(annexLevelsSum);
+      const discoveredBiomesCount = await getDiscoveredBiomesCount(db, userId);
+      const biomeBonusMultiplier = researchBiomeBonus(discoveredBiomesCount);
+      const time = Math.max(1, Math.floor(researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier * hullTimeMultiplier * annexBonusMultiplier * biomeBonusMultiplier));
 
       await resourceService.spendResources(planetId, userId, cost);
 
