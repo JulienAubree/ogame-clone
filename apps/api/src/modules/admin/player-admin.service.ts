@@ -1,8 +1,9 @@
-import { eq, like, or, sql, count } from 'drizzle-orm';
-import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings, flagships, userExilium, flagshipTalents } from '@exilium/db';
+import { eq, and, like, or, sql, count, inArray } from 'drizzle-orm';
+import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings, flagships, userExilium, flagshipTalents, fleetEvents } from '@exilium/db';
 import type { Database } from '@exilium/db';
+import type { Queue } from 'bullmq';
 
-export function createPlayerAdminService(db: Database) {
+export function createPlayerAdminService(db: Database, fleetQueue?: Queue) {
   return {
     async listPlayers(offset: number, limit: number, search?: string) {
       const conditions = search
@@ -134,6 +135,38 @@ export function createPlayerAdminService(db: Database) {
     },
 
     async updatePlanetCoordinates(planetId: string, galaxy: number, system: number, position: number) {
+      // Recall all active outbound fleets from this planet before moving it.
+      // Without this, fleets would continue traveling to/from the old coordinates.
+      const activeFleets = await db
+        .select({ id: fleetEvents.id, phase: fleetEvents.phase })
+        .from(fleetEvents)
+        .where(
+          and(
+            eq(fleetEvents.originPlanetId, planetId),
+            eq(fleetEvents.status, 'active'),
+            inArray(fleetEvents.phase, ['outbound', 'prospecting', 'mining', 'exploring']),
+          ),
+        );
+
+      for (const fleet of activeFleets) {
+        // Switch phase to return with immediate arrival
+        await db
+          .update(fleetEvents)
+          .set({ phase: 'return' })
+          .where(eq(fleetEvents.id, fleet.id));
+
+        // Cancel any pending arrival/phase job and schedule immediate return
+        if (fleetQueue) {
+          await fleetQueue.remove(`fleet-arrive-${fleet.id}`).catch(() => {});
+          await fleetQueue.remove(`fleet-phase-${fleet.id}`).catch(() => {});
+          await fleetQueue.add('return', { fleetEventId: fleet.id }, {
+            delay: 1000, // 1 second — nearly instant
+            jobId: `fleet-return-${fleet.id}`,
+          });
+        }
+      }
+
+      // Now move the planet
       await db.update(planets).set({ galaxy, system, position }).where(eq(planets.id, planetId));
     },
 
