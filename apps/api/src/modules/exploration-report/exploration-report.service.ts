@@ -1,6 +1,6 @@
 import { eq, and, ne, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { explorationReports, discoveredPositions, discoveredBiomes, biomeDefinitions } from '@exilium/db';
+import { explorationReports, discoveredPositions, discoveredBiomes, biomeDefinitions, planets } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -157,10 +157,26 @@ export function createExplorationReportService(
       planetId: string,
       input: { galaxy: number; system: number; position: number },
     ) {
-      // 1. Check the user has discovered the position
+      // 1. Check the position is not already colonized
+      const [colonized] = await db
+        .select({ id: planets.id })
+        .from(planets)
+        .where(
+          and(
+            eq(planets.galaxy, input.galaxy),
+            eq(planets.system, input.system),
+            eq(planets.position, input.position),
+          ),
+        )
+        .limit(1);
+      if (colonized) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cette position est deja colonisee — impossible de vendre un rapport' });
+      }
+
+      // 2. Check the user has discovered the position
       await assertPositionDiscovered(userId, input.galaxy, input.system, input.position);
 
-      // 2. Check no duplicate report in inventory/listed
+      // 3. Check no duplicate report in inventory/listed
       await assertNoDuplicateReport(userId, input.galaxy, input.system, input.position);
 
       // 3. Snapshot biomes from discovered_biomes
@@ -271,6 +287,22 @@ export function createExplorationReportService(
       userId: string,
       input: { galaxy: number; system: number; position: number },
     ): Promise<{ canCreate: boolean; reason?: string; cost: number }> {
+      // Check position is not colonized
+      const [colonized] = await db
+        .select({ id: planets.id })
+        .from(planets)
+        .where(
+          and(
+            eq(planets.galaxy, input.galaxy),
+            eq(planets.system, input.system),
+            eq(planets.position, input.position),
+          ),
+        )
+        .limit(1);
+      if (colonized) {
+        return { canCreate: false, reason: 'Position deja colonisee', cost: 0 };
+      }
+
       // Check position discovered
       const [discovered] = await db
         .select({ userId: discoveredPositions.userId })
