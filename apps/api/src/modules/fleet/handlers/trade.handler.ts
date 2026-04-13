@@ -214,7 +214,7 @@ export class TradeHandler implements MissionHandler {
 
     // Load merchandise into fleet cargo for return trip
     const merchandise = { minerai: 0, silicium: 0, hydrogene: 0 };
-    if (offer.resourceType in merchandise) {
+    if (offer.resourceType && offer.resourceType in merchandise) {
       merchandise[offer.resourceType as keyof typeof merchandise] = Number(offer.quantity);
     }
 

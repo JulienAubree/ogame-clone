@@ -42,5 +42,46 @@ export function createMarketRouter(marketService: ReturnType<typeof createMarket
       .mutation(async ({ ctx, input }) => {
         return marketService.cancelOffer(ctx.userId!, input.offerId);
       }),
+
+    // ── Report offer endpoints ────────────────────────────────────────
+
+    listReports: protectedProcedure
+      .input(z.object({
+        galaxy: z.number().int().optional(),
+        system: z.number().int().optional(),
+        minRarity: z.enum(['common', 'uncommon', 'rare', 'epic', 'legendary']).optional(),
+        cursor: z.string().optional(),
+        limit: z.number().int().min(1).max(50).optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        return marketService.listReportOffers(ctx.userId!, input);
+      }),
+
+    createReportOffer: protectedProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        reportId: z.string().uuid(),
+        priceMinerai: z.number().min(0).default(0),
+        priceSilicium: z.number().min(0).default(0),
+        priceHydrogene: z.number().min(0).default(0),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return marketService.createReportOffer(ctx.userId!, input.planetId, input);
+      }),
+
+    buyReport: protectedProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        offerId: z.string().uuid(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return marketService.buyReport(ctx.userId!, input.planetId, input.offerId);
+      }),
+
+    cancelReportOffer: protectedProcedure
+      .input(z.object({ offerId: z.string().uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        return marketService.cancelReportOffer(ctx.userId!, input.offerId);
+      }),
   });
 }
