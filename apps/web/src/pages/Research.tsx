@@ -34,15 +34,10 @@ export default function Research() {
     .filter((c) => c.entityType === 'research')
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const { data: buildings } = trpc.building.list.useQuery(
-    { planetId: planetId! },
-    { enabled: !!planetId },
-  );
-  const labLevel = buildings?.find((b) => b.id === 'researchLab')?.currentLevel ?? 0;
-
   const { data: researchData, isLoading } = trpc.research.list.useQuery();
   const techs = researchData?.items;
   const bonuses = researchData?.bonuses;
+  const labLevel = bonuses?.labLevel ?? 0;
 
   const { data: resourceData } = trpc.resource.production.useQuery(
     { planetId: planetId! },
@@ -93,9 +88,14 @@ export default function Research() {
 
   const buildingLevels = useMemo(() => {
     const levels: Record<string, number> = {};
-    buildings?.forEach((b) => { levels[b.id] = b.currentLevel; });
+    if (bonuses) {
+      levels['researchLab'] = bonuses.labLevel;
+      for (const annex of bonuses.annexDetails) {
+        levels[annex.buildingId] = annex.level;
+      }
+    }
     return levels;
-  }, [buildings]);
+  }, [bonuses]);
 
   if (isLoading || !researchData || !techs) {
     return (
@@ -106,7 +106,7 @@ export default function Research() {
     );
   }
 
-  if (buildings && labLevel < 1) {
+  if (bonuses && labLevel < 1) {
     return (
       <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
         <PageHeader title="Recherche" />
