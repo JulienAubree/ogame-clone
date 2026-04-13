@@ -59,6 +59,8 @@ import { createChangelogService } from '../modules/changelog/changelog.service.j
 import { createChangelogRouter } from '../modules/changelog/changelog.router.js';
 import { createNotificationPreferencesService } from '../modules/notification/notification-preferences.service.js';
 import { createNotificationPreferencesRouter } from '../modules/notification/notification-preferences.router.js';
+import { createExplorationReportService } from '../modules/exploration-report/exploration-report.service.js';
+import { createExplorationReportRouter } from '../modules/exploration-report/exploration-report.router.js';
 import { env } from '../config/env.js';
 import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
@@ -97,6 +99,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const feedbackService = createFeedbackService(db);
   const changelogService = createChangelogService(db);
   const notificationPreferencesService = createNotificationPreferencesService(db);
+  const explorationReportService = createExplorationReportService(db, resourceService, gameConfigService);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -126,6 +129,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const feedbackRouter = createFeedbackRouter(feedbackService, adminProcedure);
   const changelogRouter = createChangelogRouter(changelogService, adminProcedure);
   const notificationPreferencesRouter = createNotificationPreferencesRouter(notificationPreferencesService);
+  const explorationReportRouter = createExplorationReportRouter(explorationReportService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -160,6 +164,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     feedback: feedbackRouter,
     changelog: changelogRouter,
     notificationPreferences: notificationPreferencesRouter,
+    explorationReport: explorationReportRouter,
   });
 }
 
