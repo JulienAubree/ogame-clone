@@ -270,11 +270,12 @@ export function createFleetService(
       });
 
       // Deduct ships from planet (skip flagship — managed via flagshipService)
-      const shipUpdates: Record<string, number> = {};
+      // Atomic decrement — safe under concurrent fleet sends
+      const shipUpdates: Record<string, any> = {};
       for (const [shipId, count] of Object.entries(input.ships)) {
         if (count > 0 && shipId !== 'flagship') {
-          const current = (planetShipRow[shipId as keyof typeof planetShipRow] ?? 0) as number;
-          shipUpdates[shipId] = current - count;
+          const col = planetShips[shipId as keyof typeof planetShips];
+          shipUpdates[shipId] = sql`GREATEST(${col} - ${count}, 0)`;
         }
       }
       if (Object.keys(shipUpdates).length > 0) {
@@ -1041,18 +1042,23 @@ export function createFleetService(
 
       // Merge returning ships + PvE bonus ships into a single atomic update
       const meta = event.metadata as { bonusShips?: Record<string, number>; reportId?: string } | null;
-      const originShips = await this.getOrCreateShips(event.originPlanetId);
-      const shipUpdates: Record<string, number> = {};
+      await this.getOrCreateShips(event.originPlanetId);
+      // Compute total increment per ship type, then apply as atomic SQL
+      const shipIncrements: Record<string, number> = {};
       for (const [shipId, count] of Object.entries(ships)) {
         if (count > 0 && shipId !== 'flagship') {
-          const current = (originShips[shipId as keyof typeof originShips] ?? 0) as number;
-          shipUpdates[shipId] = current + count;
+          shipIncrements[shipId] = (shipIncrements[shipId] ?? 0) + count;
         }
       }
       if (meta?.bonusShips) {
         for (const [shipId, count] of Object.entries(meta.bonusShips)) {
-          shipUpdates[shipId] = (shipUpdates[shipId] ?? (originShips[shipId as keyof typeof originShips] ?? 0) as number) + count;
+          shipIncrements[shipId] = (shipIncrements[shipId] ?? 0) + count;
         }
+      }
+      const shipUpdates: Record<string, any> = {};
+      for (const [shipId, total] of Object.entries(shipIncrements)) {
+        const col = planetShips[shipId as keyof typeof planetShips];
+        shipUpdates[shipId] = sql`${col} + ${total}`;
       }
       if (Object.keys(shipUpdates).length > 0) {
         await db

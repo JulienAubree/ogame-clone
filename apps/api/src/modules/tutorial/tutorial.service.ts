@@ -1,4 +1,4 @@
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
 import { tutorialProgress, tutorialChapters, planets, planetBuildings, planetShips, planetDefenses, tutorialQuestDefinitions, userResearch, fleetEvents, pveMissions, flagships } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createPveService } from '../pve/pve.service.js';
@@ -376,20 +376,12 @@ export function createTutorialService(
               .values({ planetId: planet.id })
               .onConflictDoNothing();
 
-            // Increment ship count
-            const ships = await db
-              .select()
-              .from(planetShips)
-              .where(eq(planetShips.planetId, planet.id))
-              .limit(1);
-            if (ships[0]) {
-              const col = unit.shipId as keyof typeof ships[0];
-              const current = (ships[0][col] ?? 0) as number;
-              await db
-                .update(planetShips)
-                .set({ [unit.shipId]: current + unit.quantity })
-                .where(eq(planetShips.planetId, planet.id));
-            }
+            // Atomic increment — safe under concurrent completions
+            const col = unit.shipId as keyof typeof planetShips;
+            await db
+              .update(planetShips)
+              .set({ [unit.shipId]: sql`${planetShips[col]} + ${unit.quantity}` })
+              .where(eq(planetShips.planetId, planet.id));
           }
         }
 

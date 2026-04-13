@@ -301,12 +301,11 @@ export function createShipyardService(
       if (entry.type === 'ship') {
         const shipDef = config.ships[entry.itemId];
         if (shipDef) {
-          const ships = await this.getOrCreateShips(entry.planetId);
-          const col = shipDef.countColumn;
-          const current = (ships[col as keyof typeof ships] ?? 0) as number;
+          await this.getOrCreateShips(entry.planetId);
+          const col = shipDef.countColumn as keyof typeof planetShips;
           await db
             .update(planetShips)
-            .set({ [col]: current + 1 })
+            .set({ [col]: sql`${planetShips[col]} + 1` })
             .where(eq(planetShips.planetId, entry.planetId));
           // Update flagship base stats if this is a new ship type
           if (flagshipService) {
@@ -316,12 +315,11 @@ export function createShipyardService(
       } else {
         const defenseDef = config.defenses[entry.itemId];
         if (defenseDef) {
-          const defenses = await this.getOrCreateDefenses(entry.planetId);
-          const col = defenseDef.countColumn;
-          const current = (defenses[col as keyof typeof defenses] ?? 0) as number;
+          await this.getOrCreateDefenses(entry.planetId);
+          const col = defenseDef.countColumn as keyof typeof planetDefenses;
           await db
             .update(planetDefenses)
-            .set({ [col]: current + 1 })
+            .set({ [col]: sql`${planetDefenses[col]} + 1` })
             .where(eq(planetDefenses.planetId, entry.planetId));
         }
       }
@@ -422,6 +420,14 @@ export function createShipyardService(
     },
 
     async activateNextBatch(planetId: string, type: 'ship' | 'defense', facilityId?: string | null, maxSlots: number = 1) {
+      // Hoist invariant lookups outside the loop — config, building levels,
+      // and talent context don't change between iterations.
+      const config = await gameConfigService.getFullConfig();
+      const buildingLevels = await this.getBuildingLevels(planetId);
+      const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
+      // talentCtx is lazily initialised on first iteration (needs userId from nextBatch)
+      let talentCtx2: Record<string, number> | null = null;
+
       for (;;) {
         // Fresh active count each iteration to prevent concurrent over-activation
         const freshQueue = await this.getShipyardQueue(planetId, facilityId ?? undefined);
@@ -447,10 +453,9 @@ export function createShipyardService(
 
         if (!nextBatch) break;
 
-        const config = await gameConfigService.getFullConfig();
-        const buildingLevels = await this.getBuildingLevels(planetId);
-        const talentCtx2 = talentService ? await talentService.computeTalentContext(nextBatch.userId, planetId) : {};
-        const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
+        if (!talentCtx2) {
+          talentCtx2 = talentService ? await talentService.computeTalentContext(nextBatch.userId, planetId) : {};
+        }
 
         let unitTime: number;
         if (type === 'ship') {

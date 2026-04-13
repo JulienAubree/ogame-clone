@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetShips } from '@exilium/db';
 import { totalCargoCapacity } from '@exilium/game-engine';
@@ -96,27 +96,19 @@ export class StationHandler implements MissionHandler {
       })
       .where(eq(planets.id, targetPlanet.id));
 
-    // Transfer ships
-    const [targetShips] = await ctx.db
-      .select()
-      .from(planetShips)
-      .where(eq(planetShips.planetId, targetPlanet.id))
-      .limit(1);
-
-    if (targetShips) {
-      const shipUpdates: Record<string, number> = {};
-      for (const [shipId, count] of Object.entries(fleetEvent.ships)) {
-        if (count > 0 && shipId !== 'flagship') {
-          const current = (targetShips[shipId as keyof typeof targetShips] ?? 0) as number;
-          shipUpdates[shipId] = current + count;
-        }
+    // Transfer ships — atomic increment, safe under concurrent arrivals
+    const shipUpdates: Record<string, any> = {};
+    for (const [shipId, count] of Object.entries(fleetEvent.ships)) {
+      if (count > 0 && shipId !== 'flagship') {
+        const col = planetShips[shipId as keyof typeof planetShips];
+        shipUpdates[shipId] = sql`${col} + ${count}`;
       }
-      if (Object.keys(shipUpdates).length > 0) {
-        await ctx.db
-          .update(planetShips)
-          .set(shipUpdates)
-          .where(eq(planetShips.planetId, targetPlanet.id));
-      }
+    }
+    if (Object.keys(shipUpdates).length > 0) {
+      await ctx.db
+        .update(planetShips)
+        .set(shipUpdates)
+        .where(eq(planetShips.planetId, targetPlanet.id));
     }
 
     const reportId = await createStationReport(

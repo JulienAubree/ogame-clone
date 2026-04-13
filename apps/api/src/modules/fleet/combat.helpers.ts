@@ -64,11 +64,14 @@ export async function applyDefenderLosses(
   repairedDefenses: Record<string, number>,
 ): Promise<void> {
   if (defShipsRow) {
-    const shipUpdates: Record<string, number> = {};
-    for (const [key, val] of Object.entries(defShipsRow)) {
+    const shipUpdates: Record<string, any> = {};
+    for (const key of Object.keys(defShipsRow)) {
       if (key === 'planetId') continue;
       const lost = defenderLosses[key] ?? 0;
-      if (lost > 0) shipUpdates[key] = Math.max(0, Number(val) - lost);
+      if (lost > 0) {
+        const col = planetShips[key as keyof typeof planetShips];
+        shipUpdates[key] = sql`GREATEST(${col} - ${lost}, 0)`;
+      }
     }
     if (Object.keys(shipUpdates).length > 0) {
       await db.update(planetShips).set(shipUpdates).where(eq(planetShips.planetId, planetId));
@@ -76,13 +79,16 @@ export async function applyDefenderLosses(
   }
 
   if (defDefsRow) {
-    const defUpdates: Record<string, number> = {};
-    for (const [key, val] of Object.entries(defDefsRow)) {
+    const defUpdates: Record<string, any> = {};
+    for (const key of Object.keys(defDefsRow)) {
       if (key === 'planetId') continue;
       const lost = defenderLosses[key] ?? 0;
       const repaired = repairedDefenses[key] ?? 0;
       const netLoss = lost - repaired;
-      if (netLoss > 0) defUpdates[key] = Math.max(0, Number(val) - netLoss);
+      if (netLoss > 0) {
+        const col = planetDefenses[key as keyof typeof planetDefenses];
+        defUpdates[key] = sql`GREATEST(${col} - ${netLoss}, 0)`;
+      }
     }
     if (Object.keys(defUpdates).length > 0) {
       await db.update(planetDefenses).set(defUpdates).where(eq(planetDefenses.planetId, planetId));
