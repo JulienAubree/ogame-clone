@@ -230,6 +230,7 @@ export function createExplorationReportService(
           system: explorationReports.system,
           position: explorationReports.position,
           planetClassId: explorationReports.planetClassId,
+          biomes: explorationReports.biomes,
           biomeCount: explorationReports.biomeCount,
           maxRarity: explorationReports.maxRarity,
           isComplete: explorationReports.isComplete,
