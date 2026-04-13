@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { useOutletContext, Link } from 'react-router';
+import { Link } from 'react-router';
 import { trpc } from '@/trpc';
+import { usePlanetStore } from '@/stores/planet.store';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ import { useTutorialTargetId } from '@/hooks/useTutorialHighlight';
 
 
 export default function Research() {
-  const { planetId } = useOutletContext<{ planetId?: string }>();
+  const planetId = usePlanetStore((s) => s.activePlanetId);
   const utils = trpc.useUtils();
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -38,10 +39,7 @@ export default function Research() {
   );
   const labLevel = buildings?.find((b) => b.id === 'researchLab')?.currentLevel ?? 0;
 
-  const { data: techs, isLoading } = trpc.research.list.useQuery(
-    { planetId: planetId! },
-    { enabled: !!planetId },
-  );
+  const { data: techs, isLoading } = trpc.research.list.useQuery();
 
   const { data: resourceData } = trpc.resource.production.useQuery(
     { planetId: planetId! },
@@ -67,8 +65,8 @@ export default function Research() {
 
   const startMutation = trpc.research.start.useMutation({
     onSuccess: () => {
-      utils.research.list.invalidate({ planetId: planetId! });
-      utils.resource.production.invalidate({ planetId: planetId! });
+      utils.research.list.invalidate();
+      if (planetId) utils.resource.production.invalidate({ planetId });
       utils.planet.empire.invalidate();
       utils.tutorial.getCurrent.invalidate();
     },
@@ -76,8 +74,8 @@ export default function Research() {
 
   const cancelMutation = trpc.research.cancel.useMutation({
     onSuccess: () => {
-      utils.research.list.invalidate({ planetId: planetId! });
-      utils.resource.production.invalidate({ planetId: planetId! });
+      utils.research.list.invalidate();
+      if (planetId) utils.resource.production.invalidate({ planetId });
       utils.planet.empire.invalidate();
       utils.tutorial.getCurrent.invalidate();
       setCancelConfirm(false);
@@ -224,7 +222,7 @@ export default function Research() {
                                 endTime={new Date(tech.researchEndTime)}
                                 totalDuration={tech.nextLevelTime}
                                 onComplete={() => {
-                                  utils.research.list.invalidate({ planetId: planetId! });
+                                  utils.research.list.invalidate();
                                   utils.tutorial.getCurrent.invalidate();
                                 }}
                               />
@@ -247,7 +245,7 @@ export default function Research() {
                           <Button
                             size="sm"
                             className="shrink-0"
-                            onClick={(e) => { e.stopPropagation(); startMutation.mutate({ planetId: planetId!, researchId: tech.id as any }); }}
+                            onClick={(e) => { e.stopPropagation(); startMutation.mutate({ researchId: tech.id as any }); }}
                             disabled={!canAfford || !tech.prerequisitesMet || isAnyResearching || startMutation.isPending}
                           >
                             ↑
@@ -308,7 +306,7 @@ export default function Research() {
                               endTime={new Date(tech.researchEndTime)}
                               totalDuration={tech.nextLevelTime}
                               onComplete={() => {
-                                utils.research.list.invalidate({ planetId: planetId! });
+                                utils.research.list.invalidate();
                                 utils.tutorial.getCurrent.invalidate();
                               }}
                             />
@@ -338,7 +336,7 @@ export default function Research() {
                                   className="w-full"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    startMutation.mutate({ planetId: planetId!, researchId: tech.id as any });
+                                    startMutation.mutate({ researchId: tech.id as any });
                                   }}
                                   disabled={!canAfford || isAnyResearching || startMutation.isPending}
                                 >

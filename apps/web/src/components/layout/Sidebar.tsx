@@ -33,6 +33,7 @@ const sections: { title: string; items: NavItem[] }[] = [
     title: 'Empire',
     items: [
       { label: 'Empire', path: '/empire', icon: EmpireIcon },
+      { label: 'Recherche', path: '/research', icon: ResearchIcon },
     ],
   },
   {
@@ -41,7 +42,6 @@ const sections: { title: string; items: NavItem[] }[] = [
       { label: "Vue d'ensemble", path: '/', icon: OverviewIcon },
       { label: 'Énergie', path: '/energy', icon: ResourcesIcon },
       { label: 'Bâtiments', path: '/buildings', icon: BuildingsIcon },
-      { label: 'Recherche', path: '/research', icon: ResearchIcon },
     ],
   },
   {
