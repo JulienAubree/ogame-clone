@@ -259,19 +259,20 @@ export class TradeHandler implements MissionHandler {
           .set({ status: 'sold' })
           .where(eq(explorationReports.id, report.id));
 
+        // Fetch buyer + seller usernames (used for notifications AND mission report)
+        const [buyer] = await ctx.db
+          .select({ username: users.username })
+          .from(users)
+          .where(eq(users.id, fleetEvent.userId))
+          .limit(1);
+        const [seller] = await ctx.db
+          .select({ username: users.username })
+          .from(users)
+          .where(eq(users.id, offer.sellerId))
+          .limit(1);
+
         // Notify both parties about report purchase
         if (ctx.redis) {
-          const [buyer] = await ctx.db
-            .select({ username: users.username })
-            .from(users)
-            .where(eq(users.id, fleetEvent.userId))
-            .limit(1);
-          const [seller] = await ctx.db
-            .select({ username: users.username })
-            .from(users)
-            .where(eq(users.id, offer.sellerId))
-            .limit(1);
-
           publishNotification(ctx.redis, offer.sellerId, {
             type: 'report-sold',
             payload: {
@@ -290,6 +291,50 @@ export class TradeHandler implements MissionHandler {
               system: report.system,
               position: report.position,
               biomeCount: reportBiomes.length,
+            },
+          });
+        }
+
+        // Create a trade mission report for the buyer
+        if (ctx.reportService) {
+          const config = await ctx.gameConfigService.getFullConfig();
+          const shipStatsMap = buildShipStatsMap(config);
+          const [originPlanet] = await ctx.db.select({
+            galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
+          }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+
+          await ctx.reportService.create({
+            userId: fleetEvent.userId,
+            fleetEventId: fleetEvent.id,
+            missionType: 'trade',
+            title: `Rapport acquis [${report.galaxy}:${report.system}:${report.position}]`,
+            coordinates: {
+              galaxy: report.galaxy,
+              system: report.system,
+              position: report.position,
+            },
+            originCoordinates: originPlanet ? {
+              galaxy: originPlanet.galaxy,
+              system: originPlanet.system,
+              position: originPlanet.position,
+              planetName: originPlanet.name,
+            } : undefined,
+            fleet: {
+              ships: fleetEvent.ships,
+              totalCargo: totalCargoCapacity(fleetEvent.ships, shipStatsMap),
+            },
+            departureTime: fleetEvent.departureTime,
+            completionTime: new Date(),
+            result: {
+              type: 'report-purchase',
+              planetClassId: report.planetClassId,
+              galaxy: report.galaxy,
+              system: report.system,
+              position: report.position,
+              biomes: reportBiomes,
+              biomeCount: reportBiomes.length,
+              isComplete: report.isComplete,
+              sellerUsername: seller?.username ?? 'Joueur',
             },
           });
         }

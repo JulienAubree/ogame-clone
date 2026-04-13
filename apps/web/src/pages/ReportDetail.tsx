@@ -11,6 +11,7 @@ import { MineReportDetail } from '@/components/reports/MineReportDetail';
 import { SpyReportDetail } from '@/components/reports/SpyReportDetail';
 import { RecycleReportDetail } from '@/components/reports/RecycleReportDetail';
 import { ExploreReportDetail } from '@/components/reports/ExploreReportDetail';
+import { TradeReportDetail } from '@/components/reports/TradeReportDetail';
 
 function formatDate(date: string | Date) {
   return new Intl.DateTimeFormat('fr-FR', {
@@ -189,6 +190,9 @@ export default function ReportDetail() {
       )}
       {report.missionType === 'explore' && (
         <ExploreReportDetail result={result} coordinates={coords} />
+      )}
+      {report.missionType === 'trade' && result.type === 'report-purchase' && (
+        <TradeReportDetail result={result} />
       )}
     </div>
   );
