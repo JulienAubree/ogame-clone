@@ -456,22 +456,36 @@ export function MarketReportsInventory({ planetId }: MarketReportsInventoryProps
                   {isExpanded && renderBiomeDetail(report)}
 
                   <div className="flex items-center justify-between gap-3 mt-2">
-                    <div className="text-xs text-muted-foreground">
-                      Prix : <span className="text-foreground font-medium">
-                        {/* The list endpoint doesn't return per-offer price yet —
-                            show a "listed" badge for now. A follow-up can join
-                            market_offers to return the price here. */}
-                        En attente d'acheteur
-                      </span>
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => cancelOfferMutation.mutate({ reportId: report.id })}
-                      disabled={cancelOfferMutation.isPending}
-                    >
-                      Annuler
-                    </Button>
+                    {report.offerStatus === 'reserved' ? (
+                      <>
+                        <div className="text-xs text-amber-400 flex items-center gap-1.5">
+                          <div className="h-3 w-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                          Acheteur en route — vente verrouillee
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled
+                          title="Impossible d'annuler — un acheteur est en route"
+                        >
+                          Annuler
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xs text-muted-foreground">
+                          En attente d'acheteur
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => cancelOfferMutation.mutate({ reportId: report.id })}
+                          disabled={cancelOfferMutation.isPending}
+                        >
+                          Annuler
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               );

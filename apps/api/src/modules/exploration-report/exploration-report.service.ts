@@ -1,6 +1,6 @@
 import { eq, and, ne, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { explorationReports, discoveredPositions, discoveredBiomes, biomeDefinitions, planets } from '@exilium/db';
+import { explorationReports, discoveredPositions, discoveredBiomes, biomeDefinitions, planets, marketOffers } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -237,8 +237,16 @@ export function createExplorationReportService(
           creationCost: explorationReports.creationCost,
           status: explorationReports.status,
           createdAt: explorationReports.createdAt,
+          offerStatus: marketOffers.status,
         })
         .from(explorationReports)
+        .leftJoin(
+          marketOffers,
+          and(
+            eq(marketOffers.explorationReportId, explorationReports.id),
+            sql`${marketOffers.status} IN ('active', 'reserved')`,
+          ),
+        )
         .where(
           and(
             eq(explorationReports.ownerId, userId),
@@ -251,6 +259,7 @@ export function createExplorationReportService(
         ...r,
         creationCost: Number(r.creationCost),
         createdAt: r.createdAt.toISOString(),
+        offerStatus: r.offerStatus as string | null,
       }));
     },
 
