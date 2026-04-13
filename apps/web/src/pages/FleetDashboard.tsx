@@ -38,7 +38,8 @@ export default function FleetDashboard() {
   const { data: inboundFleets } = trpc.fleet.inbound.useQuery();
 
   const { data: planets } = trpc.planet.list.useQuery();
-  const { data: researchList } = trpc.research.list.useQuery();
+  const { data: researchData } = trpc.research.list.useQuery();
+  const researchList = researchData?.items;
 
   const isLoading = shipsLoading || movementsLoading;
 

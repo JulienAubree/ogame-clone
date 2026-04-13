@@ -49,6 +49,24 @@ async function getDiscoveredBiomesCount(db: Database, userId: string): Promise<n
   return Number(result?.count ?? 0);
 }
 
+async function getAnnexDetails(db: Database, userId: string): Promise<{ buildingId: string; level: number; planetName: string }[]> {
+  const rows = await db
+    .select({
+      buildingId: planetBuildings.buildingId,
+      level: planetBuildings.level,
+      planetName: planets.name,
+    })
+    .from(planetBuildings)
+    .innerJoin(planets, eq(planets.id, planetBuildings.planetId))
+    .where(
+      and(
+        eq(planets.userId, userId),
+        inArray(planetBuildings.buildingId, ANNEX_BUILDING_IDS),
+      ),
+    );
+  return rows;
+}
+
 async function hasAnnexOfType(db: Database, userId: string, annexType: string): Promise<boolean> {
   const annexBuildingId = `lab${annexType.charAt(0).toUpperCase()}${annexType.slice(1)}`;
   const userPlanets = db
@@ -119,6 +137,8 @@ export function createResearchService(
       const annexBonusMultiplier = researchAnnexBonus(annexLevelsSum);
       const discoveredBiomesCount = await getDiscoveredBiomesCount(db, userId);
       const biomeBonusMultiplier = researchBiomeBonus(discoveredBiomesCount);
+      const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
+      const annexDetails = await getAnnexDetails(db, userId);
 
       const results = await Promise.all(
         Object.values(config.research)
@@ -127,7 +147,6 @@ export function createResearchService(
             const currentLevel = (research[def.levelColumn as keyof typeof research] ?? 0) as number;
             const nextLevel = currentLevel + 1;
             const cost = researchCost(def, nextLevel, phaseMap);
-            const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
             const time = Math.max(1, Math.floor(researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier * hullTimeMultiplier * annexBonusMultiplier * biomeBonusMultiplier));
 
             const researchLevels: Record<string, number> = {};
@@ -161,7 +180,21 @@ export function createResearchService(
             };
           }),
       );
-      return results;
+      return {
+        items: results,
+        bonuses: {
+          labLevel: buildingLevels['researchLab'] ?? 0,
+          labMultiplier: bonusMultiplier,
+          annexLevelsSum,
+          annexMultiplier: annexBonusMultiplier,
+          annexDetails,
+          discoveredBiomesCount,
+          biomeMultiplier: biomeBonusMultiplier,
+          talentMultiplier: talentTimeMultiplier,
+          hullMultiplier: hullTimeMultiplier,
+          totalMultiplier: bonusMultiplier * annexBonusMultiplier * biomeBonusMultiplier * talentTimeMultiplier * hullTimeMultiplier,
+        },
+      };
     },
 
     async startResearch(userId: string, researchId: string) {

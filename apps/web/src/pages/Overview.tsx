@@ -298,7 +298,8 @@ export default function Overview() {
     { enabled: !!planetId },
   );
 
-  const { data: techs } = trpc.research.list.useQuery();
+  const { data: techsData } = trpc.research.list.useQuery();
+  const techs = techsData?.items;
 
   const { data: queue } = trpc.shipyard.queue.useQuery(
     { planetId: planetId! },

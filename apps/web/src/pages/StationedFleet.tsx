@@ -29,7 +29,8 @@ export default function StationedFleet() {
   );
   const { data: flagship } = trpc.flagship.get.useQuery();
 
-  const { data: researchList } = trpc.research.list.useQuery();
+  const { data: researchData } = trpc.research.list.useQuery();
+  const researchList = researchData?.items;
 
   const researchLevels = useMemo(() => {
     if (!researchList) return {};

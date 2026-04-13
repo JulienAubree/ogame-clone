@@ -73,7 +73,8 @@ export default function CommandCenter() {
     { enabled: !!planetId },
   );
 
-  const { data: researchList } = trpc.research.list.useQuery();
+  const { data: researchData } = trpc.research.list.useQuery();
+  const researchList = researchData?.items;
 
   const researchLevels = useMemo(() => {
     const levels: Record<string, number> = {};

@@ -202,8 +202,8 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
   const protectedBaseRatio = gameConfig ? Number(gameConfig.universe?.['protected_storage_base_ratio']) || 0.05 : 0.05;
 
   // Fetch research level for armored storage display (only for storage buildings)
-  const { data: researchList } = trpc.research.list.useQuery();
-  const armoredResearch = researchList?.find((r: any) => r.id === 'armoredStorage');
+  const { data: researchData } = trpc.research.list.useQuery();
+  const armoredResearch = researchData?.items?.find((r: any) => r.id === 'armoredStorage');
   const armoredLevel = armoredResearch?.currentLevel ?? 0;
 
   // Resolve the bonus multiplier: research gives percentPerLevel (default 5) per level

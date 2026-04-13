@@ -262,7 +262,8 @@ export default function Fleet() {
   })();
 
   // Mining-specific stats
-  const { data: researchList } = trpc.research.list.useQuery();
+  const { data: researchData } = trpc.research.list.useQuery();
+  const researchList = researchData?.items;
   const miningStats = (() => {
     if (mission !== 'mine' || !gameConfig || !researchList) return undefined;
 
