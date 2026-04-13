@@ -12,6 +12,7 @@ const FILTER_OPTIONS = [
   { label: 'Mine', types: ['mine'] },
   { label: 'Recyclage', types: ['recycle'] },
   { label: 'Espionnage', types: ['spy', 'scan'] },
+  { label: 'Exploration', types: ['explore'] },
 ];
 
 export default function Reports() {
