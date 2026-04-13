@@ -33,3 +33,4 @@ export * from './feedbacks.js';
 export * from './changelogs.js';
 export * from './notification-preferences.js';
 export * from './biomes.js';
+export * from './exploration-reports.js';

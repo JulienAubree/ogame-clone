@@ -2,6 +2,7 @@ import { pgTable, uuid, timestamp, numeric, pgEnum, index } from 'drizzle-orm/pg
 import { sql } from 'drizzle-orm';
 import { users } from './users.js';
 import { planets } from './planets.js';
+import { explorationReports } from './exploration-reports.js';
 
 export const marketOfferStatusEnum = pgEnum('market_offer_status', [
   'active',
@@ -21,8 +22,9 @@ export const marketOffers = pgTable('market_offers', {
   id: uuid('id').primaryKey().defaultRandom(),
   sellerId: uuid('seller_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   planetId: uuid('planet_id').notNull().references(() => planets.id, { onDelete: 'cascade' }),
-  resourceType: marketResourceTypeEnum('resource_type').notNull(),
-  quantity: numeric('quantity', { precision: 20, scale: 2 }).notNull(),
+  resourceType: marketResourceTypeEnum('resource_type'),
+  quantity: numeric('quantity', { precision: 20, scale: 2 }),
+  explorationReportId: uuid('exploration_report_id').references(() => explorationReports.id, { onDelete: 'set null' }),
   priceMinerai: numeric('price_minerai', { precision: 20, scale: 2 }).notNull().default('0'),
   priceSilicium: numeric('price_silicium', { precision: 20, scale: 2 }).notNull().default('0'),
   priceHydrogene: numeric('price_hydrogene', { precision: 20, scale: 2 }).notNull().default('0'),
