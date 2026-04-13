@@ -52,9 +52,9 @@ export function SortableEmpireCard({
         isDragging && 'z-50 opacity-30',
       )}
     >
-      {/* Drag handle -- desktop: full-width top bar for easy grabbing */}
+      {/* Drag handle -- desktop only, wider touch target */}
       <div
-        className="absolute inset-x-0 top-0 z-10 hidden h-10 cursor-grab items-center justify-center rounded-t-lg bg-gradient-to-b from-card/95 to-transparent backdrop-blur-sm active:cursor-grabbing lg:flex"
+        className="absolute left-2 top-2 z-10 hidden cursor-grab rounded-md border border-border/50 bg-card/90 px-2 py-1.5 backdrop-blur-sm active:cursor-grabbing lg:flex"
         {...attributes}
         {...listeners}
       >

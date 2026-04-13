@@ -15,7 +15,6 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   rectSortingStrategy,
-  verticalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
 import { SortableEmpireCard } from './SortableEmpireCard';
@@ -82,8 +81,6 @@ export function ReorderableEmpireGrid({
     onSave(order);
   };
 
-  const items = orderedPlanets.map((p) => p.id);
-
   return (
     <>
       <DndContext
@@ -92,8 +89,11 @@ export function ReorderableEmpireGrid({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Desktop grid */}
-        <SortableContext items={items} strategy={rectSortingStrategy}>
+        <SortableContext
+          items={orderedPlanets.map((p) => p.id)}
+          strategy={rectSortingStrategy}
+        >
+          {/* Desktop grid */}
           <div className="hidden lg:grid lg:grid-cols-[repeat(auto-fill,minmax(340px,1fr))] lg:gap-4">
             {orderedPlanets.map((planet, i) => (
               <SortableEmpireCard
@@ -108,10 +108,8 @@ export function ReorderableEmpireGrid({
               />
             ))}
           </div>
-        </SortableContext>
 
-        {/* Mobile list */}
-        <SortableContext items={items} strategy={verticalListSortingStrategy}>
+          {/* Mobile list */}
           <div className="flex flex-col gap-3 lg:hidden">
             {orderedPlanets.map((planet, i) => (
               <SortableEmpireCard
@@ -131,7 +129,7 @@ export function ReorderableEmpireGrid({
         {/* Floating overlay that follows the cursor while dragging */}
         <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
           {activePlanet ? (
-            <div className="pointer-events-none rotate-1 scale-[1.03] rounded-lg shadow-2xl shadow-primary/20 ring-2 ring-primary/40">
+            <div className="pointer-events-none scale-[1.02] rounded-lg shadow-2xl shadow-primary/20 ring-2 ring-primary/40">
               <EmpirePlanetCard planet={activePlanet} isFirst={false} />
             </div>
           ) : null}
