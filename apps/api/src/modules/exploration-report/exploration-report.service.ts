@@ -373,7 +373,7 @@ export function createExplorationReportService(
 
       // Check no existing report in inventory/listed
       const [existing] = await db
-        .select({ id: explorationReports.id })
+        .select({ id: explorationReports.id, status: explorationReports.status })
         .from(explorationReports)
         .where(
           and(
@@ -387,7 +387,10 @@ export function createExplorationReportService(
         .limit(1);
 
       if (existing) {
-        return { canCreate: false, reason: 'Un rapport existe deja pour cette position', cost: 0 };
+        const reason = existing.status === 'listed'
+          ? 'Un rapport pour cette position est deja en vente sur le marche'
+          : 'Un rapport pour cette position est deja dans votre inventaire';
+        return { canCreate: false, reason, cost: 0 };
       }
 
       return { canCreate: true, cost: 0 };
