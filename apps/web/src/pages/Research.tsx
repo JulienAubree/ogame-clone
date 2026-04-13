@@ -160,92 +160,109 @@ export default function Research() {
                   style={{ width: `${Math.min(totalReduction, 100)}%` }}
                 />
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Vos recherches sont <span className="text-emerald-400 font-medium">{totalReduction}% plus rapides</span> grace aux bonus cumules de votre empire.
-              </p>
             </div>
 
-            {/* Bonus breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {/* Main lab */}
-              <div className="rounded-lg border border-white/10 bg-card/50 px-3 py-2.5 space-y-1">
-                <div className="flex items-center gap-2">
-                  <ResearchIcon width={14} height={14} className="text-violet-400 shrink-0" />
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Labo principal</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs text-foreground">Niveau {bonuses.labLevel}</span>
-                  <span className="text-xs font-semibold text-emerald-400">-{labReduction}%</span>
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Left: Labs */}
+              <div className="flex-1 space-y-3">
+                <h3 className="text-[10px] uppercase tracking-wider font-semibold text-violet-400 flex items-center gap-1.5">
+                  <BuildingsIcon width={14} height={14} />
+                  Laboratoires de l'empire
+                </h3>
+
+                <div className="space-y-1.5">
+                  {/* Main lab */}
+                  <div className="flex items-center gap-2 bg-card/50 border border-white/10 rounded-lg px-3 py-2">
+                    <ResearchIcon width={16} height={16} className="text-violet-400 shrink-0" />
+                    <span className="text-xs text-foreground font-medium">Laboratoire de recherche</span>
+                    <span className="ml-auto text-xs text-violet-400 font-semibold">Niv. {bonuses.labLevel}</span>
+                  </div>
+
+                  {/* Annex labs */}
+                  {bonuses.annexDetails.length > 0 ? (
+                    bonuses.annexDetails.map((annex, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-card/50 border border-white/10 rounded-lg px-3 py-2">
+                        <BuildingsIcon width={14} height={14} className="text-violet-400/60 shrink-0" />
+                        <span className="text-xs text-foreground truncate">{ANNEX_NAMES[annex.buildingId] ?? annex.buildingId}</span>
+                        <span className="text-[10px] text-muted-foreground truncate">({annex.planetName})</span>
+                        <span className="ml-auto text-xs text-violet-400/80 font-semibold shrink-0">Niv. {annex.level}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic px-1">Aucun laboratoire annexe</p>
+                  )}
                 </div>
               </div>
 
-              {/* Annex labs */}
-              <div className="rounded-lg border border-white/10 bg-card/50 px-3 py-2.5 space-y-1">
-                <div className="flex items-center gap-2">
-                  <BuildingsIcon width={14} height={14} className="text-violet-400 shrink-0" />
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Labos annexes</span>
-                </div>
-                {bonuses.annexDetails.length > 0 ? (
-                  <div className="space-y-0.5">
-                    {bonuses.annexDetails.map((annex, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground truncate">{ANNEX_NAMES[annex.buildingId] ?? annex.buildingId} <span className="text-foreground/50">({annex.planetName})</span></span>
-                        <span className="text-violet-400 font-medium shrink-0 ml-2">Niv. {annex.level}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-baseline justify-between border-t border-white/5 pt-1 mt-1">
-                      <span className="text-[10px] text-muted-foreground">{bonuses.annexLevelsSum} niveaux cumules</span>
-                      <span className="text-xs font-semibold text-emerald-400">-{annexReduction}%</span>
+              {/* Divider */}
+              <div className="hidden lg:block w-px bg-white/10" />
+              <div className="lg:hidden h-px bg-white/10" />
+
+              {/* Right: Bonuses */}
+              <div className="flex-1 space-y-3">
+                <h3 className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400 flex items-center gap-1.5">
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+                  </svg>
+                  Bonus de vitesse
+                </h3>
+
+                <div className="space-y-1.5">
+                  {/* Main lab bonus */}
+                  <div className="flex items-center gap-2 px-3 py-1.5">
+                    <ResearchIcon width={14} height={14} className="text-violet-400 shrink-0" />
+                    <span className="text-xs text-foreground flex-1">Labo principal <span className="text-muted-foreground">(Niv. {bonuses.labLevel})</span></span>
+                    <span className="text-xs font-semibold text-emerald-400 shrink-0">-{labReduction}%</span>
+                    <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden shrink-0">
+                      <div className="h-full rounded-full bg-emerald-500/60" style={{ width: `${Math.min(labReduction, 100)}%` }} />
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-muted-foreground italic">Aucun</span>
-                    <span className="text-xs text-muted-foreground/50">-0%</span>
+
+                  {/* Annex bonus */}
+                  <div className="flex items-center gap-2 px-3 py-1.5">
+                    <BuildingsIcon width={14} height={14} className={cn('shrink-0', annexReduction > 0 ? 'text-violet-400' : 'text-muted-foreground/50')} />
+                    <span className={cn('text-xs flex-1', annexReduction > 0 ? 'text-foreground' : 'text-muted-foreground')}>Labos annexes <span className="text-muted-foreground">({bonuses.annexLevelsSum} niv.)</span></span>
+                    <span className={cn('text-xs font-semibold shrink-0', annexReduction > 0 ? 'text-emerald-400' : 'text-muted-foreground/50')}>-{annexReduction}%</span>
+                    <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden shrink-0">
+                      <div className="h-full rounded-full bg-emerald-500/60" style={{ width: `${Math.min(annexReduction, 100)}%` }} />
+                    </div>
                   </div>
-                )}
+
+                  {/* Biomes bonus */}
+                  <div className="flex items-center gap-2 px-3 py-1.5">
+                    <GalaxyIcon width={14} height={14} className={cn('shrink-0', biomeReduction > 0 ? 'text-amber-400' : 'text-muted-foreground/50')} />
+                    <span className={cn('text-xs flex-1', biomeReduction > 0 ? 'text-foreground' : 'text-muted-foreground')}>Biomes <span className="text-muted-foreground">({bonuses.discoveredBiomesCount})</span></span>
+                    <span className={cn('text-xs font-semibold shrink-0', biomeReduction > 0 ? 'text-emerald-400' : 'text-muted-foreground/50')}>-{biomeReduction}%</span>
+                    <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden shrink-0">
+                      <div className="h-full rounded-full bg-emerald-500/60" style={{ width: `${Math.min(biomeReduction, 100)}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Talents bonus */}
+                  {talentReduction > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1.5">
+                      <EmpireIcon width={14} height={14} className="text-emerald-400 shrink-0" />
+                      <span className="text-xs text-foreground flex-1">Talents</span>
+                      <span className="text-xs font-semibold text-emerald-400 shrink-0">-{talentReduction}%</span>
+                      <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden shrink-0">
+                        <div className="h-full rounded-full bg-emerald-500/60" style={{ width: `${Math.min(talentReduction, 100)}%` }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hull bonus */}
+                  {hullReduction > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1.5">
+                      <FlagshipIcon width={14} height={14} className="text-cyan-400 shrink-0" />
+                      <span className="text-xs text-foreground flex-1">Vaisseau amiral</span>
+                      <span className="text-xs font-semibold text-emerald-400 shrink-0">-{hullReduction}%</span>
+                      <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden shrink-0">
+                        <div className="h-full rounded-full bg-emerald-500/60" style={{ width: `${Math.min(hullReduction, 100)}%` }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {/* Biomes */}
-              <div className="rounded-lg border border-white/10 bg-card/50 px-3 py-2.5 space-y-1">
-                <div className="flex items-center gap-2">
-                  <GalaxyIcon width={14} height={14} className="text-amber-400 shrink-0" />
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Biomes decouverts</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs text-foreground">{bonuses.discoveredBiomesCount} biomes</span>
-                  <span className={cn('text-xs font-semibold', biomeReduction > 0 ? 'text-emerald-400' : 'text-muted-foreground/50')}>-{biomeReduction}%</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground">-1% par biome explore</p>
-              </div>
-
-              {/* Talents (only if active) */}
-              {talentReduction > 0 && (
-                <div className="rounded-lg border border-white/10 bg-card/50 px-3 py-2.5 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <EmpireIcon width={14} height={14} className="text-emerald-400 shrink-0" />
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Talents</span>
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-foreground">Bonus du vaisseau amiral</span>
-                    <span className="text-xs font-semibold text-emerald-400">-{talentReduction}%</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Hull (only if active) */}
-              {hullReduction > 0 && (
-                <div className="rounded-lg border border-white/10 bg-card/50 px-3 py-2.5 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <FlagshipIcon width={14} height={14} className="text-cyan-400 shrink-0" />
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Vaisseau amiral</span>
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-foreground">Bonus passif de coque</span>
-                    <span className="text-xs font-semibold text-emerald-400">-{hullReduction}%</span>
-                  </div>
-                </div>
-              )}
             </div>
           </section>
         );
