@@ -78,8 +78,19 @@ export function createResearchService(
   dailyQuestService?: ReturnType<typeof createDailyQuestService>,
 ) {
   return {
-    async listResearch(userId: string, planetId: string) {
-      await this.getOwnedPlanet(userId, planetId);
+    async getHomeworld(userId: string) {
+      const [homeworld] = await db
+        .select()
+        .from(planets)
+        .where(and(eq(planets.userId, userId), eq(planets.planetClassId, 'homeworld')))
+        .limit(1);
+      if (!homeworld) throw new TRPCError({ code: 'NOT_FOUND', message: 'Planete mere introuvable' });
+      return homeworld;
+    },
+
+    async listResearch(userId: string) {
+      const homeworld = await this.getHomeworld(userId);
+      const planetId = homeworld.id;
       const research = await this.getOrCreateResearch(userId);
       const config = await gameConfigService.getFullConfig();
       const buildingLevels = await getBuildingLevels(db, planetId);
@@ -153,8 +164,9 @@ export function createResearchService(
       return results;
     },
 
-    async startResearch(userId: string, planetId: string, researchId: string) {
-      await this.getOwnedPlanet(userId, planetId);
+    async startResearch(userId: string, researchId: string) {
+      const homeworld = await this.getHomeworld(userId);
+      const planetId = homeworld.id;
       const research = await this.getOrCreateResearch(userId);
       const config = await gameConfigService.getFullConfig();
       const def = config.research[researchId];

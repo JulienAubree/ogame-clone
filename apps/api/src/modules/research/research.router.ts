@@ -5,18 +5,16 @@ import type { createResearchService } from './research.service.js';
 export function createResearchRouter(researchService: ReturnType<typeof createResearchService>) {
   return router({
     list: protectedProcedure
-      .input(z.object({ planetId: z.string().uuid() }))
-      .query(async ({ ctx, input }) => {
-        return researchService.listResearch(ctx.userId!, input.planetId);
+      .query(async ({ ctx }) => {
+        return researchService.listResearch(ctx.userId!);
       }),
 
     start: protectedProcedure
       .input(z.object({
-        planetId: z.string().uuid(),
         researchId: z.string().min(1),
       }))
       .mutation(async ({ ctx, input }) => {
-        return researchService.startResearch(ctx.userId!, input.planetId, input.researchId);
+        return researchService.startResearch(ctx.userId!, input.researchId);
       }),
 
     cancel: protectedProcedure
