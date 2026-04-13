@@ -132,7 +132,7 @@ export function createResearchService(
       // For empire-level research: get global talents (no planet restriction)
       // then get hull bonus separately (always active for research, regardless of flagship location)
       const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
-      const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
+      const talentTimeMultiplier = 1 - (talentCtx['research_time'] ?? 0);
       // Hull bonus: fetch with flagship's planet to ensure hull passive is included
       let hullTimeMultiplier = 1;
       if (talentService) {
@@ -273,7 +273,7 @@ export function createResearchService(
       const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
       // Empire-level: global talents + hull bonus from any planet
       const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
-      const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
+      const talentTimeMultiplier = 1 - (talentCtx['research_time'] ?? 0);
       let hullTimeMultiplier = 1;
       if (talentService) {
         const flagshipCtx = await talentService.computeTalentContext(userId, planetId);
