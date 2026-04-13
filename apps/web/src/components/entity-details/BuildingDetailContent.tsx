@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useOutletContext } from 'react-router';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { trpc } from '@/trpc';
 import { GameImage } from '@/components/common/GameImage';
@@ -202,11 +201,7 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
   const protectedBaseRatio = gameConfig ? Number(gameConfig.universe?.['protected_storage_base_ratio']) || 0.05 : 0.05;
 
   // Fetch research level for armored storage display (only for storage buildings)
-  const { planetId } = useOutletContext<{ planetId?: string }>() ?? {};
-  const { data: researchList } = trpc.research.list.useQuery(
-    { planetId: planetId! },
-    { enabled: isStorageBuilding && !!planetId },
-  );
+  const { data: researchList } = trpc.research.list.useQuery();
   const armoredResearch = researchList?.find((r: any) => r.id === 'armoredStorage');
   const armoredLevel = armoredResearch?.currentLevel ?? 0;
 

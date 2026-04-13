@@ -74,10 +74,7 @@ export default function Shipyard() {
     { enabled: !!planetId },
   );
 
-  const { data: researchList } = trpc.research.list.useQuery(
-    { planetId: planetId! },
-    { enabled: !!planetId },
-  );
+  const { data: researchList } = trpc.research.list.useQuery();
 
   const researchLevels = useMemo(() => {
     const levels: Record<string, number> = {};

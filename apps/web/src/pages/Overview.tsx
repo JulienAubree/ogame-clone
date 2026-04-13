@@ -298,10 +298,7 @@ export default function Overview() {
     { enabled: !!planetId },
   );
 
-  const { data: techs } = trpc.research.list.useQuery(
-    { planetId: planetId! },
-    { enabled: !!planetId },
-  );
+  const { data: techs } = trpc.research.list.useQuery();
 
   const { data: queue } = trpc.shipyard.queue.useQuery(
     { planetId: planetId! },
@@ -507,7 +504,7 @@ export default function Overview() {
                         totalDuration={activeResearch.nextLevelTime}
                         className="text-[10px] text-muted-foreground"
                         onComplete={() => {
-                          utils.research.list.invalidate({ planetId: planetId! });
+                          utils.research.list.invalidate();
                         }}
                       />
                     </div>

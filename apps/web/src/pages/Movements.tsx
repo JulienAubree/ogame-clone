@@ -313,11 +313,7 @@ export default function Movements() {
   const { data: inboundFleets } = trpc.fleet.inbound.useQuery();
   const { data: fleetSlots } = trpc.fleet.slots.useQuery();
   const { data: planets } = trpc.planet.list.useQuery();
-  const firstPlanetId = planets?.[0]?.id;
-  const { data: researchList } = trpc.research.list.useQuery(
-    { planetId: firstPlanetId! },
-    { enabled: !!firstPlanetId },
-  );
+  const { data: researchList } = trpc.research.list.useQuery();
   const researchLevels = useMemo(() => {
     if (!researchList) return {};
     return Object.fromEntries(researchList.map((r) => [r.id, r.currentLevel]));

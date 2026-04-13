@@ -262,10 +262,7 @@ export default function Fleet() {
   })();
 
   // Mining-specific stats
-  const { data: researchList } = trpc.research.list.useQuery(
-    { planetId: planetId! },
-    { enabled: !!planetId && mission === 'mine' },
-  );
+  const { data: researchList } = trpc.research.list.useQuery();
   const miningStats = (() => {
     if (mission !== 'mine' || !gameConfig || !researchList) return undefined;
 

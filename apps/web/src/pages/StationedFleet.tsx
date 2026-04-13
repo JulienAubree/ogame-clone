@@ -29,12 +29,7 @@ export default function StationedFleet() {
   );
   const { data: flagship } = trpc.flagship.get.useQuery();
 
-  const { data: planets } = trpc.planet.list.useQuery();
-  const firstPlanetId = planets?.[0]?.id;
-  const { data: researchList } = trpc.research.list.useQuery(
-    { planetId: firstPlanetId! },
-    { enabled: !!firstPlanetId },
-  );
+  const { data: researchList } = trpc.research.list.useQuery();
 
   const researchLevels = useMemo(() => {
     if (!researchList) return {};
