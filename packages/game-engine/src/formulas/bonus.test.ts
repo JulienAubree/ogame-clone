@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBonus, buildingBonusAtLevel, type BonusDefinition } from './bonus.js';
+import { resolveBonus, buildingBonusAtLevel, researchAnnexBonus, researchBiomeBonus, type BonusDefinition } from './bonus.js';
 
 const bonusDefs: BonusDefinition[] = [
   { sourceType: 'building', sourceId: 'robotics', stat: 'building_time', percentPerLevel: -15, category: null },
@@ -86,5 +86,38 @@ describe('buildingBonusAtLevel', () => {
 
   it('returns 1/11 at level 10', () => {
     expect(buildingBonusAtLevel(10)).toBeCloseTo(1 / 11);
+  });
+});
+
+describe('researchAnnexBonus', () => {
+  it('returns 1 when no annex levels', () => {
+    expect(researchAnnexBonus(0)).toBe(1);
+  });
+
+  it('applies -5% per annex level', () => {
+    expect(researchAnnexBonus(1)).toBeCloseTo(0.95);
+    expect(researchAnnexBonus(5)).toBeCloseTo(0.75);
+    expect(researchAnnexBonus(10)).toBeCloseTo(0.50);
+  });
+
+  it('clamps to minimum 0.01', () => {
+    expect(researchAnnexBonus(25)).toBe(0.01);
+    expect(researchAnnexBonus(100)).toBe(0.01);
+  });
+});
+
+describe('researchBiomeBonus', () => {
+  it('returns 1 when no biomes discovered', () => {
+    expect(researchBiomeBonus(0)).toBe(1);
+  });
+
+  it('applies -1% per discovered biome', () => {
+    expect(researchBiomeBonus(1)).toBeCloseTo(0.99);
+    expect(researchBiomeBonus(12)).toBeCloseTo(0.88);
+    expect(researchBiomeBonus(35)).toBeCloseTo(0.65);
+  });
+
+  it('clamps to minimum 0.01', () => {
+    expect(researchBiomeBonus(200)).toBe(0.01);
   });
 });

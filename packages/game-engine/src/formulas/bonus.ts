@@ -53,3 +53,23 @@ export function buildingBonusAtLevel(level: number): number {
   if (level <= 0) return 1;
   return 1 / (1 + level);
 }
+
+/**
+ * Passive research time multiplier from all annex lab levels combined.
+ * Linear: each annex level gives -5% research time.
+ * Unlike building bonuses in resolveBonus (diminishing returns),
+ * this is intentionally linear to reward empire expansion.
+ */
+export function researchAnnexBonus(totalAnnexLevels: number, percentPerLevel: number = 5): number {
+  if (totalAnnexLevels <= 0) return 1;
+  return Math.max(0.01, 1 - totalAnnexLevels * (percentPerLevel / 100));
+}
+
+/**
+ * Research time multiplier from total discovered biomes across all planets.
+ * Each unique biome discovered gives -1% research time.
+ */
+export function researchBiomeBonus(totalDiscoveredBiomes: number, percentPerBiome: number = 1): number {
+  if (totalDiscoveredBiomes <= 0) return 1;
+  return Math.max(0.01, 1 - totalDiscoveredBiomes * (percentPerBiome / 100));
+}
