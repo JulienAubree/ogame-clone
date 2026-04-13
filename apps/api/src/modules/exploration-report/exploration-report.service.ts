@@ -1,6 +1,6 @@
 import { eq, and, ne, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { explorationReports, discoveredPositions, discoveredBiomes, biomeDefinitions, planets, marketOffers } from '@exilium/db';
+import { explorationReports, discoveredPositions, discoveredBiomes, biomeDefinitions, planets, marketOffers, missionReports } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -173,10 +173,31 @@ export function createExplorationReportService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cette position est deja colonisee — impossible de vendre un rapport' });
       }
 
-      // 2. Check the user has discovered the position
+      // 2. Check the user EXPLORED this position themselves (not just via a purchased report)
+      const [exploreReport] = await db
+        .select({ id: missionReports.id })
+        .from(missionReports)
+        .where(
+          and(
+            eq(missionReports.userId, userId),
+            eq(missionReports.missionType, 'explore'),
+            sql`${missionReports.coordinates}->>'galaxy' = ${String(input.galaxy)}`,
+            sql`${missionReports.coordinates}->>'system' = ${String(input.system)}`,
+            sql`${missionReports.coordinates}->>'position' = ${String(input.position)}`,
+          ),
+        )
+        .limit(1);
+      if (!exploreReport) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Vous devez avoir explore cette position vous-meme pour pouvoir vendre un rapport',
+        });
+      }
+
+      // 3. Check the user has discovered the position
       await assertPositionDiscovered(userId, input.galaxy, input.system, input.position);
 
-      // 3. Check no duplicate report in inventory/listed
+      // 4. Check no duplicate report in inventory/listed
       await assertNoDuplicateReport(userId, input.galaxy, input.system, input.position);
 
       // 3. Snapshot biomes from discovered_biomes
@@ -311,6 +332,24 @@ export function createExplorationReportService(
         .limit(1);
       if (colonized) {
         return { canCreate: false, reason: 'Position deja colonisee', cost: 0 };
+      }
+
+      // Check the user explored this position themselves
+      const [exploreReport] = await db
+        .select({ id: missionReports.id })
+        .from(missionReports)
+        .where(
+          and(
+            eq(missionReports.userId, userId),
+            eq(missionReports.missionType, 'explore'),
+            sql`${missionReports.coordinates}->>'galaxy' = ${String(input.galaxy)}`,
+            sql`${missionReports.coordinates}->>'system' = ${String(input.system)}`,
+            sql`${missionReports.coordinates}->>'position' = ${String(input.position)}`,
+          ),
+        )
+        .limit(1);
+      if (!exploreReport) {
+        return { canCreate: false, reason: 'Vous devez avoir explore cette position vous-meme', cost: 0 };
       }
 
       // Check position discovered
