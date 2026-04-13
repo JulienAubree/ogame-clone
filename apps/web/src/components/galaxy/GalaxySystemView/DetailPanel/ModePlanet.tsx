@@ -11,7 +11,7 @@
  * effects beyond the click handlers wired to the caller.
  */
 
-import type { ReactElement, ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import type { SlotView } from '../slotView';
 import type { DetailPanelActions, DetailPanelContext } from './types';
 import { BiomeChips } from './BiomeChips';
@@ -58,16 +58,32 @@ function ActionButton({
   onClick: () => void;
   children: ReactNode;
 }): ReactElement {
+  const [showTip, setShowTip] = useState(false);
   return (
-    <button
-      type="button"
-      disabled={!enabled}
-      title={enabled ? enabledTitle : disabledTitle}
-      className={enabled ? enabledClassName : BTN_DISABLED}
-      onClick={enabled ? onClick : undefined}
+    <div
+      className="relative inline-flex"
+      onMouseEnter={() => { if (!enabled) setShowTip(true); }}
+      onMouseLeave={() => setShowTip(false)}
     >
-      {children}
-    </button>
+      <button
+        type="button"
+        disabled={!enabled}
+        title={enabled ? enabledTitle : undefined}
+        className={enabled ? enabledClassName : BTN_DISABLED}
+        onClick={enabled ? onClick : undefined}
+      >
+        {children}
+      </button>
+      {showTip && !enabled && (
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-lg border border-border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-xl pointer-events-none"
+          style={{ zIndex: 50 }}
+        >
+          {disabledTitle}
+          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-border" />
+        </div>
+      )}
+    </div>
   );
 }
 
