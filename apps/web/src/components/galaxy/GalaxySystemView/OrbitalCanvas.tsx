@@ -37,7 +37,7 @@ const STAR_OUTER_RADIUS = 26;
 const STAR_CORE_RADIUS = 9;
 const STARFIELD_COUNT = 60;
 const TOTAL_POSITIONS = 16;
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const DRAG_THRESHOLD_PX = 5;
 

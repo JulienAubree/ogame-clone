@@ -28,6 +28,7 @@ import {
 } from 'react';
 import { useSearchParams } from 'react-router';
 import { trpc } from '@/trpc';
+import { CoordinateInput } from '@/components/common/CoordinateInput';
 import { DetailPanel } from './DetailPanel';
 import type {
   DetailPanelActions,
@@ -58,6 +59,7 @@ export interface GalaxySystemViewProps {
   myCapitalPosition: number | null;
   onSystemPrev: () => void;
   onSystemNext: () => void;
+  onCoordinateChange: (galaxy: number, system: number) => void;
   actions: DetailPanelActions;
 }
 
@@ -79,6 +81,7 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
     myCapitalPosition,
     onSystemPrev,
     onSystemNext,
+    onCoordinateChange,
     actions,
   } = props;
 
@@ -263,7 +266,7 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
     selection.kind === 'slot' ? selection.position : null;
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] min-h-[480px] rounded-lg overflow-hidden border border-cyan-500/10 bg-black/40">
+    <div className="flex h-[calc(100vh-6rem)] min-h-[480px] rounded-lg overflow-hidden bg-black/40">
       <Ribbon
         views={views}
         selectedPosition={selectedPosition}
@@ -282,6 +285,34 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
           onSelectStar={selectStar}
           onHoverPosition={setHoveredPosition}
         />
+        {/* System selector overlay — top-left */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 border border-cyan-500/20 rounded-md p-1 backdrop-blur-sm z-10">
+          <button
+            type="button"
+            onClick={onSystemPrev}
+            className="w-7 h-7 flex items-center justify-center text-cyan-300 hover:bg-cyan-500/20 rounded text-sm"
+            aria-label="Systeme precedent"
+          >
+            &lt;
+          </button>
+          <div className="px-1">
+            <CoordinateInput
+              galaxy={galaxy}
+              system={system}
+              position={1}
+              onChange={(c) => onCoordinateChange(c.galaxy, c.system)}
+              hidePosition
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onSystemNext}
+            className="w-7 h-7 flex items-center justify-center text-cyan-300 hover:bg-cyan-500/20 rounded text-sm"
+            aria-label="Systeme suivant"
+          >
+            &gt;
+          </button>
+        </div>
       </div>
       <DetailPanel
         selection={selection}
