@@ -703,10 +703,13 @@ export function createMarketService(
             .onConflictDoNothing();
         }
 
-        // 7. Update report: ownerId -> buyer, status -> sold
+        // 7. Update report: status -> sold (ownerId stays with the seller —
+        // the buyer consumes the data, they don't "own" the report object.
+        // This prevents the bought report from showing in the buyer's
+        // "Mes rapports" inventory.)
         await tx
           .update(explorationReports)
-          .set({ ownerId: userId, status: 'sold' })
+          .set({ status: 'sold' })
           .where(eq(explorationReports.id, report.id));
 
         // 8. Update offer: status -> sold
