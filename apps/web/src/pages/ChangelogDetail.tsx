@@ -205,16 +205,21 @@ function renderMarkdown(content: string) {
     // Headings — check longest prefix first
     if (line.startsWith('##### ')) {
       flushList();
+      const text = line.slice(6);
+      const id = slugify(text);
       elements.push(
-        <h5 key={`h5-${elements.length}`} className="text-xs font-medium text-foreground/70 mt-2 mb-0.5">
-          {inlineFormat(line.slice(6))}
+        <h5 key={`h5-${elements.length}`} id={id} className="text-xs font-medium text-muted-foreground mt-3 mb-1 scroll-mt-4 uppercase tracking-wider">
+          {inlineFormat(text)}
         </h5>
       );
     } else if (line.startsWith('#### ')) {
       flushList();
+      const text = line.slice(5);
+      const id = slugify(text);
       elements.push(
-        <h4 key={`h4-${elements.length}`} className="text-sm font-medium text-foreground/90 mt-2.5 mb-0.5">
-          {inlineFormat(line.slice(5))}
+        <h4 key={`h4-${elements.length}`} id={id} className="text-xs font-semibold text-foreground/80 mt-4 mb-1 scroll-mt-4 flex items-center gap-2">
+          <span className="w-3 h-px bg-cyan-500/40" />
+          {inlineFormat(text)}
         </h4>
       );
     } else if (line.startsWith('### ')) {
@@ -223,7 +228,8 @@ function renderMarkdown(content: string) {
       const text = line.slice(4);
       const id = slugify(text);
       elements.push(
-        <h3 key={`h3-${elements.length}`} id={id} className="text-sm font-semibold text-foreground mt-5 mb-1.5 scroll-mt-4">
+        <h3 key={`h3-${elements.length}`} id={id} className="text-sm font-semibold text-foreground mt-6 mb-2 scroll-mt-4 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-purple-400/60" />
           {inlineFormat(text)}
         </h3>
       );
