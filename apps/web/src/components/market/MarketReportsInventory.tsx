@@ -177,10 +177,6 @@ export function MarketReportsInventory({ planetId }: MarketReportsInventoryProps
               <div key={report.id} className="retro-card p-4 space-y-3">
                 {renderReportCard(report)}
 
-                <div className="text-xs text-muted-foreground">
-                  Cout de creation : <span className="text-blue-400">{report.creationCost.toLocaleString('fr-FR')} H2</span>
-                </div>
-
                 {/* Sell form */}
                 {sellingReportId === report.id ? (
                   <div className="border border-primary/20 bg-primary/5 rounded-md p-3 space-y-3">

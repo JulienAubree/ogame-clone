@@ -423,9 +423,6 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
               {' · '}{discoveredCount > 0 ? `${discoveredCount} biome(s) inclus` : 'Aucun biome'}
               {isComplete && ' · Complet'}
             </div>
-            <div className="text-xs">
-              Cout : <span className="text-blue-400 font-semibold">{canCreate.data?.cost} hydrogene</span>
-            </div>
             <div className="flex gap-2">
               <button type="button" className={BTN_AMBER} onClick={handleCreate} disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Creation...' : 'Confirmer'}

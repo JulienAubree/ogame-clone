@@ -151,36 +151,6 @@ export function createExplorationReportService(
     return RARITY_ORDER[maxIndex];
   }
 
-  /** Compute the hydrogene creation cost based on biome rarities. */
-  function computeCreationCost(
-    biomes: BiomeSnapshot[],
-    baseCost: number,
-    biomeCosts: Record<string, number>,
-  ): number {
-    let cost = baseCost;
-    for (const b of biomes) {
-      cost += biomeCosts[b.rarity] ?? 0;
-    }
-    return cost;
-  }
-
-  /** Read the report cost config from universe config. */
-  async function getReportCostConfig(): Promise<{
-    baseCost: number;
-    biomeCosts: Record<string, number>;
-  }> {
-    const config = await gameConfigService.getFullConfig();
-    const baseCost = Number(config.universe.report_creation_base_cost) || 200;
-    const biomeCosts = (config.universe.report_creation_biome_costs as Record<string, number>) ?? {
-      common: 50,
-      uncommon: 100,
-      rare: 250,
-      epic: 600,
-      legendary: 1000,
-    };
-    return { baseCost, biomeCosts };
-  }
-
   return {
     async create(
       userId: string,
@@ -213,18 +183,7 @@ export function createExplorationReportService(
       // 6. Compute maxRarity
       const maxRarity = computeMaxRarity(biomes);
 
-      // 7. Compute creation cost
-      const { baseCost, biomeCosts } = await getReportCostConfig();
-      const creationCost = computeCreationCost(biomes, baseCost, biomeCosts);
-
-      // 8. Deduct hydrogene from the player's planet
-      await resourceService.spendResources(planetId, userId, {
-        minerai: 0,
-        silicium: 0,
-        hydrogene: creationCost,
-      });
-
-      // 9. Insert into exploration_reports
+      // 7. Insert into exploration_reports (no creation cost — free to create)
       const [report] = await db
         .insert(explorationReports)
         .values({
@@ -238,7 +197,7 @@ export function createExplorationReportService(
           biomeCount: biomes.length,
           maxRarity,
           isComplete,
-          creationCost: String(creationCost),
+          creationCost: '0',
           status: 'inventory',
         })
         .returning();
@@ -349,12 +308,7 @@ export function createExplorationReportService(
         return { canCreate: false, reason: 'Un rapport existe deja pour cette position', cost: 0 };
       }
 
-      // Compute cost
-      const biomes = await snapshotBiomes(userId, input.galaxy, input.system, input.position);
-      const { baseCost, biomeCosts } = await getReportCostConfig();
-      const cost = computeCreationCost(biomes, baseCost, biomeCosts);
-
-      return { canCreate: true, cost };
+      return { canCreate: true, cost: 0 };
     },
   };
 }
