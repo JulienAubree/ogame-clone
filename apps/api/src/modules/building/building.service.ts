@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, buildQueue, planetBuildings } from '@exilium/db';
 import type { Database } from '@exilium/db';
@@ -31,7 +31,7 @@ export function createBuildingService(
     },
 
     async listBuildings(userId: string, planetId: string) {
-      await this.getOwnedPlanet(userId, planetId);
+      const planet = await this.getOwnedPlanet(userId, planetId);
       const config = await gameConfigService.getFullConfig();
       const buildingLevels = await this.getBuildingLevels(planetId);
 
@@ -55,6 +55,11 @@ export function createBuildingService(
       const talentTimeMultiplier = 1 / (1 + (talentCtx['building_time'] ?? 0));
 
       return Object.values(config.buildings)
+        .filter((def) => {
+          const allowed = (def as { allowedPlanetTypes?: string[] | null }).allowedPlanetTypes;
+          if (!allowed) return true;
+          return allowed.includes(planet.planetClassId ?? '');
+        })
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((def) => {
           const currentLevel = buildingLevels[def.id] ?? 0;
@@ -100,17 +105,42 @@ export function createBuildingService(
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Construction déjà en cours' });
       }
 
+      // Check planet type restriction
+      const allowedTypes = (def as { allowedPlanetTypes?: string[] | null }).allowedPlanetTypes;
+      if (allowedTypes && !allowedTypes.includes(planet.planetClassId ?? '')) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Ce batiment ne peut pas etre construit sur ce type de planete',
+        });
+      }
+
       const buildingLevels = await this.getBuildingLevels(planetId);
 
       // Check prerequisites
+      // For buildings restricted to specific planet types (annexes), check prerequisites
+      // across ALL player's planets (e.g., researchLab on homeworld)
+      let prereqLevels = buildingLevels;
+      if (allowedTypes) {
+        const allPlanetRows = await db
+          .select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
+          .from(planetBuildings)
+          .innerJoin(planets, eq(planets.id, planetBuildings.planetId))
+          .where(eq(planets.userId, userId));
+        const globalLevels: Record<string, number> = {};
+        for (const row of allPlanetRows) {
+          globalLevels[row.buildingId] = Math.max(globalLevels[row.buildingId] ?? 0, row.level);
+        }
+        prereqLevels = globalLevels;
+      }
+
       for (const prereq of def.prerequisites) {
-        const prereqLevel = buildingLevels[prereq.buildingId] ?? 0;
+        const prereqLevel = prereqLevels[prereq.buildingId] ?? 0;
         if (prereqLevel < prereq.level) {
           const prereqDef = config.buildings[prereq.buildingId];
           const prereqName = prereqDef?.name ?? prereq.buildingId;
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Prérequis non rempli : ${prereqName} niveau ${prereq.level}`,
+            message: `Prerequis non rempli : ${prereqName} niveau ${prereq.level}`,
           });
         }
       }
