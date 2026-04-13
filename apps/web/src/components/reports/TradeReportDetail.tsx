@@ -1,6 +1,7 @@
 // apps/web/src/components/reports/TradeReportDetail.tsx
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { PlanetVisual } from '@/components/galaxy/PlanetVisual';
+import { CoordsLink } from '@/components/common/CoordsLink';
 
 const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',
@@ -78,7 +79,9 @@ export function TradeReportDetail({ result }: TradeReportDetailProps) {
             Rapport d'exploration acquis
           </div>
           <h3 className="text-lg font-bold text-foreground leading-tight">
-            Position {coordsLabel}
+            Position {result.galaxy != null && result.system != null && result.position != null
+              ? <CoordsLink galaxy={result.galaxy} system={result.system} position={result.position} className="text-cyan-400 hover:text-cyan-300 hover:underline font-mono text-lg transition-colors" />
+              : coordsLabel}
           </h3>
           <div className="text-xs text-muted-foreground mt-0.5">
             Type : {planetTypeName}

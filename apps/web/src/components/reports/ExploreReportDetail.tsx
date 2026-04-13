@@ -5,6 +5,7 @@ import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { useToastStore } from '@/stores/toast.store';
 import { PlanetVisual } from '@/components/galaxy/PlanetVisual';
+import { CoordsLink } from '@/components/common/CoordsLink';
 
 // Button styles — mirrors ModePlanet.tsx so enabled/disabled states
 // stay consistent between the galaxy detail panel and the report view.
@@ -246,6 +247,7 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
     planetTypeName,
   });
 
+  // coordsLabel kept for non-link usages; CoordsLink used in JSX
   const coordsLabel = `[${coordinates.galaxy}:${coordinates.system}:${coordinates.position}]`;
 
   const statusBadge = isComplete
@@ -269,7 +271,7 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
             Position cartographiée
           </div>
           <h3 className="text-lg font-bold text-foreground leading-tight">{planetTypeName}</h3>
-          <div className="text-xs text-muted-foreground font-mono mt-0.5">{coordsLabel}</div>
+          <div className="mt-0.5"><CoordsLink galaxy={coordinates.galaxy} system={coordinates.system} position={coordinates.position} /></div>
           <div className="mt-3">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${statusBadge.cls}`}

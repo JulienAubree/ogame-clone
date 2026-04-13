@@ -12,6 +12,7 @@ import { SpyReportDetail } from '@/components/reports/SpyReportDetail';
 import { RecycleReportDetail } from '@/components/reports/RecycleReportDetail';
 import { ExploreReportDetail } from '@/components/reports/ExploreReportDetail';
 import { TradeReportDetail } from '@/components/reports/TradeReportDetail';
+import { CoordsLink } from '@/components/common/CoordsLink';
 
 function formatDate(date: string | Date) {
   return new Intl.DateTimeFormat('fr-FR', {
@@ -110,8 +111,8 @@ export default function ReportDetail() {
           <h1 className="text-lg font-bold text-foreground">{report.title}</h1>
           <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
             <div>
-              Cible : {formatCoords(coords)}
-              {origin && <> — Origine : {origin.planetName} {formatCoords(origin)}</>}
+              Cible : <CoordsLink galaxy={coords.galaxy} system={coords.system} position={coords.position} />
+              {origin && <> — Origine : {origin.planetName} <CoordsLink galaxy={origin.galaxy} system={origin.system} position={origin.position} /></>}
             </div>
             <div>{formatDate(report.completionTime)}</div>
           </div>

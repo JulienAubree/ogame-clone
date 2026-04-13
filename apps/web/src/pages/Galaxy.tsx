@@ -104,10 +104,15 @@ export default function Galaxy() {
     { enabled: !!planetId },
   );
 
-  const [galaxy, setGalaxy] = useState(activePlanet?.galaxy ?? 1);
-  const [system, setSystem] = useState(activePlanet?.system ?? 1);
-  const [initialized, setInitialized] = useState(false);
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read g/s from URL if present (deep-link from reports, market, etc.)
+  const urlGalaxy = searchParams.get('g') ? Number(searchParams.get('g')) : null;
+  const urlSystem = searchParams.get('s') ? Number(searchParams.get('s')) : null;
+
+  const [galaxy, setGalaxy] = useState(urlGalaxy ?? activePlanet?.galaxy ?? 1);
+  const [system, setSystem] = useState(urlSystem ?? activePlanet?.system ?? 1);
+  const [initialized, setInitialized] = useState(urlGalaxy != null);
   const setActivePlanetStore = usePlanetStore((s) => s.setActivePlanet);
 
   useEffect(() => {
