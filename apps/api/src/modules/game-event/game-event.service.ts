@@ -4,7 +4,7 @@ import { gameEvents, notificationPreferences } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import { EVENT_TYPE_TO_CATEGORY } from '@exilium/shared';
 
-export type GameEventType = 'building-done' | 'research-done' | 'shipyard-done' | 'fleet-arrived' | 'fleet-returned' | 'pve-mission-done' | 'tutorial-quest-done' | 'friend-request' | 'friend-accepted' | 'friend-declined';
+export type GameEventType = 'building-done' | 'research-done' | 'shipyard-done' | 'fleet-arrived' | 'fleet-returned' | 'pve-mission-done' | 'tutorial-quest-done' | 'friend-request' | 'friend-accepted' | 'friend-declined' | 'report-sold' | 'report-purchased';
 
 export function createGameEventService(db: Database) {
   return {

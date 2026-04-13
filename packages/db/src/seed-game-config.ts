@@ -435,6 +435,8 @@ const UI_LABELS = [
   { key: 'event.friend-request', label: 'Demande d\'ami' },
   { key: 'event.friend-accepted', label: 'Ami accepté' },
   { key: 'event.friend-declined', label: 'Ami refusé' },
+  { key: 'event.report-sold', label: 'Rapport vendu' },
+  { key: 'event.report-purchased', label: 'Rapport acheté' },
   // Spy visibility
   { key: 'spy_visibility.resources', label: 'Ressources' },
   { key: 'spy_visibility.fleet', label: 'Flotte' },
@@ -532,6 +534,8 @@ const UNIVERSE_CONFIG = [
   { key: 'market_commission_percent', value: 5, label: 'Commission du marché galactique (%)' },
   { key: 'market_offer_duration_hours', value: 48, label: 'Durée de vie des offres du marché (heures)' },
   { key: 'market_reservation_minutes', value: 60, label: 'Temps de réservation avant expiration (minutes)' },
+  { key: 'report_creation_base_cost', value: '200' },
+  { key: 'report_creation_biome_costs', value: '{"common":50,"uncommon":100,"rare":250,"epic":600,"legendary":1000}' },
 
   // ── Exilium ──
   { key: 'exilium_daily_quest_reward', value: 1 },

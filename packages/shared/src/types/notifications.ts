@@ -48,6 +48,8 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, NotificationCategory> = {
   'friend-request': 'social',
   'friend-accepted': 'social',
   'friend-declined': 'social',
+  'report-sold': 'market',
+  'report-purchased': 'market',
   'daily-quest-completed': 'quest',
   'tutorial-quest-complete': 'quest',
 };
@@ -74,6 +76,8 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   'friend-request': 'Demande d\'ami',
   'friend-accepted': 'Ami accepté',
   'friend-declined': 'Ami refusé',
+  'report-sold': 'Rapport vendu',
+  'report-purchased': 'Rapport acheté',
   'daily-quest-completed': 'Mission quotidienne',
   'tutorial-quest-complete': 'Quête tutoriel',
 };

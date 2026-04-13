@@ -234,6 +234,20 @@ export function useNotifications() {
           showBrowserNotification('Demande refusée', `${event.payload.fromUsername} a refusé votre demande d'ami`);
         }
         break;
+      case 'report-sold':
+        utils.market.myOffers.invalidate();
+        if (isToastEnabled(event.type)) {
+          addToast(`${event.payload.buyerUsername} a acheté votre rapport d'exploration [${event.payload.galaxy}:${event.payload.system}:?]`);
+          showBrowserNotification('Rapport vendu', `${event.payload.buyerUsername} a acheté votre rapport`);
+        }
+        break;
+      case 'report-purchased':
+        utils.galaxy.system.invalidate();
+        if (isToastEnabled(event.type)) {
+          addToast(`Rapport d'exploration acquis — ${event.payload.biomeCount} biomes révélés en [${event.payload.galaxy}:${event.payload.system}:${event.payload.position}]`);
+          showBrowserNotification('Rapport acheté', `${event.payload.biomeCount} biomes révélés`);
+        }
+        break;
       case 'fleet-inbound':
         utils.fleet.inbound.invalidate();
         if (isToastEnabled(event.type)) {

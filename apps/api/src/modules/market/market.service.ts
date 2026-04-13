@@ -735,7 +735,7 @@ export function createMarketService(
         });
 
         if (gameEventService) {
-          gameEventService.insert(offer.sellerId, offer.planetId, 'report-sold' as any, {
+          gameEventService.insert(offer.sellerId, offer.planetId, 'report-sold', {
             buyerUsername,
             galaxy: report.galaxy,
             system: report.system,
@@ -757,7 +757,7 @@ export function createMarketService(
         });
 
         if (gameEventService) {
-          gameEventService.insert(userId, planetId, 'report-purchased' as any, {
+          gameEventService.insert(userId, planetId, 'report-purchased', {
             sellerUsername,
             galaxy: report.galaxy,
             system: report.system,

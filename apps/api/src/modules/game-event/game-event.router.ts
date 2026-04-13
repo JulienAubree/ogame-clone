@@ -13,6 +13,8 @@ const gameEventTypeEnum = z.enum([
   'friend-request',
   'friend-accepted',
   'friend-declined',
+  'report-sold',
+  'report-purchased',
 ]);
 
 export function createGameEventRouter(gameEventService: ReturnType<typeof createGameEventService>) {

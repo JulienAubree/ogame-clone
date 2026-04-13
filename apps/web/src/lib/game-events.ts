@@ -10,6 +10,8 @@ export function eventTypeColor(type: string) {
     case 'friend-request': return 'bg-sky-500';
     case 'friend-accepted': return 'bg-emerald-500';
     case 'friend-declined': return 'bg-red-500';
+    case 'report-sold': return 'bg-emerald-500';
+    case 'report-purchased': return 'bg-cyan-500';
     default: return 'bg-muted';
   }
 }
@@ -45,6 +47,8 @@ export function formatEventText(
     case 'friend-request': return `Demande d'ami de ${p.fromUsername}`;
     case 'friend-accepted': return `${p.fromUsername} a accepté votre demande`;
     case 'friend-declined': return `${p.fromUsername} a refusé votre demande`;
+    case 'report-sold': return `Rapport vendu à ${p.buyerUsername} [${p.galaxy}:${p.system}:?]`;
+    case 'report-purchased': return `Rapport acquis en [${p.galaxy}:${p.system}:${p.position}] — ${p.biomeCount} biomes`;
     default: return 'Événement';
   }
 }
@@ -117,7 +121,9 @@ export function eventNavigationTarget(type: string, payload?: unknown): string {
     case 'flagship-incapacitated': return '/flagship';
     case 'market-offer-reserved':
     case 'market-offer-sold':
-    case 'market-offer-expired': return '/market';
+    case 'market-offer-expired':
+    case 'report-sold':
+    case 'report-purchased': return '/market';
     case 'daily-quest-completed': return '/overview';
     case 'alliance-activity':
     case 'new-alliance-message': return '/alliance';
