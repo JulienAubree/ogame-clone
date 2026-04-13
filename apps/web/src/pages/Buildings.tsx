@@ -295,9 +295,9 @@ export default function Buildings() {
                       resources.silicium >= building.nextLevelCost.silicium &&
                       resources.hydrogene >= building.nextLevelCost.hydrogene;
 
-                    const prereqsMet = building.prerequisites.every((p) => {
-                      const pb = buildings.find((b) => b.id === p.buildingId);
-                      return pb && pb.currentLevel >= p.level;
+                    const prereqsMet = building.prerequisites.every((p: any) => {
+                      const currentLvl = p.currentLevel ?? buildings.find((b) => b.id === p.buildingId)?.currentLevel ?? 0;
+                      return currentLvl >= p.level;
                     });
 
                     const highlighted = tutorialTargetId === building.id;
@@ -403,9 +403,9 @@ export default function Buildings() {
                       resources.silicium >= building.nextLevelCost.silicium &&
                       resources.hydrogene >= building.nextLevelCost.hydrogene;
 
-                    const prereqsMet = building.prerequisites.every((p) => {
-                      const pb = buildings.find((b) => b.id === p.buildingId);
-                      return pb && pb.currentLevel >= p.level;
+                    const prereqsMet = building.prerequisites.every((p: any) => {
+                      const currentLvl = p.currentLevel ?? buildings.find((b) => b.id === p.buildingId)?.currentLevel ?? 0;
+                      return currentLvl >= p.level;
                     });
 
                     const effectiveLevel = building.id === 'planetaryShield'
@@ -514,7 +514,7 @@ export default function Buildings() {
                                 {formatDuration(building.nextLevelTime)}
                               </div>
                               {!prereqsMet ? (
-                                <PrerequisiteList items={buildPrerequisiteItems({ buildings: building.prerequisites }, buildingLevels, {}, gameConfig)} missingOnly />
+                                <PrerequisiteList items={buildPrerequisiteItems({ buildings: building.prerequisites }, Object.fromEntries(building.prerequisites.map((p: any) => [p.buildingId, p.currentLevel ?? buildingLevels[p.buildingId] ?? 0])), {}, gameConfig)} missingOnly />
                               ) : (
                                 <Button
                                   variant="retro"

@@ -54,6 +54,23 @@ export function createBuildingService(
       const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
       const talentTimeMultiplier = 1 / (1 + (talentCtx['building_time'] ?? 0));
 
+      // Fetch cross-planet max building levels for annex prerequisite display
+      const hasAnnex = Object.values(config.buildings).some(
+        (def) => def.allowedPlanetTypes && def.allowedPlanetTypes.includes(planet.planetClassId ?? ''),
+      );
+      let globalBuildingLevels: Record<string, number> | null = null;
+      if (hasAnnex) {
+        const allRows = await db
+          .select({ buildingId: planetBuildings.buildingId, level: planetBuildings.level })
+          .from(planetBuildings)
+          .innerJoin(planets, eq(planets.id, planetBuildings.planetId))
+          .where(eq(planets.userId, userId));
+        globalBuildingLevels = {};
+        for (const row of allRows) {
+          globalBuildingLevels[row.buildingId] = Math.max(globalBuildingLevels[row.buildingId] ?? 0, row.level);
+        }
+      }
+
       return Object.values(config.buildings)
         .filter((def) => {
           const allowed = def.allowedPlanetTypes;
@@ -68,6 +85,14 @@ export function createBuildingService(
           const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
           const time = buildingTime(def, nextLevel, bonusMultiplier * talentTimeMultiplier, phaseMap);
 
+          // For annex buildings, resolve prerequisites cross-planet
+          const prereqLevels = def.allowedPlanetTypes ? (globalBuildingLevels ?? buildingLevels) : buildingLevels;
+          const resolvedPrereqs = def.prerequisites.map(p => ({
+            buildingId: p.buildingId,
+            level: p.level,
+            currentLevel: prereqLevels[p.buildingId] ?? 0,
+          }));
+
           return {
             id: def.id,
             name: def.name,
@@ -75,7 +100,7 @@ export function createBuildingService(
             currentLevel,
             nextLevelCost: cost,
             nextLevelTime: time,
-            prerequisites: def.prerequisites,
+            prerequisites: resolvedPrereqs,
             isUpgrading: activeBuild?.itemId === def.id,
             upgradeEndTime: activeBuild?.itemId === def.id ? activeBuild.endTime.toISOString() : null,
           };
