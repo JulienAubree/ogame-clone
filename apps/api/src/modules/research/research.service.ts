@@ -129,9 +129,29 @@ export function createResearchService(
         ? Object.fromEntries(Object.entries(config.universe.phase_multiplier as Record<string, number>).map(([k, v]) => [Number(k), v]))
         : undefined;
       const timeDivisor = Number(config.universe.research_time_divisor) || 1000;
-      const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
+      // For empire-level research: get global talents (no planet restriction)
+      // then get hull bonus separately (always active for research, regardless of flagship location)
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
       const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
-      const hullTimeMultiplier = 1 - (talentCtx['hull_research_time_reduction'] ?? 0);
+      // Hull bonus: fetch with flagship's planet to ensure hull passive is included
+      let hullTimeMultiplier = 1;
+      if (talentService) {
+        const flagshipCtx = await talentService.computeTalentContext(userId, planetId);
+        // If flagship is not on homeworld, try without planet restriction to get hull from any planet
+        if (!flagshipCtx['hull_research_time_reduction']) {
+          // Fetch all user planets to find the one with the flagship
+          const userPlanets = await db.select({ id: planets.id }).from(planets).where(eq(planets.userId, userId));
+          for (const p of userPlanets) {
+            const ctx = await talentService.computeTalentContext(userId, p.id);
+            if (ctx['hull_research_time_reduction']) {
+              hullTimeMultiplier = 1 - ctx['hull_research_time_reduction'];
+              break;
+            }
+          }
+        } else {
+          hullTimeMultiplier = 1 - flagshipCtx['hull_research_time_reduction'];
+        }
+      }
 
       const annexLevelsSum = await getAnnexLevelsSum(db, userId);
       const annexBonusMultiplier = researchAnnexBonus(annexLevelsSum);
@@ -251,9 +271,25 @@ export function createResearchService(
       const timeDivisor = Number(config.universe.research_time_divisor) || 1000;
       const cost = researchCost(def, nextLevel, phaseMap);
       const bonusMultiplier = resolveBonus('research_time', null, buildingLevels, config.bonuses);
-      const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
+      // Empire-level: global talents + hull bonus from any planet
+      const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
       const talentTimeMultiplier = 1 / (1 + (talentCtx['research_time'] ?? 0));
-      const hullTimeMultiplier = 1 - (talentCtx['hull_research_time_reduction'] ?? 0);
+      let hullTimeMultiplier = 1;
+      if (talentService) {
+        const flagshipCtx = await talentService.computeTalentContext(userId, planetId);
+        if (!flagshipCtx['hull_research_time_reduction']) {
+          const userPlanets = await db.select({ id: planets.id }).from(planets).where(eq(planets.userId, userId));
+          for (const p of userPlanets) {
+            const ctx = await talentService.computeTalentContext(userId, p.id);
+            if (ctx['hull_research_time_reduction']) {
+              hullTimeMultiplier = 1 - ctx['hull_research_time_reduction'];
+              break;
+            }
+          }
+        } else {
+          hullTimeMultiplier = 1 - flagshipCtx['hull_research_time_reduction'];
+        }
+      }
       const annexLevelsSum = await getAnnexLevelsSum(db, userId);
       const annexBonusMultiplier = researchAnnexBonus(annexLevelsSum);
       const discoveredBiomesCount = await getDiscoveredBiomesCount(db, userId);
