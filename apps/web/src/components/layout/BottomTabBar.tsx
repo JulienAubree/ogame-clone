@@ -17,7 +17,9 @@ import {
   AllianceRankingIcon,
   FlagshipIcon,
   EmpireIcon,
+  HistoryIcon,
 } from '@/lib/icons';
+import { MessageSquarePlus } from 'lucide-react';
 import { useUIStore } from '@/stores/ui.store';
 import { trpc } from '@/trpc';
 import { BottomSheet } from './BottomSheet';
@@ -27,7 +29,7 @@ const TAB_GROUPS = {
   planete: ['/', '/energy', '/buildings'],
   production: ['/shipyard', '/command-center', '/defense'],
   espace: ['/galaxy', '/fleet', '/missions', '/market', '/flagship'],
-  social: ['/messages', '/alliance', '/ranking', '/alliance-ranking'],
+  social: ['/messages', '/alliance', '/ranking', '/alliance-ranking', '/changelog', '/feedback'],
 };
 
 type TabGroup = keyof typeof TAB_GROUPS;
@@ -59,6 +61,8 @@ const SHEET_ITEMS = {
     { label: 'Alliance', path: '/alliance', icon: AllianceIcon },
     { label: 'Classement', path: '/ranking', icon: RankingIcon },
     { label: 'Classement Alliances', path: '/alliance-ranking', icon: AllianceRankingIcon },
+    { label: 'Nouveautes', path: '/changelog', icon: HistoryIcon },
+    { label: 'Feedback', path: '/feedback', icon: MessageSquarePlus as any },
   ],
 };
 
