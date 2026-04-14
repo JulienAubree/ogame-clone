@@ -226,14 +226,15 @@ export default function Galaxy() {
     return mine?.position ?? null;
   }, [planets, currentUser, galaxy, system]);
 
-  // System nav callbacks (stable references for GalaxySystemView props)
+  // System nav callbacks — wrap around (1 ↔ maxSystem)
+  const maxSystem = Number(gameConfig?.universe?.systems) || 499;
   const handleSystemPrev = useCallback(
-    () => setSystem((s) => Math.max(1, s - 1)),
-    [],
+    () => setSystem((s) => (s <= 1 ? maxSystem : s - 1)),
+    [maxSystem],
   );
   const handleSystemNext = useCallback(
-    () => setSystem((s) => Math.min(499, s + 1)),
-    [],
+    () => setSystem((s) => (s >= maxSystem ? 1 : s + 1)),
+    [maxSystem],
   );
 
   const handleCoordinateChange = useCallback((g: number, s: number) => {
@@ -286,8 +287,8 @@ export default function Galaxy() {
     if (touchStart.current === null) return;
     const delta = e.changedTouches[0].clientX - touchStart.current;
     if (Math.abs(delta) > 50) {
-      if (delta > 0) setSystem(Math.max(1, system - 1));
-      else setSystem(Math.min(499, system + 1));
+      if (delta > 0) setSystem(system <= 1 ? maxSystem : system - 1);
+      else setSystem(system >= maxSystem ? 1 : system + 1);
     }
     touchStart.current = null;
   };
@@ -301,8 +302,7 @@ export default function Galaxy() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSystem(Math.max(1, system - 1))}
-            disabled={system <= 1}
+            onClick={() => setSystem(system <= 1 ? maxSystem : system - 1)}
           >
             &lt;
           </Button>
@@ -316,8 +316,7 @@ export default function Galaxy() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSystem(Math.min(499, system + 1))}
-            disabled={system >= 499}
+            onClick={() => setSystem(system >= maxSystem ? 1 : system + 1)}
           >
             &gt;
           </Button>
