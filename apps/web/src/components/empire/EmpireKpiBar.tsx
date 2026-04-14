@@ -1,10 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router';
 import { Globe, Rocket, ShieldAlert, Landmark, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { formatDuration } from '@/lib/format';
+import { usePlanetStore } from '@/stores/planet.store';
+
+/** Live countdown that ticks every second. */
+function useCountdown(targetDate: Date): string {
+  const compute = useCallback(() => {
+    const diff = Math.max(0, Math.floor((targetDate.getTime() - Date.now()) / 1000));
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = diff % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }, [targetDate]);
+
+  const [display, setDisplay] = useState(compute);
+
+  useEffect(() => {
+    const id = setInterval(() => setDisplay(compute()), 1000);
+    return () => clearInterval(id);
+  }, [compute]);
+
+  return display;
+}
 
 interface GovernanceData {
   colonyCount: number;
@@ -15,6 +36,7 @@ interface GovernanceData {
 }
 
 interface PlanetData {
+  id: string;
   name: string;
   mineraiPerHour?: number;
   siliciumPerHour?: number;
@@ -186,6 +208,20 @@ function Kpi({ iconNode, color, value, label, active, onClick }: {
 // Resource breakdown panel
 // ---------------------------------------------------------------------------
 
+function PlanetLink({ planet }: { planet: PlanetData }) {
+  const navigate = useNavigate();
+  const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
+  return (
+    <button
+      type="button"
+      onClick={() => { setActivePlanet(planet.id); navigate('/'); }}
+      className="truncate text-foreground font-medium hover:text-primary transition-colors text-left"
+    >
+      {planet.name}
+    </button>
+  );
+}
+
 function ResourcePanel({ resource, planets, total }: {
   resource: 'minerai' | 'silicium' | 'hydrogene';
   planets: PlanetData[];
@@ -207,8 +243,8 @@ function ResourcePanel({ resource, planets, total }: {
           const rate = p[rateKey] ?? 0;
           const pct = total > 0 ? (rate / total) * 100 : 0;
           return (
-            <div key={p.name} className="flex items-center gap-2 text-xs">
-              <span className="w-24 truncate text-foreground font-medium">{p.name}</span>
+            <div key={p.id} className="flex items-center gap-2 text-xs">
+              <div className="w-24"><PlanetLink planet={p} /></div>
               <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className={cn('h-full rounded-full', resource === 'minerai' ? 'bg-minerai' : resource === 'silicium' ? 'bg-silicium' : 'bg-hydrogene')}
@@ -234,8 +270,12 @@ function ResourcePanel({ resource, planets, total }: {
 // ---------------------------------------------------------------------------
 
 function PlanetsPanel({ planets }: { planets: PlanetData[] }) {
+  const navigate = useNavigate();
+  const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
   const active = planets.filter(p => p.status !== 'colonizing');
   const colonizing = planets.filter(p => p.status === 'colonizing');
+
+  const goToPlanet = (p: PlanetData) => { setActivePlanet(p.id); navigate('/'); };
 
   return (
     <div className="space-y-2">
@@ -245,15 +285,22 @@ function PlanetsPanel({ planets }: { planets: PlanetData[] }) {
       </div>
       <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-3">
         {planets.map((p) => (
-          <div key={p.name} className={cn(
-            'rounded-lg border px-3 py-1.5 text-xs',
-            p.status === 'colonizing' ? 'border-amber-500/30 bg-amber-500/5' : 'border-border/30 bg-card/50',
-          )}>
-            <div className="font-medium text-foreground truncate">{p.name}</div>
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => goToPlanet(p)}
+            className={cn(
+              'rounded-lg border px-3 py-1.5 text-xs text-left transition-colors',
+              p.status === 'colonizing'
+                ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50'
+                : 'border-border/30 bg-card/50 hover:border-primary/30',
+            )}
+          >
+            <div className="font-medium text-foreground truncate hover:text-primary transition-colors">{p.name}</div>
             <div className="text-muted-foreground text-[10px]">
               {p.status === 'colonizing' ? 'Colonisation en cours' : `${formatRate(p.mineraiPerHour ?? 0)} / ${formatRate(p.siliciumPerHour ?? 0)} / ${formatRate(p.hydrogenePerHour ?? 0)}`}
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -318,58 +365,69 @@ const PHASE_LABELS: Record<string, string> = {
   exploring: 'Exploration',
 };
 
+function FleetRow({ movement, gameConfig }: { movement: any; gameConfig: any }) {
+  const navigate = useNavigate();
+  const missionLabel = gameConfig?.missions?.[movement.mission]?.label ?? movement.mission;
+  const missionColor = MISSION_COLORS[movement.mission] ?? 'text-foreground';
+  const phaseLabel = PHASE_LABELS[movement.phase] ?? movement.phase;
+  const arrival = new Date(movement.arrivalTime);
+  const countdown = useCountdown(arrival);
+  const coords = `[${movement.targetGalaxy}:${movement.targetSystem}:${movement.targetPosition}]`;
+  const shipCount = Object.values(movement.ships as Record<string, number>).reduce((s: number, c: number) => s + c, 0);
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/fleet/movements')}
+      className="flex w-full items-center gap-3 rounded-lg border border-border/30 bg-card/50 px-3 py-2 text-xs text-left transition-colors hover:border-primary/30"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className={cn('font-semibold', missionColor)}>{missionLabel}</span>
+          <span className="text-muted-foreground">-</span>
+          <span className="text-muted-foreground">{phaseLabel}</span>
+        </div>
+        <div className="text-[10px] text-muted-foreground truncate">
+          {coords} · {shipCount} vaisseau{shipCount > 1 ? 'x' : ''}
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <div className="font-mono text-foreground tabular-nums">{countdown}</div>
+        <div className="text-[10px] text-muted-foreground">
+          {arrival.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function FleetsPanel({ planets, totalFleets }: { planets: PlanetData[]; totalFleets: number }) {
+  const navigate = useNavigate();
   const { data: movements } = trpc.fleet.movements.useQuery();
   const { data: gameConfig } = useGameConfig();
   const underAttack = planets.filter(p => p.inboundAttack);
 
-  const planetNameMap = new Map(planets.map(p => [p.name, p]));
-
   return (
     <div className="space-y-2">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-        {totalFleets} flotte{totalFleets > 1 ? 's' : ''} en vol
+      <div className="flex items-center justify-between">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+          {totalFleets} flotte{totalFleets > 1 ? 's' : ''} en vol
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/fleet/movements')}
+          className="text-[10px] text-primary hover:underline"
+        >
+          Voir les mouvements
+        </button>
       </div>
       {movements && movements.length > 0 ? (
         <div className="space-y-1">
-          {movements
+          {[...movements]
             .sort((a, b) => new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime())
-            .map((m) => {
-              const missionLabel = gameConfig?.missions?.[m.mission]?.label ?? m.mission;
-              const missionColor = MISSION_COLORS[m.mission] ?? 'text-foreground';
-              const phaseLabel = PHASE_LABELS[m.phase] ?? m.phase;
-              const arrival = new Date(m.arrivalTime);
-              const now = new Date();
-              const remainingSec = Math.max(0, Math.floor((arrival.getTime() - now.getTime()) / 1000));
-              const coords = `[${m.targetGalaxy}:${m.targetSystem}:${m.targetPosition}]`;
-              const shipCount = Object.values(m.ships as Record<string, number>).reduce((s, c) => s + c, 0);
-
-              return (
-                <div
-                  key={m.id}
-                  className="flex items-center gap-3 rounded-lg border border-border/30 bg-card/50 px-3 py-2 text-xs"
-                >
-                  {/* Mission + phase */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn('font-semibold', missionColor)}>{missionLabel}</span>
-                      <span className="text-muted-foreground">-</span>
-                      <span className="text-muted-foreground">{phaseLabel}</span>
-                    </div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      {coords} · {shipCount} vaisseau{shipCount > 1 ? 'x' : ''}
-                    </div>
-                  </div>
-                  {/* Arrival countdown */}
-                  <div className="text-right shrink-0">
-                    <div className="font-mono text-foreground">{formatDuration(remainingSec)}</div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {arrival.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            .map((m) => (
+              <FleetRow key={m.id} movement={m} gameConfig={gameConfig} />
+            ))}
         </div>
       ) : (
         <div className="text-xs text-muted-foreground">Aucune flotte en vol.</div>
@@ -380,7 +438,7 @@ function FleetsPanel({ planets, totalFleets }: { planets: PlanetData[]; totalFle
             Planetes attaquees
           </div>
           {underAttack.map((p) => (
-            <div key={p.name} className="flex items-center justify-between text-xs text-destructive rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5">
+            <div key={p.id} className="flex items-center justify-between text-xs text-destructive rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5">
               <span className="font-medium">{p.name}</span>
               <span className="font-mono">Attaque imminente</span>
             </div>
