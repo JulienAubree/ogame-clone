@@ -215,7 +215,7 @@ export function createColonizationService(
         .where(eq(colonizationProcesses.id, processId));
     },
 
-    /** Local action: consolidate colony (with cooldown) */
+    /** Local action: consolidate colony (costs resources, with cooldown) */
     async consolidate(userId: string, planetId: string) {
       const process = await this.getProcess(planetId);
       if (!process || process.userId !== userId) {
@@ -224,7 +224,9 @@ export function createColonizationService(
 
       const config = await gameConfigService.getFullConfig();
       const cooldownSeconds = Number(config.universe.colonization_consolidate_cooldown) || 14400;
-      const boost = Number(config.universe.colonization_consolidate_boost) || 0.09;
+      const boost = Number(config.universe.colonization_consolidate_boost) || 0.20;
+      const costMinerai = Number(config.universe.colonization_consolidate_cost_minerai) || 2000;
+      const costSilicium = Number(config.universe.colonization_consolidate_cost_silicium) || 1000;
 
       // Enforce cooldown
       if (process.lastConsolidateAt) {
@@ -239,6 +241,34 @@ export function createColonizationService(
           });
         }
       }
+
+      // Check and deduct resources from the colonizing planet
+      const [planet] = await db
+        .select({ minerai: planets.minerai, silicium: planets.silicium })
+        .from(planets)
+        .where(eq(planets.id, planetId))
+        .limit(1);
+
+      if (!planet) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      const currentMinerai = Number(planet.minerai);
+      const currentSilicium = Number(planet.silicium);
+
+      if (currentMinerai < costMinerai || currentSilicium < costSilicium) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Ressources insuffisantes (${costMinerai} minerai + ${costSilicium} silicium requis, disponible : ${Math.floor(currentMinerai)} minerai + ${Math.floor(currentSilicium)} silicium)`,
+        });
+      }
+
+      // Deduct resources atomically
+      await db
+        .update(planets)
+        .set({
+          minerai: sql`${planets.minerai} - ${costMinerai}`,
+          silicium: sql`${planets.silicium} - ${costSilicium}`,
+        })
+        .where(eq(planets.id, planetId));
 
       await this.applyBoost(process.id, boost);
       await db

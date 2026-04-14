@@ -27,7 +27,13 @@ function useCountdown(target: Date): string {
 // ── Event helpers ──
 
 function eventLabel(type: 'raid' | 'shortage') {
-  return type === 'raid' ? 'Raid hostile' : 'Penurie de materiaux';
+  return type === 'raid' ? 'Raid hostile' : 'Penurie critique';
+}
+
+function eventDescription(type: 'raid' | 'shortage') {
+  return type === 'raid'
+    ? 'Des pirates ont repere votre avant-poste vulnerable et lancent une offensive. Sans renforts, la colonie subira de lourds degats.'
+    : 'Les stocks de materiaux sont en chute libre. Sans ravitaillement rapide, les travaux de colonisation seront suspendus.';
 }
 
 function EventIcon({ type, className }: { type: 'raid' | 'shortage'; className?: string }) {
@@ -226,7 +232,8 @@ export default function ColonizationProgress() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-sm">{eventLabel(event.eventType)}</p>
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{eventDescription(event.eventType)}</p>
+                    <div className="flex items-center gap-2 text-[10px] mt-1">
                       <span className="text-red-400">-{Math.round(event.penalty * 100)}% si ignore</span>
                       <span className="text-white/10">|</span>
                       <span className="text-emerald-400">+{Math.round(event.resolveBonus * 100)}% si resolu</span>
@@ -256,64 +263,95 @@ export default function ColonizationProgress() {
           </section>
         )}
 
-        {/* ════ ACTIONS ════ */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* ════ MISSIONS DE COLONISATION ════ */}
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Missions de colonisation
+          </h3>
+
+          {/* Etablir l'avant-poste */}
           <button
             type="button"
             onClick={() => consolidateMutation.mutate({ planetId: planetId! })}
             disabled={consolidateMutation.isPending || hasCooldown}
-            className="group relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-900/10 p-4 text-left transition-all hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-900/10 p-4 text-left transition-all hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/15">
-                <Wrench className="h-5 w-5 text-amber-400" />
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/15 shrink-0">
+                <Wrench className="h-6 w-6 text-amber-400" />
               </div>
-              <div>
-                <div className="text-sm font-bold text-foreground">Consolider</div>
-                <div className="text-[10px] text-muted-foreground">+{Math.round((status as any).consolidateBoost ?? 9)}% progression</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-bold text-foreground">Etablir l'avant-poste</h4>
+                  <span className="text-xs font-bold text-amber-400 shrink-0">+20%</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Deployer les infrastructures temporaires et etablir un perimetre de securite. Les fondations de la colonie prennent forme.
+                </p>
+                <div className="flex items-center gap-3 mt-2 text-[10px]">
+                  <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-minerai font-medium">2 000 minerai</span>
+                  <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-silicium font-medium">1 000 silicium</span>
+                  <span className="text-muted-foreground">· Cooldown 4h</span>
+                </div>
+                {hasCooldown && (
+                  <div className="mt-1.5 text-[11px] text-amber-400/70">
+                    Disponible dans {Math.floor(status.consolidateCooldownRemaining! / 3600)}h{Math.ceil((status.consolidateCooldownRemaining! % 3600) / 60)}min
+                  </div>
+                )}
               </div>
             </div>
-            {hasCooldown ? (
-              <div className="text-[11px] text-muted-foreground">
-                Cooldown : {Math.floor(status.consolidateCooldownRemaining! / 3600)}h{Math.ceil((status.consolidateCooldownRemaining! % 3600) / 60)}min
-              </div>
-            ) : (
-              <div className="text-[11px] text-amber-400/70">Action disponible</div>
-            )}
           </button>
 
+          {/* Ravitaillement vital */}
           <button
             type="button"
             onClick={() => navigate(fleetSendUrl('colonize_supply'))}
-            className="group relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-900/10 p-4 text-left transition-all hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10"
+            className="w-full rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-900/10 p-4 text-left transition-all hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15">
-                <Package className="h-5 w-5 text-emerald-400" />
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15 shrink-0">
+                <Package className="h-6 w-6 text-emerald-400" />
               </div>
-              <div>
-                <div className="text-sm font-bold text-foreground">Ravitaillement</div>
-                <div className="text-[10px] text-muted-foreground">+18% progression</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-bold text-foreground">Ravitaillement vital</h4>
+                  <span className="text-xs font-bold text-emerald-400 shrink-0">+5% / 2 000 res.</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Les reserves de la colonie sont critiques. Un convoi de ravitaillement apportera les materiaux necessaires a la construction des premiers batiments permanents.
+                </p>
+                <div className="flex items-center gap-3 mt-2 text-[10px]">
+                  <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-emerald-400 font-medium">+5% par tranche de 2 000 ressources</span>
+                  <span className="text-muted-foreground">· Max +25%</span>
+                </div>
               </div>
             </div>
-            <div className="text-[11px] text-emerald-400/70">Envoyer des ressources</div>
           </button>
 
+          {/* Securiser le secteur */}
           <button
             type="button"
             onClick={() => navigate(fleetSendUrl('colonize_reinforce'))}
-            className="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-900/10 p-4 text-left transition-all hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10"
+            className="w-full rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-900/10 p-4 text-left transition-all hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15">
-                <Send className="h-5 w-5 text-blue-400" />
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/15 shrink-0">
+                <Shield className="h-6 w-6 text-blue-400" />
               </div>
-              <div>
-                <div className="text-sm font-bold text-foreground">Renforts</div>
-                <div className="text-[10px] text-muted-foreground">+12% progression</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-bold text-foreground">Securiser le secteur</h4>
+                  <span className="text-xs font-bold text-blue-400 shrink-0">+2% / vaisseau</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Des signaux hostiles ont ete detectes dans le secteur. L'envoi d'une escorte militaire permettra de securiser la zone et d'accelerer l'installation.
+                </p>
+                <div className="flex items-center gap-3 mt-2 text-[10px]">
+                  <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-blue-400 font-medium">+2% par vaisseau de combat</span>
+                  <span className="text-muted-foreground">· Max +20%</span>
+                </div>
               </div>
             </div>
-            <div className="text-[11px] text-blue-400/70">Envoyer des vaisseaux</div>
           </button>
         </section>
 

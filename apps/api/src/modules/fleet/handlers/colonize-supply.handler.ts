@@ -18,13 +18,24 @@ export class ColonizeSupplyHandler implements MissionHandler {
       .limit(1);
 
     if (!target) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucune colonisation en cours à cette position' });
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucune colonisation en cours a cette position' });
     }
   }
 
   async processArrival(fleetEvent: FleetEvent, ctx: MissionHandlerContext): Promise<ArrivalResult> {
     const config = await ctx.gameConfigService.getFullConfig();
-    const boost = Number(config.universe.colonization_supply_boost) || 0.18;
+
+    // Proportional boost: +5% per 2000 resources delivered, capped at 25%
+    const boostPerTranche = Number(config.universe.colonization_supply_boost_per_tranche) || 0.05;
+    const trancheSize = Number(config.universe.colonization_supply_tranche_size) || 2000;
+    const maxBoost = Number(config.universe.colonization_supply_max_boost) || 0.25;
+
+    const mineraiCargo = Number(fleetEvent.mineraiCargo);
+    const siliciumCargo = Number(fleetEvent.siliciumCargo);
+    const hydrogeneCargo = Number(fleetEvent.hydrogeneCargo);
+    const totalResources = mineraiCargo + siliciumCargo + hydrogeneCargo;
+    const tranches = Math.floor(totalResources / trancheSize);
+    const boost = Math.min(maxBoost, tranches * boostPerTranche);
 
     // Find the colonizing planet at target coordinates
     const [targetPlanet] = await ctx.db
@@ -38,10 +49,9 @@ export class ColonizeSupplyHandler implements MissionHandler {
       ))
       .limit(1);
 
-    if (targetPlanet && ctx.colonizationService) {
+    if (targetPlanet && ctx.colonizationService && boost > 0) {
       const process = await ctx.colonizationService.getProcess(targetPlanet.id);
       if (process) {
-        // Apply supply boost
         await ctx.colonizationService.applyBoost(process.id, boost);
 
         // Auto-resolve any pending 'shortage' event
@@ -62,11 +72,7 @@ export class ColonizeSupplyHandler implements MissionHandler {
     }
 
     // Transfer cargo to the colonizing planet
-    const mineraiCargo = Number(fleetEvent.mineraiCargo);
-    const siliciumCargo = Number(fleetEvent.siliciumCargo);
-    const hydrogeneCargo = Number(fleetEvent.hydrogeneCargo);
-
-    if (targetPlanet && (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0)) {
+    if (targetPlanet && totalResources > 0) {
       await ctx.db
         .update(planets)
         .set({
@@ -77,7 +83,6 @@ export class ColonizeSupplyHandler implements MissionHandler {
         .where(eq(planets.id, targetPlanet.id));
     }
 
-    // Ships return empty
     return { scheduleReturn: true, cargo: { minerai: 0, silicium: 0, hydrogene: 0 } };
   }
 }
