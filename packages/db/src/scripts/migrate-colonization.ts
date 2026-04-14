@@ -42,7 +42,7 @@ async function main() {
     const playerPlanets = await db
       .select({
         id: planets.id,
-        sortOrder: planets.sortOrder,
+        planetClassId: planets.planetClassId,
         createdAt: planets.createdAt,
       })
       .from(planets)
@@ -51,9 +51,9 @@ async function main() {
     const colonyCount = Math.max(0, playerPlanets.length - 1);
     if (colonyCount === 0) continue;
 
-    // Find homeworld: sortOrder 0, or fallback to first planet by createdAt
+    // Find homeworld by planetClassId, fallback to earliest planet
     const homeworld =
-      playerPlanets.find((p) => p.sortOrder === 0) ??
+      playerPlanets.find((p) => p.planetClassId === 'homeworld') ??
       playerPlanets.sort(
         (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
       )[0];

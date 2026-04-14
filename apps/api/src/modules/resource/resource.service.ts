@@ -172,7 +172,7 @@ export function createResourceService(
       }
 
       // Governance harvest penalty (non-homeworld only)
-      const govPenalty = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+      const govPenalty = await getGovernancePenalty(db, userId, planet.planetClassId, config);
       if (govPenalty.harvestMalus > 0) {
         for (const key of ['production_minerai', 'production_silicium', 'production_hydrogene'] as const) {
           talentCtx[key] = (talentCtx[key] ?? 0) - govPenalty.harvestMalus;
@@ -261,7 +261,7 @@ export function createResourceService(
       }
 
       // Governance harvest penalty (non-homeworld only)
-      const govPenalty = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+      const govPenalty = await getGovernancePenalty(db, userId, planet.planetClassId, config);
       if (govPenalty.harvestMalus > 0) {
         for (const key of ['production_minerai', 'production_silicium', 'production_hydrogene'] as const) {
           talentCtx[key] = (talentCtx[key] ?? 0) - govPenalty.harvestMalus;
@@ -395,7 +395,7 @@ export function createResourceService(
 
       // Governance harvest penalty (non-homeworld only)
       if (userId && planet.sortOrder != null) {
-        const govPenalty = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+        const govPenalty = await getGovernancePenalty(db, userId, planet.planetClassId ?? null, config);
         if (govPenalty.harvestMalus > 0) {
           for (const key of ['production_minerai', 'production_silicium', 'production_hydrogene'] as const) {
             talentCtx[key] = (talentCtx[key] ?? 0) - govPenalty.harvestMalus;

@@ -56,7 +56,7 @@ export function createBuildingService(
       const talentTimeMultiplier = 1 / (1 + (talentCtx['building_time'] ?? 0));
 
       // Governance construction penalty (non-homeworld only)
-      const govPenalty = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+      const govPenalty = await getGovernancePenalty(db, userId, planet.planetClassId, config);
       const govTimeMult = 1 + govPenalty.constructionMalus;
 
       // Fetch cross-planet max building levels for annex prerequisite display
@@ -190,7 +190,7 @@ export function createBuildingService(
       const bonusMultiplier = resolveBonus('building_time', null, buildingLevels, config.bonuses);
       const talentCtx = talentService ? await talentService.computeTalentContext(userId, planetId) : {};
       const talentTimeMultiplier = 1 / (1 + (talentCtx['building_time'] ?? 0));
-      const govPenaltyUpgrade = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+      const govPenaltyUpgrade = await getGovernancePenalty(db, userId, planet.planetClassId, config);
       const govTimeMultUpgrade = 1 + govPenaltyUpgrade.constructionMalus;
       const time = Math.max(1, Math.floor(buildingTime(def, nextLevel, bonusMultiplier * talentTimeMultiplier, phaseMap) * govTimeMultUpgrade));
 

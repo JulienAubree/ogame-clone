@@ -220,7 +220,7 @@ export class ColonizeHandler implements MissionHandler {
 
     // Calculate colonization difficulty
     const [homeworld] = await ctx.db.select({ system: planets.system }).from(planets)
-      .where(and(eq(planets.userId, fleetEvent.userId), eq(planets.sortOrder, 0)))
+      .where(and(eq(planets.userId, fleetEvent.userId), eq(planets.planetClassId, 'homeworld')))
       .limit(1);
 
     const config2 = await ctx.gameConfigService.getFullConfig();

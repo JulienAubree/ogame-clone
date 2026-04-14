@@ -6,11 +6,11 @@ import type { Database } from '@exilium/db';
 export async function getGovernancePenalty(
   db: Database,
   userId: string,
-  planetSortOrder: number,
+  planetClassId: string | null,
   config: { universe: Record<string, unknown> },
 ) {
-  // Homeworld (sortOrder 0) is exempt from governance penalties
-  if (planetSortOrder === 0) {
+  // Homeworld is exempt from governance penalties
+  if (planetClassId === 'homeworld') {
     return { overextend: 0, harvestMalus: 0, constructionMalus: 0 };
   }
 

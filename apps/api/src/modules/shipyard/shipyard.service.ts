@@ -64,7 +64,7 @@ export function createShipyardService(
       const talentTimeMultiplier = 1 / (1 + (talentCtx['ship_build_time'] ?? 0));
 
       // Governance construction penalty
-      const govPenalty = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+      const govPenalty = await getGovernancePenalty(db, userId, planet.planetClassId, config);
       const govTimeMult = 1 + govPenalty.constructionMalus;
 
       return Object.values(config.ships)
@@ -111,7 +111,7 @@ export function createShipyardService(
       const talentDefenseTimeMultiplier = 1 / (1 + (talentCtx['defense_build_time'] ?? 0));
 
       // Governance construction penalty
-      const govPenaltyDef = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+      const govPenaltyDef = await getGovernancePenalty(db, userId, planet.planetClassId, config);
       const govTimeMultDef = 1 + govPenaltyDef.constructionMalus;
 
       return Object.values(config.defenses)
@@ -214,7 +214,7 @@ export function createShipyardService(
       const timeDivisor = Number(config.universe.shipyard_time_divisor) || 2500;
 
       // Governance construction penalty
-      const govPenaltyBuild = await getGovernancePenalty(db, userId, planet.sortOrder, config);
+      const govPenaltyBuild = await getGovernancePenalty(db, userId, planet.planetClassId, config);
       const govTimeMultBuild = 1 + govPenaltyBuild.constructionMalus;
 
       let unitTime: number;
@@ -317,13 +317,13 @@ export function createShipyardService(
       const config = await gameConfigService.getFullConfig();
       const newCompletedCount = entry.completedCount + 1;
 
-      // Fetch planet sortOrder for governance penalty
+      // Fetch planet class for governance penalty
       const [entryPlanet] = await db
-        .select({ sortOrder: planets.sortOrder })
+        .select({ planetClassId: planets.planetClassId })
         .from(planets)
         .where(eq(planets.id, entry.planetId))
         .limit(1);
-      const govPenaltyUnit = await getGovernancePenalty(db, entry.userId, entryPlanet?.sortOrder ?? 0, config);
+      const govPenaltyUnit = await getGovernancePenalty(db, entry.userId, entryPlanet?.planetClassId ?? null, config);
       const govTimeMultUnit = 1 + govPenaltyUnit.constructionMalus;
 
       if (entry.type === 'ship') {
@@ -458,13 +458,13 @@ export function createShipyardService(
 
       // Governance construction penalty
       const [batchPlanet] = await db
-        .select({ sortOrder: planets.sortOrder, userId: planets.userId })
+        .select({ planetClassId: planets.planetClassId, userId: planets.userId })
         .from(planets)
         .where(eq(planets.id, planetId))
         .limit(1);
       let govTimeMultBatch = 1;
       if (batchPlanet) {
-        const govPenaltyBatch = await getGovernancePenalty(db, batchPlanet.userId, batchPlanet.sortOrder, config);
+        const govPenaltyBatch = await getGovernancePenalty(db, batchPlanet.userId, batchPlanet.planetClassId, config);
         govTimeMultBatch = 1 + govPenaltyBatch.constructionMalus;
       }
 

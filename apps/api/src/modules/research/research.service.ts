@@ -162,7 +162,7 @@ export function createResearchService(
       const annexDetails = await getAnnexDetails(db, userId);
 
       // Governance construction penalty (no-op on homeworld, applied for consistency)
-      const govPenalty = await getGovernancePenalty(db, userId, homeworld.sortOrder, config);
+      const govPenalty = await getGovernancePenalty(db, userId, homeworld.planetClassId, config);
       const govTimeMult = 1 + govPenalty.constructionMalus;
 
       const results = await Promise.all(
@@ -305,7 +305,7 @@ export function createResearchService(
       const discoveredBiomesCount = await getDiscoveredBiomesCount(db, userId);
       const biomeBonusMultiplier = researchBiomeBonus(discoveredBiomesCount);
       // Governance construction penalty (no-op on homeworld, applied for consistency)
-      const govPenaltyResearch = await getGovernancePenalty(db, userId, homeworld.sortOrder, config);
+      const govPenaltyResearch = await getGovernancePenalty(db, userId, homeworld.planetClassId, config);
       const govTimeMultResearch = 1 + govPenaltyResearch.constructionMalus;
       const time = Math.max(1, Math.floor(researchTime(def, nextLevel, bonusMultiplier, { timeDivisor, phaseMap }) * talentTimeMultiplier * hullTimeMultiplier * annexBonusMultiplier * biomeBonusMultiplier * govTimeMultResearch));
 
