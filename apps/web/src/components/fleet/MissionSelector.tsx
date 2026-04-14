@@ -2,7 +2,11 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { type Mission } from '@/config/mission-config';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { trpc } from '@/trpc';
 import { MissionIcon } from './MissionIcon';
+
+// Missions that only appear when the player has an active colonization
+const COLONIZATION_MISSIONS = new Set(['colonize_supply', 'colonize_reinforce']);
 
 interface MissionSelectorProps {
   selected: Mission | null;
@@ -12,15 +16,22 @@ interface MissionSelectorProps {
 
 export function MissionSelector({ selected, onChange, locked }: MissionSelectorProps) {
   const { data: gameConfig } = useGameConfig();
+  const { data: planets } = trpc.planet.list.useQuery();
+  const hasActiveColonization = planets?.some((p: any) => p.status === 'colonizing') ?? false;
 
   // Build selectable missions from game config: all missions that don't require PvE
   const selectableMissions = useMemo(() => {
     if (!gameConfig?.missions) return [];
     return Object.entries(gameConfig.missions)
-      .filter(([, m]) => !m.requiresPveMission)
+      .filter(([id, m]) => {
+        if (m.requiresPveMission) return false;
+        // Hide colonization missions when no colonization is active
+        if (COLONIZATION_MISSIONS.has(id) && !hasActiveColonization) return false;
+        return true;
+      })
       .sort(([, a], [, b]) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
       .map(([id]) => id as Mission);
-  }, [gameConfig?.missions]);
+  }, [gameConfig?.missions, hasActiveColonization]);
 
   // In PvE mode, include the pre-filled mission (mine/pirate) even though it's not manually selectable
   const missions = selected && !selectableMissions.includes(selected)
