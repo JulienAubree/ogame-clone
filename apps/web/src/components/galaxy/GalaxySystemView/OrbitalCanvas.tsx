@@ -217,10 +217,14 @@ export function OrbitalCanvas({
         line1Class = 'text-foreground';
         planetClassId = view.planetClassId;
         planetImageIndex = view.planetImageIndex;
-        aura = view.relation;
+        const isColonizing = view.relation === 'mine' && view.status === 'colonizing';
+        aura = isColonizing ? 'colonizing' : view.relation;
         const username = view.username ?? 'Joueur';
         const tagPrefix = view.allianceTag ? `[${view.allianceTag}] ` : '';
-        if (view.relation === 'mine') {
+        if (isColonizing) {
+          line2 = 'Colonisation en cours';
+          line2Class = 'text-amber-400';
+        } else if (view.relation === 'mine') {
           line2 = 'Vous';
           line2Class = 'text-cyan-400';
         } else if (view.relation === 'ally') {

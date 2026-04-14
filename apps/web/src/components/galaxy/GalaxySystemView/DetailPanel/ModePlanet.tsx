@@ -129,6 +129,60 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
   if (view.kind === 'planet') {
     const typeName = planetTypeName(view.planetClassId, ctx);
     const displayName = view.username ?? 'Joueur';
+    const isColonizing = view.relation === 'mine' && view.status === 'colonizing';
+
+    // Colonizing state — dedicated intermediate panel
+    if (isColonizing) {
+      return (
+        <div>
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <PlanetVisual
+                planetClassId={view.planetClassId}
+                planetImageIndex={view.planetImageIndex}
+                size={96}
+                aura="colonizing"
+                variant="thumb"
+                glow
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-semibold">{view.planetName}</h3>
+              <p className="text-xs text-muted-foreground">
+                Type {typeName} · Position {view.position}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
+              </span>
+              <span className="text-sm font-semibold text-amber-300">
+                Colonisation en cours
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cette planete est en cours de stabilisation. Les structures seront
+              disponibles une fois la colonisation terminee.
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              className={BTN_AMBER}
+              onClick={() => actions.onViewColonization(view.planetId)}
+            >
+              Voir la colonisation
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div>
         <div className="flex items-start gap-4">

@@ -239,7 +239,11 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
           const view = views.find((v) => v.position === selection.position);
           if (view && view.kind === 'planet' && view.relation === 'mine') {
             e.preventDefault();
-            actions.onManagePlanet(view.planetId);
+            if (view.status === 'colonizing') {
+              actions.onViewColonization(view.planetId);
+            } else {
+              actions.onManagePlanet(view.planetId);
+            }
           }
           return;
         }

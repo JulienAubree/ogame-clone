@@ -272,6 +272,10 @@ export default function Galaxy() {
       setActivePlanetStore(planetId);
       navigate('/');
     },
+    onViewColonization: (planetId) => {
+      setActivePlanetStore(planetId);
+      navigate('/');
+    },
     onCreateReport: (position) => {
       if (!planetId) return;
       createReportMutation.mutate({ planetId, galaxy, system, position });

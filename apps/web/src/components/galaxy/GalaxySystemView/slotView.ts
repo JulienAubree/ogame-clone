@@ -35,6 +35,7 @@ export type SlotView =
       allianceTag: string | null;
       biomes: BiomeView[];
       debris?: { minerai: number; silicium: number };
+      status: string;
     }
   | {
       kind: 'empty-discovered';
@@ -149,6 +150,7 @@ export function toSlotView(
     allianceTag: typeof rawSlot.allianceTag === 'string' ? rawSlot.allianceTag : null,
     biomes: asBiomes(rawSlot.biomes),
     debris,
+    status: typeof rawSlot.status === 'string' ? rawSlot.status : 'active',
   };
 }
 

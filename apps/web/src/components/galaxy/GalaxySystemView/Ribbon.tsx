@@ -109,8 +109,21 @@ export function Ribbon({
           let textClasses: string;
           switch (view.kind) {
             case 'planet':
-              displayContent = view.planetName;
-              textClasses = 'text-foreground';
+              if (view.relation === 'mine' && view.status === 'colonizing') {
+                displayContent = (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    </span>
+                    <span className="truncate">{view.planetName}</span>
+                  </span>
+                );
+                textClasses = 'text-amber-300';
+              } else {
+                displayContent = view.planetName;
+                textClasses = 'text-foreground';
+              }
               break;
             case 'empty-discovered':
               if (view.biomes.length > 0) {

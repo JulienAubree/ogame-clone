@@ -45,6 +45,7 @@ export interface DetailPanelActions {
   onMessage: (userId: string, username: string) => void;
   onCenterCapital: () => void;
   onManagePlanet: (planetId: string) => void;
+  onViewColonization: (planetId: string) => void;
   onCreateReport: (position: number) => void;
 }
 

@@ -26,12 +26,13 @@ export const TYPE_COLORS: Record<string, PlanetTypeColors> = {
   unknown:   { from: '#94a3b8', to: '#475569', accent: '#e2e8f0' },
 };
 
-export type PlanetAura = 'mine' | 'ally' | 'enemy';
+export type PlanetAura = 'mine' | 'ally' | 'enemy' | 'colonizing';
 
 export const AURA_COLORS: Record<PlanetAura, string> = {
-  mine:  '#67e8f9', // cyan
-  ally:  '#60a5fa', // blue
-  enemy: '#f87171', // red
+  mine:       '#67e8f9', // cyan
+  ally:       '#60a5fa', // blue
+  enemy:      '#f87171', // red
+  colonizing: '#f59e0b', // amber
 };
 
 export const BELT_DEBRIS_COLOR = '#fb923c';

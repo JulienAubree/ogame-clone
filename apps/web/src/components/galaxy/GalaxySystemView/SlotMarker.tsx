@@ -49,8 +49,10 @@ export interface SlotMarkerProps {
 function ariaLabelFor(view: SlotView): string {
   switch (view.kind) {
     case 'planet': {
-      const rel =
-        view.relation === 'mine'
+      const isColonizing = view.relation === 'mine' && view.status === 'colonizing';
+      const rel = isColonizing
+        ? 'colonisation en cours'
+        : view.relation === 'mine'
           ? 'votre planète'
           : view.relation === 'ally'
             ? 'planète alliée'
@@ -98,8 +100,9 @@ export function SlotMarker({
   let defs: ReactElement | null = null;
 
   if (view.kind === 'planet') {
+    const isColonizing = view.relation === 'mine' && view.status === 'colonizing';
     const colors = TYPE_COLORS[view.planetClassId ?? 'unknown'] ?? TYPE_COLORS.unknown;
-    const auraColor = AURA_COLORS[view.relation];
+    const auraColor = isColonizing ? AURA_COLORS.colonizing : AURA_COLORS[view.relation];
 
     defs = (
       <defs>
@@ -122,7 +125,7 @@ export function SlotMarker({
           cy={cy}
           r={haloRadius}
           fill={`url(#${haloGradId})`}
-          className="animate-aura-breathe"
+          className={isColonizing ? 'animate-colonizing-pulse' : 'animate-aura-breathe'}
         />
         <circle cx={cx} cy={cy} r={SLOT_RADII.PLANET} fill={`url(#${planetGradId})`} />
         <circle
@@ -130,8 +133,8 @@ export function SlotMarker({
           cy={cy}
           r={SLOT_RADII.PLANET}
           fill="none"
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth={0.4}
+          stroke={isColonizing ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.15)'}
+          strokeWidth={isColonizing ? 0.8 : 0.4}
         />
       </>
     );

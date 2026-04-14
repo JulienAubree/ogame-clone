@@ -79,6 +79,15 @@
   animation: selection-rotate 12s linear infinite;
 }
 
+@keyframes colonizing-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
+}
+
+.animate-colonizing-pulse {
+  animation: colonizing-pulse 2s ease-in-out infinite;
+}
+
 /* --- Debris field icon (used by Ribbon + legacy Galaxy mobile list) --- */
 
 @keyframes debris-tumble {
@@ -102,6 +111,7 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-star-breathe,
   .animate-aura-breathe,
+  .animate-colonizing-pulse,
   .animate-selection-rotate,
   .debris-shard {
     animation: none;
