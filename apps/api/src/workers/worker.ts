@@ -24,6 +24,8 @@ import { startBuildCompletionWorker } from './build-completion.worker.js';
 import { startFleetWorker } from './fleet.worker.js';
 import { createMarketService } from '../modules/market/market.service.js';
 import { startMarketWorker } from './market.worker.js';
+import { createColonizationService } from '../modules/colonization/colonization.service.js';
+import { startColonizationWorker } from './colonization.worker.js';
 import { eventCatchup } from '../cron/event-catchup.js';
 import { resourceTick } from '../cron/resource-tick.js';
 import { rankingUpdate } from '../cron/ranking-update.js';
@@ -58,6 +60,9 @@ const fleetService = createFleetService(db, resourceService, fleetQueue, message
 // Market service
 const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis, dailyQuestService, exiliumService);
 
+// Colonization service
+const colonizationService = createColonizationService(db, gameConfigService);
+
 console.log('[worker] Starting workers...');
 
 startBuildCompletionWorker(db, redis, { buildingService, researchService, shipyardService, tutorialService, pushService, dailyQuestService });
@@ -68,6 +73,9 @@ console.log('[worker] Fleet worker started');
 
 startMarketWorker(marketService);
 console.log('[worker] Market worker started');
+
+startColonizationWorker(db, redis, colonizationService, gameConfigService, fleetQueue);
+console.log('[worker] Colonization worker started');
 
 // Crons (unchanged)
 setInterval(async () => {

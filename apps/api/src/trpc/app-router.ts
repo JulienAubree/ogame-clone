@@ -61,6 +61,8 @@ import { createNotificationPreferencesService } from '../modules/notification/no
 import { createNotificationPreferencesRouter } from '../modules/notification/notification-preferences.router.js';
 import { createExplorationReportService } from '../modules/exploration-report/exploration-report.service.js';
 import { createExplorationReportRouter } from '../modules/exploration-report/exploration-report.router.js';
+import { createColonizationService } from '../modules/colonization/colonization.service.js';
+import { createColonizationRouter } from '../modules/colonization/colonization.router.js';
 import { env } from '../config/env.js';
 import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
@@ -100,6 +102,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const changelogService = createChangelogService(db);
   const notificationPreferencesService = createNotificationPreferencesService(db);
   const explorationReportService = createExplorationReportService(db, resourceService, gameConfigService);
+  const colonizationService = createColonizationService(db, gameConfigService);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService);
@@ -130,6 +133,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const changelogRouter = createChangelogRouter(changelogService, adminProcedure);
   const notificationPreferencesRouter = createNotificationPreferencesRouter(notificationPreferencesService);
   const explorationReportRouter = createExplorationReportRouter(explorationReportService);
+  const colonizationRouter = createColonizationRouter(colonizationService);
 
   return router({
     health: publicProcedure.query(() => ({
@@ -165,6 +169,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     changelog: changelogRouter,
     notificationPreferences: notificationPreferencesRouter,
     explorationReport: explorationReportRouter,
+    colonization: colonizationRouter,
   });
 }
 
