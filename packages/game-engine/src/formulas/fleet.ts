@@ -16,6 +16,8 @@ export interface FleetConfig {
   positionFactor: number;
   samePositionDistance: number;
   speedFactor: number;
+  maxSystems?: number;
+  maxGalaxies?: number;
 }
 
 const DEFAULT_FLEET_CONFIG: FleetConfig = {
@@ -26,6 +28,8 @@ const DEFAULT_FLEET_CONFIG: FleetConfig = {
   positionFactor: 5,
   samePositionDistance: 5,
   speedFactor: 35000,
+  maxSystems: 499,
+  maxGalaxies: 9,
 };
 
 export function shipSpeed(stats: ShipStats, speedMultiplier: number): number {
@@ -52,10 +56,16 @@ export function fleetSpeed(
 
 export function distance(origin: Coordinates, target: Coordinates, config: FleetConfig = DEFAULT_FLEET_CONFIG): number {
   if (origin.galaxy !== target.galaxy) {
-    return config.galaxyFactor * Math.abs(origin.galaxy - target.galaxy);
+    const maxG = config.maxGalaxies ?? 9;
+    const linearG = Math.abs(origin.galaxy - target.galaxy);
+    const wrappedG = maxG - linearG;
+    return config.galaxyFactor * Math.min(linearG, wrappedG);
   }
   if (origin.system !== target.system) {
-    return config.systemBase + config.systemFactor * Math.abs(origin.system - target.system);
+    const maxS = config.maxSystems ?? 499;
+    const linearS = Math.abs(origin.system - target.system);
+    const wrappedS = maxS - linearS;
+    return config.systemBase + config.systemFactor * Math.min(linearS, wrappedS);
   }
   if (origin.position !== target.position) {
     return config.positionBase + config.positionFactor * Math.abs(origin.position - target.position);

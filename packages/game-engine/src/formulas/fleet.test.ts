@@ -95,3 +95,23 @@ describe('FleetConfig', () => {
     expect(d).toBe(50000);
   });
 });
+
+describe('wrap-around distance', () => {
+  it('system 1 to 499 wraps (distance = 1 system, not 498)', () => {
+    const d1 = distance({ galaxy: 1, system: 1, position: 4 }, { galaxy: 1, system: 499, position: 4 });
+    const d2 = distance({ galaxy: 1, system: 1, position: 4 }, { galaxy: 1, system: 2, position: 4 });
+    expect(d1).toBe(d2); // both are 1 system apart
+  });
+
+  it('system 1 to 250 is shorter direct (249) than wrapped (250)', () => {
+    const d = distance({ galaxy: 1, system: 1, position: 4 }, { galaxy: 1, system: 250, position: 4 });
+    const dDirect = distance({ galaxy: 1, system: 1, position: 4 }, { galaxy: 1, system: 250, position: 4 });
+    expect(d).toBe(dDirect);
+  });
+
+  it('galaxy wraps around too', () => {
+    const d1 = distance({ galaxy: 1, system: 1, position: 4 }, { galaxy: 9, system: 1, position: 4 });
+    const d2 = distance({ galaxy: 1, system: 1, position: 4 }, { galaxy: 2, system: 1, position: 4 });
+    expect(d1).toBe(d2); // galaxy 1 to 9 = 1 galaxy apart via wrapping
+  });
+});
