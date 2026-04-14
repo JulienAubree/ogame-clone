@@ -166,6 +166,11 @@ export function createShipyardService(
       quantity: number,
     ) {
       const planet = await this.getOwnedPlanet(userId, planetId);
+
+      if (planet.status === 'colonizing') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Construction impossible pendant la colonisation' });
+      }
+
       const config = await gameConfigService.getFullConfig();
       const facilityId = getFacilityId(type, itemId, config);
 

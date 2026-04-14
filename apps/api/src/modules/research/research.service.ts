@@ -224,6 +224,11 @@ export function createResearchService(
 
     async startResearch(userId: string, researchId: string) {
       const homeworld = await this.getHomeworld(userId);
+
+      if (homeworld.status === 'colonizing') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Construction impossible pendant la colonisation' });
+      }
+
       const planetId = homeworld.id;
       const research = await this.getOrCreateResearch(userId);
       const config = await gameConfigService.getFullConfig();

@@ -140,6 +140,10 @@ export function createResourceService(
         throw new TRPCError({ code: 'NOT_FOUND' });
       }
 
+      if (planet.status === 'colonizing') {
+        return planet; // No resource production on colonizing planets
+      }
+
       const bonus = await loadPlanetTypeBonus(db, planet.planetClassId);
       const roleMap = await getRoleMap();
       const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
@@ -330,7 +334,31 @@ export function createResourceService(
       shieldPercent?: number | null;
       planetClassId?: string | null;
       sortOrder?: number;
+      status?: string | null;
     }, bonus?: PlanetTypeBonus, userId?: string) {
+      if (planet.status === 'colonizing') {
+        return {
+          mineraiPerHour: 0,
+          siliciumPerHour: 0,
+          hydrogenePerHour: 0,
+          productionFactor: 0,
+          energyProduced: 0,
+          energyConsumed: 0,
+          mineraiMineEnergyConsumption: 0,
+          siliciumMineEnergyConsumption: 0,
+          hydrogeneSynthEnergyConsumption: 0,
+          shieldEnergyConsumption: 0,
+          shieldPercent: 0,
+          mineraiMinePercent: 0,
+          siliciumMinePercent: 0,
+          hydrogeneSynthPercent: 0,
+          storageMineraiCapacity: 0,
+          storageSiliciumCapacity: 0,
+          storageHydrogeneCapacity: 0,
+          shieldLevelBonus: 0,
+        };
+      }
+
       const roleMap = await getRoleMap();
       const levels = await buildPlanetLevels(db, planetId, planet, roleMap);
       const config = await gameConfigService.getFullConfig();
