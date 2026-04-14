@@ -34,6 +34,7 @@ const sections: { title: string; items: NavItem[] }[] = [
     items: [
       { label: 'Empire', path: '/empire', icon: EmpireIcon },
       { label: 'Recherche', path: '/research', icon: ResearchIcon },
+      { label: 'Vaisseau amiral', path: '/flagship', icon: FlagshipIcon },
     ],
   },
   {
@@ -57,7 +58,6 @@ const sections: { title: string; items: NavItem[] }[] = [
     items: [
       { label: 'Galaxie', path: '/galaxy', icon: GalaxyIcon },
       { label: 'Flotte', path: '/fleet', icon: FleetIcon },
-      { label: 'Vaisseau amiral', path: '/flagship', icon: FlagshipIcon },
       { label: 'Missions', path: '/missions', icon: MissionsIcon },
       { label: 'Marché', path: '/market', icon: MarketIcon },
     ],

@@ -25,10 +25,10 @@ import { trpc } from '@/trpc';
 import { BottomSheet } from './BottomSheet';
 
 const TAB_GROUPS = {
-  empire: ['/empire', '/research'],
+  empire: ['/empire', '/research', '/flagship'],
   planete: ['/', '/energy', '/buildings'],
   production: ['/shipyard', '/command-center', '/defense'],
-  espace: ['/galaxy', '/fleet', '/missions', '/market', '/flagship'],
+  espace: ['/galaxy', '/fleet', '/missions', '/market'],
   social: ['/messages', '/alliance', '/ranking', '/alliance-ranking', '/changelog', '/feedback'],
 };
 
@@ -38,6 +38,7 @@ const SHEET_ITEMS = {
   empire: [
     { label: 'Empire', path: '/empire', icon: EmpireIcon },
     { label: 'Recherche', path: '/research', icon: ResearchIcon },
+    { label: 'Vaisseau amiral', path: '/flagship', icon: FlagshipIcon },
   ],
   planete: [
     { label: "Vue d'ensemble", path: '/', icon: OverviewIcon },
@@ -54,7 +55,6 @@ const SHEET_ITEMS = {
     { label: 'Flotte', path: '/fleet', icon: FleetIcon },
     { label: 'Missions', path: '/missions', icon: MissionsIcon },
     { label: 'Marché', path: '/market', icon: MarketIcon },
-    { label: 'Vaisseau amiral', path: '/flagship', icon: FlagshipIcon },
   ],
   social: [
     { label: 'Messages', path: '/messages', icon: MessagesIcon },
