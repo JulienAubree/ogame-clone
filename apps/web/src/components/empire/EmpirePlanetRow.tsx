@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { Hammer, FlaskConical, ShieldAlert, ChevronRight, ShieldPlus } from 'lucide-react';
+import { Hammer, FlaskConical, ShieldAlert, ChevronRight, ShieldPlus, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPlanetImageUrl } from '@/lib/assets';
 import { usePlanetStore } from '@/stores/planet.store';
@@ -16,6 +16,7 @@ interface EmpirePlanet {
   position: number;
   planetClassId: string | null;
   planetImageIndex: number | null;
+  status?: string;
   minerai: number;
   silicium: number;
   hydrogene: number;
@@ -46,8 +47,44 @@ export function EmpirePlanetRow({ planet, isFirst, isLast }: { planet: EmpirePla
 
   const handleClick = () => {
     setActivePlanet(planet.id);
-    navigate('/');
+    navigate(planet.status === 'colonizing' ? '/colonization' : '/');
   };
+
+  // Colonizing planets: simplified row
+  if (planet.status === 'colonizing') {
+    return (
+      <button
+        onClick={handleClick}
+        className={cn(
+          'flex w-full items-center gap-3 border border-amber-500/25 bg-card/80 p-3 text-left transition-colors hover:bg-accent/30 touch-feedback',
+          !isFirst && 'border-t-0',
+          isFirst && 'rounded-t-xl',
+          isLast && 'rounded-b-xl',
+        )}
+      >
+        {planet.planetClassId && planet.planetImageIndex != null ? (
+          <img
+            src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex, 'icon')}
+            alt={planet.name}
+            className="h-9 w-9 rounded-full border border-amber-500/30 object-cover opacity-70"
+          />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-500/30 bg-muted text-xs font-semibold text-muted-foreground opacity-70">
+            {planet.name.charAt(0)}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <span className="truncate text-sm font-semibold text-foreground">{planet.name}</span>
+          <div className="text-xs text-muted-foreground">[{planet.galaxy}:{planet.system}:{planet.position}]</div>
+          <div className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-400">
+            <Rocket className="h-3 w-3" />
+            <span>Colonisation en cours</span>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/30" />
+      </button>
+    );
+  }
 
   const badge = planet.inboundAttack
     ? { icon: ShieldAlert, label: 'Attaque', endTime: planet.inboundAttack.arrivalTime, className: 'text-destructive' }

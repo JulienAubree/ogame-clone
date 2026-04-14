@@ -17,6 +17,7 @@ interface EmpirePlanet {
   planetClassId: string | null;
   planetImageIndex: number | null;
   diameter: number;
+  status?: string;
   minerai: number;
   silicium: number;
   hydrogene: number;
@@ -55,6 +56,49 @@ export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; is
     setActivePlanet(planet.id);
     navigate(path);
   };
+
+  // Colonizing planets: simplified card
+  if (planet.status === 'colonizing') {
+    return (
+      <div className="flex flex-col rounded-xl border border-amber-500/25 bg-card/80 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-3.5 pb-2.5">
+          <button onClick={() => goTo('/colonization')} className="shrink-0">
+            {planet.planetClassId && planet.planetImageIndex != null ? (
+              <img
+                src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex, 'thumb')}
+                alt={planet.name}
+                className="h-11 w-11 rounded-full border-2 border-amber-500/30 object-cover cursor-pointer opacity-70 hover:ring-2 hover:ring-amber-500/40 transition-shadow"
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-500/30 bg-muted font-semibold text-muted-foreground cursor-pointer opacity-70">
+                {planet.name.charAt(0)}
+              </div>
+            )}
+          </button>
+          <div className="min-w-0 flex-1">
+            <button onClick={() => goTo('/colonization')} className="truncate text-sm font-semibold text-foreground hover:text-amber-400 transition-colors text-left">
+              {planet.name}
+            </button>
+            <div className="text-xs text-muted-foreground">
+              [{planet.galaxy}:{planet.system}:{planet.position}] · {planet.diameter.toLocaleString('fr-FR')} km
+            </div>
+          </div>
+          <span className="shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium bg-amber-500/15 text-amber-400">
+            Colonisation
+          </span>
+        </div>
+
+        {/* Colonization status */}
+        <div className="px-3.5 pb-3.5">
+          <div className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-400">
+            <Rocket className="h-3.5 w-3.5 shrink-0" />
+            <span>Colonisation en cours</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const resources = [
     { label: 'Fe', value: planet.minerai, max: planet.storageMineraiCapacity ?? 0, rate: planet.mineraiPerHour ?? 0, color: 'text-minerai', fill: 'bg-minerai' },

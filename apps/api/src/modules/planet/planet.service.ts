@@ -204,6 +204,43 @@ export function createPlanetService(
 
       const planetData = await Promise.all(
         planetList.map(async (planet) => {
+          // Colonizing planets have no resources/buildings yet — return minimal data
+          if (planet.status === 'colonizing') {
+            return {
+              id: planet.id,
+              name: planet.name,
+              galaxy: planet.galaxy,
+              system: planet.system,
+              position: planet.position,
+              planetClassId: planet.planetClassId,
+              planetImageIndex: planet.planetImageIndex,
+              diameter: planet.diameter,
+              minTemp: planet.minTemp,
+              maxTemp: planet.maxTemp,
+              status: planet.status as string,
+              minerai: 0,
+              silicium: 0,
+              hydrogene: 0,
+              mineraiPerHour: 0,
+              siliciumPerHour: 0,
+              hydrogenePerHour: 0,
+              storageMineraiCapacity: 0,
+              storageSiliciumCapacity: 0,
+              storageHydrogeneCapacity: 0,
+              energyProduced: 0,
+              energyConsumed: 0,
+              hasFlagship: false,
+              activeBuild: null,
+              activeResearch: null,
+              activeShipyard: null,
+              activeDefense: null,
+              outboundFleets: null,
+              inboundFriendlyFleets: null,
+              inboundAttack: null,
+              biomes: [] as { id: string; name: string; rarity: string; effects: unknown }[],
+            };
+          }
+
           const updated = await resourceService.materializeResources(planet.id, userId);
 
           const bonus = planet.planetClassId
@@ -305,6 +342,7 @@ export function createPlanetService(
             diameter: planet.diameter,
             minTemp: planet.minTemp,
             maxTemp: planet.maxTemp,
+            status: planet.status as string,
             minerai: Number(updated.minerai),
             silicium: Number(updated.silicium),
             hydrogene: Number(updated.hydrogene),

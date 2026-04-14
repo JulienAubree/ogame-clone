@@ -11,6 +11,7 @@ import { ArrowUpDown } from 'lucide-react';
 export default function Empire() {
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.planet.empire.useQuery();
+  const { data: governance } = trpc.colonization.governance.useQuery();
   const [isReordering, setIsReordering] = useState(false);
 
   const reorderMutation = trpc.planet.reorder.useMutation({
@@ -54,6 +55,7 @@ export default function Empire() {
         planetCount={data.planets.length}
         activeFleetCount={data.activeFleetCount}
         inboundAttackCount={data.inboundAttackCount}
+        governance={governance}
       />
 
       {isReordering ? (
