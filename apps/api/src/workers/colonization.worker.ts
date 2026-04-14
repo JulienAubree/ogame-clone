@@ -64,8 +64,8 @@ export function startColonizationWorker(
 
           if (!fresh || fresh.status !== 'active') continue;
 
-          // 5. Check completion
-          if (fresh.progress >= 1) {
+          // 5. Check completion (0.995 threshold to avoid floating-point near-miss)
+          if (fresh.progress >= 0.995) {
             await colonizationService.finalize(process.id);
             publishNotification(redis, process.userId, {
               type: 'colonization-complete',

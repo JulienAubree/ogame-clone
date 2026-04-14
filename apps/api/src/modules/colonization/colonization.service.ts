@@ -270,6 +270,19 @@ export function createColonizationService(
       return { boosted: true, amount: boost };
     },
 
+    /** Player-triggered completion — validates progress >= 0.995 */
+    async completeFromPlayer(userId: string, planetId: string) {
+      const process = await this.getProcess(planetId);
+      if (!process || process.userId !== userId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'No active colonization process' });
+      }
+      if (process.progress < 0.995) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'La colonisation n\'est pas encore terminee' });
+      }
+      await this.finalize(process.id);
+      return { completed: true, planetId };
+    },
+
     /** Finalize a completed colonization */
     async finalize(processId: string) {
       const [process] = await db
