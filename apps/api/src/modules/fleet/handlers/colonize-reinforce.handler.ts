@@ -1,6 +1,6 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, colonizationEvents } from '@exilium/db';
+import { planets, colonizationEvents, colonizationProcesses } from '@exilium/db';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
 
 export class ColonizeReinforceHandler implements MissionHandler {
@@ -69,7 +69,13 @@ export class ColonizeReinforceHandler implements MissionHandler {
     if (targetPlanet && ctx.colonizationService && boost > 0) {
       const process = await ctx.colonizationService.getProcess(targetPlanet.id);
       if (process) {
-        await ctx.colonizationService.applyBoost(process.id, boost);
+        // Add passive bonus instead of instant boost — capped at maxBoost total
+        const currentBonus = process.reinforcePassiveBonus ?? 0;
+        const newBonus = Math.min(maxBoost, currentBonus + boost);
+        await ctx.db
+          .update(colonizationProcesses)
+          .set({ reinforcePassiveBonus: newBonus })
+          .where(eq(colonizationProcesses.id, process.id));
 
         // Auto-resolve any pending 'raid' event
         const [raidEvent] = await ctx.db

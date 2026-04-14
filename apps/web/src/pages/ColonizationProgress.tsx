@@ -196,7 +196,12 @@ export default function ColonizationProgress() {
               </span>
             </div>
             <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-              <span>Progression passive : <span className="text-amber-400 font-medium">{passiveRatePct}%/h</span></span>
+              <span>
+                Progression : <span className="text-amber-400 font-medium">{passiveRatePct}%/h</span>
+                {(status.reinforcePassiveBonus ?? 0) > 0 && (
+                  <span className="text-blue-400 ml-1">(dont +{((status.reinforcePassiveBonus ?? 0) * 100).toFixed(0)}% renforts)</span>
+                )}
+              </span>
               <span>Estimation : <span className="text-foreground font-medium">{etaDisplay}</span></span>
             </div>
           </div>
@@ -341,15 +346,20 @@ export default function ColonizationProgress() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="text-sm font-bold text-foreground">Securiser le secteur</h4>
-                  <span className="text-xs font-bold text-blue-400 shrink-0">+2% / vaisseau</span>
+                  <span className="text-xs font-bold text-blue-400 shrink-0">+2%/h par vaisseau</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                  Des signaux hostiles ont ete detectes dans le secteur. L'envoi d'une escorte militaire permettra de securiser la zone et d'accelerer l'installation.
+                  Des signaux hostiles ont ete detectes dans le secteur. L'envoi d'une escorte militaire securisera la zone durablement, accelerant l'installation en continu.
                 </p>
                 <div className="flex items-center gap-3 mt-2 text-[10px]">
-                  <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-blue-400 font-medium">+2% par vaisseau de combat</span>
-                  <span className="text-muted-foreground">· Max +20%</span>
+                  <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-blue-400 font-medium">+2%/h passif par vaisseau de combat</span>
+                  <span className="text-muted-foreground">· Max +20%/h · Cumulable</span>
                 </div>
+                {(status.reinforcePassiveBonus ?? 0) > 0 && (
+                  <div className="mt-1.5 text-[11px] text-blue-400">
+                    Bonus actif : +{((status.reinforcePassiveBonus ?? 0) * 100).toFixed(0)}%/h
+                  </div>
+                )}
               </div>
             </div>
           </button>

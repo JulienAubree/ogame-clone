@@ -15,6 +15,7 @@ export const colonizationProcesses = pgTable('colonization_processes', {
   colonyShipOriginPlanetId: uuid('colony_ship_origin_planet_id').notNull(),
   progress: real('progress').notNull().default(0),
   difficultyFactor: real('difficulty_factor').notNull().default(1),
+  reinforcePassiveBonus: real('reinforce_passive_bonus').notNull().default(0),
   status: colonizationStatusEnum('status').notNull().default('active'),
   lastTickAt: timestamp('last_tick_at', { withTimezone: true }).notNull().defaultNow(),
   lastEventAt: timestamp('last_event_at', { withTimezone: true }).notNull().defaultNow(),

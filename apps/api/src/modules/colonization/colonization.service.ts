@@ -35,7 +35,8 @@ export function createColonizationService(
 
       const config = await gameConfigService.getFullConfig();
       const passiveRate = Number(config.universe.colonization_passive_rate) || 0.10;
-      const effectiveRate = passiveRate * process.difficultyFactor;
+      const reinforceBonus = process.reinforcePassiveBonus ?? 0;
+      const effectiveRate = passiveRate * process.difficultyFactor + reinforceBonus;
       const remaining = Math.max(0, 1 - process.progress);
       const etaHours = effectiveRate > 0 ? remaining / effectiveRate : Infinity;
 
@@ -81,7 +82,8 @@ export function createColonizationService(
 
       const config = await gameConfigService.getFullConfig();
       const passiveRate = Number(config.universe.colonization_passive_rate) || 0.10;
-      const effectiveRate = passiveRate * process.difficultyFactor;
+      const reinforceBonus = process.reinforcePassiveBonus ?? 0;
+      const effectiveRate = passiveRate * process.difficultyFactor + reinforceBonus;
 
       const now = new Date();
       const elapsedHours = (now.getTime() - new Date(process.lastTickAt).getTime()) / (1000 * 60 * 60);
