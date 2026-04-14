@@ -10,4 +10,6 @@ export enum MissionType {
   Trade = 'trade',
   Scan = 'scan',
   Explore = 'explore',
+  ColonizeSupply = 'colonize_supply',
+  ColonizeReinforce = 'colonize_reinforce',
 }
