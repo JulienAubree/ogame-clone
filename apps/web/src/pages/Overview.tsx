@@ -15,6 +15,7 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { eventTypeColor, formatEventText, formatRelativeTime, groupEvents } from '@/lib/game-events';
 import { getPlanetImageUrl, getFlagshipImageUrl } from '@/lib/assets';
 import { getUnitName } from '@/lib/entity-names';
+import ColonizationProgress from './ColonizationProgress';
 import {
   HistoryIcon,
   MovementsIcon,
@@ -325,12 +326,22 @@ export default function Overview() {
 
   const { data: flagship } = trpc.flagship.get.useQuery();
 
+  const { data: colonizationStatus } = trpc.colonization.status.useQuery(
+    { planetId: planetId! },
+    { enabled: !!planetId },
+  );
+
   const renameMutation = trpc.planet.rename.useMutation({
     onSuccess: () => {
       utils.planet.list.invalidate();
       setIsRenaming(false);
     },
   });
+
+  // If planet is being colonized, show colonization page instead
+  if (colonizationStatus) {
+    return <ColonizationProgress />;
+  }
 
   if (isLoading) {
     return <OverviewSkeleton />;
