@@ -42,6 +42,7 @@ const CATEGORIES = [
   { id: 'building_exploration', entityType: 'building', name: 'Exploration', sortOrder: 6 },
   { id: 'building_commerce', entityType: 'building', name: 'Commerce', sortOrder: 7 },
   { id: 'building_defense', entityType: 'building', name: 'Défense', sortOrder: 8 },
+  { id: 'building_gouvernance', entityType: 'building', name: 'Gouvernance', sortOrder: 9 },
   // Research
   { id: 'research_propulsion', entityType: 'research', name: 'Propulsion', sortOrder: 0 },
   { id: 'research_combat', entityType: 'research', name: 'Combat', sortOrder: 1 },
@@ -97,6 +98,7 @@ const BUILDINGS = [
   { id: 'labTemperate', name: 'Bio-Laboratoire', description: "Annexe de recherche specialisee dans l'optimisation de la production, s'appuyant sur la biodiversite locale.", baseCostMinerai: 8000, baseCostSilicium: 16000, baseCostHydrogene: 8000, costFactor: 2, baseTime: 3600, categoryId: 'building_recherche', sortOrder: 3, role: null, flavorText: "La richesse biologique des mondes temperes inspire des procedes d'optimisation energetique et productive sans equivalent.", prerequisites: [{ buildingId: 'researchLab', level: 6 }], allowedPlanetTypes: ['temperate'] },
   { id: 'labGlacial', name: 'Cryo-Laboratoire', description: "Annexe de recherche specialisee dans les technologies defensives, exploitant les proprietes cryogeniques.", baseCostMinerai: 8000, baseCostSilicium: 16000, baseCostHydrogene: 8000, costFactor: 2, baseTime: 3600, categoryId: 'building_recherche', sortOrder: 4, role: null, flavorText: "Les temperatures proches du zero absolu permettent de developper des supraconducteurs et des boucliers d'une efficacite inegalee.", prerequisites: [{ buildingId: 'researchLab', level: 6 }], allowedPlanetTypes: ['glacial'] },
   { id: 'labGaseous', name: 'Nebula-Lab', description: "Annexe de recherche specialisee dans la propulsion, exploitant les courants atmospheriques et les gaz rares.", baseCostMinerai: 8000, baseCostSilicium: 16000, baseCostHydrogene: 8000, costFactor: 2, baseTime: 3600, categoryId: 'building_recherche', sortOrder: 5, role: null, flavorText: "Flottant dans l'atmosphere dense des geantes gazeuses, le Nebula-Lab teste des systemes de propulsion dans des conditions extremes.", prerequisites: [{ buildingId: 'researchLab', level: 6 }], allowedPlanetTypes: ['gaseous'] },
+  { id: 'imperialPowerCenter', name: 'Centre de Pouvoir Impérial', description: "Siège du pouvoir politique de votre empire. Chaque niveau augmente votre capacité de gouvernance, permettant de gérer efficacement davantage de colonies.", baseCostMinerai: 5000, baseCostSilicium: 8000, baseCostHydrogene: 3000, costFactor: 1.8, baseTime: 7200, categoryId: 'building_gouvernance', sortOrder: 0, role: 'governance', flavorText: "Le cœur politique d'un empire en expansion.", allowedPlanetTypes: ['homeworld'], prerequisites: [{ buildingId: 'robotics', level: 4 }] },
 ];
 
 // ── Research data ──
@@ -421,6 +423,8 @@ const MISSION_DEFINITIONS = [
     requiresPveMission: false,
   },
   { id: 'explore', label: 'Explorer', hint: "Envoyez des explorateurs découvrir les biomes d'une planète", buttonLabel: 'Explorer', color: '#06b6d4', sortOrder: 10, dangerous: false, requiredShipRoles: ['exploration'], exclusive: true, recommendedShipRoles: ['exploration'], requiresPveMission: false },
+  { id: 'colonize_supply', label: 'Ravitaillement colonie', hint: 'Envoyez des ressources pour stabiliser votre colonie', buttonLabel: 'Ravitailler', color: '#22c55e', sortOrder: 11, dangerous: false, requiredShipRoles: null, exclusive: false, recommendedShipRoles: null, requiresPveMission: false },
+  { id: 'colonize_reinforce', label: 'Renfort colonie', hint: 'Envoyez des vaisseaux pour sécuriser votre colonie', buttonLabel: 'Renforcer', color: '#3b82f6', sortOrder: 12, dangerous: false, requiredShipRoles: null, exclusive: false, recommendedShipRoles: null, requiresPveMission: false },
 ];
 
 // ── UI labels data ──
@@ -477,7 +481,6 @@ const UNIVERSE_CONFIG = [
   { key: 'galaxies', value: 9 },
   { key: 'systems', value: 499 },
   { key: 'positions', value: 16 },
-  { key: 'maxPlanetsPerPlayer', value: 9 },
   { key: 'debrisRatio', value: 0.3 },
   { key: 'lootRatio', value: 0.5 },
   { key: 'startingMinerai', value: 500 },
@@ -568,6 +571,26 @@ const UNIVERSE_CONFIG = [
   // ── Flagship ──
   { key: 'flagship_repair_duration_seconds', value: 7200 },
   { key: 'flagship_instant_repair_exilium_cost', value: 2 },
+
+  // ── Colonization & Governance ──
+  { key: 'colonization_passive_rate', value: 0.10 },
+  { key: 'colonization_event_interval', value: 7200 },
+  { key: 'colonization_event_deadline_min', value: 14400 },
+  { key: 'colonization_event_deadline_max', value: 21600 },
+  { key: 'colonization_event_raid_penalty', value: 0.12 },
+  { key: 'colonization_event_shortage_penalty', value: 0.12 },
+  { key: 'colonization_event_resolve_bonus', value: 0.04 },
+  { key: 'colonization_supply_boost', value: 0.18 },
+  { key: 'colonization_reinforce_boost', value: 0.12 },
+  { key: 'colonization_consolidate_boost', value: 0.09 },
+  { key: 'colonization_consolidate_cooldown', value: 14400 },
+  { key: 'governance_penalty_harvest', value: [0.15, 0.35, 0.60] },
+  { key: 'governance_penalty_construction', value: [0.15, 0.35, 0.60] },
+  { key: 'colonization_difficulty_temperate', value: 1.0 },
+  { key: 'colonization_difficulty_arid', value: 0.7 },
+  { key: 'colonization_difficulty_glacial', value: 0.7 },
+  { key: 'colonization_difficulty_volcanic', value: 0.5 },
+  { key: 'colonization_difficulty_gaseous', value: 0.5 },
 
   // ── Daily Quests ──
   { key: 'daily_quest_count', value: 3 },
