@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FlagshipIcon } from '@/lib/icons';
-import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
+import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
 import { getPlanetImageUrl } from '@/lib/assets';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { trpc } from '@/trpc';
@@ -58,6 +58,7 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
   }
   const biomeStat2Resource: Record<string, string> = {
     production_minerai: 'minerai', production_silicium: 'silicium', production_hydrogene: 'hydrogene',
+    energy_production: 'energy',
   };
   for (const biome of biomes) {
     for (const e of biome.effects ?? []) {
@@ -158,6 +159,15 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
                     return (
                       <span className={`inline-flex items-center gap-1 text-xs font-semibold ${pct > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         <HydrogeneIcon size={13} className="text-hydrogene" />
+                        {pct > 0 ? '+' : ''}{pct}%
+                      </span>
+                    );
+                  })()}
+                  {cumulatedBonuses['energy'] != null && (() => {
+                    const pct = Math.round(cumulatedBonuses['energy'] * 100);
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${pct > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <EnergieIcon size={13} className="text-energy" />
                         {pct > 0 ? '+' : ''}{pct}%
                       </span>
                     );
