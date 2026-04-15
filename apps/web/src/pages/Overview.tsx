@@ -394,44 +394,53 @@ export default function Overview() {
   const stationaryShips = ships?.filter((s) => s.count > 0) ?? [];
   const stationaryDefenses = defenses?.filter((d) => d.count > 0) ?? [];
 
+  // Aggregate biome bonuses for inline display
+  const biomeBonuses: Record<string, number> = {};
+  for (const biome of ((planet as any).biomes ?? []) as Array<{ id: string; effects?: Array<{ stat: string; modifier: number }> }>) {
+    const configBiome = gameConfig?.biomes?.find((b: any) => b.id === biome.id);
+    for (const e of (configBiome?.effects ?? biome.effects ?? []) as Array<{ stat: string; modifier: number }>) {
+      if (typeof e.modifier === 'number') biomeBonuses[e.stat] = (biomeBonuses[e.stat] ?? 0) + e.modifier;
+    }
+  }
+  const hasBiomeBonuses = Object.keys(biomeBonuses).length > 0;
+
   return (
-    <div className="space-y-4 p-4 lg:p-6">
-      {/* ════ HERO BANNER ════ */}
+    <div className="space-y-3 p-4 lg:p-6">
+      {/* ════ COMPACT HERO ════ */}
       <div className="relative overflow-hidden rounded-2xl -mx-4 -mt-4 lg:mx-0 lg:mt-0">
-        {/* Background image */}
         <div className="absolute inset-0">
           {planet.planetClassId && planet.planetImageIndex != null ? (
             <img
               src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)}
               alt=""
-              className="h-full w-full object-cover opacity-40 blur-sm scale-110"
+              className="h-full w-full object-cover opacity-30 blur-sm scale-110"
               onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
             />
           ) : (
             <div className="h-full w-full bg-gradient-to-br from-indigo-950 via-purple-900/60 to-slate-950" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
         </div>
 
-        <div className="relative px-5 pt-8 pb-5 lg:px-8 lg:pt-10 lg:pb-6">
-          <div className="flex items-start gap-5">
+        <div className="relative px-4 pt-5 pb-4 lg:px-6 lg:pt-6 lg:pb-5">
+          <div className="flex items-center gap-4">
             {/* Planet thumbnail — clickable for detail */}
             <button type="button" onClick={() => setShowPlanetDetail(true)} className="shrink-0 cursor-pointer group">
               {planet.planetClassId && planet.planetImageIndex != null ? (
                 <img
                   src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex, 'thumb')}
                   alt={planet.name}
-                  className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-primary/10 transition-all group-hover:ring-2 group-hover:ring-primary/40 group-hover:shadow-primary/20"
+                  className="h-14 w-14 lg:h-16 lg:w-16 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-primary/10 transition-all group-hover:ring-2 group-hover:ring-primary/40"
                 />
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/30 bg-card text-2xl font-bold text-primary shadow-lg shadow-primary/10 transition-all group-hover:ring-2 group-hover:ring-primary/40">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary/30 bg-card text-xl font-bold text-primary shadow-lg transition-all group-hover:ring-2 group-hover:ring-primary/40">
                   {planet.name.charAt(0)}
                 </div>
               )}
             </button>
 
             {/* Title + info */}
-            <div className="flex-1 min-w-0 pt-1">
+            <div className="flex-1 min-w-0">
               {isRenaming ? (
                 <form
                   className="flex items-center gap-2"
@@ -442,39 +451,46 @@ export default function Overview() {
                     }
                   }}
                 >
-                  <Input
-                    autoFocus
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    maxLength={30}
-                    className="h-8"
-                  />
+                  <Input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={30} className="h-7 text-sm" />
                   <Button type="submit" size="sm" disabled={renameMutation.isPending}>OK</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setIsRenaming(false)}>Annuler</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setIsRenaming(false)}>X</Button>
                 </form>
               ) : (
                 <h1
-                  className={`text-xl lg:text-2xl font-bold text-foreground truncate ${!planet.renamed ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                  className={`text-lg lg:text-xl font-bold text-foreground truncate ${!planet.renamed ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
                   onClick={!planet.renamed ? () => { setNewName(planet.name); setIsRenaming(true); } : undefined}
                   title={!planet.renamed ? 'Cliquer pour renommer' : undefined}
                 >
                   {planet.name}
                   {flagship?.planetId === planet.id && (
-                    <FlagshipIcon width={18} height={18} className="inline-block ml-2 text-energy align-text-bottom" />
+                    <FlagshipIcon width={16} height={16} className="inline-block ml-1.5 text-energy align-text-bottom" />
                   )}
                 </h1>
               )}
-              <p className="text-sm text-muted-foreground">
-                [{planet.galaxy}:{planet.system}:{planet.position}]
-                {' '} · {planet.diameter.toLocaleString('fr-FR')} km
-                {' '} · {planet.minTemp}&deg;C a {planet.maxTemp}&deg;C
-              </p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>[{planet.galaxy}:{planet.system}:{planet.position}]</span>
+                <span className="text-border">|</span>
+                <span>{planet.diameter.toLocaleString('fr-FR')} km</span>
+                <span className="text-border">|</span>
+                <span>{planet.minTemp}&deg;C a {planet.maxTemp}&deg;C</span>
+              </div>
             </div>
+
+            {/* Biome bonus summary (desktop only) */}
+            {hasBiomeBonuses && (
+              <div className="hidden lg:flex flex-wrap gap-1.5 shrink-0 max-w-xs justify-end">
+                {Object.entries(biomeBonuses).sort(([,a],[,b]) => b - a).slice(0, 4).map(([stat, mod]) => (
+                  <span key={stat} className="text-[10px] rounded-md bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-emerald-400">
+                    {mod > 0 ? '+' : ''}{Math.round(mod * 100)}% {(STAT_LABELS[stat] ?? stat).replace('Production ', '').replace('Stockage ', 'Stock. ')}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Biomes */}
+          {/* Biomes (mobile) */}
           {(planet as any).biomes && (planet as any).biomes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-4">
+            <div className="flex flex-wrap gap-1 mt-2 lg:hidden">
               {(planet as any).biomes.map((biome: any) => (
                 <BiomeBadge key={biome.id} biome={biome} size="xs" />
               ))}
@@ -483,11 +499,16 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* ════ LAYOUT: main + sidebar ════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 lg:gap-6">
+      {/* ════ DASHBOARD GRID ════ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 
-        {/* ── COLONNE PRINCIPALE ── */}
-        <div className="flex flex-col gap-4">
+        {/* ── Production & Stockage (takes full width on mobile, 1 col on desktop) ── */}
+        <div className="md:col-span-2 lg:col-span-1">
+          {planetId && <ProductionStorageCard planetId={planetId} />}
+        </div>
+
+        {/* ── Activites en cours ── */}
+        <div className="flex flex-col gap-3">
 
           {/* Activites en cours */}
           {hasActivity && (
@@ -973,81 +994,31 @@ export default function Overview() {
           )}
         </div>
 
-        {/* ── SIDEBAR ── */}
-        <div className="flex flex-col gap-4">
-
-          {/* Production & Stockage (isolated component — re-renders every 1s without affecting the rest) */}
-          {planetId && <ProductionStorageCard planetId={planetId} />}
-
-          {/* Informations planete */}
-          <section className="glass-card p-4">
-            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <OverviewIcon width={16} height={16} className="opacity-70" />
-              Informations planete
-            </h2>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between py-1 border-b border-border/30">
-                <span className="text-muted-foreground">Energie</span>
-                <span className="font-medium" style={{ color: (resourceData?.rates.energyProduced ?? 0) >= (resourceData?.rates.energyConsumed ?? 0) ? '#facc15' : '#f87171' }}>
-                  {Math.floor(resourceData?.rates.energyProduced ?? 0) - Math.floor(resourceData?.rates.energyConsumed ?? 0)} / {Math.floor(resourceData?.rates.energyProduced ?? 0)}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-border/30">
-                <span className="text-muted-foreground">Diametre</span>
-                <span className="text-foreground font-medium">{planet.diameter.toLocaleString('fr-FR')} km</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-muted-foreground">Temperature</span>
-                <span className="text-foreground font-medium">{planet.minTemp}&deg;C a {planet.maxTemp}&deg;C</span>
-              </div>
-            </div>
-            {(planet as any).biomes && (planet as any).biomes.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/30">
-                <span className="text-xs text-muted-foreground font-medium">Biomes</span>
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {(planet as any).biomes.map((biome: any) => (
-                    <BiomeBadge key={biome.id} biome={biome} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
+        {/* ── Colonne 3: Flotte + Flagship + Quick nav ── */}
+        <div className="flex flex-col gap-3">
 
           {/* Vaisseau amiral */}
           {flagship && (
             <section
-              className="glass-card p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+              className="glass-card p-3 cursor-pointer hover:bg-muted/30 transition-colors"
               onClick={() => navigate('/flagship')}
             >
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <FlagshipIcon width={16} height={16} className="opacity-70" />
-                Vaisseau amiral
-              </h2>
               <div className="flex items-center gap-3">
                 {flagship.flagshipImageIndex ? (
                   <img
                     src={getFlagshipImageUrl(flagship.hullId ?? 'industrial', flagship.flagshipImageIndex, 'icon')}
                     alt={flagship.name}
-                    className="w-10 h-10 rounded-lg object-cover border border-white/10 flex-shrink-0"
+                    className="w-9 h-9 rounded-lg object-cover border border-white/10 flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 border border-white/10 flex items-center justify-center text-xs font-bold text-primary/30 flex-shrink-0">
-                    VA
-                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 border border-white/10 flex items-center justify-center text-[10px] font-bold text-primary/30 flex-shrink-0">VA</div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium truncate">{flagship.name}</div>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      flagship.status === 'active' ? 'bg-emerald-400' :
-                      flagship.status === 'in_mission' ? 'bg-blue-400' : 'bg-red-400'
-                    }`} />
-                    <span className={`${
-                      flagship.status === 'active' ? 'text-emerald-400' :
-                      flagship.status === 'in_mission' ? 'text-blue-400' : 'text-red-400'
-                    }`}>
-                      {flagship.status === 'active' ? 'Operationnel' :
-                       flagship.status === 'in_mission' ? 'En mission' : 'Incapacite'}
+                  <div className="text-xs font-medium truncate">{flagship.name}</div>
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <span className={`w-1.5 h-1.5 rounded-full ${flagship.status === 'active' ? 'bg-emerald-400' : flagship.status === 'in_mission' ? 'bg-blue-400' : 'bg-red-400'}`} />
+                    <span className={flagship.status === 'active' ? 'text-emerald-400' : flagship.status === 'in_mission' ? 'text-blue-400' : 'text-red-400'}>
+                      {flagship.status === 'active' ? 'Operationnel' : flagship.status === 'in_mission' ? 'En mission' : 'Incapacite'}
                     </span>
                   </div>
                 </div>
@@ -1055,17 +1026,13 @@ export default function Overview() {
             </section>
           )}
 
-          {/* Actions rapides */}
-          <section className="glass-card p-4">
-            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <MoreIcon width={16} height={16} className="opacity-70" />
-              Actions rapides
-            </h2>
-            <div className="grid grid-cols-2 gap-2">
+          {/* Quick nav */}
+          <section className="glass-card p-3">
+            <div className="grid grid-cols-3 gap-1.5">
               <QuickAction icon={BuildingsIcon} label="Batiments" to="/buildings" />
               <QuickAction icon={ResearchIcon} label="Recherche" to="/research" />
               <QuickAction icon={ShipyardIcon} label="Chantier" to="/shipyard" />
-              <QuickAction icon={DefenseIcon} label="Defenses" to="/defense" />
+              <QuickAction icon={DefenseIcon} label="Defense" to="/defense" />
               <QuickAction icon={FleetIcon} label="Flotte" to="/fleet" />
               <QuickAction icon={GalaxyIcon} label="Galaxie" to="/galaxy" />
             </div>
