@@ -68,7 +68,7 @@ function getContextualTable(
       level,
       production: prodFn(level),
       gain: i === 0 ? null : prodFn(level) - prodFn(level - 1),
-      energy: -energyFn(level),
+      energy: i === 0 ? -energyFn(level) : -(energyFn(level) - energyFn(level - 1)),
     }));
 
   switch (buildingId) {
@@ -473,7 +473,9 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
                     <td className="px-2 py-1.5 text-right text-emerald-500">
                       {row.gain != null ? `+${fmt(row.gain)}` : '\u2014'}
                     </td>
-                    <td className="px-2 py-1.5 text-right text-red-500">{fmt(row.energy)}</td>
+                    <td className="px-2 py-1.5 text-right text-red-500">
+                      {i === 0 ? '\u2014' : fmt(row.energy)}
+                    </td>
                   </tr>
                 ))}
               {tableData.type === 'solar' &&
