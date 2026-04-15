@@ -362,7 +362,7 @@ export default function Overview() {
   const allMovementsForGrid = [...outboundMovements, ...ownInbound, ...peacefulInbound] as any[];
 
   return (
-    <div className="space-y-3 p-4 lg:p-6">
+    <div className="space-y-3">
       {/* 1. Hero */}
       <OverviewHero
         planet={planet as any}
@@ -372,6 +372,9 @@ export default function Overview() {
         renderBiomeBadge={(biome) => <BiomeBadge biome={biome} size="xs" />}
         renderPlanetDetail={(p) => <PlanetDetailContent planet={p} resourceData={resourceData} gameConfig={gameConfig} />}
       />
+
+      {/* Content with padding */}
+      <div className="space-y-3 px-4 pb-4 lg:px-6 lg:pb-6">
 
       {/* 2. KPI Bar */}
       <OverviewKpiBar
@@ -439,6 +442,8 @@ export default function Overview() {
 
       {/* 6. Events */}
       <OverviewEvents events={(recentEvents ?? []) as any[]} gameConfig={gameConfig} />
+
+      </div>
     </div>
   );
 }

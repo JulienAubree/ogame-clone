@@ -51,7 +51,7 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-2xl -mx-4 -mt-4 lg:mx-0 lg:mt-0">
+      <div className="relative overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0">
           {planet.planetClassId && planet.planetImageIndex != null ? (
