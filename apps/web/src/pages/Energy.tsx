@@ -282,21 +282,45 @@ export default function Energy() {
                 {data.planetTypeName ?? 'Inconnue'} · {data.maxTemp}°C
               </p>
 
-              {/* Cumulated bonus pills */}
+              {/* Cumulated bonuses with resource icons */}
               {hasBonuses && (
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  {Object.entries(totals).map(([stat, val]) => {
-                    const info = STAT_SHORT[stat];
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  {totals['production_minerai'] != null && (() => {
+                    const pct = Math.round(totals['production_minerai'] * 100);
                     return (
-                      <span key={stat} className={`text-[11px] px-2 py-0.5 rounded font-medium border ${
-                        val > 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : val < 0 ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                          : 'bg-muted/10 text-muted-foreground border-border/30'
-                      }`}>
-                        {formatBonus(val)} {info?.label ?? stat}
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${pct > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <MineraiIcon size={13} className="text-minerai" />
+                        {pct > 0 ? '+' : ''}{pct}%
                       </span>
                     );
-                  })}
+                  })()}
+                  {totals['production_silicium'] != null && (() => {
+                    const pct = Math.round(totals['production_silicium'] * 100);
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${pct > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <SiliciumIcon size={13} className="text-silicium" />
+                        {pct > 0 ? '+' : ''}{pct}%
+                      </span>
+                    );
+                  })()}
+                  {totals['production_hydrogene'] != null && (() => {
+                    const pct = Math.round(totals['production_hydrogene'] * 100);
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${pct > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <HydrogeneIcon size={13} className="text-hydrogene" />
+                        {pct > 0 ? '+' : ''}{pct}%
+                      </span>
+                    );
+                  })()}
+                  {totals['energy_production'] != null && (() => {
+                    const pct = Math.round(totals['energy_production'] * 100);
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${pct > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <EnergieIcon size={13} className="text-energy" />
+                        {pct > 0 ? '+' : ''}{pct}%
+                      </span>
+                    );
+                  })()}
                   <button type="button" onClick={() => setBonusExpanded(!bonusExpanded)}
                     className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 ml-1">
                     Detail
