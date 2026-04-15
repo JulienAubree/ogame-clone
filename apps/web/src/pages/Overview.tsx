@@ -339,20 +339,22 @@ export default function Overview() {
     },
   });
 
+  // Show skeleton until planet data is loaded — prevents React #310 crash
+  // on full page reload where data isn't cached yet
+  if (isLoading || !planets) {
+    return <OverviewSkeleton />;
+  }
+
   // If planet is being colonized, show colonization page instead
   if (colonizationStatus) {
     return <ColonizationProgress />;
   }
 
-  if (isLoading) {
-    return <OverviewSkeleton />;
-  }
-
-  if (isError && !planets) {
+  if (isError) {
     return (
       <div className="p-4 space-y-4">
         <PageHeader title="Vue d'ensemble" />
-        <QueryError error={{ message: 'Impossible de charger vos planetes.' }} retry={() => refetch()} />
+        <QueryError error={{ message: 'Impossible de charger vos planetes.' }} retry={() => void refetch()} />
       </div>
     );
   }
