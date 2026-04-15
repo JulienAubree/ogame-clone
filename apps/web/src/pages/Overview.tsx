@@ -1,45 +1,30 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useOutletContext } from 'react-router';
+import { useOutletContext } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Timer } from '@/components/common/Timer';
-import { GameImage } from '@/components/common/GameImage';
+import { useGameConfig } from '@/hooks/useGameConfig';
 import { OverviewSkeleton } from '@/components/common/PageSkeleton';
 import { EmptyState } from '@/components/common/EmptyState';
 import { QueryError } from '@/components/common/QueryError';
-import { PageHeader } from '@/components/common/PageHeader';
-import { useGameConfig } from '@/hooks/useGameConfig';
-import { eventTypeColor, formatEventText, formatRelativeTime, groupEvents } from '@/lib/game-events';
-import { getPlanetImageUrl, getFlagshipImageUrl } from '@/lib/assets';
-import { getUnitName } from '@/lib/entity-names';
-import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
+import { getPlanetImageUrl } from '@/lib/assets';
 import ColonizationProgress from './ColonizationProgress';
-import {
-  HistoryIcon,
-  MovementsIcon,
-  MissionsIcon,
-  FleetIcon,
-  DefenseIcon,
-  OverviewIcon,
-  MoreIcon,
-  BuildingsIcon,
-  ResearchIcon,
-  ShipyardIcon,
-  GalaxyIcon,
-  FlagshipIcon,
-} from '@/lib/icons';
 
-// ── Rarity / biome constants ──
+import { OverviewHero } from '@/components/overview/OverviewHero';
+import { OverviewKpiBar } from '@/components/overview/OverviewKpiBar';
+import { OverviewActivities } from '@/components/overview/OverviewActivities';
+import { AttackAlert } from '@/components/overview/AttackAlert';
+import { OverviewGrid } from '@/components/overview/OverviewGrid';
+import { OverviewEvents } from '@/components/overview/OverviewEvents';
+
+// ── Rarity / biome constants (used by BiomeBadge) ──
 
 const RARITY_COLORS: Record<string, string> = {
-  common: '#9ca3af',    // gray
-  uncommon: '#22c55e',  // green
-  rare: '#3b82f6',      // blue
-  epic: '#a855f7',      // purple
-  legendary: '#eab308', // gold
+  common: '#9ca3af',
+  uncommon: '#22c55e',
+  rare: '#3b82f6',
+  epic: '#a855f7',
+  legendary: '#eab308',
 };
 
 const RARITY_LABELS: Record<string, string> = {
@@ -60,8 +45,6 @@ const STAT_LABELS: Record<string, string> = {
   storage_hydrogene: 'Stockage hydrogene',
 };
 
-// ── Biome badge with hover popover ──
-
 function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -74,9 +57,8 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
   const handleEnter = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popoverWidth = 224; // w-56 = 14rem = 224px
+      const popoverWidth = 224;
       const viewportWidth = window.innerWidth;
-      // Default: align left edge with badge; flip right if it would overflow
       let left = rect.left;
       if (left + popoverWidth > viewportWidth - 8) {
         left = Math.max(8, viewportWidth - popoverWidth - 8);
@@ -86,17 +68,12 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
     setIsOpen(true);
   };
 
-  const handleLeave = () => {
-    setIsOpen(false);
-    setCoords(null);
-  };
-
   return (
     <>
       <span
         ref={triggerRef}
         onMouseEnter={handleEnter}
-        onMouseLeave={handleLeave}
+        onMouseLeave={() => { setIsOpen(false); setCoords(null); }}
         className={`inline-flex items-center gap-1 rounded-full ${padding} ${textSize} font-medium border cursor-default transition-colors`}
         style={{
           color,
@@ -104,10 +81,7 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
           backgroundColor: `${color}${isOpen ? '25' : '15'}`,
         }}
       >
-        <span
-          className={`${dotSize} rounded-full`}
-          style={{ backgroundColor: color }}
-        />
+        <span className={`${dotSize} rounded-full`} style={{ backgroundColor: color }} />
         {biome.name}
       </span>
       {isOpen && coords && createPortal(
@@ -147,65 +121,121 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
   );
 }
 
-// ── Circular gauge (inline, used only here) ──
-
-function ResourceGauge({ current, capacity, rate, label, color, protectedAmount }: {
-  current: number;
-  capacity: number;
-  rate: number;
-  label: string;
-  color: string;
-  protectedAmount?: number;
-}) {
-  const pct = capacity > 0 ? Math.min(100, Math.round((current / capacity) * 100)) : 0;
-  const radius = 28;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (pct / 100) * circumference;
+function PlanetDetailContent({ planet, resourceData, gameConfig }: { planet: any; resourceData: any; gameConfig: any }) {
+  const biomes = (planet.biomes ?? []) as Array<{ id: string; name: string; rarity: string; effects?: Array<{ stat: string; modifier: number }> }>;
+  const aggregatedBonuses: Record<string, number> = {};
+  for (const biome of biomes) {
+    const configBiome = gameConfig?.biomes?.find((b: any) => b.id === biome.id);
+    const effects = (configBiome?.effects ?? biome.effects ?? []) as Array<{ stat: string; modifier: number }>;
+    for (const e of effects) {
+      if (typeof e.modifier === 'number') aggregatedBonuses[e.stat] = (aggregatedBonuses[e.stat] ?? 0) + e.modifier;
+    }
+  }
+  const planetTypeName = gameConfig?.planetTypes?.find((t: any) => t.id === planet.planetClassId)?.name ?? planet.planetClassId;
 
   return (
-    <div className="text-center">
-      <div className="relative w-[66px] h-[66px] flex items-center justify-center mx-auto">
-        <svg className="absolute top-0 left-0 -rotate-90" width={66} height={66}>
-          <circle cx={33} cy={33} r={radius} fill="none" stroke={color} strokeWidth={3} opacity={0.2} />
-          <circle
-            cx={33} cy={33} r={radius} fill="none" stroke={color} strokeWidth={3}
-            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-          />
-          {protectedAmount != null && protectedAmount > 0 && (() => {
-            const protPct = Math.min(100, (protectedAmount / capacity) * 100);
-            const protOffset = circumference - (protPct / 100) * circumference;
-            return (
-              <circle
-                cx={33} cy={33} r={radius} fill="none" stroke="#22c55e" strokeWidth={2}
-                strokeDasharray={circumference} strokeDashoffset={protOffset}
-                strokeLinecap="round" opacity={0.4}
-              />
-            );
-          })()}
-        </svg>
-        <span className="text-xs font-semibold" style={{ color }}>{pct}%</span>
+    <>
+      <div className="relative -mx-5 -mt-5 h-[200px] overflow-hidden">
+        {planet.planetClassId && planet.planetImageIndex != null ? (
+          <img src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)} alt={planet.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-indigo-950 via-purple-900/60 to-slate-950" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-white">{planet.name}</h3>
+            <p className="text-xs text-white/70">[{planet.galaxy}:{planet.system}:{planet.position}]</p>
+          </div>
+          <span className="text-xs font-medium text-white/80 bg-white/10 rounded-full px-2.5 py-0.5 backdrop-blur-sm">{planetTypeName}</span>
+        </div>
       </div>
-      <div className="text-[10px] mt-1 font-medium" style={{ color }}>{label}</div>
-      <div className="text-[10px] text-muted-foreground">+{Math.floor(rate).toLocaleString('fr-FR')}/h</div>
-      {protectedAmount != null && protectedAmount > 0 && (
-        <div className="text-[9px] text-green-500/70 flex items-center justify-center gap-0.5">
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          {Math.floor(protectedAmount).toLocaleString('fr-FR')}
+      <div className="mt-4">
+        <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider mb-2">Caracteristiques</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
+            <div className="text-[10px] text-muted-foreground">Diametre</div>
+            <div className="text-sm font-bold text-foreground">{planet.diameter.toLocaleString('fr-FR')} km</div>
+          </div>
+          <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
+            <div className="text-[10px] text-muted-foreground">Temperature</div>
+            <div className="text-sm font-bold text-foreground">{planet.minTemp}&deg;C a {planet.maxTemp}&deg;C</div>
+          </div>
+          <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
+            <div className="text-[10px] text-muted-foreground">Type</div>
+            <div className="text-sm font-bold text-foreground">{planetTypeName}</div>
+          </div>
+          <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
+            <div className="text-[10px] text-muted-foreground">Energie</div>
+            <div className="text-sm font-bold" style={{ color: (resourceData?.rates.energyProduced ?? 0) >= (resourceData?.rates.energyConsumed ?? 0) ? '#facc15' : '#f87171' }}>
+              {Math.floor(resourceData?.rates.energyProduced ?? 0) - Math.floor(resourceData?.rates.energyConsumed ?? 0)} / {Math.floor(resourceData?.rates.energyProduced ?? 0)}
+            </div>
+          </div>
+        </div>
+      </div>
+      {biomes.length > 0 && (
+        <div className="mt-4">
+          <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider mb-2">Biomes</div>
+          <div className="space-y-2">
+            {biomes.map((biome) => {
+              const bColor = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
+              const configBiome = gameConfig?.biomes?.find((b: any) => b.id === biome.id);
+              const effects = (configBiome?.effects ?? biome.effects ?? []) as Array<{ stat: string; modifier: number }>;
+              return (
+                <div key={biome.id} className="rounded-md px-3 py-2" style={{ backgroundColor: `${bColor}10`, borderLeft: `3px solid ${bColor}` }}>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: bColor }} />
+                    <span className="text-xs font-semibold" style={{ color: bColor }}>{biome.name}</span>
+                    <span className="text-[9px] rounded-full px-1.5 py-px" style={{ color: bColor, backgroundColor: `${bColor}20` }}>
+                      {RARITY_LABELS[biome.rarity] ?? biome.rarity}
+                    </span>
+                  </div>
+                  {effects.length > 0 && (
+                    <div className="flex flex-wrap gap-x-3 mt-1 ml-4">
+                      {effects.map((e, i) => (
+                        <span key={i} className={`text-[10px] ${e.modifier > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {e.modifier > 0 ? '+' : ''}{Math.round(e.modifier * 100)}% {STAT_LABELS[e.stat] ?? e.stat}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {Object.keys(aggregatedBonuses).length > 0 && (
+            <div className="mt-3 rounded-md border border-border/30 bg-card/50 px-3 py-2">
+              <div className="text-[10px] text-muted-foreground font-semibold mb-1">Bonus cumules</div>
+              <div className="flex flex-wrap gap-x-4">
+                {Object.entries(aggregatedBonuses).map(([stat, mod]) => (
+                  <span key={stat} className={`text-xs ${mod > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {mod > 0 ? '+' : ''}{Math.round(mod * 100)}% {STAT_LABELS[stat] ?? stat}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
-// ── Production & Storage card (isolated to avoid re-rendering the whole page every second) ──
+export default function Overview() {
+  const { planetId } = useOutletContext<{ planetId?: string }>();
+  const utils = trpc.useUtils();
 
-function ProductionStorageCard({ planetId }: { planetId: string }) {
+  // ── All hooks MUST come before any conditional returns (React rule #310) ──
+
+  const { data: gameConfig } = useGameConfig();
+  const { data: planets, isLoading, isError, refetch } = trpc.planet.list.useQuery();
+
   const { data: resourceData } = trpc.resource.production.useQuery(
-    { planetId },
+    { planetId: planetId! },
     { enabled: !!planetId },
   );
 
-  const resources = useResourceCounter(
+  const liveResources = useResourceCounter(
     resourceData
       ? {
           minerai: resourceData.minerai,
@@ -222,80 +252,6 @@ function ProductionStorageCard({ planetId }: { planetId: string }) {
       : undefined,
   );
 
-  return (
-    <section className="glass-card p-4">
-      <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-        </svg>
-        Production & Stockage
-      </h2>
-      <div className="flex justify-around py-2">
-        <ResourceGauge
-          current={resources?.minerai ?? 0}
-          capacity={resourceData?.rates.storageMineraiCapacity ?? 1}
-          rate={resourceData?.rates.mineraiPerHour ?? 0}
-          label="Minerai"
-          color="#fb923c"
-          protectedAmount={resourceData?.protectedMinerai}
-        />
-        <ResourceGauge
-          current={resources?.silicium ?? 0}
-          capacity={resourceData?.rates.storageSiliciumCapacity ?? 1}
-          rate={resourceData?.rates.siliciumPerHour ?? 0}
-          label="Silicium"
-          color="#34d399"
-          protectedAmount={resourceData?.protectedSilicium}
-        />
-        <ResourceGauge
-          current={resources?.hydrogene ?? 0}
-          capacity={resourceData?.rates.storageHydrogeneCapacity ?? 1}
-          rate={resourceData?.rates.hydrogenePerHour ?? 0}
-          label="Hydrogene"
-          color="#60a5fa"
-          protectedAmount={resourceData?.protectedHydrogene}
-        />
-      </div>
-    </section>
-  );
-}
-
-// ── Quick action button ──
-
-function QuickAction({ icon: Icon, label, to }: {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  label: string;
-  to: string;
-}) {
-  const navigate = useNavigate();
-  return (
-    <button
-      onClick={() => navigate(to)}
-      className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted/30 border border-border/50 text-sm text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-    >
-      <Icon width={16} height={16} className="opacity-70" />
-      {label}
-    </button>
-  );
-}
-
-export default function Overview() {
-  const { planetId } = useOutletContext<{ planetId?: string }>();
-  const navigate = useNavigate();
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [showPlanetDetail, setShowPlanetDetail] = useState(false);
-  const utils = trpc.useUtils();
-
-  const { data: gameConfig } = useGameConfig();
-  const { data: planets, isLoading, isError, refetch } = trpc.planet.list.useQuery();
-
-  const { data: resourceData } = trpc.resource.production.useQuery(
-    { planetId: planetId! },
-    { enabled: !!planetId },
-  );
-
   const { data: buildings } = trpc.building.list.useQuery(
     { planetId: planetId! },
     { enabled: !!planetId },
@@ -304,8 +260,13 @@ export default function Overview() {
   const { data: techsData } = trpc.research.list.useQuery();
   const techs = techsData?.items;
 
-  const { data: queue } = trpc.shipyard.queue.useQuery(
-    { planetId: planetId! },
+  const { data: shipyardQueue } = trpc.shipyard.queue.useQuery(
+    { planetId: planetId!, facilityId: 'shipyard' },
+    { enabled: !!planetId },
+  );
+
+  const { data: commandCenterQueue } = trpc.shipyard.queue.useQuery(
+    { planetId: planetId!, facilityId: 'commandCenter' },
     { enabled: !!planetId },
   );
 
@@ -333,910 +294,120 @@ export default function Overview() {
     { enabled: !!planetId },
   );
 
-  const renameMutation = trpc.planet.rename.useMutation({
-    onSuccess: () => {
-      utils.planet.list.invalidate();
-      setIsRenaming(false);
-    },
-  });
+  // ── Guards — all hooks above, conditional returns only below ──
 
-  // Show skeleton until planet data is loaded — prevents React #310 crash
-  // on full page reload where data isn't cached yet
-  if (isLoading || !planets) {
-    return <OverviewSkeleton />;
-  }
-
-  // If planet is being colonized, show colonization page instead
-  if (colonizationStatus) {
-    return <ColonizationProgress />;
-  }
-
-  if (isError) {
-    return (
-      <div className="p-4 space-y-4">
-        <PageHeader title="Vue d'ensemble" />
-        <QueryError error={{ message: 'Impossible de charger vos planetes.' }} retry={() => void refetch()} />
-      </div>
-    );
-  }
-
-  const planet = planets?.find((p) => p.id === planetId) ?? planets?.[0];
-  if (!planet) {
-    return (
-      <div className="p-4">
-        <EmptyState title="Aucune planete trouvee" description="Aucune planete n'est associee a votre compte." />
-      </div>
-    );
-  }
-
-  const activeBuilding = buildings?.find((b) => b.isUpgrading);
-  const activeResearch = techs?.find((t) => t.isResearching);
-  const activeQueue = queue?.filter((q) => q.endTime) ?? [];
-  const hasActivity = activeBuilding || activeResearch || activeQueue.length > 0;
-
-  const fleetMovements = allMovements?.filter(
-    (m) => m.originPlanetId === planet.id,
-  );
-
-  // Own fleets heading to this planet from other planets (outbound only)
-  const ownInbound = allMovements?.filter(
-    (m) =>
-      m.phase === 'outbound' &&
-      m.originPlanetId !== planet.id &&
-      m.targetGalaxy === planet.galaxy &&
-      m.targetSystem === planet.system &&
-      m.targetPosition === planet.position,
-  );
-
-  const planetInbound = inboundFleets?.filter(
-    (f) => f.targetGalaxy === planet.galaxy && f.targetSystem === planet.system && f.targetPosition === planet.position,
-  );
-
-  const stationaryShips = ships?.filter((s) => s.count > 0) ?? [];
-  const stationaryDefenses = defenses?.filter((d) => d.count > 0) ?? [];
-
-  return (
-    <div className="space-y-4 p-4 lg:p-6">
-      {/* ════ HERO BANNER ════ */}
-      <div className="relative overflow-hidden rounded-2xl -mx-4 -mt-4 lg:mx-0 lg:mt-0">
-        {/* Background image */}
-        <div className="absolute inset-0">
-          {planet.planetClassId && planet.planetImageIndex != null ? (
-            <img
-              src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)}
-              alt=""
-              className="h-full w-full object-cover opacity-40 blur-sm scale-110"
-              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-indigo-950 via-purple-900/60 to-slate-950" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-        </div>
-
-        <div className="relative px-5 pt-8 pb-5 lg:px-8 lg:pt-10 lg:pb-6">
-          <div className="flex items-start gap-5">
-            {/* Planet thumbnail — clickable for detail */}
-            <button type="button" onClick={() => setShowPlanetDetail(true)} className="shrink-0 cursor-pointer group">
-              {planet.planetClassId && planet.planetImageIndex != null ? (
-                <img
-                  src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex, 'thumb')}
-                  alt={planet.name}
-                  className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-primary/10 transition-all group-hover:ring-2 group-hover:ring-primary/40 group-hover:shadow-primary/20"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/30 bg-card text-2xl font-bold text-primary shadow-lg shadow-primary/10 transition-all group-hover:ring-2 group-hover:ring-primary/40">
-                  {planet.name.charAt(0)}
-                </div>
-              )}
-            </button>
-
-            {/* Title + info */}
-            <div className="flex-1 min-w-0 pt-1">
-              {isRenaming ? (
-                <form
-                  className="flex items-center gap-2"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (newName.trim()) {
-                      renameMutation.mutate({ planetId: planet.id, name: newName.trim() });
-                    }
-                  }}
-                >
-                  <Input
-                    autoFocus
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    maxLength={30}
-                    className="h-8"
-                  />
-                  <Button type="submit" size="sm" disabled={renameMutation.isPending}>OK</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setIsRenaming(false)}>Annuler</Button>
-                </form>
-              ) : (
-                <h1
-                  className={`text-xl lg:text-2xl font-bold text-foreground truncate ${!planet.renamed ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
-                  onClick={!planet.renamed ? () => { setNewName(planet.name); setIsRenaming(true); } : undefined}
-                  title={!planet.renamed ? 'Cliquer pour renommer' : undefined}
-                >
-                  {planet.name}
-                  {flagship?.planetId === planet.id && (
-                    <FlagshipIcon width={18} height={18} className="inline-block ml-2 text-energy align-text-bottom" />
-                  )}
-                </h1>
-              )}
-              <p className="text-sm text-muted-foreground">
-                [{planet.galaxy}:{planet.system}:{planet.position}]
-                {' '} · {planet.diameter.toLocaleString('fr-FR')} km
-                {' '} · {planet.minTemp}&deg;C a {planet.maxTemp}&deg;C
-              </p>
-            </div>
-          </div>
-
-          {/* Biomes */}
-          {(planet as any).biomes && (planet as any).biomes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-4">
-              {(planet as any).biomes.map((biome: any) => (
-                <BiomeBadge key={biome.id} biome={biome} size="xs" />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ════ LAYOUT: main + sidebar ════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 lg:gap-6">
-
-        {/* ── COLONNE PRINCIPALE ── */}
-        <div className="flex flex-col gap-4">
-
-          {/* Activites en cours */}
-          {hasActivity && (
-            <section className="glass-card p-4">
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <HistoryIcon width={16} height={16} className="opacity-70" />
-                Activites en cours
-              </h2>
-              <div className="space-y-2">
-                {activeBuilding && activeBuilding.upgradeEndTime && (
-                  <div
-                    className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate('/buildings')}
-                  >
-                    <GameImage category="buildings" id={activeBuilding.id} size="icon" alt={activeBuilding.name} className="w-7 h-7 rounded-md flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-foreground font-medium">{activeBuilding.name}</span>
-                        <span className="text-muted-foreground">Niv. {activeBuilding.currentLevel + 1}</span>
-                      </div>
-                      <Timer
-                        endTime={new Date(activeBuilding.upgradeEndTime)}
-                        totalDuration={activeBuilding.nextLevelTime}
-                        className="text-[10px] text-muted-foreground"
-                        onComplete={() => {
-                          utils.building.list.invalidate({ planetId: planetId! });
-                          utils.resource.production.invalidate({ planetId: planetId! });
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {activeResearch && activeResearch.researchEndTime && (
-                  <div
-                    className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate('/research')}
-                  >
-                    <GameImage category="research" id={activeResearch.id} size="icon" alt={activeResearch.name} className="w-7 h-7 rounded-md flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-foreground font-medium">{activeResearch.name}</span>
-                        <span className="text-muted-foreground">Niv. {activeResearch.currentLevel + 1}</span>
-                      </div>
-                      <Timer
-                        endTime={new Date(activeResearch.researchEndTime)}
-                        totalDuration={activeResearch.nextLevelTime}
-                        className="text-[10px] text-muted-foreground"
-                        onComplete={() => {
-                          utils.research.list.invalidate();
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {activeQueue.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate('/shipyard')}
-                  >
-                    <GameImage category={item.type === 'defense' ? 'defenses' : 'ships'} id={item.itemId} size="icon" alt={getUnitName(item.itemId, gameConfig)} className="w-7 h-7 rounded-md flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-foreground font-medium">{getUnitName(item.itemId, gameConfig)}</span>
-                        <span className="text-muted-foreground">x{item.quantity - (item.completedCount ?? 0)}</span>
-                      </div>
-                      {item.status === 'active' && item.endTime ? (
-                        <Timer
-                          endTime={new Date(item.endTime)}
-                          totalDuration={Math.floor((new Date(item.endTime).getTime() - new Date(item.startTime).getTime()) / 1000)}
-                          className="text-[10px] text-muted-foreground"
-                          onComplete={() => {
-                            utils.shipyard.queue.invalidate({ planetId: planetId! });
-                            utils.shipyard.ships.invalidate({ planetId: planetId! });
-                          }}
-                        />
-                      ) : (
-                        <div className="text-[10px] text-muted-foreground">En attente</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Mouvements de flotte */}
-          {fleetMovements && fleetMovements.length > 0 && (
-            <section className="glass-card p-4">
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <MovementsIcon width={16} height={16} className="opacity-70" />
-                Mouvements de flotte
-              </h2>
-              <div className="space-y-1.5">
-                {fleetMovements.map((event) => {
-                  const isReturn = event.phase === 'return';
-                  const ships = event.ships as Record<string, number>;
-                  const shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
-                  const missionLabel = gameConfig?.missions[event.mission]?.label ?? event.mission;
-                  const targetCoords = `[${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}]`;
-                  const originCoords = planet ? `[${planet.galaxy}:${planet.system}:${planet.position}]` : '';
-
-                  const hex = gameConfig?.missions[event.mission]?.color ?? '#3b82f6';
-
-                  const dep = new Date(event.departureTime).getTime();
-                  const arr = new Date(event.arrivalTime).getTime();
-                  const total = arr - dep;
-                  const progress = total > 0 ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100)) : 100;
-
-                  const hasCargo = Number(event.mineraiCargo) > 0 || Number(event.siliciumCargo) > 0 || Number(event.hydrogeneCargo) > 0;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-muted/50 transition-colors space-y-1.5"
-                      onClick={() => navigate('/fleet/movements')}
-                    >
-                      {/* Line 1: Mission + Phase + Timer */}
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: hex, boxShadow: `0 0 6px ${hex}60` }}
-                        />
-                        <span className="text-sm font-medium text-foreground">{missionLabel}</span>
-                        <span className="text-[10px] text-muted-foreground/70">{gameConfig?.labels[`phase.${event.phase}`] ?? event.phase}</span>
-                        <div className="ml-auto flex-shrink-0">
-                          <Timer
-                            endTime={new Date(event.arrivalTime)}
-                            onComplete={() => utils.fleet.movements.invalidate()}
-                          />
-                        </div>
-                      </div>
-                      {/* Line 2: Route + ship count */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-4">
-                        <span className="truncate">
-                          {isReturn ? `${targetCoords} → ${planet?.name ?? ''} ${originCoords}` : `${planet?.name ?? ''} ${originCoords} → ${targetCoords}`}
-                        </span>
-                        <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                        <span className="flex-shrink-0">{shipCount} vsx</span>
-                        {hasCargo && (
-                          <>
-                            <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                            <span className="flex-shrink-0 text-amber-400/70">cargo</span>
-                          </>
-                        )}
-                      </div>
-                      {/* Mini progress bar */}
-                      <div className="h-0.5 rounded-full bg-white/[0.04] overflow-hidden ml-4">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${progress}%`, background: hex }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* Mes flottes en approche (own inbound from other planets) */}
-          {ownInbound && ownInbound.length > 0 && (
-            <section className="glass-card p-4 ring-1 ring-emerald-500/10">
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-400">Flottes en approche</span>
-                <span className="text-[10px] text-emerald-400/60 ml-auto">{ownInbound.length}</span>
-              </h2>
-              <div className="space-y-1.5">
-                {ownInbound.map((event) => {
-                  const ships = event.ships as Record<string, number>;
-                  const shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
-                  const missionLabel = gameConfig?.missions[event.mission]?.label ?? event.mission;
-                  const hex = gameConfig?.missions[event.mission]?.color ?? '#10b981';
-
-                  const originPl = planets?.find((p) => p.id === event.originPlanetId);
-                  const originName = originPl?.name ?? 'Planète';
-                  const originCoords = originPl
-                    ? `[${originPl.galaxy}:${originPl.system}:${originPl.position}]`
-                    : '';
-
-                  const hasCargo =
-                    Number(event.mineraiCargo) > 0 ||
-                    Number(event.siliciumCargo) > 0 ||
-                    Number(event.hydrogeneCargo) > 0;
-
-                  const dep = new Date(event.departureTime).getTime();
-                  const arr = new Date(event.arrivalTime).getTime();
-                  const total = arr - dep;
-                  const progress =
-                    total > 0
-                      ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100))
-                      : 100;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-emerald-500/5 transition-colors space-y-1.5"
-                      onClick={() => navigate('/fleet/movements')}
-                    >
-                      {/* Line 1: Mission + Phase + Timer */}
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: hex, boxShadow: `0 0 6px ${hex}60` }}
-                        />
-                        <span className="text-sm font-medium text-foreground">{missionLabel}</span>
-                        <span className="text-[10px] text-muted-foreground/70">
-                          {gameConfig?.labels[`phase.${event.phase}`] ?? event.phase}
-                        </span>
-                        <div className="ml-auto flex-shrink-0">
-                          <Timer
-                            endTime={new Date(event.arrivalTime)}
-                            onComplete={() => utils.fleet.movements.invalidate()}
-                          />
-                        </div>
-                      </div>
-                      {/* Line 2: Route + ship count */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-4">
-                        <span className="truncate">
-                          {originName} {originCoords} → ici
-                        </span>
-                        <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                        <span className="flex-shrink-0">{shipCount} vsx</span>
-                        {hasCargo && (
-                          <>
-                            <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                            <span className="flex-shrink-0 text-amber-400/70">cargo</span>
-                          </>
-                        )}
-                      </div>
-                      {/* Mini progress bar */}
-                      <div className="h-0.5 rounded-full bg-white/[0.04] overflow-hidden ml-4">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${progress}%`, background: hex }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* Flottes entrantes */}
-          {planetInbound && planetInbound.length > 0 && (() => {
-            const hostileInbound = planetInbound.filter((e) => (e as any).hostile);
-            const peacefulInbound = planetInbound.filter((e) => !(e as any).hostile);
-            return (
-            <>
-              {/* Hostile inbound — alert banner */}
-              {hostileInbound.length > 0 && (
-                <section
-                  className="relative overflow-hidden rounded-xl border border-red-500/40 cursor-pointer hover:border-red-500/60 transition-colors"
-                  style={{ background: 'linear-gradient(135deg, rgba(127,29,29,0.5) 0%, rgba(69,10,10,0.6) 50%, rgba(127,29,29,0.4) 100%)' }}
-                  onClick={() => navigate('/fleet/movements')}
-                >
-                  {/* Animated scan line */}
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.08) 50%, transparent 100%)',
-                      animation: 'scan 3s ease-in-out infinite',
-                    }}
-                  />
-                  <style>{`@keyframes scan { 0%,100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }`}</style>
-
-                  {/* Top red accent bar */}
-                  <div className="h-1 w-full bg-gradient-to-r from-red-600 via-red-500 to-red-600" />
-
-                  <div className="px-4 py-3 space-y-2.5 relative">
-                    {/* Header */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-                          <div className="absolute inset-0 w-3 h-3 rounded-full bg-red-500 animate-ping opacity-40" />
-                        </div>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                          <line x1="12" y1="9" x2="12" y2="13" />
-                          <line x1="12" y1="17" x2="12.01" y2="17" />
-                        </svg>
-                      </div>
-                      <span className="text-red-400 font-bold text-sm uppercase tracking-wider">
-                        Attaque imminente
-                      </span>
-                      <span className="text-red-400/60 text-[10px] font-semibold ml-auto">
-                        {hostileInbound.length} flotte{hostileInbound.length > 1 ? 's' : ''}
-                      </span>
-                    </div>
-
-                    {/* Fleet entries */}
-                    {hostileInbound.map((event) => {
-                      const tier = (event as any).detectionTier ?? 0;
-                      const ships = event.ships as Record<string, number>;
-                      const shipCount = tier >= 3
-                        ? Object.values(ships).reduce((sum, n) => sum + n, 0)
-                        : tier >= 2 ? ((event as any).shipCount ?? 0) : 0;
-                      const hasOrigin = tier >= 1;
-                      const hasSender = tier >= 4;
-
-                      const dep = new Date(event.departureTime).getTime();
-                      const arr = new Date(event.arrivalTime).getTime();
-                      const total = arr - dep;
-                      const progress = total > 0 ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100)) : 100;
-
-                      return (
-                        <div key={event.id} className="space-y-1.5 border-t border-red-500/20 pt-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-red-300">
-                              {hasSender ? (
-                                <>
-                                  {event.allianceTag && <span className="text-red-400 mr-1">[{event.allianceTag}]</span>}
-                                  {event.senderUsername}
-                                </>
-                              ) : (
-                                <span className="italic text-red-400/50">Attaquant inconnu</span>
-                              )}
-                            </span>
-                            <div className="ml-auto">
-                              <Timer
-                                endTime={new Date(event.arrivalTime)}
-                                onComplete={() => utils.fleet.inbound.invalidate()}
-                                className="!text-red-400 font-bold"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-red-300/60">
-                            <span>{hasOrigin ? `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]` : '???'} → ici</span>
-                            {shipCount > 0 && (
-                              <>
-                                <span className="text-red-500/30">·</span>
-                                <span>{shipCount} vaisseaux</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="h-1 rounded-full bg-red-950/60 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400"
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {/* Peaceful inbound */}
-              {peacefulInbound.length > 0 && (
-                <section className="glass-card p-4 ring-1 ring-yellow-500/10">
-                  <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-                    <span className="text-yellow-400">Flottes entrantes</span>
-                    <span className="text-[10px] text-yellow-400/60 ml-auto">{peacefulInbound.length}</span>
-                  </h2>
-                  <div className="space-y-1.5">
-                    {peacefulInbound.map((event) => {
-                      const ships = event.ships as Record<string, number>;
-                      const shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
-                      const missionLabel = gameConfig?.missions[event.mission]?.label ?? event.mission;
-                      const hex = gameConfig?.missions[event.mission]?.color ?? '#eab308';
-
-                      const originCoords = `[${event.originGalaxy}:${event.originSystem}:${event.originPosition}]`;
-                      const hasCargo = Number(event.mineraiCargo) > 0 || Number(event.siliciumCargo) > 0 || Number(event.hydrogeneCargo) > 0;
-
-                      const dep = new Date(event.departureTime).getTime();
-                      const arr = new Date(event.arrivalTime).getTime();
-                      const total = arr - dep;
-                      const progress = total > 0 ? Math.min(100, Math.max(0, ((Date.now() - dep) / total) * 100)) : 100;
-
-                      return (
-                        <div
-                          key={event.id}
-                          className="px-2.5 py-2 rounded-md cursor-pointer hover:bg-yellow-500/5 transition-colors space-y-1.5"
-                          onClick={() => navigate('/fleet/movements')}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ background: hex, boxShadow: `0 0 6px ${hex}60` }}
-                            />
-                            <span className="text-sm font-medium text-foreground">{missionLabel}</span>
-                            <span className="text-[10px] text-muted-foreground/70">
-                              {event.allianceTag && <span className="text-yellow-400 font-semibold mr-1">[{event.allianceTag}]</span>}
-                              {event.senderUsername}
-                            </span>
-                            <div className="ml-auto flex-shrink-0">
-                              <Timer
-                                endTime={new Date(event.arrivalTime)}
-                                onComplete={() => utils.fleet.inbound.invalidate()}
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-4">
-                            <span className="truncate">
-                              {event.originPlanetName ?? 'Planète'} {originCoords} → ici
-                            </span>
-                            <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                            <span className="flex-shrink-0">{shipCount} vsx</span>
-                            {hasCargo && (
-                              <>
-                                <span className="text-muted-foreground/30 flex-shrink-0">·</span>
-                                <span className="flex-shrink-0 text-amber-400/70">cargo</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="h-0.5 rounded-full bg-white/[0.04] overflow-hidden ml-4">
-                            <div className="h-full rounded-full" style={{ width: `${progress}%`, background: hex }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-            </>
-            );
-          })()}
-
-          {/* Evenements recents */}
-          <section className="glass-card p-4">
-            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <MissionsIcon width={16} height={16} className="opacity-70" />
-              Evenements recents
-            </h2>
-            {recentEvents && recentEvents.length > 0 ? (
-              <div className="space-y-0.5">
-                {groupEvents(recentEvents).map((event) => (
-                  <div key={event.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/30 last:border-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${eventTypeColor(event.type)}`} />
-                      <span className="text-muted-foreground">{formatEventText(event, { missions: gameConfig?.missions })}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground/60 shrink-0 ml-2">{formatRelativeTime(event.createdAt)}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Aucun evenement recent</p>
-            )}
-          </section>
-
-          {/* Flotte stationnee */}
-          {stationaryShips.length > 0 && (
-            <section className="glass-card p-4">
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <FleetIcon width={16} height={16} className="opacity-70" />
-                Flotte stationnee
-              </h2>
-              <div className="grid grid-cols-2 gap-1.5 text-xs">
-                {stationaryShips.map((ship) => (
-                  <div key={ship.id} className="flex justify-between px-2 py-1.5 rounded bg-muted/30">
-                    <span className="text-muted-foreground">{ship.name}</span>
-                    <span className="text-foreground font-semibold">{ship.count}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Defenses planetaires */}
-          {stationaryDefenses.length > 0 && (
-            <section className="glass-card p-4">
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <DefenseIcon width={16} height={16} className="opacity-70" />
-                Defenses planetaires
-              </h2>
-              <div className="grid grid-cols-2 gap-1.5 text-xs">
-                {stationaryDefenses.map((def) => (
-                  <div key={def.id} className="flex justify-between px-2 py-1.5 rounded bg-muted/30">
-                    <span className="text-muted-foreground">{def.name}</span>
-                    <span className="text-foreground font-semibold">{def.count}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* ── SIDEBAR ── */}
-        <div className="flex flex-col gap-4">
-
-          {/* Production & Stockage (isolated component — re-renders every 1s without affecting the rest) */}
-          {planetId && <ProductionStorageCard planetId={planetId} />}
-
-          {/* Informations planete */}
-          <section className="glass-card p-4">
-            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <OverviewIcon width={16} height={16} className="opacity-70" />
-              Informations planete
-            </h2>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between py-1 border-b border-border/30">
-                <span className="text-muted-foreground">Energie</span>
-                <span className="font-medium" style={{ color: (resourceData?.rates.energyProduced ?? 0) >= (resourceData?.rates.energyConsumed ?? 0) ? '#facc15' : '#f87171' }}>
-                  {Math.floor(resourceData?.rates.energyProduced ?? 0) - Math.floor(resourceData?.rates.energyConsumed ?? 0)} / {Math.floor(resourceData?.rates.energyProduced ?? 0)}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-border/30">
-                <span className="text-muted-foreground">Diametre</span>
-                <span className="text-foreground font-medium">{planet.diameter.toLocaleString('fr-FR')} km</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-muted-foreground">Temperature</span>
-                <span className="text-foreground font-medium">{planet.minTemp}&deg;C a {planet.maxTemp}&deg;C</span>
-              </div>
-            </div>
-            {(planet as any).biomes && (planet as any).biomes.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/30">
-                <span className="text-xs text-muted-foreground font-medium">Biomes</span>
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {(planet as any).biomes.map((biome: any) => (
-                    <BiomeBadge key={biome.id} biome={biome} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Vaisseau amiral */}
-          {flagship && (
-            <section
-              className="glass-card p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-              onClick={() => navigate('/flagship')}
-            >
-              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <FlagshipIcon width={16} height={16} className="opacity-70" />
-                Vaisseau amiral
-              </h2>
-              <div className="flex items-center gap-3">
-                {flagship.flagshipImageIndex ? (
-                  <img
-                    src={getFlagshipImageUrl(flagship.hullId ?? 'industrial', flagship.flagshipImageIndex, 'icon')}
-                    alt={flagship.name}
-                    className="w-10 h-10 rounded-lg object-cover border border-white/10 flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 border border-white/10 flex items-center justify-center text-xs font-bold text-primary/30 flex-shrink-0">
-                    VA
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium truncate">{flagship.name}</div>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      flagship.status === 'active' ? 'bg-emerald-400' :
-                      flagship.status === 'in_mission' ? 'bg-blue-400' : 'bg-red-400'
-                    }`} />
-                    <span className={`${
-                      flagship.status === 'active' ? 'text-emerald-400' :
-                      flagship.status === 'in_mission' ? 'text-blue-400' : 'text-red-400'
-                    }`}>
-                      {flagship.status === 'active' ? 'Operationnel' :
-                       flagship.status === 'in_mission' ? 'En mission' : 'Incapacite'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Actions rapides */}
-          <section className="glass-card p-4">
-            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <MoreIcon width={16} height={16} className="opacity-70" />
-              Actions rapides
-            </h2>
-            <div className="grid grid-cols-2 gap-2">
-              <QuickAction icon={BuildingsIcon} label="Batiments" to="/buildings" />
-              <QuickAction icon={ResearchIcon} label="Recherche" to="/research" />
-              <QuickAction icon={ShipyardIcon} label="Chantier" to="/shipyard" />
-              <QuickAction icon={DefenseIcon} label="Defenses" to="/defense" />
-              <QuickAction icon={FleetIcon} label="Flotte" to="/fleet" />
-              <QuickAction icon={GalaxyIcon} label="Galaxie" to="/galaxy" />
-            </div>
-          </section>
-        </div>
-      </div>
-
-      {/* ════ PLANET DETAIL OVERLAY ════ */}
-      <EntityDetailOverlay
-        open={showPlanetDetail}
-        onClose={() => setShowPlanetDetail(false)}
-        title={planet.name}
-      >
-        <PlanetDetailContent planet={planet} resourceData={resourceData} gameConfig={gameConfig} />
-      </EntityDetailOverlay>
+  if (isLoading || !planets) return <OverviewSkeleton />;
+  if (colonizationStatus) return <ColonizationProgress />;
+  if (isError) return (
+    <div className="p-4 space-y-4">
+      <QueryError error={{ message: 'Impossible de charger vos planetes.' }} retry={() => void refetch()} />
     </div>
   );
-}
 
-// ── Planet detail content (shown in overlay on planet click) ──
+  const planet = planets?.find((p) => p.id === planetId) ?? planets?.[0];
+  if (!planet) return (
+    <div className="p-4">
+      <EmptyState title="Aucune planete trouvee" description="Aucune planete n'est associee a votre compte." />
+    </div>
+  );
 
-function PlanetDetailContent({ planet, resourceData, gameConfig }: {
-  planet: any;
-  resourceData: any;
-  gameConfig: any;
-}) {
-  const biomes = (planet.biomes ?? []) as Array<{
-    id: string; name: string; rarity: string;
-    effects?: Array<{ stat: string; modifier: number }>;
-  }>;
+  // ── Derive data for child components ──
 
-  // Aggregate all biome bonuses
-  const aggregatedBonuses: Record<string, number> = {};
-  for (const biome of biomes) {
-    const configBiome = gameConfig?.biomes?.find((b: any) => b.id === biome.id);
-    const effects = (configBiome?.effects ?? biome.effects ?? []) as Array<{ stat: string; modifier: number }>;
-    for (const e of effects) {
-      if (typeof e.modifier === 'number') {
-        aggregatedBonuses[e.stat] = (aggregatedBonuses[e.stat] ?? 0) + e.modifier;
-      }
-    }
-  }
+  const activeBuilding = buildings?.find((b) => b.isUpgrading && b.upgradeEndTime);
+  const activeResearch = techs?.find((t) => t.isResearching);
+  void activeResearch; // available if needed by future components
 
-  const planetTypeName = gameConfig?.planetTypes?.find((t: any) => t.id === planet.planetClassId)?.name ?? planet.planetClassId;
+  const stationaryShips = (ships?.filter((s) => s.count > 0) ?? []) as Array<{ id: string; name: string; count: number }>;
+  const stationaryDefenses = (defenses?.filter((d) => d.count > 0) ?? []) as Array<{ id: string; name: string; count: number }>;
+
+  // Movements from/to this planet
+  const outboundMovements = allMovements?.filter((m) => m.originPlanetId === planet.id) ?? [];
+  const ownInbound = allMovements?.filter(
+    (m) => m.phase === 'outbound' && m.originPlanetId !== planet.id &&
+      m.targetGalaxy === planet.galaxy && m.targetSystem === planet.system && m.targetPosition === planet.position,
+  ) ?? [];
+  const planetInbound = inboundFleets?.filter(
+    (f) => f.targetGalaxy === planet.galaxy && f.targetSystem === planet.system && f.targetPosition === planet.position,
+  ) ?? [];
+  const hostileInbound = planetInbound.filter((e) => (e as any).hostile);
+  const peacefulInbound = planetInbound.filter((e) => !(e as any).hostile);
+
+  const allMovementsForGrid = [...outboundMovements, ...ownInbound, ...peacefulInbound] as any[];
 
   return (
-    <>
-      {/* Hero image */}
-      <div className="relative -mx-5 -mt-5 h-[200px] overflow-hidden">
-        {planet.planetClassId && planet.planetImageIndex != null ? (
-          <img
-            src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)}
-            alt={planet.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-indigo-950 via-purple-900/60 to-slate-950" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-white">{planet.name}</h3>
-            <p className="text-xs text-white/70">[{planet.galaxy}:{planet.system}:{planet.position}]</p>
-          </div>
-          <span className="text-xs font-medium text-white/80 bg-white/10 rounded-full px-2.5 py-0.5 backdrop-blur-sm">
-            {planetTypeName}
-          </span>
-        </div>
-      </div>
+    <div className="space-y-3 p-4 lg:p-6">
+      {/* 1. Hero */}
+      <OverviewHero
+        planet={planet as any}
+        flagshipOnPlanet={flagship?.planetId === planet.id}
+        renderBiomeBadge={(biome) => <BiomeBadge biome={biome} size="xs" />}
+        renderPlanetDetail={(p) => <PlanetDetailContent planet={p} resourceData={resourceData} gameConfig={gameConfig} />}
+      />
 
-      {/* Characteristics */}
-      <div className="mt-4">
-        <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider mb-2">
-          Caracteristiques
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
-            <div className="text-[10px] text-muted-foreground">Diametre</div>
-            <div className="text-sm font-bold text-foreground">{planet.diameter.toLocaleString('fr-FR')} km</div>
-          </div>
-          <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
-            <div className="text-[10px] text-muted-foreground">Temperature</div>
-            <div className="text-sm font-bold text-foreground">{planet.minTemp}&deg;C a {planet.maxTemp}&deg;C</div>
-          </div>
-          {resourceData && (
-            <>
-              <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
-                <div className="text-[10px] text-muted-foreground">Energie</div>
-                <div className="text-sm font-bold">
-                  <span className={(resourceData.rates?.energyProduced ?? 0) >= (resourceData.rates?.energyConsumed ?? 0) ? 'text-emerald-400' : 'text-red-400'}>
-                    {resourceData.rates?.energyProduced ?? 0} / {resourceData.rates?.energyConsumed ?? 0}
-                  </span>
-                </div>
-              </div>
-              <div className="rounded-lg border border-border/30 bg-card/50 px-3 py-2">
-                <div className="text-[10px] text-muted-foreground">Production totale</div>
-                <div className="text-sm font-bold text-foreground">
-                  {((resourceData.rates?.mineraiPerHour ?? 0) + (resourceData.rates?.siliciumPerHour ?? 0) + (resourceData.rates?.hydrogenePerHour ?? 0)).toLocaleString('fr-FR')}/h
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      {/* 2. KPI Bar */}
+      <OverviewKpiBar
+        resources={resourceData ? {
+          minerai: resourceData.minerai,
+          silicium: resourceData.silicium,
+          hydrogene: resourceData.hydrogene,
+          mineraiPerHour: resourceData.rates.mineraiPerHour,
+          siliciumPerHour: resourceData.rates.siliciumPerHour,
+          hydrogenePerHour: resourceData.rates.hydrogenePerHour,
+          storageMineraiCapacity: resourceData.rates.storageMineraiCapacity,
+          storageSiliciumCapacity: resourceData.rates.storageSiliciumCapacity,
+          storageHydrogeneCapacity: resourceData.rates.storageHydrogeneCapacity,
+          energyProduced: resourceData.rates.energyProduced,
+          energyConsumed: resourceData.rates.energyConsumed,
+          protectedMinerai: resourceData.protectedMinerai,
+          protectedSilicium: resourceData.protectedSilicium,
+          protectedHydrogene: resourceData.protectedHydrogene,
+        } : undefined}
+        liveResources={liveResources}
+        ships={stationaryShips}
+      />
 
-      {/* Biomes with full effects */}
-      {biomes.length > 0 && (
-        <div className="mt-4">
-          <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider mb-2">
-            Biomes actifs ({biomes.length})
-          </div>
-          <div className="space-y-2">
-            {biomes.map((biome) => {
-              const color = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
-              const configBiome = gameConfig?.biomes?.find((b: any) => b.id === biome.id);
-              const effects = (configBiome?.effects ?? biome.effects ?? []) as Array<{ stat: string; modifier: number }>;
-              return (
-                <div
-                  key={biome.id}
-                  className="rounded-lg px-3 py-2"
-                  style={{ backgroundColor: `${color}10`, borderLeft: `3px solid ${color}` }}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                    <span className="text-sm font-semibold" style={{ color }}>{biome.name}</span>
-                    <span className="text-[10px] rounded-full px-1.5 py-px font-medium" style={{ color, backgroundColor: `${color}20` }}>
-                      {RARITY_LABELS[biome.rarity] ?? biome.rarity}
-                    </span>
-                  </div>
-                  {effects.length > 0 && (
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 ml-4 text-xs">
-                      {effects.map((e: any, i: number) => (
-                        <span key={i}>
-                          <span className={e.modifier > 0 ? 'text-emerald-400 font-medium' : 'text-red-400 font-medium'}>
-                            {e.modifier > 0 ? '+' : ''}{Math.round(e.modifier * 100)}%
-                          </span>{' '}
-                          <span className="text-muted-foreground">{STAT_LABELS[e.stat] ?? e.stat}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* 3. Activities */}
+      <OverviewActivities
+        activeBuilding={activeBuilding as any}
+        shipyardQueue={(shipyardQueue ?? []) as any[]}
+        commandCenterQueue={(commandCenterQueue ?? []) as any[]}
+        planetId={planetId!}
+        gameConfig={gameConfig}
+        onBuildingComplete={() => {
+          utils.building.list.invalidate({ planetId: planetId! });
+          utils.resource.production.invalidate({ planetId: planetId! });
+        }}
+        onShipyardComplete={() => {
+          utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'shipyard' });
+          utils.shipyard.ships.invalidate({ planetId: planetId! });
+        }}
+        onCommandCenterComplete={() => {
+          utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'commandCenter' });
+          utils.shipyard.ships.invalidate({ planetId: planetId! });
+        }}
+      />
 
-      {/* Aggregated bonuses */}
-      {Object.keys(aggregatedBonuses).length > 0 && (
-        <div className="mt-4">
-          <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider mb-2">
-            Bonus cumules des biomes
-          </div>
-          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-            <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-xs">
-              {Object.entries(aggregatedBonuses)
-                .sort(([, a], [, b]) => b - a)
-                .map(([stat, modifier]) => (
-                  <div key={stat} className="flex justify-between">
-                    <span className="text-muted-foreground">{STAT_LABELS[stat] ?? stat}</span>
-                    <span className={modifier > 0 ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold'}>
-                      {modifier > 0 ? '+' : ''}{Math.round(modifier * 100)}%
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      {/* 4. Attack alert */}
+      <AttackAlert
+        hostileFleets={hostileInbound as any[]}
+        onTimerComplete={() => utils.fleet.inbound.invalidate()}
+      />
+
+      {/* 5. Grid */}
+      <OverviewGrid
+        ships={stationaryShips}
+        defenses={stationaryDefenses}
+        movements={allMovementsForGrid}
+        flagship={flagship as any}
+        currentPlanetId={planet.id}
+        currentPlanetName={planet.name}
+        currentPlanetCoords={{ galaxy: planet.galaxy, system: planet.system, position: planet.position }}
+        gameConfig={gameConfig}
+        onFleetTimerComplete={() => utils.fleet.movements.invalidate()}
+      />
+
+      {/* 6. Events */}
+      <OverviewEvents events={(recentEvents ?? []) as any[]} gameConfig={gameConfig} />
+    </div>
   );
 }
