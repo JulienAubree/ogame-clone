@@ -18,6 +18,7 @@ import {
   FlagshipIcon,
   EmpireIcon,
   HistoryIcon,
+  ReportsIcon,
 } from '@/lib/icons';
 import { MessageSquarePlus } from 'lucide-react';
 import { useUIStore } from '@/stores/ui.store';
@@ -28,7 +29,7 @@ const TAB_GROUPS = {
   empire: ['/empire', '/research', '/flagship'],
   planete: ['/', '/energy', '/buildings'],
   production: ['/shipyard', '/command-center', '/defense'],
-  espace: ['/galaxy', '/fleet', '/missions', '/market'],
+  espace: ['/galaxy', '/fleet', '/missions', '/market', '/reports'],
   social: ['/messages', '/alliance', '/ranking', '/alliance-ranking', '/changelog', '/feedback'],
 };
 
@@ -55,6 +56,7 @@ const SHEET_ITEMS = {
     { label: 'Flotte', path: '/fleet', icon: FleetIcon },
     { label: 'Missions', path: '/missions', icon: MissionsIcon },
     { label: 'Marché', path: '/market', icon: MarketIcon },
+    { label: 'Rapports', path: '/reports', icon: ReportsIcon },
   ],
   social: [
     { label: 'Messages', path: '/messages', icon: MessagesIcon },
