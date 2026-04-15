@@ -298,7 +298,7 @@ export default function Galaxy() {
   };
 
   return (
-    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
+    <div className="space-y-4 p-4 lg:space-y-6 lg:px-6 lg:pb-6 lg:pt-0">
       {/* Mobile header + selector (hidden on desktop — GalaxySystemView has its own) */}
       <div className="lg:hidden">
         <PageHeader title="Galaxie" />
