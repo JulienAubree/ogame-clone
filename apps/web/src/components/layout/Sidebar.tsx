@@ -61,7 +61,6 @@ const sections: { title: string; items: NavItem[] }[] = [
       { label: 'Flotte', path: '/fleet', icon: FleetIcon },
       { label: 'Missions', path: '/missions', icon: MissionsIcon },
       { label: 'Marché', path: '/market', icon: MarketIcon },
-      { label: 'Rapports', path: '/reports', icon: ReportsIcon },
     ],
   },
   {

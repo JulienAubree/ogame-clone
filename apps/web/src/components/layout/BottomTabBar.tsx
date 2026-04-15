@@ -29,7 +29,7 @@ const TAB_GROUPS = {
   empire: ['/empire', '/research', '/flagship'],
   planete: ['/', '/energy', '/buildings'],
   production: ['/shipyard', '/command-center', '/defense'],
-  espace: ['/galaxy', '/fleet', '/missions', '/market', '/reports'],
+  espace: ['/galaxy', '/fleet', '/missions', '/market'],
   social: ['/messages', '/alliance', '/ranking', '/alliance-ranking', '/changelog', '/feedback'],
 };
 
@@ -56,7 +56,6 @@ const SHEET_ITEMS = {
     { label: 'Flotte', path: '/fleet', icon: FleetIcon },
     { label: 'Missions', path: '/missions', icon: MissionsIcon },
     { label: 'Marché', path: '/market', icon: MarketIcon },
-    { label: 'Rapports', path: '/reports', icon: ReportsIcon },
   ],
   social: [
     { label: 'Messages', path: '/messages', icon: MessagesIcon },

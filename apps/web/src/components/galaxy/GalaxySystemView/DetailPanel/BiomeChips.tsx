@@ -40,44 +40,52 @@ const STAT_LABELS: Record<string, string> = {
   storage_hydrogene: 'Stockage hydrogène',
 };
 
-function summarizeFirstEffect(effectsRaw: unknown): string | null {
+function formatEffects(effectsRaw: unknown): Array<{ text: string; positive: boolean }> {
   const effects = Array.isArray(effectsRaw)
     ? (effectsRaw as Array<{ stat?: string; modifier?: number }>)
     : [];
-  const first = effects[0];
-  if (!first || typeof first.modifier !== 'number' || !first.stat) {
-    return null;
-  }
-  const sign = first.modifier > 0 ? '+' : '';
-  const pct = Math.round(first.modifier * 100);
-  const label = STAT_LABELS[first.stat] ?? first.stat;
-  return `${sign}${pct}% ${label}`;
+  return effects
+    .filter((e) => typeof e.modifier === 'number' && e.stat)
+    .map((e) => {
+      const sign = e.modifier! > 0 ? '+' : '';
+      const pct = Math.round(e.modifier! * 100);
+      const label = STAT_LABELS[e.stat!] ?? e.stat!;
+      return { text: `${sign}${pct}% ${label}`, positive: e.modifier! > 0 };
+    });
 }
 
 export function BiomeChips({ biomes }: Props): ReactElement | null {
   if (biomes.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="space-y-1.5">
       {biomes.map((biome) => {
         const color = RARITY_COLORS[biome.rarity] ?? RARITY_COLORS.common;
-        const summary = summarizeFirstEffect(biome.effects);
+        const effects = formatEffects(biome.effects);
         return (
           <div
             key={biome.id}
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px]"
+            className="rounded-md px-2.5 py-1.5 text-[11px]"
             style={{
-              backgroundColor: `${color}15`,
-              border: `1px solid ${color}40`,
+              backgroundColor: `${color}10`,
+              borderLeft: `3px solid ${color}`,
             }}
           >
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: color }}
-            />
-            <span style={{ color }}>{biome.name}</span>
-            {summary && (
-              <span className="text-muted-foreground">· {summary}</span>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: color }}
+              />
+              <span className="font-medium" style={{ color }}>{biome.name}</span>
+            </div>
+            {effects.length > 0 && (
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 ml-3">
+                {effects.map((e, i) => (
+                  <span key={i} className={e.positive ? 'text-emerald-400' : 'text-red-400'}>
+                    {e.text}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
         );

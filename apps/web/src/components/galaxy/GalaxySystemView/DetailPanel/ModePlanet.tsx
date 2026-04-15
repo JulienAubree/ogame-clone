@@ -12,6 +12,7 @@
  */
 
 import { useState, type ReactElement, type ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 import type { SlotView } from '../slotView';
 import type { DetailPanelActions, DetailPanelContext } from './types';
 import { BiomeChips } from './BiomeChips';
@@ -323,76 +324,7 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
   if (view.kind === 'empty-discovered') {
     const typeName = planetTypeName(view.planetClassId, ctx);
     return (
-      <div>
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0">
-            <PlanetDot planetClassId={view.planetClassId} size={80} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold">Position {view.position}</h3>
-            <p className="text-xs text-muted-foreground">Type {typeName} — vide</p>
-          </div>
-        </div>
-
-        {view.biomes.length === 0 ? (
-          <div className="mt-3 rounded-md border border-dashed border-cyan-500/30 bg-cyan-500/5 px-3 py-3">
-            <div className="text-[10px] uppercase tracking-wider text-cyan-500/70 mb-1">
-              Position inexplorée
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Les biomes de cette position n&apos;ont pas encore été révélés.
-              Envoie un explorateur pour découvrir ses caractéristiques.
-            </p>
-          </div>
-        ) : view.undiscoveredCount > 0 ? (
-          <div className="mt-3">
-            <SectionLabel>Biomes</SectionLabel>
-            <BiomeChips biomes={view.biomes} />
-            <p className="text-xs text-amber-400/80 mt-2">
-              Exploration incomplète
-            </p>
-          </div>
-        ) : (
-          <div className="mt-3">
-            <SectionLabel>Biomes</SectionLabel>
-            <BiomeChips biomes={view.biomes} />
-            <p className="text-xs text-emerald-400/80 mt-2">
-              Tous les biomes ont été révélés
-            </p>
-          </div>
-        )}
-
-        <div className="mt-4 flex flex-col gap-2">
-          <ActionButton
-            enabled={ctx.hasColonizer}
-            enabledClassName={BTN_EMERALD}
-            disabledTitle="Aucun vaisseau de colonisation disponible"
-            onClick={() => actions.onColonize(view.position)}
-          >
-            Coloniser
-          </ActionButton>
-          <ActionButton
-            enabled={ctx.hasExplorer && view.undiscoveredCount > 0}
-            enabledClassName={BTN_CYAN}
-            disabledTitle={
-              !ctx.hasExplorer
-                ? "Aucun vaisseau d'exploration disponible"
-                : 'Tous les biomes sont déjà découverts'
-            }
-            onClick={() => actions.onExplore(view.position)}
-          >
-            Explorer
-          </ActionButton>
-          <ActionButton
-            enabled={ctx.canCreateReport}
-            enabledClassName={BTN_AMBER}
-            disabledTitle={ctx.canCreateReportReason ?? 'Vente impossible'}
-            onClick={() => actions.onCreateReport(view.position)}
-          >
-            Vendre le rapport
-          </ActionButton>
-        </div>
-      </div>
+      <EmptyDiscoveredPanel view={view} ctx={ctx} actions={actions} typeName={typeName} />
     );
   }
 
@@ -421,6 +353,108 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
           onClick={() => actions.onExplore(view.position)}
         >
           Envoyer un explorateur
+        </ActionButton>
+      </div>
+    </div>
+  );
+}
+
+// ── Mode C: empty-discovered position with full biome info + report link ──
+
+function EmptyDiscoveredPanel({
+  view,
+  ctx,
+  actions,
+  typeName,
+}: {
+  view: Extract<SlotView, { kind: 'empty-discovered' }>;
+  ctx: DetailPanelContext;
+  actions: DetailPanelActions;
+  typeName: string;
+}) {
+  const navigate = useNavigate();
+  const totalBiomes = view.biomes.length + (view.undiscoveredCount ?? 0);
+  const discoveredCount = view.biomes.length;
+  const isComplete = (view.undiscoveredCount ?? 0) === 0;
+
+  return (
+    <div>
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0">
+          <PlanetDot planetClassId={view.planetClassId} size={80} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-semibold">Position {view.position}</h3>
+          <p className="text-xs text-muted-foreground">Type {typeName} — vide</p>
+          {totalBiomes > 0 && (
+            <p className="text-xs mt-1">
+              <span className={isComplete ? 'text-emerald-400' : 'text-amber-400'}>
+                {discoveredCount}/{totalBiomes} biomes
+              </span>
+              <span className="text-muted-foreground">
+                {isComplete ? ' — cartographie complete' : ' — exploration incomplete'}
+              </span>
+            </p>
+          )}
+        </div>
+      </div>
+
+      {view.biomes.length === 0 ? (
+        <div className="mt-3 rounded-md border border-dashed border-cyan-500/30 bg-cyan-500/5 px-3 py-3">
+          <div className="text-[10px] uppercase tracking-wider text-cyan-500/70 mb-1">
+            Position inexploree
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Les biomes de cette position n&apos;ont pas encore ete reveles.
+            Envoie un explorateur pour decouvrir ses caracteristiques.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <SectionLabel>Biomes decouverts</SectionLabel>
+          <BiomeChips biomes={view.biomes} />
+        </div>
+      )}
+
+      {/* Report link */}
+      {view.biomes.length > 0 && (
+        <button
+          type="button"
+          onClick={() => navigate('/reports?filter=exploration')}
+          className="mt-2 text-[11px] text-primary hover:underline"
+        >
+          Voir les rapports d&apos;exploration
+        </button>
+      )}
+
+      <div className="mt-4 flex flex-col gap-2">
+        <ActionButton
+          enabled={ctx.hasColonizer}
+          enabledClassName={BTN_EMERALD}
+          disabledTitle="Aucun vaisseau de colonisation disponible"
+          onClick={() => actions.onColonize(view.position)}
+        >
+          Coloniser
+        </ActionButton>
+        <ActionButton
+          enabled={ctx.hasExplorer && (view.undiscoveredCount ?? 0) > 0}
+          enabledClassName={BTN_CYAN}
+          disabledTitle={
+            !ctx.hasExplorer
+              ? "Aucun vaisseau d'exploration disponible"
+              : 'Tous les biomes sont deja decouverts'
+          }
+          onClick={() => actions.onExplore(view.position)}
+        >
+          Explorer
+        </ActionButton>
+        <ActionButton
+          enabled={ctx.canCreateReport}
+          enabledClassName={BTN_AMBER}
+          disabledTitle={ctx.canCreateReportReason ?? 'Vente impossible'}
+          onClick={() => actions.onCreateReport(view.position)}
+        >
+          Vendre le rapport
         </ActionButton>
       </div>
     </div>
