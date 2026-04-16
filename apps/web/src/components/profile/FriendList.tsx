@@ -12,11 +12,7 @@ export function FriendList() {
     <div className="flex flex-wrap gap-2">
       {friends.map(f => (
         <Link key={f.userId} to={`/player/${f.userId}`} title={f.username}>
-          {f.avatarId ? (
-            <img src={`/assets/avatars/${f.avatarId}.webp`} alt={f.username} className="w-8 h-8 rounded-full object-cover border border-white/10" />
-          ) : (
-            <UserAvatar username={f.username} size="sm" />
-          )}
+          <UserAvatar username={f.username} avatarId={f.avatarId} size="sm" />
         </Link>
       ))}
     </div>

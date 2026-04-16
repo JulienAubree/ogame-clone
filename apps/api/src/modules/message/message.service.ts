@@ -192,6 +192,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
           id: messages.id,
           senderId: messages.senderId,
           senderUsername: users.username,
+          senderAvatarId: users.avatarId,
           type: messages.type,
           subject: messages.subject,
           read: messages.read,
@@ -267,6 +268,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
           id: messages.id,
           senderId: messages.senderId,
           senderUsername: users.username,
+          senderAvatarId: users.avatarId,
           recipientId: messages.recipientId,
           type: messages.type,
           subject: messages.subject,
@@ -293,6 +295,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
           id: messages.id,
           senderId: messages.senderId,
           senderUsername: users.username,
+          senderAvatarId: users.avatarId,
           recipientId: messages.recipientId,
           type: messages.type,
           subject: messages.subject,
@@ -411,7 +414,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
           if (!otherUserId) return null;
 
           const [otherUser] = await db
-            .select({ id: users.id, username: users.username })
+            .select({ id: users.id, username: users.username, avatarId: users.avatarId })
             .from(users)
             .where(eq(users.id, otherUserId))
             .limit(1);
@@ -431,7 +434,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
 
           return {
             threadId: t.threadId!,
-            otherUser: { id: otherUser.id, username: otherUser.username },
+            otherUser: { id: otherUser.id, username: otherUser.username, avatarId: otherUser.avatarId },
             lastMessage: {
               body: lastMsg.body,
               senderId: lastMsg.senderId,
@@ -530,6 +533,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
           id: messages.id,
           senderId: messages.senderId,
           senderUsername: users.username,
+          senderAvatarId: users.avatarId,
           recipientId: messages.recipientId,
           type: messages.type,
           subject: messages.subject,

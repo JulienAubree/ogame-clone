@@ -4,6 +4,7 @@ interface AuthUser {
   id: string;
   email: string;
   username: string;
+  avatarId?: string | null;
 }
 
 interface AuthState {

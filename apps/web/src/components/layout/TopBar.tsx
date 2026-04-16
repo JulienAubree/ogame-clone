@@ -456,12 +456,20 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
               profileOpen ? 'bg-accent' : 'hover:bg-accent',
             )}
           >
-            <div className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white',
-              profileOpen && 'ring-2 ring-primary',
-            )}>
-              {user?.username?.slice(0, 2).toUpperCase() ?? '??'}
-            </div>
+            {user?.avatarId ? (
+              <img
+                src={`/assets/avatars/${user.avatarId}-icon.webp`}
+                alt={user.username}
+                className={cn('h-8 w-8 rounded-full object-cover', profileOpen && 'ring-2 ring-primary')}
+              />
+            ) : (
+              <div className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white',
+                profileOpen && 'ring-2 ring-primary',
+              )}>
+                {user?.username?.slice(0, 2).toUpperCase() ?? '??'}
+              </div>
+            )}
             <span className="hidden text-sm font-medium lg:inline">{user?.username ?? ''}</span>
             <svg className="hidden h-3 w-3 text-muted-foreground lg:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="m6 9 6 6 6-6" />

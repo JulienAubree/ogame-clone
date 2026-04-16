@@ -5,6 +5,7 @@ interface Message {
   id: string;
   senderId: string | null;
   senderUsername: string | null;
+  senderAvatarId?: string | null;
   body: string;
   createdAt: Date | string;
 }
@@ -56,6 +57,7 @@ export function ChatMessageList({ messages, currentUserId, className = '', showS
               body={msg.body}
               isSent={msg.senderId === currentUserId}
               senderUsername={msg.senderId !== currentUserId ? (msg.senderUsername ?? undefined) : undefined}
+              senderAvatarId={msg.senderId !== currentUserId ? (msg.senderAvatarId ?? undefined) : undefined}
               createdAt={msg.createdAt}
               showName={showSenderName}
             />

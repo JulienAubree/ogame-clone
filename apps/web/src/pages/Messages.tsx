@@ -6,12 +6,14 @@ export default function Messages() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeUsername, setActiveUsername] = useState<string | null>(null);
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
+  const [activeAvatarId, setActiveAvatarId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
 
-  const handleSelectThread = (threadId: string, username: string, userId: string) => {
+  const handleSelectThread = (threadId: string, username: string, userId: string, avatarId?: string | null) => {
     setActiveThreadId(threadId);
     setActiveUsername(username);
     setActiveUserId(userId);
+    setActiveAvatarId(avatarId ?? null);
     setMobileView('chat');
   };
 
@@ -45,6 +47,7 @@ export default function Messages() {
           threadId={activeThreadId}
           otherUsername={activeUsername}
           otherUserId={activeUserId}
+          otherAvatarId={activeAvatarId}
           onThreadCreated={handleThreadCreated}
         />
       </div>
@@ -62,6 +65,7 @@ export default function Messages() {
             threadId={activeThreadId}
             otherUsername={activeUsername}
             otherUserId={activeUserId}
+          otherAvatarId={activeAvatarId}
             onBack={handleBack}
             onThreadCreated={handleThreadCreated}
             className="h-full"

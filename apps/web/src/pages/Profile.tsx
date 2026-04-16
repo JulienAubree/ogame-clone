@@ -7,6 +7,7 @@ import { FriendList } from '@/components/profile/FriendList';
 import { FriendRequests } from '@/components/profile/FriendRequests';
 import { NotificationPreferences } from '@/components/profile/NotificationPreferences';
 import { useSearchParams } from 'react-router';
+import { useAuthStore } from '@/stores/auth.store';
 
 const PLAYSTYLE_LABELS: Record<string, string> = {
   miner: 'Mineur',
@@ -91,6 +92,11 @@ export default function Profile() {
 
   function handleAvatarSelect(avatarId: string) {
     updateMutation.mutate({ avatarId });
+    const user = useAuthStore.getState().user;
+    if (user) {
+      localStorage.setItem('user', JSON.stringify({ ...user, avatarId }));
+      useAuthStore.setState({ user: { ...user, avatarId } });
+    }
   }
 
   const pendingCount = pendingReceived?.length ?? 0;

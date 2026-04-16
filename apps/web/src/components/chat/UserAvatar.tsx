@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const AVATAR_GRADIENTS = [
   ['#6366f1', '#8b5cf6'],
   ['#059669', '#10b981'],
@@ -23,15 +25,35 @@ const SIZES = {
   lg: 'w-11 h-11 text-sm',
 } as const;
 
+const AVATAR_SUFFIX: Record<string, string> = {
+  sm: '-icon',
+  md: '-thumb',
+  lg: '-thumb',
+};
+
 interface UserAvatarProps {
   username: string;
+  avatarId?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-export function UserAvatar({ username, size = 'md', className = '' }: UserAvatarProps) {
+export function UserAvatar({ username, avatarId, size = 'md', className = '' }: UserAvatarProps) {
+  const [imgError, setImgError] = useState(false);
   const [from, to] = AVATAR_GRADIENTS[hashUsername(username)];
   const initials = username.slice(0, 2).toUpperCase();
+
+  if (avatarId && !imgError) {
+    const suffix = AVATAR_SUFFIX[size];
+    return (
+      <img
+        src={`/assets/avatars/${avatarId}${suffix}.webp`}
+        alt={username}
+        onError={() => setImgError(true)}
+        className={`rounded-full object-cover flex-shrink-0 ${SIZES[size]} ${className}`}
+      />
+    );
+  }
 
   return (
     <div

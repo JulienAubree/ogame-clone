@@ -10,12 +10,13 @@ import { ChatInput } from './ChatInput';
 interface ChatOverlayWindowProps {
   userId: string;
   username: string;
+  avatarId?: string | null;
   threadId: string | null;
   allianceId?: string;
   allianceTag?: string;
 }
 
-export function ChatOverlayWindow({ userId: otherUserId, username, threadId, allianceId, allianceTag }: ChatOverlayWindowProps) {
+export function ChatOverlayWindow({ userId: otherUserId, username, avatarId, threadId, allianceId, allianceTag }: ChatOverlayWindowProps) {
   const currentUserId = useAuthStore((s) => s.user?.id);
   const { closeChat, minimizeChat, setThreadId } = useChatStore();
   const utils = trpc.useUtils();
@@ -105,7 +106,7 @@ export function ChatOverlayWindow({ userId: otherUserId, username, threadId, all
             {allianceTag?.slice(0, 2)}
           </div>
         ) : (
-          <UserAvatar username={username} size="sm" />
+          <UserAvatar username={username} avatarId={avatarId} size="sm" />
         )}
         {isAlliance ? (
           <span className="text-sm font-semibold text-foreground flex-1 truncate">

@@ -70,7 +70,7 @@ export function createAuthService(db: Database) {
       return {
         accessToken,
         refreshToken: rawRefresh,
-        user: { id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin },
+        user: { id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin, avatarId: user.avatarId },
       };
     },
 

@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 interface ConversationListProps {
   activeThreadId: string | null;
-  onSelectThread: (threadId: string, otherUsername: string, otherUserId: string) => void;
+  onSelectThread: (threadId: string, otherUsername: string, otherUserId: string, otherAvatarId?: string | null) => void;
   onNewConversation: (username: string) => void;
 }
 
@@ -103,7 +103,7 @@ export function ConversationList({ activeThreadId, onSelectThread, onNewConversa
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
               >
-                <UserAvatar username={user.username} size="md" />
+                <UserAvatar username={user.username} avatarId={user.avatarId} size="md" />
                 <span className="text-sm text-foreground">{user.username}</span>
               </button>
             ))
@@ -130,7 +130,7 @@ export function ConversationList({ activeThreadId, onSelectThread, onNewConversa
             filtered.map((conv) => (
               <button
                 key={conv.threadId}
-                onClick={() => onSelectThread(conv.threadId, conv.otherUser.username, conv.otherUser.id)}
+                onClick={() => onSelectThread(conv.threadId, conv.otherUser.username, conv.otherUser.id, conv.otherUser.avatarId)}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setDeleteConfirm(conv.threadId);
@@ -140,7 +140,7 @@ export function ConversationList({ activeThreadId, onSelectThread, onNewConversa
                 }`}
               >
                 <div className="relative">
-                  <UserAvatar username={conv.otherUser.username} size="md" />
+                  <UserAvatar username={conv.otherUser.username} avatarId={conv.otherUser.avatarId} size="md" />
                   {conv.unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center">
                       {conv.unreadCount > 9 ? '9+' : conv.unreadCount}

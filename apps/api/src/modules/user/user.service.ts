@@ -10,7 +10,7 @@ export function createUserService(db: Database, assetsDir: string) {
     async searchUsers(currentUserId: string, query: string) {
       const escaped = query.replace(/[%_]/g, '\\$&');
       return db
-        .select({ id: users.id, username: users.username })
+        .select({ id: users.id, username: users.username, avatarId: users.avatarId })
         .from(users)
         .where(and(
           ilike(users.username, `%${escaped}%`),

@@ -4,11 +4,12 @@ interface ChatBubbleProps {
   body: string;
   isSent: boolean;
   senderUsername?: string;
+  senderAvatarId?: string | null;
   createdAt: Date | string;
   showName?: boolean;
 }
 
-export function ChatBubble({ body, isSent, senderUsername, createdAt, showName }: ChatBubbleProps) {
+export function ChatBubble({ body, isSent, senderUsername, senderAvatarId, createdAt, showName }: ChatBubbleProps) {
   const time = new Date(createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
   if (isSent) {
@@ -24,7 +25,7 @@ export function ChatBubble({ body, isSent, senderUsername, createdAt, showName }
 
   return (
     <div className="flex gap-2 items-end max-w-[75%]">
-      {senderUsername && <UserAvatar username={senderUsername} size="sm" />}
+      {senderUsername && <UserAvatar username={senderUsername} avatarId={senderAvatarId} size="sm" />}
       <div className="rounded-xl rounded-bl-sm bg-muted/50 px-3 py-2 text-foreground text-sm">
         {showName && senderUsername && (
           <p className="text-[10px] font-semibold text-primary/80 mb-0.5">{senderUsername}</p>

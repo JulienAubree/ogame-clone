@@ -3,6 +3,7 @@ import { create } from 'zustand';
 interface ChatWindow {
   userId: string;
   username: string;
+  avatarId?: string | null;
   threadId: string | null;
   minimized: boolean;
   unreadCount: number;
@@ -12,7 +13,7 @@ interface ChatWindow {
 
 interface ChatStore {
   windows: ChatWindow[];
-  openChat: (userId: string, username: string, threadId?: string | null) => void;
+  openChat: (userId: string, username: string, threadId?: string | null, avatarId?: string | null) => void;
   openAllianceChat: (allianceId: string, allianceName: string, allianceTag: string) => void;
   closeChat: (userId: string) => void;
   minimizeChat: (userId: string) => void;
@@ -26,17 +27,17 @@ const MAX_WINDOWS = 3;
 export const useChatStore = create<ChatStore>((set) => ({
   windows: [],
 
-  openChat: (userId, username, threadId = null) =>
+  openChat: (userId, username, threadId = null, avatarId = null) =>
     set((state) => {
       const existing = state.windows.find((w) => w.userId === userId);
       if (existing) {
         return {
           windows: state.windows.map((w) =>
-            w.userId === userId ? { ...w, minimized: false, unreadCount: 0, threadId: threadId ?? w.threadId } : w,
+            w.userId === userId ? { ...w, minimized: false, unreadCount: 0, threadId: threadId ?? w.threadId, avatarId: avatarId ?? w.avatarId } : w,
           ),
         };
       }
-      const windows = [...state.windows, { userId, username, threadId, minimized: false, unreadCount: 0 }];
+      const windows = [...state.windows, { userId, username, avatarId, threadId, minimized: false, unreadCount: 0 }];
       if (windows.length > MAX_WINDOWS) windows.shift();
       return { windows };
     }),

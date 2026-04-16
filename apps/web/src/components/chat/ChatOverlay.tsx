@@ -38,13 +38,13 @@ function ChatFab() {
   const isSearching = searchQuery.length >= 2;
 
   const handleSelectConversation = (conv: NonNullable<(typeof nonNullConvs)>[number]) => {
-    openChat(conv.otherUser.id, conv.otherUser.username, conv.threadId);
+    openChat(conv.otherUser.id, conv.otherUser.username, conv.threadId, conv.otherUser.avatarId);
     setPanelOpen(false);
     setSearchQuery('');
   };
 
-  const handleSelectUser = (user: { id: string; username: string }) => {
-    openChat(user.id, user.username);
+  const handleSelectUser = (user: { id: string; username: string; avatarId?: string | null }) => {
+    openChat(user.id, user.username, null, user.avatarId);
     setPanelOpen(false);
     setSearchQuery('');
   };
@@ -75,7 +75,7 @@ function ChatFab() {
                     onClick={() => handleSelectUser(user)}
                     className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/30 transition-colors text-left"
                   >
-                    <UserAvatar username={user.username} size="sm" />
+                    <UserAvatar username={user.username} avatarId={user.avatarId} size="sm" />
                     <span className="text-xs text-foreground">{user.username}</span>
                   </button>
                 ))
@@ -95,7 +95,7 @@ function ChatFab() {
                     className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/30 transition-colors text-left"
                   >
                     <div className="relative flex-shrink-0">
-                      <UserAvatar username={conv.otherUser.username} size="sm" />
+                      <UserAvatar username={conv.otherUser.username} avatarId={conv.otherUser.avatarId} size="sm" />
                       {conv.unreadCount > 0 && (
                         <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[8px] font-bold text-primary-foreground flex items-center justify-center">
                           {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
@@ -182,6 +182,7 @@ export function ChatOverlay() {
           key={w.userId}
           userId={w.userId}
           username={w.username}
+          avatarId={w.avatarId}
           threadId={w.threadId}
           allianceId={w.allianceId}
           allianceTag={w.allianceTag}
@@ -200,7 +201,7 @@ export function ChatOverlay() {
                 {w.allianceTag?.slice(0, 3)}
               </div>
             ) : (
-              <UserAvatar username={w.username} size="lg" className="shadow-lg cursor-pointer hover:scale-105 transition-transform" />
+              <UserAvatar username={w.username} avatarId={w.avatarId} size="lg" className="shadow-lg cursor-pointer hover:scale-105 transition-transform" />
             )}
           </button>
           {w.unreadCount > 0 && (
