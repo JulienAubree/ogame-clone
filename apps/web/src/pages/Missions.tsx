@@ -58,6 +58,8 @@ function KpiTile({ label, value, icon, color, onClick }: {
 
 export default function Missions() {
   const [combatInfoOpen, setCombatInfoOpen] = useState(false);
+  const [miningInfoOpen, setMiningInfoOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [filter, setFilter] = useState<MissionFilter>('all');
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -91,11 +93,9 @@ export default function Missions() {
 
   // Build lookup: pveMissionId → active fleet events
   const fleetsByMission = new Map<string, typeof movements>();
-  let activePveFleets = 0;
   if (movements) {
     for (const m of movements) {
       if (m.pveMissionId) {
-        activePveFleets++;
         const existing = fleetsByMission.get(m.pveMissionId);
         if (existing) {
           existing.push(m);
@@ -164,27 +164,31 @@ export default function Missions() {
 
         <div className="relative px-5 pt-8 pb-6 lg:px-8 lg:pt-10 lg:pb-8">
           <div className="flex items-start gap-5">
-            <img
-              src={getAssetUrl('buildings', 'missionCenter', 'thumb')}
-              alt="Centre de missions"
-              className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-amber-500/30 object-cover shadow-lg shadow-amber-500/10 shrink-0"
-              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-            />
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="relative group shrink-0"
+              title="Comment fonctionnent les missions ?"
+            >
+              <img
+                src={getAssetUrl('buildings', 'missionCenter', 'thumb')}
+                alt="Centre de missions"
+                className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-amber-500/30 object-cover shadow-lg shadow-amber-500/10 transition-opacity group-hover:opacity-80"
+                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <path d="M12 17h.01" />
+                </svg>
+              </div>
+            </button>
 
             <div className="flex-1 min-w-0 pt-1">
               <h1 className="text-xl lg:text-2xl font-bold text-foreground">Centre de missions</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Niveau {centerLevel}
-                {nextDiscoveryInFuture && (
-                  <>
-                    {' · '}Prochaine decouverte dans{' '}
-                    <Timer
-                      endTime={nextDiscoveryAt}
-                      onComplete={() => utils.pve.getMissions.invalidate()}
-                      className="inline text-sm text-primary"
-                    />
-                  </>
-                )}
+                Niveau {centerLevel} · Decouverte toutes les {Math.max(1, 7 - centerLevel)}h
               </p>
               <p className="text-xs text-muted-foreground/70 mt-2 max-w-lg leading-relaxed hidden lg:block">
                 Decouvrez des gisements de ressources et traquez des repaires pirates.
@@ -224,19 +228,28 @@ export default function Missions() {
               </svg>
             }
           />
-          <KpiTile
-            label="Flottes en mission"
-            value={activePveFleets}
-            color="text-cyan-400"
-            onClick={() => setFilter('all')}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            }
-          />
+          <div className="rounded-xl border border-border/30 bg-card/60 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-cyan-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                {nextDiscoveryInFuture ? (
+                  <Timer
+                    endTime={nextDiscoveryAt}
+                    onComplete={() => utils.pve.getMissions.invalidate()}
+                    className="text-lg font-bold tabular-nums leading-tight text-cyan-400"
+                  />
+                ) : (
+                  <div className="text-lg font-bold tabular-nums leading-tight text-cyan-400">--:--</div>
+                )}
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">Prochaine decouverte</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filter */}
@@ -273,6 +286,42 @@ export default function Missions() {
                   </h3>
                 </div>
               )}
+
+              {/* Mining info */}
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-2 mb-4">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 w-full text-left"
+                  onClick={() => setMiningInfoOpen(!miningInfoOpen)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 shrink-0">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  <span className="text-xs text-muted-foreground">
+                    La <span className="text-amber-300 font-semibold">capacite de soute</span> de votre flotte determine combien de ressources vous ramenez.
+                  </span>
+                  <svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className={cn('text-muted-foreground/60 ml-auto shrink-0 transition-transform', miningInfoOpen && 'rotate-180')}
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                {miningInfoOpen && (
+                  <div className="space-y-2 pt-1 text-xs text-muted-foreground">
+                    <p>
+                      Envoyez des <span className="text-foreground">cargos</span> avec votre flotte miniere pour maximiser le butin. Sans cargos, vos vaisseaux ne pourront rien ramener.
+                    </p>
+                    <p>
+                      Le minage se deroule en plusieurs phases : <span className="text-foreground">aller</span>, <span className="text-foreground">prospection</span>, <span className="text-foreground">extraction</span>, puis <span className="text-foreground">retour</span>. La recherche <span className="text-foreground">Raffinage spatial</span> reduit les pertes de scories lors de l&apos;extraction.
+                    </p>
+                    <p>
+                      Un gisement reste exploitable tant qu&apos;il contient des ressources — vous pouvez envoyer <span className="text-foreground">plusieurs flottes</span> successivement pour le vider completement.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {miningMissions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
@@ -504,19 +553,36 @@ export default function Missions() {
           )}
         </section>
 
-        {/* Explainer */}
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
-          <h3 className="text-sm font-semibold text-primary">Comment fonctionnent les missions ?</h3>
-          <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-            <li>Votre Centre de missions <span className="text-foreground">decouvre automatiquement</span> des gisements et des repaires pirates toutes les <span className="text-foreground">{Math.max(1, 7 - centerLevel)}h</span> (6h au niv. 1, -1h/niveau, min 1h).</li>
-            <li>Jusqu&apos;a <span className="text-foreground">3 gisements</span> et <span className="text-foreground">2 repaires pirates</span> peuvent etre decouverts simultanement.</li>
-            <li>Un gisement reste exploitable <span className="text-foreground">tant qu&apos;il contient des ressources</span> — envoyez plusieurs flottes pour le vider.</li>
-            <li>Un repaire pirate est une <span className="text-foreground">mission de combat unique</span> — detruisez les pirates pour recuperer leur butin et potentiellement des vaisseaux bonus.</li>
-            <li><span className="text-foreground">Pensez a envoyer des cargos</span> avec vos flottes ! Les ressources extraites ou pillees sont <span className="text-foreground">limitees par la capacite de soute</span> de votre flotte — sans cargos, vos vaisseaux ne pourront rien ramener.</li>
-            <li>Vous pouvez <span className="text-foreground">annuler</span> un gisement pour liberer un emplacement (cooldown 24h).</li>
-          </ul>
-        </div>
       </div>
+
+      {/* Help overlay */}
+      {helpOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setHelpOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-xl border border-primary/20 bg-card p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-primary">Comment fonctionnent les missions ?</h2>
+              <button
+                type="button"
+                onClick={() => setHelpOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <ul className="text-xs text-muted-foreground space-y-2 list-disc list-inside">
+              <li>Votre Centre de missions <span className="text-foreground">decouvre automatiquement</span> des gisements et des repaires pirates toutes les <span className="text-foreground">{Math.max(1, 7 - centerLevel)}h</span> (6h au niv. 1, -1h/niveau, min 1h).</li>
+              <li>Jusqu&apos;a <span className="text-foreground">3 gisements</span> et <span className="text-foreground">2 repaires pirates</span> peuvent etre decouverts simultanement.</li>
+              <li>Un gisement reste exploitable <span className="text-foreground">tant qu&apos;il contient des ressources</span> — envoyez plusieurs flottes pour le vider.</li>
+              <li>Un repaire pirate est une <span className="text-foreground">mission de combat unique</span> — detruisez les pirates pour recuperer leur butin et potentiellement des vaisseaux bonus.</li>
+              <li><span className="text-foreground">Pensez a envoyer des cargos</span> avec vos flottes ! Les ressources extraites ou pillees sont <span className="text-foreground">limitees par la capacite de soute</span> de votre flotte — sans cargos, vos vaisseaux ne pourront rien ramener.</li>
+              <li>Vous pouvez <span className="text-foreground">annuler</span> un gisement pour liberer un emplacement (cooldown 24h).</li>
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
