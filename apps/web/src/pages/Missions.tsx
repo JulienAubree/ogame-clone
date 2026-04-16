@@ -31,7 +31,7 @@ const FILTERS: { key: MissionFilter; label: string }[] = [
 
 function KpiTile({ label, value, icon, color, onClick }: {
   label: string;
-  value: string | number;
+  value: React.ReactNode;
   icon: React.ReactNode;
   color: string;
   onClick?: () => void;
@@ -40,7 +40,10 @@ function KpiTile({ label, value, icon, color, onClick }: {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border border-border/30 bg-card/60 px-4 py-3 text-left transition-colors hover:bg-card/80 hover:border-primary/20 cursor-pointer"
+      className={cn(
+        'rounded-xl border border-border/30 bg-card/60 px-4 py-3 text-left transition-colors',
+        onClick ? 'hover:bg-card/80 hover:border-primary/20 cursor-pointer' : 'cursor-default',
+      )}
     >
       <div className="flex items-center gap-3">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg bg-white/5', color)}>
@@ -229,28 +232,27 @@ export default function Missions() {
               </svg>
             }
           />
-          <div className="rounded-xl border border-border/30 bg-card/60 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-cyan-400">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-              </div>
-              <div className="min-w-0">
-                {nextDiscoveryInFuture ? (
-                  <Timer
-                    endTime={nextDiscoveryAt}
-                    onComplete={() => utils.pve.getMissions.invalidate()}
-                    className="text-lg font-bold tabular-nums leading-tight text-cyan-400"
-                  />
-                ) : (
-                  <div className="text-lg font-bold tabular-nums leading-tight text-cyan-400">--:--</div>
-                )}
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">Prochaine decouverte</div>
-              </div>
-            </div>
-          </div>
+          <KpiTile
+            label="Prochaine decouverte"
+            value={
+              nextDiscoveryInFuture ? (
+                <Timer
+                  endTime={nextDiscoveryAt}
+                  onComplete={() => utils.pve.getMissions.invalidate()}
+                  className="text-lg font-bold tabular-nums leading-tight text-cyan-400"
+                />
+              ) : (
+                '--:--'
+              )
+            }
+            color="text-cyan-400"
+            icon={
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            }
+          />
         </div>
 
         {/* Filter */}
