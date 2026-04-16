@@ -270,7 +270,7 @@ export function GalaxySystemView(props: GalaxySystemViewProps): ReactElement {
     selection.kind === 'slot' ? selection.position : null;
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] min-h-[480px] rounded-lg overflow-hidden bg-black/40">
+    <div className="flex h-[calc(100vh-3.75rem)] min-h-[480px] overflow-hidden bg-black/40">
       <Ribbon
         views={views}
         selectedPosition={selectedPosition}
