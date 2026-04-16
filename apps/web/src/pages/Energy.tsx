@@ -20,7 +20,7 @@ const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af', uncommon: '#22c55e', rare: '#3b82f6', epic: '#a855f7', legendary: '#eab308',
 };
 const RARITY_LABELS: Record<string, string> = {
-  common: 'Commun', uncommon: 'Peu commun', rare: 'Rare', epic: 'Epique', legendary: 'Legendaire',
+  common: 'Commun', uncommon: 'Peu commun', rare: 'Rare', epic: 'Épique', legendary: 'Légendaire',
 };
 const STAT_SHORT: Record<string, { label: string }> = {
   production_minerai: { label: 'Minerai' }, production_silicium: { label: 'Silicium' },

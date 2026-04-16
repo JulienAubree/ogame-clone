@@ -18,8 +18,8 @@ const RARITY_LABELS: Record<string, string> = {
   common: 'Commun',
   uncommon: 'Peu commun',
   rare: 'Rare',
-  epic: 'Epique',
-  legendary: 'Legendaire',
+  epic: 'Épique',
+  legendary: 'Légendaire',
 };
 
 const RARITY_OPTIONS = ['common', 'uncommon', 'rare', 'epic', 'legendary'] as const;
