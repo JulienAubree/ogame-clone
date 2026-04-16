@@ -4,7 +4,7 @@ import fs from 'fs';
 
 import { toKebab, type AssetCategory } from '@exilium/shared';
 
-const VALID_CATEGORIES: AssetCategory[] = ['buildings', 'research', 'ships', 'defenses', 'planets', 'flagships'];
+const VALID_CATEGORIES: AssetCategory[] = ['buildings', 'research', 'ships', 'defenses', 'planets', 'flagships', 'avatars'];
 
 const SIZES: readonly { suffix: string; width: number; height?: number; quality: number; label: string }[] = [
   { suffix: '', width: 1200, quality: 85, label: 'hero' },
@@ -85,6 +85,25 @@ export async function processPlanetImage(
   }
 
   return files;
+}
+
+export async function processAvatarImage(
+  buffer: Buffer,
+  avatarId: string,
+  assetsDir: string,
+): Promise<string[]> {
+  const outputDir = path.join(assetsDir, 'avatars');
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  const filename = `${avatarId}.webp`;
+  const outPath = path.join(outputDir, filename);
+
+  await sharp(buffer)
+    .resize({ width: 512, height: 512, fit: 'cover', position: 'centre' })
+    .webp({ quality: 85 })
+    .toFile(outPath);
+
+  return [filename];
 }
 
 export async function processFlagshipImage(

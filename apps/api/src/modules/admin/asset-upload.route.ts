@@ -3,9 +3,11 @@ import '@fastify/multipart';
 import { jwtVerify } from 'jose';
 import { eq } from 'drizzle-orm';
 import { users, type Database } from '@exilium/db';
-import { processImage, processPlanetImage, processFlagshipImage, isValidCategory } from '../../lib/image-processing.js';
+import { processImage, processPlanetImage, processFlagshipImage, processAvatarImage, isValidCategory } from '../../lib/image-processing.js';
 import { getNextPlanetImageIndex, listPlanetImageIndexes } from '../../lib/planet-image.util.js';
 import { getNextFlagshipImageIndex, listFlagshipImageIndexes } from '../../lib/flagship-image.util.js';
+import { readdirSync, unlinkSync, existsSync } from 'fs';
+import { join } from 'path';
 import { env } from '../../config/env.js';
 
 const JWT_SECRET = new TextEncoder().encode(env.JWT_SECRET);
@@ -65,7 +67,9 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     // 4. Process image
     try {
       let files: string[];
-      if (category === 'planets') {
+      if (category === 'avatars') {
+        files = await processAvatarImage(buffer, entityId!, env.ASSETS_DIR);
+      } else if (category === 'planets') {
         const planetClassId = entityId!;
         const nextIndex = getNextPlanetImageIndex(planetClassId, env.ASSETS_DIR);
         files = await processPlanetImage(buffer, planetClassId, nextIndex, env.ASSETS_DIR);
@@ -147,5 +151,81 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     }));
 
     return reply.send({ images });
+  });
+
+  // --- Avatar management routes ---
+
+  server.get('/admin/avatars', async (request, reply) => {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    let userId: string;
+    try {
+      const { payload } = await jwtVerify(authHeader.slice(7), JWT_SECRET);
+      userId = payload.userId as string;
+    } catch {
+      return reply.status(401).send({ error: 'Invalid token' });
+    }
+
+    const [user] = await db
+      .select({ isAdmin: users.isAdmin })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user?.isAdmin) {
+      return reply.status(403).send({ error: 'Admin access required' });
+    }
+
+    const dir = join(env.ASSETS_DIR, 'avatars');
+    try {
+      const avatars = readdirSync(dir)
+        .filter(f => f.endsWith('.webp'))
+        .map(f => f.replace('.webp', ''))
+        .sort();
+      return reply.send({ avatars });
+    } catch {
+      return reply.send({ avatars: [] });
+    }
+  });
+
+  server.delete('/admin/avatars/:avatarId', async (request, reply) => {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    let userId: string;
+    try {
+      const { payload } = await jwtVerify(authHeader.slice(7), JWT_SECRET);
+      userId = payload.userId as string;
+    } catch {
+      return reply.status(401).send({ error: 'Invalid token' });
+    }
+
+    const [user] = await db
+      .select({ isAdmin: users.isAdmin })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user?.isAdmin) {
+      return reply.status(403).send({ error: 'Admin access required' });
+    }
+
+    const { avatarId } = request.params as { avatarId: string };
+    const filePath = join(env.ASSETS_DIR, 'avatars', `${avatarId}.webp`);
+
+    if (!existsSync(filePath)) {
+      return reply.status(404).send({ error: 'Avatar not found' });
+    }
+
+    try {
+      unlinkSync(filePath);
+      return reply.send({ success: true });
+    } catch (err) {
+      request.log.error(err, 'Failed to delete avatar');
+      return reply.status(500).send({ error: 'Failed to delete avatar' });
+    }
   });
 }
