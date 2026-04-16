@@ -4,6 +4,7 @@ import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { Timer } from '@/components/common/Timer';
+import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/assets';
@@ -556,33 +557,16 @@ export default function Missions() {
       </div>
 
       {/* Help overlay */}
-      {helpOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setHelpOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-xl border border-primary/20 bg-card p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-primary">Comment fonctionnent les missions ?</h2>
-              <button
-                type="button"
-                onClick={() => setHelpOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <ul className="text-xs text-muted-foreground space-y-2 list-disc list-inside">
-              <li>Votre Centre de missions <span className="text-foreground">decouvre automatiquement</span> des gisements et des repaires pirates toutes les <span className="text-foreground">{Math.max(1, 7 - centerLevel)}h</span> (6h au niv. 1, -1h/niveau, min 1h).</li>
-              <li>Jusqu&apos;a <span className="text-foreground">3 gisements</span> et <span className="text-foreground">2 repaires pirates</span> peuvent etre decouverts simultanement.</li>
-              <li>Un gisement reste exploitable <span className="text-foreground">tant qu&apos;il contient des ressources</span> — envoyez plusieurs flottes pour le vider.</li>
-              <li>Un repaire pirate est une <span className="text-foreground">mission de combat unique</span> — detruisez les pirates pour recuperer leur butin et potentiellement des vaisseaux bonus.</li>
-              <li><span className="text-foreground">Pensez a envoyer des cargos</span> avec vos flottes ! Les ressources extraites ou pillees sont <span className="text-foreground">limitees par la capacite de soute</span> de votre flotte — sans cargos, vos vaisseaux ne pourront rien ramener.</li>
-              <li>Vous pouvez <span className="text-foreground">annuler</span> un gisement pour liberer un emplacement (cooldown 24h).</li>
-            </ul>
-          </div>
-        </div>
-      )}
+      <EntityDetailOverlay open={helpOpen} onClose={() => setHelpOpen(false)} title="Comment fonctionnent les missions ?">
+        <ul className="text-sm text-muted-foreground space-y-3 list-disc list-inside">
+          <li>Votre Centre de missions <span className="text-foreground">decouvre automatiquement</span> des gisements et des repaires pirates toutes les <span className="text-foreground">{Math.max(1, 7 - centerLevel)}h</span> (6h au niv. 1, -1h/niveau, min 1h).</li>
+          <li>Jusqu&apos;a <span className="text-foreground">3 gisements</span> et <span className="text-foreground">2 repaires pirates</span> peuvent etre decouverts simultanement.</li>
+          <li>Un gisement reste exploitable <span className="text-foreground">tant qu&apos;il contient des ressources</span> — envoyez plusieurs flottes pour le vider.</li>
+          <li>Un repaire pirate est une <span className="text-foreground">mission de combat unique</span> — detruisez les pirates pour recuperer leur butin et potentiellement des vaisseaux bonus.</li>
+          <li><span className="text-foreground">Pensez a envoyer des cargos</span> avec vos flottes ! Les ressources extraites ou pillees sont <span className="text-foreground">limitees par la capacite de soute</span> de votre flotte — sans cargos, vos vaisseaux ne pourront rien ramener.</li>
+          <li>Vous pouvez <span className="text-foreground">annuler</span> un gisement pour liberer un emplacement (cooldown 24h).</li>
+        </ul>
+      </EntityDetailOverlay>
     </div>
   );
 }
