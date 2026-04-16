@@ -119,6 +119,21 @@ describe('calculateResources', () => {
     expect(result.silicium).toBeLessThanOrEqual(10000);
   });
 
+  it('preserves resources above storage capacity (e.g. from transport)', () => {
+    const overflowPlanet = {
+      ...basePlanet,
+      minerai: 50000, // well above storage capacity of 10000
+      silicium: 20000,
+      hydrogene: 15000,
+    };
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000);
+    const result = calculateResources(overflowPlanet, oneHourAgo, new Date());
+    // Resources above cap must NOT be destroyed — production just stops
+    expect(result.minerai).toBe(50000);
+    expect(result.silicium).toBe(20000);
+    expect(result.hydrogene).toBe(15000);
+  });
+
   it('does not go below current resources', () => {
     const now = new Date();
     const result = calculateResources(basePlanet, now, now);

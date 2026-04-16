@@ -14,6 +14,7 @@ import { OverviewHero } from '@/components/overview/OverviewHero';
 import { OverviewKpiBar } from '@/components/overview/OverviewKpiBar';
 import { OverviewActivities } from '@/components/overview/OverviewActivities';
 import { AttackAlert } from '@/components/overview/AttackAlert';
+import { GovernanceAlert } from '@/components/overview/GovernanceAlert';
 import { OverviewGrid } from '@/components/overview/OverviewGrid';
 import { OverviewEvents } from '@/components/overview/OverviewEvents';
 
@@ -420,13 +421,16 @@ export default function Overview() {
         }}
       />
 
-      {/* 4. Attack alert */}
+      {/* 4. Governance warning */}
+      <GovernanceAlert planetClassId={planet.planetClassId} />
+
+      {/* 5. Attack alert */}
       <AttackAlert
         hostileFleets={hostileInbound as any[]}
         onTimerComplete={() => utils.fleet.inbound.invalidate()}
       />
 
-      {/* 5. Grid */}
+      {/* 6. Grid */}
       <OverviewGrid
         ships={stationaryShips}
         defenses={stationaryDefenses}
@@ -440,7 +444,7 @@ export default function Overview() {
         onFleetTimerComplete={() => utils.fleet.movements.invalidate()}
       />
 
-      {/* 6. Events */}
+      {/* 7. Events */}
       <OverviewEvents events={(recentEvents ?? []) as any[]} gameConfig={gameConfig} />
 
       </div>

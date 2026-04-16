@@ -9,7 +9,28 @@ export function createColonizationService(
   db: Database,
   gameConfigService: GameConfigService,
 ) {
+  async function getIpcLevel(userId: string): Promise<number> {
+    const userPlanets = await db
+      .select({ id: planets.id })
+      .from(planets)
+      .where(eq(planets.userId, userId));
+    const userPlanetIds = new Set(userPlanets.map(p => p.id));
+    const allIpc = await db
+      .select({ planetId: planetBuildings.planetId, level: planetBuildings.level })
+      .from(planetBuildings)
+      .where(eq(planetBuildings.buildingId, 'imperialPowerCenter'));
+    const ipc = allIpc.find(b => userPlanetIds.has(b.planetId));
+    return ipc?.level ?? 0;
+  }
+
+  function scaleCost(baseCost: number, ipcLevel: number, scalingFactor: number): number {
+    return Math.floor(baseCost * (1 + scalingFactor * ipcLevel));
+  }
+
   return {
+    /** Get IPC level for a user (used by fleet handlers for cost scaling) */
+    getIpcLevel,
+
     /** Get active colonization process for a planet */
     async getProcess(planetId: string) {
       const [process] = await db
@@ -47,12 +68,29 @@ export function createColonizationService(
         consolidateCooldownRemaining = Math.max(0, Math.ceil(cooldownSeconds - elapsed));
       }
 
+      // Scaled costs based on IPC level
+      const ipcLevel = await getIpcLevel(userId);
+      const sf = Number(config.universe.colonization_cost_scaling_factor) || 0.5;
+      const baseCostMinerai = Number(config.universe.colonization_consolidate_cost_minerai) || 2000;
+      const baseCostSilicium = Number(config.universe.colonization_consolidate_cost_silicium) || 1000;
+      const baseTrancheSize = Number(config.universe.colonization_supply_tranche_size) || 2000;
+
       return {
         ...process,
         events: events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
         effectivePassiveRate: effectiveRate,
         estimatedCompletionHours: etaHours,
         consolidateCooldownRemaining,
+        // Config values for frontend display (scaled by IPC)
+        ipcLevel,
+        consolidateBoost: Number(config.universe.colonization_consolidate_boost) || 0.08,
+        consolidateCostMinerai: scaleCost(baseCostMinerai, ipcLevel, sf),
+        consolidateCostSilicium: scaleCost(baseCostSilicium, ipcLevel, sf),
+        supplyBoostPerTranche: Number(config.universe.colonization_supply_boost_per_tranche) || 0.03,
+        supplyTrancheSize: scaleCost(baseTrancheSize, ipcLevel, sf),
+        supplyMaxBoost: Number(config.universe.colonization_supply_max_boost) || 0.15,
+        reinforceBoostPerShip: Number(config.universe.colonization_reinforce_boost_per_ship) || 0.01,
+        reinforceMaxBoost: Number(config.universe.colonization_reinforce_max_boost) || 0.10,
       };
     },
 
@@ -229,9 +267,13 @@ export function createColonizationService(
       }
 
       const config = await gameConfigService.getFullConfig();
-      const boost = Number(config.universe.colonization_consolidate_boost) || 0.20;
-      const costMinerai = Number(config.universe.colonization_consolidate_cost_minerai) || 2000;
-      const costSilicium = Number(config.universe.colonization_consolidate_cost_silicium) || 1000;
+      const boost = Number(config.universe.colonization_consolidate_boost) || 0.08;
+      const baseCostMinerai = Number(config.universe.colonization_consolidate_cost_minerai) || 2000;
+      const baseCostSilicium = Number(config.universe.colonization_consolidate_cost_silicium) || 1000;
+      const sf = Number(config.universe.colonization_cost_scaling_factor) || 0.5;
+      const ipcLevel = await getIpcLevel(userId);
+      const costMinerai = scaleCost(baseCostMinerai, ipcLevel, sf);
+      const costSilicium = scaleCost(baseCostSilicium, ipcLevel, sf);
 
       // Check and deduct resources from the colonizing planet
       const [planet] = await db

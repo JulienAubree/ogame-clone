@@ -387,14 +387,14 @@ export default function ColonizationProgress() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-sm font-bold text-foreground">Etablir l'avant-poste</h4>
-                    <span className="text-xs font-bold text-amber-400 shrink-0">+20%</span>
+                    <span className="text-xs font-bold text-amber-400 shrink-0">+{Math.round((status.consolidateBoost ?? 0.08) * 100)}%</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
                     Deployer les infrastructures temporaires et etablir un perimetre de securite. Les fondations de la colonie prennent forme.
                   </p>
                   <div className="flex items-center gap-3 mt-2 text-[10px]">
-                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-minerai font-medium">2 000 minerai</span>
-                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-silicium font-medium">1 000 silicium</span>
+                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-minerai font-medium">{(status.consolidateCostMinerai ?? 2000).toLocaleString()} minerai</span>
+                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-silicium font-medium">{(status.consolidateCostSilicium ?? 1000).toLocaleString()} silicium</span>
                   </div>
                 </div>
               </div>
@@ -427,14 +427,14 @@ export default function ColonizationProgress() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-sm font-bold text-foreground">Ravitaillement vital</h4>
-                    <span className="text-xs font-bold text-emerald-400 shrink-0">+5% / 2 000 res.</span>
+                    <span className="text-xs font-bold text-emerald-400 shrink-0">+{Math.round((status.supplyBoostPerTranche ?? 0.03) * 100)}% / {(status.supplyTrancheSize ?? 2000).toLocaleString()} res.</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
                     Les reserves de la colonie sont critiques. Un convoi de ravitaillement apportera les materiaux necessaires a la construction des premiers batiments permanents.
                   </p>
                   <div className="flex items-center gap-3 mt-2 text-[10px]">
-                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-emerald-400 font-medium">+5% par tranche de 2 000 ressources</span>
-                    <span className="text-muted-foreground">· Max +25%</span>
+                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-emerald-400 font-medium">+{Math.round((status.supplyBoostPerTranche ?? 0.03) * 100)}% par tranche de {(status.supplyTrancheSize ?? 2000).toLocaleString()} ressources</span>
+                    <span className="text-muted-foreground">· Max +{Math.round((status.supplyMaxBoost ?? 0.15) * 100)}%</span>
                   </div>
                 </div>
               </div>
@@ -469,14 +469,14 @@ export default function ColonizationProgress() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-sm font-bold text-foreground">Securiser le secteur</h4>
-                    <span className="text-xs font-bold text-blue-400 shrink-0">+2%/h par vaisseau</span>
+                    <span className="text-xs font-bold text-blue-400 shrink-0">+{Math.round((status.reinforceBoostPerShip ?? 0.01) * 100)}%/h par vaisseau</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
                     Des signaux hostiles ont ete detectes dans le secteur. L'envoi d'une escorte militaire securisera la zone durablement, accelerant l'installation en continu.
                   </p>
                   <div className="flex items-center gap-3 mt-2 text-[10px]">
-                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-blue-400 font-medium">+2%/h passif par vaisseau de combat</span>
-                    <span className="text-muted-foreground">· Max +20%/h</span>
+                    <span className="rounded-md bg-card/80 border border-border/30 px-2 py-0.5 text-blue-400 font-medium">+{Math.round((status.reinforceBoostPerShip ?? 0.01) * 100)}%/h passif par vaisseau de combat</span>
+                    <span className="text-muted-foreground">· Max +{Math.round((status.reinforceMaxBoost ?? 0.10) * 100)}%/h</span>
                   </div>
                 </div>
               </div>

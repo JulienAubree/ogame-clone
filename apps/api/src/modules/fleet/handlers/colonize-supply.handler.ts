@@ -35,10 +35,14 @@ export class ColonizeSupplyHandler implements MissionHandler {
   async processArrival(fleetEvent: FleetEvent, ctx: MissionHandlerContext): Promise<ArrivalResult> {
     const config = await ctx.gameConfigService.getFullConfig();
 
-    // Proportional boost: +5% per 2000 resources delivered, capped at 25%
-    const boostPerTranche = Number(config.universe.colonization_supply_boost_per_tranche) || 0.05;
-    const trancheSize = Number(config.universe.colonization_supply_tranche_size) || 2000;
-    const maxBoost = Number(config.universe.colonization_supply_max_boost) || 0.25;
+    // Proportional boost: +3% per tranche of resources, capped at 15%
+    // Tranche size scales with IPC level: base * (1 + scalingFactor * ipcLevel)
+    const boostPerTranche = Number(config.universe.colonization_supply_boost_per_tranche) || 0.03;
+    const baseTrancheSize = Number(config.universe.colonization_supply_tranche_size) || 2000;
+    const maxBoost = Number(config.universe.colonization_supply_max_boost) || 0.15;
+    const sf = Number(config.universe.colonization_cost_scaling_factor) || 0.5;
+    const ipcLevel = ctx.colonizationService ? await ctx.colonizationService.getIpcLevel(fleetEvent.userId) : 0;
+    const trancheSize = Math.floor(baseTrancheSize * (1 + sf * ipcLevel));
 
     const mineraiCargo = Number(fleetEvent.mineraiCargo);
     const siliciumCargo = Number(fleetEvent.siliciumCargo);

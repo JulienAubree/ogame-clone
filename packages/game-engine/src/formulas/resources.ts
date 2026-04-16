@@ -141,7 +141,9 @@ export interface PlanetResources extends PlanetLevels {
 
 /**
  * Calculate current resources with lazy production since last update.
- * Caps resources at storage capacity.
+ * Production is capped at storage capacity, but resources already above
+ * capacity (e.g. received via transport) are preserved — production simply
+ * stops until the player spends down below the cap.
  */
 export function calculateResources(
   planet: PlanetResources,
@@ -154,18 +156,24 @@ export function calculateResources(
   const rates = calculateProductionRates(planet, bonus, prodConfig, talentBonuses);
   const elapsedHours = Math.max(0, (now.getTime() - resourcesUpdatedAt.getTime()) / (3600 * 1000));
 
-  const minerai = Math.min(
-    planet.minerai + Math.floor(rates.mineraiPerHour * elapsedHours),
-    rates.storageMineraiCapacity,
-  );
-  const silicium = Math.min(
-    planet.silicium + Math.floor(rates.siliciumPerHour * elapsedHours),
-    rates.storageSiliciumCapacity,
-  );
-  const hydrogene = Math.min(
-    planet.hydrogene + Math.floor(rates.hydrogenePerHour * elapsedHours),
-    rates.storageHydrogeneCapacity,
-  );
+  const minerai = planet.minerai >= rates.storageMineraiCapacity
+    ? planet.minerai
+    : Math.min(
+        planet.minerai + Math.floor(rates.mineraiPerHour * elapsedHours),
+        rates.storageMineraiCapacity,
+      );
+  const silicium = planet.silicium >= rates.storageSiliciumCapacity
+    ? planet.silicium
+    : Math.min(
+        planet.silicium + Math.floor(rates.siliciumPerHour * elapsedHours),
+        rates.storageSiliciumCapacity,
+      );
+  const hydrogene = planet.hydrogene >= rates.storageHydrogeneCapacity
+    ? planet.hydrogene
+    : Math.min(
+        planet.hydrogene + Math.floor(rates.hydrogenePerHour * elapsedHours),
+        rates.storageHydrogeneCapacity,
+      );
 
   return { minerai, silicium, hydrogene };
 }

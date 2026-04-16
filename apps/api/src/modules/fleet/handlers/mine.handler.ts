@@ -95,6 +95,26 @@ export class MineHandler implements PhasedMissionHandler {
     }
     const config = await ctx.gameConfigService.getFullConfig();
     const shipStatsMap = buildShipStatsMap(config);
+
+    // Inject flagship stats if present in mining fleet
+    if (fleetEvent.ships['flagship'] && fleetEvent.ships['flagship'] > 0 && ctx.flagshipService) {
+      const flagship = await ctx.flagshipService.get(fleetEvent.userId);
+      if (flagship) {
+        const fs = 'effectiveStats' in flagship ? (flagship as any).effectiveStats : null;
+        const effectiveCargo = fs?.cargoCapacity ?? flagship.cargoCapacity;
+        const hullConfig = flagship.hullId ? config.hulls[flagship.hullId] : null;
+        const hullAbilities = ((hullConfig as any)?.abilities ?? []) as Array<{ miningExtractionEqualsCargo?: boolean }>;
+        const hasMiningExtraction = hullAbilities.some(a => a.miningExtractionEqualsCargo);
+        shipStatsMap['flagship'] = {
+          baseSpeed: fs?.baseSpeed ?? flagship.baseSpeed,
+          fuelConsumption: fs?.fuelConsumption ?? flagship.fuelConsumption,
+          cargoCapacity: effectiveCargo,
+          driveType: (fs?.driveType ?? flagship.driveType) as import('@exilium/game-engine').ShipStats['driveType'],
+          miningExtraction: hasMiningExtraction ? effectiveCargo : 0,
+        };
+      }
+    }
+
     const cargoCapacity = totalCargoCapacity(fleetEvent.ships, shipStatsMap);
     const baseFleetExtr = totalMiningExtraction(fleetEvent.ships, shipStatsMap);
     const extractionMultiplier = resolveBonus('mining_extraction', null, researchLevels, config.bonuses);
@@ -138,6 +158,26 @@ export class MineHandler implements PhasedMissionHandler {
     const params = mission.parameters as { depositId: string };
     const config = await ctx.gameConfigService.getFullConfig();
     const shipStatsMap = buildShipStatsMap(config);
+
+    // Inject flagship stats if present in mining fleet
+    if (ships['flagship'] && ships['flagship'] > 0 && ctx.flagshipService) {
+      const flagship = await ctx.flagshipService.get(fleetEvent.userId);
+      if (flagship) {
+        const fs = 'effectiveStats' in flagship ? (flagship as any).effectiveStats : null;
+        const effectiveCargo = fs?.cargoCapacity ?? flagship.cargoCapacity;
+        const hullConfig = flagship.hullId ? config.hulls[flagship.hullId] : null;
+        const hullAbilities = ((hullConfig as any)?.abilities ?? []) as Array<{ miningExtractionEqualsCargo?: boolean }>;
+        const hasMiningExtraction = hullAbilities.some(a => a.miningExtractionEqualsCargo);
+        shipStatsMap['flagship'] = {
+          baseSpeed: fs?.baseSpeed ?? flagship.baseSpeed,
+          fuelConsumption: fs?.fuelConsumption ?? flagship.fuelConsumption,
+          cargoCapacity: effectiveCargo,
+          driveType: (fs?.driveType ?? flagship.driveType) as import('@exilium/game-engine').ShipStats['driveType'],
+          miningExtraction: hasMiningExtraction ? effectiveCargo : 0,
+        };
+      }
+    }
+
     const cargoCapacity = totalCargoCapacity(ships, shipStatsMap);
     const baseFleetExtr = totalMiningExtraction(ships, shipStatsMap);
 

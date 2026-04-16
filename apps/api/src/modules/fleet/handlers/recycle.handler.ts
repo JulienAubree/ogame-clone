@@ -83,14 +83,29 @@ export class RecycleHandler implements MissionHandler {
     }
 
     const config = await ctx.gameConfigService.getFullConfig();
+    const shipStatsMap = buildShipStatsMap(config);
+
+    // Inject flagship stats if present in recycling fleet
+    if (fleetEvent.ships['flagship'] && fleetEvent.ships['flagship'] > 0 && ctx.flagshipService) {
+      const flagship = await ctx.flagshipService.get(fleetEvent.userId);
+      if (flagship) {
+        const fs = 'effectiveStats' in flagship ? (flagship as any).effectiveStats : null;
+        shipStatsMap['flagship'] = {
+          baseSpeed: fs?.baseSpeed ?? flagship.baseSpeed,
+          fuelConsumption: fs?.fuelConsumption ?? flagship.fuelConsumption,
+          cargoCapacity: fs?.cargoCapacity ?? flagship.cargoCapacity,
+          driveType: (fs?.driveType ?? flagship.driveType) as import('@exilium/game-engine').ShipStats['driveType'],
+          miningExtraction: 0,
+        };
+      }
+    }
+
     const recyclerDefs = Object.values(config.ships).filter((s) => s.role === 'recycling');
-    let totalCargoCapacityValue = 0;
     let recyclerCount = 0;
     for (const def of recyclerDefs) {
-      const count = fleetEvent.ships[def.id] ?? 0;
-      recyclerCount += count;
-      totalCargoCapacityValue += count * (def.cargoCapacity ?? 20000);
+      recyclerCount += fleetEvent.ships[def.id] ?? 0;
     }
+    const totalCargoCapacityValue = totalCargoCapacity(fleetEvent.ships, shipStatsMap);
 
     let remainingCargo = totalCargoCapacityValue;
     const availableMinerai = Number(debris.minerai);
