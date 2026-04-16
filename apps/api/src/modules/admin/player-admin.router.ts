@@ -149,5 +149,25 @@ export function createPlayerAdminRouter(
         await playerAdminService.resetFlagshipTalents(input.flagshipId);
         return { success: true };
       }),
+
+    updatePlanetShips: adminProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        ships: z.record(z.string(), z.number().int().min(0)),
+      }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.updatePlanetShips(input.planetId, input.ships);
+        return { success: true };
+      }),
+
+    updatePlanetDefenses: adminProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        defenses: z.record(z.string(), z.number().int().min(0)),
+      }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.updatePlanetDefenses(input.planetId, input.defenses);
+        return { success: true };
+      }),
   });
 }

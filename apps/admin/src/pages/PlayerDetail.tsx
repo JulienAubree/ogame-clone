@@ -3,7 +3,7 @@ import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { PageSkeleton } from '@/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ArrowLeft, Ship, Gem, Sparkles, Wrench, RotateCcw, Crown } from 'lucide-react';
+import { ArrowLeft, Ship, Gem, Sparkles, Wrench, RotateCcw, Crown, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 function CoordinateEditor({
@@ -106,6 +106,118 @@ function ResourceEditor({
         className="admin-btn-primary py-1 px-3 text-xs"
       >
         {mutation.isPending ? '...' : 'Sauver'}
+      </button>
+    </div>
+  );
+}
+
+// ── Ship & Defense editors ──
+
+const SHIP_FIELDS = [
+  { key: 'smallCargo', label: 'Petit cargo' },
+  { key: 'largeCargo', label: 'Grand cargo' },
+  { key: 'interceptor', label: 'Intercepteur' },
+  { key: 'frigate', label: 'Fregate' },
+  { key: 'cruiser', label: 'Croiseur' },
+  { key: 'battlecruiser', label: 'Croiseur B.' },
+  { key: 'espionageProbe', label: 'Sonde espion' },
+  { key: 'colonyShip', label: 'Vaiss. colo.' },
+  { key: 'recycler', label: 'Recycleur' },
+  { key: 'prospector', label: 'Prospecteur' },
+  { key: 'recuperateur', label: 'Recuperateur' },
+  { key: 'solarSatellite', label: 'Sat. solaire' },
+  { key: 'explorer', label: 'Explorateur' },
+];
+
+const DEFENSE_FIELDS = [
+  { key: 'rocketLauncher', label: 'Lance-roquettes' },
+  { key: 'lightLaser', label: 'Laser leger' },
+  { key: 'heavyLaser', label: 'Laser lourd' },
+  { key: 'electromagneticCannon', label: 'Canon EM' },
+  { key: 'plasmaTurret', label: 'Tourelle plasma' },
+];
+
+function ShipEditor({
+  planetId,
+  ships,
+  onSaved,
+}: {
+  planetId: string;
+  ships: Record<string, number> | null;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<Record<string, number>>(() => {
+    const s: Record<string, number> = {};
+    for (const { key } of SHIP_FIELDS) s[key] = ships?.[key] ?? 0;
+    return s;
+  });
+  const mutation = trpc.playerAdmin.updatePlanetShips.useMutation({ onSuccess: onSaved });
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-2">
+        {SHIP_FIELDS.map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-2">
+            <label className="text-xs text-gray-400 w-20 text-right shrink-0 truncate" title={label}>{label}</label>
+            <input
+              type="number"
+              min={0}
+              value={form[key]}
+              onChange={(e) => setForm({ ...form, [key]: Number(e.target.value) })}
+              className="admin-input w-16 py-1 text-xs font-mono"
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => mutation.mutate({ planetId, ships: form })}
+        disabled={mutation.isPending}
+        className="admin-btn-primary py-1 px-3 text-xs"
+      >
+        {mutation.isPending ? '...' : 'Sauver vaisseaux'}
+      </button>
+    </div>
+  );
+}
+
+function DefenseEditor({
+  planetId,
+  defenses,
+  onSaved,
+}: {
+  planetId: string;
+  defenses: Record<string, number> | null;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<Record<string, number>>(() => {
+    const s: Record<string, number> = {};
+    for (const { key } of DEFENSE_FIELDS) s[key] = defenses?.[key] ?? 0;
+    return s;
+  });
+  const mutation = trpc.playerAdmin.updatePlanetDefenses.useMutation({ onSuccess: onSaved });
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-2">
+        {DEFENSE_FIELDS.map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-2">
+            <label className="text-xs text-gray-400 w-24 text-right shrink-0 truncate" title={label}>{label}</label>
+            <input
+              type="number"
+              min={0}
+              value={form[key]}
+              onChange={(e) => setForm({ ...form, [key]: Number(e.target.value) })}
+              className="admin-input w-16 py-1 text-xs font-mono"
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => mutation.mutate({ planetId, defenses: form })}
+        disabled={mutation.isPending}
+        className="admin-btn-primary py-1 px-3 text-xs"
+      >
+        {mutation.isPending ? '...' : 'Sauver defenses'}
       </button>
     </div>
   );
@@ -372,7 +484,7 @@ export default function PlayerDetail() {
 
             {/* Building levels */}
             <div className="text-xs text-gray-500 mb-1">Batiments</div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-3">
               {Object.entries(planet)
                 .filter(([key]) => key.endsWith('Level'))
                 .map(([key, value]) => (
@@ -382,6 +494,20 @@ export default function PlayerDetail() {
                   </div>
                 ))}
             </div>
+
+            {/* Ships */}
+            <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+              <Ship className="w-3 h-3" /> Vaisseaux
+            </div>
+            <div className="mb-3">
+              <ShipEditor planetId={planet.id} ships={planet.ships} onSaved={refetch} />
+            </div>
+
+            {/* Defenses */}
+            <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+              <Shield className="w-3 h-3" /> Defenses
+            </div>
+            <DefenseEditor planetId={planet.id} defenses={planet.defenses} onSaved={refetch} />
           </div>
         ))}
       </div>

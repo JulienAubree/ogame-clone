@@ -170,6 +170,26 @@ export function createPlayerAdminService(db: Database, fleetQueue?: Queue) {
       await db.update(planets).set({ galaxy, system, position }).where(eq(planets.id, planetId));
     },
 
+    async updatePlanetShips(planetId: string, ships: Record<string, number>) {
+      await db
+        .insert(planetShips)
+        .values({ planetId, ...ships })
+        .onConflictDoUpdate({
+          target: [planetShips.planetId],
+          set: ships,
+        });
+    },
+
+    async updatePlanetDefenses(planetId: string, defenses: Record<string, number>) {
+      await db
+        .insert(planetDefenses)
+        .values({ planetId, ...defenses })
+        .onConflictDoUpdate({
+          target: [planetDefenses.planetId],
+          set: defenses,
+        });
+    },
+
     async setCapital(userId: string, newCapitalPlanetId: string) {
       const [currentHomeworld] = await db
         .select({ id: planets.id, planetClassId: planets.planetClassId })
