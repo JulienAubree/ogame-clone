@@ -12,10 +12,11 @@ import { getAssetUrl } from '@/lib/assets';
 
 // ── Types ────────────────────────────────────────────────────────────
 
-type MarketCategory = 'resources' | 'exploration';
+type MarketCategory = 'all' | 'resources' | 'exploration';
 type MarketTab = 'buy' | 'sell' | 'my-offers' | 'history';
 
 const CATEGORIES: { key: MarketCategory; label: string }[] = [
+  { key: 'all', label: 'Tout' },
   { key: 'resources', label: 'Ressources' },
   { key: 'exploration', label: 'Exploration' },
 ];
@@ -45,10 +46,10 @@ function resolveInitialTab(param: string | null): MarketTab {
 }
 
 function resolveInitialCategory(param: string | null, viewParam: string | null): MarketCategory {
-  if (param === 'resources' || param === 'exploration') return param;
+  if (param === 'all' || param === 'resources' || param === 'exploration') return param;
   // Legacy ?view= hints
   if (viewParam?.startsWith('report')) return 'exploration';
-  return 'resources';
+  return 'all';
 }
 
 // ── KPI Tile ─────────────────────────────────────────────────────────
@@ -282,19 +283,33 @@ export default function Market() {
         {/* ── Tab content ──────────────────────────────────── */}
 
         {planetId && (
-          <section className="glass-card p-4 lg:p-5">
+          <div className="space-y-6">
             {/* Resources */}
-            {category === 'resources' && tab === 'buy' && <ResourceBuy planetId={planetId} />}
-            {category === 'resources' && tab === 'sell' && <ResourceSell planetId={planetId} commissionPercent={commissionPercent} />}
-            {category === 'resources' && tab === 'my-offers' && <ResourceMyOffers planetId={planetId} statuses={['active', 'reserved']} />}
-            {category === 'resources' && tab === 'history' && <ResourceMyOffers planetId={planetId} statuses={['sold', 'expired', 'cancelled']} />}
+            {(category === 'all' || category === 'resources') && (
+              <section className="glass-card p-4 lg:p-5">
+                {category === 'all' && (
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Ressources</h3>
+                )}
+                {tab === 'buy' && <ResourceBuy planetId={planetId} />}
+                {tab === 'sell' && <ResourceSell planetId={planetId} commissionPercent={commissionPercent} />}
+                {tab === 'my-offers' && <ResourceMyOffers planetId={planetId} statuses={['active', 'reserved']} />}
+                {tab === 'history' && <ResourceMyOffers planetId={planetId} statuses={['sold', 'expired', 'cancelled']} />}
+              </section>
+            )}
 
             {/* Exploration */}
-            {category === 'exploration' && tab === 'buy' && <MarketReportsBuy planetId={planetId} />}
-            {category === 'exploration' && tab === 'sell' && <MarketReportsInventory planetId={planetId} sections={['inventory']} />}
-            {category === 'exploration' && tab === 'my-offers' && <MarketReportsInventory planetId={planetId} sections={['listed']} />}
-            {category === 'exploration' && tab === 'history' && <MarketReportsInventory planetId={planetId} sections={['sold']} />}
-          </section>
+            {(category === 'all' || category === 'exploration') && (
+              <section className="glass-card p-4 lg:p-5">
+                {category === 'all' && (
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Rapports d'exploration</h3>
+                )}
+                {tab === 'buy' && <MarketReportsBuy planetId={planetId} />}
+                {tab === 'sell' && <MarketReportsInventory planetId={planetId} sections={['inventory']} />}
+                {tab === 'my-offers' && <MarketReportsInventory planetId={planetId} sections={['listed']} />}
+                {tab === 'history' && <MarketReportsInventory planetId={planetId} sections={['sold']} />}
+              </section>
+            )}
+          </div>
         )}
       </div>
     </div>
