@@ -170,6 +170,41 @@ export function createPlayerAdminService(db: Database, fleetQueue?: Queue) {
       await db.update(planets).set({ galaxy, system, position }).where(eq(planets.id, planetId));
     },
 
+    async setCapital(userId: string, newCapitalPlanetId: string) {
+      const [currentHomeworld] = await db
+        .select({ id: planets.id, planetClassId: planets.planetClassId })
+        .from(planets)
+        .where(and(eq(planets.userId, userId), eq(planets.planetClassId, 'homeworld')))
+        .limit(1);
+
+      const [newCapital] = await db
+        .select({ id: planets.id, planetClassId: planets.planetClassId })
+        .from(planets)
+        .where(and(eq(planets.id, newCapitalPlanetId), eq(planets.userId, userId)))
+        .limit(1);
+
+      if (!newCapital) throw new Error('Planet not found');
+      if (newCapital.planetClassId === 'homeworld') return;
+
+      if (currentHomeworld) {
+        // Old homeworld gets the new capital's type
+        await db.update(planets)
+          .set({ planetClassId: newCapital.planetClassId })
+          .where(eq(planets.id, currentHomeworld.id));
+
+        // Remove IPC from old homeworld
+        await db.delete(planetBuildings)
+          .where(and(
+            eq(planetBuildings.planetId, currentHomeworld.id),
+            eq(planetBuildings.buildingId, 'imperialPowerCenter'),
+          ));
+      }
+
+      await db.update(planets)
+        .set({ planetClassId: 'homeworld' })
+        .where(eq(planets.id, newCapitalPlanetId));
+    },
+
     async resetFlagshipTalents(flagshipId: string) {
       await db.delete(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagshipId));
     },

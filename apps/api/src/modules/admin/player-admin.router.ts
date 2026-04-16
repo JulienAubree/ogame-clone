@@ -133,6 +133,16 @@ export function createPlayerAdminRouter(
         return { success: true };
       }),
 
+    setCapital: adminProcedure
+      .input(z.object({
+        userId: z.string().uuid(),
+        planetId: z.string().uuid(),
+      }))
+      .mutation(async ({ input }) => {
+        await playerAdminService.setCapital(input.userId, input.planetId);
+        return { success: true };
+      }),
+
     resetFlagshipTalents: adminProcedure
       .input(z.object({ flagshipId: z.string().uuid() }))
       .mutation(async ({ input }) => {

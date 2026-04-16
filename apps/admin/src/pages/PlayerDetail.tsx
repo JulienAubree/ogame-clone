@@ -3,7 +3,7 @@ import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { PageSkeleton } from '@/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ArrowLeft, Ship, Gem, Sparkles, Wrench, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Ship, Gem, Sparkles, Wrench, RotateCcw, Crown } from 'lucide-react';
 import { useState } from 'react';
 
 function CoordinateEditor({
@@ -301,6 +301,10 @@ export default function PlayerDetail() {
     { enabled: !!id },
   );
   const { data: gameConfig } = useGameConfig();
+  const [capitalConfirm, setCapitalConfirm] = useState<{ planetId: string; name: string } | null>(null);
+  const setCapitalMut = trpc.playerAdmin.setCapital.useMutation({
+    onSuccess: () => { refetch(); setCapitalConfirm(null); },
+  });
 
   if (isLoading) return <PageSkeleton />;
   if (!data) return <div className="text-gray-500">Joueur introuvable.</div>;
@@ -326,7 +330,22 @@ export default function PlayerDetail() {
         {data.planets?.map((planet: any) => (
           <div key={planet.id} className="admin-card p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-medium text-gray-200">{planet.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-200">{planet.name}</span>
+                {planet.planetClassId === 'homeworld' ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded font-medium text-yellow-400 bg-yellow-900/20">Capitale</span>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded font-medium text-gray-500 bg-panel">{planet.planetClassId ?? 'colonie'}</span>
+                )}
+              </div>
+              {planet.planetClassId !== 'homeworld' && (
+                <button
+                  onClick={() => setCapitalConfirm({ planetId: planet.id, name: planet.name })}
+                  className="admin-btn-ghost py-1 px-2 text-xs flex items-center gap-1 text-yellow-400"
+                >
+                  <Crown className="w-3 h-3" /> Definir comme capitale
+                </button>
+              )}
             </div>
 
             <div className="mb-3">
@@ -416,6 +435,19 @@ export default function PlayerDetail() {
           />
         </>
       )}
+
+      <ConfirmDialog
+        open={!!capitalConfirm}
+        title="Changer la capitale ?"
+        message={`"${capitalConfirm?.name}" deviendra la capitale. L'IPC sera supprime de l'ancienne capitale.`}
+        confirmLabel={setCapitalMut.isPending ? '...' : 'Confirmer'}
+        onConfirm={() => {
+          if (capitalConfirm && id) {
+            setCapitalMut.mutate({ userId: id, planetId: capitalConfirm.planetId });
+          }
+        }}
+        onCancel={() => setCapitalConfirm(null)}
+      />
     </div>
   );
 }
