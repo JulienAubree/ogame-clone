@@ -12,7 +12,13 @@ import { getAssetUrl } from '@/lib/assets';
 
 // ── Types ────────────────────────────────────────────────────────────
 
+type MarketCategory = 'resources' | 'exploration';
 type MarketTab = 'buy' | 'sell' | 'my-offers' | 'history';
+
+const CATEGORIES: { key: MarketCategory; label: string }[] = [
+  { key: 'resources', label: 'Ressources' },
+  { key: 'exploration', label: 'Exploration' },
+];
 
 const TABS: { key: MarketTab; label: string }[] = [
   { key: 'buy', label: 'Acheter' },
@@ -21,7 +27,7 @@ const TABS: { key: MarketTab; label: string }[] = [
   { key: 'history', label: 'Historique' },
 ];
 
-/** Map legacy ?view= values to new tabs (backward compat). */
+/** Map legacy ?view= values to new tab+category (backward compat). */
 function resolveInitialTab(param: string | null): MarketTab {
   if (!param) return 'buy';
   const map: Record<string, MarketTab> = {
@@ -36,6 +42,13 @@ function resolveInitialTab(param: string | null): MarketTab {
     'history': 'history',
   };
   return map[param] ?? 'buy';
+}
+
+function resolveInitialCategory(param: string | null, viewParam: string | null): MarketCategory {
+  if (param === 'resources' || param === 'exploration') return param;
+  // Legacy ?view= hints
+  if (viewParam?.startsWith('report')) return 'exploration';
+  return 'resources';
 }
 
 // ── KPI Tile ─────────────────────────────────────────────────────────
@@ -72,6 +85,9 @@ export default function Market() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
   const { data: gameConfig } = useGameConfig();
   const [searchParams] = useSearchParams();
+  const [category, setCategory] = useState<MarketCategory>(
+    resolveInitialCategory(searchParams.get('cat'), searchParams.get('view')),
+  );
   const [tab, setTab] = useState<MarketTab>(
     resolveInitialTab(searchParams.get('tab') ?? searchParams.get('view')),
   );
@@ -227,8 +243,26 @@ export default function Market() {
           />
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-0.5 bg-card/50 rounded-lg p-0.5 border border-border/30 w-fit">
+        {/* Category selector */}
+        <div className="flex gap-1 bg-card/50 rounded-lg p-1 border border-border/30 w-fit">
+          {CATEGORIES.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setCategory(key)}
+              className={cn(
+                'px-4 py-2 rounded-md text-sm font-semibold transition-colors',
+                category === key
+                  ? 'bg-primary/15 text-primary border border-primary/30'
+                  : 'text-muted-foreground hover:text-foreground border border-transparent',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Action tabs */}
+        <div className="flex gap-0.5 bg-card/30 rounded-lg p-0.5 border border-border/20 w-fit">
           {TABS.map(({ key, label }) => (
             <button
               key={key}
@@ -247,56 +281,20 @@ export default function Market() {
 
         {/* ── Tab content ──────────────────────────────────── */}
 
-        {tab === 'buy' && planetId && (
-          <div className="space-y-6">
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Ressources</h3>
-              <ResourceBuy planetId={planetId} />
-            </section>
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Rapports d'exploration</h3>
-              <MarketReportsBuy planetId={planetId} />
-            </section>
-          </div>
-        )}
+        {planetId && (
+          <section className="glass-card p-4 lg:p-5">
+            {/* Resources */}
+            {category === 'resources' && tab === 'buy' && <ResourceBuy planetId={planetId} />}
+            {category === 'resources' && tab === 'sell' && <ResourceSell planetId={planetId} commissionPercent={commissionPercent} />}
+            {category === 'resources' && tab === 'my-offers' && <ResourceMyOffers planetId={planetId} statuses={['active', 'reserved']} />}
+            {category === 'resources' && tab === 'history' && <ResourceMyOffers planetId={planetId} statuses={['sold', 'expired', 'cancelled']} />}
 
-        {tab === 'sell' && planetId && (
-          <div className="space-y-6">
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Vendre des ressources</h3>
-              <ResourceSell planetId={planetId} commissionPercent={commissionPercent} />
-            </section>
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Vendre des rapports</h3>
-              <MarketReportsInventory planetId={planetId} sections={['inventory']} />
-            </section>
-          </div>
-        )}
-
-        {tab === 'my-offers' && planetId && (
-          <div className="space-y-6">
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Offres de ressources</h3>
-              <ResourceMyOffers planetId={planetId} statuses={['active', 'reserved']} />
-            </section>
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Rapports en vente</h3>
-              <MarketReportsInventory planetId={planetId} sections={['listed']} />
-            </section>
-          </div>
-        )}
-
-        {tab === 'history' && planetId && (
-          <div className="space-y-6">
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Ressources</h3>
-              <ResourceMyOffers planetId={planetId} statuses={['sold', 'expired', 'cancelled']} />
-            </section>
-            <section className="glass-card p-4 lg:p-5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Rapports</h3>
-              <MarketReportsInventory planetId={planetId} sections={['sold']} />
-            </section>
-          </div>
+            {/* Exploration */}
+            {category === 'exploration' && tab === 'buy' && <MarketReportsBuy planetId={planetId} />}
+            {category === 'exploration' && tab === 'sell' && <MarketReportsInventory planetId={planetId} sections={['inventory']} />}
+            {category === 'exploration' && tab === 'my-offers' && <MarketReportsInventory planetId={planetId} sections={['listed']} />}
+            {category === 'exploration' && tab === 'history' && <MarketReportsInventory planetId={planetId} sections={['sold']} />}
+          </section>
         )}
       </div>
     </div>
