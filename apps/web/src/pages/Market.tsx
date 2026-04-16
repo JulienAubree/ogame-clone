@@ -13,14 +13,19 @@ import { getAssetUrl } from '@/lib/assets';
 
 // ── KPI Tile ─────────────────────────────────────────────────────────
 
-function KpiTile({ label, value, icon, color }: {
+function KpiTile({ label, value, icon, color, onClick }: {
   label: string;
   value: string | number;
   icon: React.ReactNode;
   color: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-border/30 bg-card/60 px-4 py-3">
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-xl border border-border/30 bg-card/60 px-4 py-3 text-left transition-colors hover:bg-card/80 hover:border-primary/20 cursor-pointer"
+    >
       <div className="flex items-center gap-3">
         <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg bg-white/5', color)}>
           {icon}
@@ -30,14 +35,8 @@ function KpiTile({ label, value, icon, color }: {
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">{label}</div>
         </div>
       </div>
-    </div>
+    </button>
   );
-}
-
-function formatVolume(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`;
-  return String(value);
 }
 
 // ── Tab config ───────────────────────────────────────────────────────
@@ -90,11 +89,10 @@ export default function Market() {
   );
 
   // KPI computations
-  const marketVolume = (offersData?.offers ?? []).reduce((sum: number, o: any) => sum + (Number(o.quantity) || 0), 0);
+  const totalOffers = (offersData?.offers?.length ?? 0);
   const myActiveResourceOffers = (myOffers ?? []).filter((o: any) => o.status === 'active').length;
   const myListedReports = (reports ?? []).filter((r: any) => r.status === 'listed').length;
   const mySalesCount = myActiveResourceOffers + myListedReports;
-  const inventoryCount = (reports ?? []).filter((r: any) => r.status === 'inventory').length;
   const soldResourceOffers = (myOffers ?? []).filter((o: any) => o.status === 'sold').length;
   const soldReports = (reports ?? []).filter((r: any) => r.status === 'sold').length;
   const totalTrades = soldResourceOffers + soldReports;
@@ -185,15 +183,16 @@ export default function Market() {
       <div className="space-y-4 px-4 pb-4 lg:px-6 lg:pb-6">
 
         {/* KPI tiles */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <KpiTile
-            label="Volume du marche"
-            value={formatVolume(marketVolume)}
+            label="Offres sur le marche"
+            value={totalOffers}
             color="text-cyan-400"
+            onClick={() => setView('resource-buy')}
             icon={
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                <polyline points="16 7 22 7 22 13" />
+                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
             }
           />
@@ -201,6 +200,7 @@ export default function Market() {
             label="Mes ventes en cours"
             value={mySalesCount}
             color="text-emerald-400"
+            onClick={() => setView('resource-my')}
             icon={
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="1" x2="12" y2="23" />
@@ -209,21 +209,10 @@ export default function Market() {
             }
           />
           <KpiTile
-            label="Rapports en stock"
-            value={inventoryCount}
-            color="text-purple-400"
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <path d="M12 18v-6" /><path d="M9 15l3 3 3-3" />
-              </svg>
-            }
-          />
-          <KpiTile
             label="Echanges realises"
             value={totalTrades}
             color="text-amber-400"
+            onClick={() => setView('resource-my')}
             icon={
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
