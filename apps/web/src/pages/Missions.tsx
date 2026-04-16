@@ -557,15 +557,72 @@ export default function Missions() {
       </div>
 
       {/* Help overlay */}
-      <EntityDetailOverlay open={helpOpen} onClose={() => setHelpOpen(false)} title="Comment fonctionnent les missions ?">
-        <ul className="text-sm text-muted-foreground space-y-3 list-disc list-inside">
-          <li>Votre Centre de missions <span className="text-foreground">decouvre automatiquement</span> des gisements et des repaires pirates toutes les <span className="text-foreground">{Math.max(1, 7 - centerLevel)}h</span> (6h au niv. 1, -1h/niveau, min 1h).</li>
-          <li>Jusqu&apos;a <span className="text-foreground">3 gisements</span> et <span className="text-foreground">2 repaires pirates</span> peuvent etre decouverts simultanement.</li>
-          <li>Un gisement reste exploitable <span className="text-foreground">tant qu&apos;il contient des ressources</span> — envoyez plusieurs flottes pour le vider.</li>
-          <li>Un repaire pirate est une <span className="text-foreground">mission de combat unique</span> — detruisez les pirates pour recuperer leur butin et potentiellement des vaisseaux bonus.</li>
-          <li><span className="text-foreground">Pensez a envoyer des cargos</span> avec vos flottes ! Les ressources extraites ou pillees sont <span className="text-foreground">limitees par la capacite de soute</span> de votre flotte — sans cargos, vos vaisseaux ne pourront rien ramener.</li>
-          <li>Vous pouvez <span className="text-foreground">annuler</span> un gisement pour liberer un emplacement (cooldown 24h).</li>
-        </ul>
+      <EntityDetailOverlay open={helpOpen} onClose={() => setHelpOpen(false)} title="Centre de missions">
+        {/* Hero image */}
+        <div className="relative -mx-5 -mt-5 overflow-hidden rounded-t-lg">
+          <img
+            src={getAssetUrl('buildings', 'missionCenter')}
+            alt=""
+            className="w-full h-40 object-cover"
+            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+          <div className="absolute bottom-3 left-5">
+            <p className="text-sm font-semibold text-foreground">Niveau {centerLevel}</p>
+            <p className="text-xs text-muted-foreground">Decouverte toutes les {Math.max(1, 7 - centerLevel)}h</p>
+          </div>
+        </div>
+
+        {/* Decouverte */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            Decouverte automatique
+          </h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Votre Centre de missions decouvre automatiquement des gisements et des repaires pirates toutes les <span className="text-foreground font-medium">{Math.max(1, 7 - centerLevel)}h</span> (6h au niv. 1, -1h/niveau, min 1h). Jusqu&apos;a <span className="text-foreground font-medium">3 gisements</span> et <span className="text-foreground font-medium">2 repaires pirates</span> peuvent etre decouverts simultanement.
+          </p>
+        </div>
+
+        {/* Gisements */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
+              <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
+            </svg>
+            Gisements miniers
+          </h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Un gisement reste exploitable <span className="text-foreground font-medium">tant qu&apos;il contient des ressources</span> — envoyez plusieurs flottes pour le vider completement. Le minage se deroule en phases : aller, prospection, extraction, puis retour.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span className="text-foreground font-medium">Pensez a envoyer des cargos</span> avec vos flottes ! Les ressources extraites sont limitees par la capacite de soute. La recherche <span className="text-foreground font-medium">Raffinage spatial</span> reduit les pertes de scories.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Vous pouvez annuler un gisement pour liberer un emplacement (cooldown 24h).
+          </p>
+        </div>
+
+        {/* Pirates */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 15s1.5-2 4-2 4 2 4 2" />
+              <path d="M9 9l.01 0M15 9l.01 0" />
+            </svg>
+            Repaires pirates
+          </h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Un repaire pirate est une <span className="text-foreground font-medium">mission de combat unique</span>. Le <span className="text-rose-300 font-medium">Facteur de Puissance (FP)</span> mesure la force d&apos;une flotte — comparez votre FP a celui des pirates avant d&apos;attaquer.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Detruisez les pirates pour recuperer leur butin et potentiellement des <span className="text-foreground font-medium">vaisseaux bonus</span>.
+          </p>
+        </div>
       </EntityDetailOverlay>
     </div>
   );
