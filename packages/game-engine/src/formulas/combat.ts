@@ -48,6 +48,7 @@ export interface CombatInput {
   defenseIds: Set<string>;
   rngSeed?: number;
   planetaryShieldCapacity?: number;
+  detailedLog?: boolean;
 }
 
 interface CombatUnit {
@@ -111,6 +112,35 @@ export interface CombatResult {
   repairedDefenses: Record<string, number>;
   attackerStats: CombatSideStats;
   defenderStats: CombatSideStats;
+  detailedLog?: DetailedCombatLog;
+}
+
+export interface CombatEvent {
+  round: number;
+  shooterId: string;
+  shooterType: string;
+  targetId: string;
+  targetType: string;
+  damage: number;
+  shieldAbsorbed: number;
+  armorBlocked: number;
+  hullDamage: number;
+  targetDestroyed: boolean;
+}
+
+export interface UnitSnapshot {
+  unitId: string;
+  unitType: string;
+  side: 'attacker' | 'defender';
+  shield: number;
+  hull: number;
+  destroyed: boolean;
+}
+
+export interface DetailedCombatLog {
+  events: CombatEvent[];
+  snapshots: UnitSnapshot[][];
+  initialUnits: UnitSnapshot[];
 }
 
 // ── Private helpers ──
@@ -208,6 +238,8 @@ function fireShot(
   attackerStats: CombatSideStats,
   defenderStats: CombatSideStats,
   targetDamageByType: Record<string, UnitTypeDamageReceived>,
+  round?: number,
+  eventAccumulator?: CombatEvent[],
 ): void {
   const damage = attacker.weaponDamage;
 
@@ -219,20 +251,37 @@ function fireShot(
     target.shield -= damage;
     defenderStats.shieldAbsorbed += damage;
     entry.shieldDamage += damage;
+    if (eventAccumulator && round !== undefined) {
+      eventAccumulator.push({
+        round,
+        shooterId: attacker.id,
+        shooterType: attacker.shipType,
+        targetId: target.id,
+        targetType: target.shipType,
+        damage,
+        shieldAbsorbed: damage,
+        armorBlocked: 0,
+        hullDamage: 0,
+        targetDestroyed: false,
+      });
+    }
     return;
   }
 
   let surplus = damage;
+  let shotShieldAbsorbed = 0;
   if (target.shield > 0) {
     surplus = damage - target.shield;
     defenderStats.shieldAbsorbed += target.shield;
     entry.shieldDamage += target.shield;
+    shotShieldAbsorbed = target.shield;
     target.shield = 0;
   }
 
   // Armor reduces surplus, minimum 1 damage if shot reaches hull
   const hullDamage = Math.max(surplus - target.armor, minDamage);
-  defenderStats.armorBlocked += surplus - hullDamage;
+  const shotArmorBlocked = surplus - hullDamage;
+  defenderStats.armorBlocked += shotArmorBlocked;
 
   target.hull -= hullDamage;
   entry.hullDamage += hullDamage;
@@ -249,6 +298,21 @@ function fireShot(
     target.destroyed = true;
     entry.destroyed += 1;
   }
+
+  if (eventAccumulator && round !== undefined) {
+    eventAccumulator.push({
+      round,
+      shooterId: attacker.id,
+      shooterType: attacker.shipType,
+      targetId: target.id,
+      targetType: target.shipType,
+      damage,
+      shieldAbsorbed: shotShieldAbsorbed,
+      armorBlocked: shotArmorBlocked,
+      hullDamage,
+      targetDestroyed: target.hull <= 0,
+    });
+  }
 }
 
 function fireSalvo(
@@ -261,11 +325,13 @@ function fireSalvo(
   defenderStats: CombatSideStats,
   rng: () => number,
   targetDamageByType: Record<string, UnitTypeDamageReceived>,
+  round?: number,
+  eventAccumulator?: CombatEvent[],
 ): void {
   for (let shot = 0; shot < attacker.shotCount; shot++) {
     const target = selectTarget(enemies, priorityCategoryId, categories, rng);
     if (!target) return;
-    fireShot(attacker, target, minDamage, attackerStats, defenderStats, targetDamageByType);
+    fireShot(attacker, target, minDamage, attackerStats, defenderStats, targetDamageByType, round, eventAccumulator);
   }
 }
 
@@ -369,6 +435,24 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const totalAttackerStats = emptySideStats();
   const totalDefenderStats = emptySideStats();
 
+  // Detailed logging accumulators (opt-in)
+  const eventAccumulator: CombatEvent[] | undefined = input.detailedLog ? [] : undefined;
+  const snapshotsPerRound: UnitSnapshot[][] | undefined = input.detailedLog ? [] : undefined;
+
+  function snapshotUnits(attackerUnits: CombatUnit[], defenderUnits: CombatUnit[]): UnitSnapshot[] {
+    const snapshots: UnitSnapshot[] = [];
+    for (const u of attackerUnits) {
+      snapshots.push({ unitId: u.id, unitType: u.shipType, side: 'attacker', shield: u.shield, hull: u.hull, destroyed: u.destroyed });
+    }
+    for (const u of defenderUnits) {
+      if (u.shipType === '__planetaryShield__') continue;
+      snapshots.push({ unitId: u.id, unitType: u.shipType, side: 'defender', shield: u.shield, hull: u.hull, destroyed: u.destroyed });
+    }
+    return snapshots;
+  }
+
+  const initialUnits = input.detailedLog ? snapshotUnits(attackers, defenders) : undefined;
+
   // Filter helper: exclude the planetary shield from gameplay-affecting checks
   const isNotShield = (u: CombatUnit) => u.shipType !== '__planetaryShield__';
 
@@ -390,7 +474,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
     // Attackers fire at defender clones
     for (const attacker of aliveAttackers) {
       fireSalvo(attacker, defendersForAttackerFire, attackerTargetPriority,
-        sortedCategories, combatConfig.minDamagePerHit, roundAttackerStats, roundDefenderStats, rng, defenderDamageByType);
+        sortedCategories, combatConfig.minDamagePerHit, roundAttackerStats, roundDefenderStats, rng, defenderDamageByType, round, eventAccumulator);
     }
 
     // Track planetary shield absorption before defenders fire
@@ -404,12 +488,17 @@ export function simulateCombat(input: CombatInput): CombatResult {
     // Defenders fire at attacker clones
     for (const defender of aliveDefenders) {
       fireSalvo(defender, attackersForDefenderFire, defenderTargetPriority,
-        sortedCategories, combatConfig.minDamagePerHit, roundDefenderStats, roundAttackerStats, rng, attackerDamageByType);
+        sortedCategories, combatConfig.minDamagePerHit, roundDefenderStats, roundAttackerStats, rng, attackerDamageByType, round, eventAccumulator);
     }
 
     // Apply damage from both phases back to real units
     applyDamage(defenders, defendersForAttackerFire);
     applyDamage(attackers, attackersForDefenderFire);
+
+    // Snapshot after damage, before shield regen
+    if (snapshotsPerRound) {
+      snapshotsPerRound.push(snapshotUnits(attackers, defenders));
+    }
 
     // Regenerate shields for survivors
     for (const unit of [...attackers, ...defenders]) {
@@ -478,6 +567,13 @@ export function simulateCombat(input: CombatInput): CombatResult {
   return {
     rounds, outcome, attackerLosses, defenderLosses, debris, repairedDefenses,
     attackerStats: totalAttackerStats, defenderStats: totalDefenderStats,
+    ...(input.detailedLog && initialUnits && snapshotsPerRound && eventAccumulator ? {
+      detailedLog: {
+        events: eventAccumulator,
+        snapshots: snapshotsPerRound,
+        initialUnits,
+      },
+    } : {}),
   };
 }
 
