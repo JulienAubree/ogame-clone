@@ -40,14 +40,20 @@ export function RoundDisplay({
   const [shotDetailOpen, setShotDetailOpen] = useState(false);
   const totalRounds = result.rounds.length;
 
-  // Build a map of unitId -> side from the detailed log's initial units
-  const unitSideMap = useMemo(() => {
-    const map = new Map<string, 'attacker' | 'defender'>();
-    if (!detailedLog?.initialUnits) return map;
+  // Build maps from the detailed log's initial units
+  const { unitSideMap, unitNumberMap } = useMemo(() => {
+    const sideMap = new Map<string, 'attacker' | 'defender'>();
+    const numberMap = new Map<string, number>();
+    if (!detailedLog?.initialUnits) return { unitSideMap: sideMap, unitNumberMap: numberMap };
+    // Count per (side, type) to assign sequential numbers
+    const counters: Record<string, number> = {};
     for (const u of detailedLog.initialUnits) {
-      map.set(u.unitId, u.side);
+      sideMap.set(u.unitId, u.side);
+      const key = `${u.side}:${u.unitType}`;
+      counters[key] = (counters[key] ?? 0) + 1;
+      numberMap.set(u.unitId, counters[key]);
     }
-    return map;
+    return { unitSideMap: sideMap, unitNumberMap: numberMap };
   }, [detailedLog?.initialUnits]);
 
   // Reset when result changes (defensive — consumers should also use key prop)
@@ -216,6 +222,7 @@ export function RoundDisplay({
                 events={detailedLog.events}
                 round={displayedRound}
                 unitSideMap={unitSideMap}
+                unitNumberMap={unitNumberMap}
                 gameConfig={gameConfig}
                 perspective={perspective}
               />
