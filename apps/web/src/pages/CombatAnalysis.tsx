@@ -5,6 +5,7 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { CombatAnalysisHeader } from '@/components/combat-analysis/CombatAnalysisHeader';
 import { CombatTimeline } from '@/components/combat-analysis/CombatTimeline';
 import { CombatAnalysisLayout } from '@/components/combat-analysis/CombatAnalysisLayout';
+import { CombatSummary } from '@/components/combat-analysis/CombatSummary';
 import type { DetailedCombatLog, RoundResult } from '@/components/combat-analysis/types';
 
 export default function CombatAnalysis() {
@@ -104,21 +105,40 @@ export default function CombatAnalysis() {
         totalRounds={totalRounds}
       />
 
-      <CombatAnalysisLayout
-        selectedRound={selectedRound}
-        selectedUnitType={selectedUnitType}
-        selectedSide={selectedSide}
-        expandedUnitId={expandedUnitId}
-        onSelectUnit={handleSelectUnit}
-        onExpandUnit={setExpandedUnitId}
-        roundResult={roundResult}
-        detailedLog={detailedLog}
-        attackerFleet={currentAttackerFleet}
-        defenderFleet={currentDefenderFleet}
-        initialAttackerFleet={initialAttackerFleet}
-        initialDefenderFleet={initialDefenderFleet}
-        gameConfig={gameConfig}
-      />
+      {selectedRound === totalRounds + 1 ? (
+        <CombatSummary
+          outcome={outcome}
+          perspective={perspective}
+          rounds={rounds}
+          attackerFleet={attackerFleet}
+          defenderFleet={defenderFleet}
+          defenderDefenses={defenderDefenses}
+          attackerLosses={(result.attackerLosses ?? {}) as Record<string, number>}
+          defenderLosses={(result.defenderLosses ?? {}) as Record<string, number>}
+          debris={result.debris as { minerai: number; silicium: number } | undefined}
+          pillage={result.pillage as Record<string, number> | undefined}
+          repairedDefenses={result.repairedDefenses as Record<string, number> | undefined}
+          attackerStats={result.attackerStats as any}
+          defenderStats={result.defenderStats as any}
+          gameConfig={gameConfig}
+        />
+      ) : (
+        <CombatAnalysisLayout
+          selectedRound={selectedRound}
+          selectedUnitType={selectedUnitType}
+          selectedSide={selectedSide}
+          expandedUnitId={expandedUnitId}
+          onSelectUnit={handleSelectUnit}
+          onExpandUnit={setExpandedUnitId}
+          roundResult={roundResult}
+          detailedLog={detailedLog}
+          attackerFleet={currentAttackerFleet}
+          defenderFleet={currentDefenderFleet}
+          initialAttackerFleet={initialAttackerFleet}
+          initialDefenderFleet={initialDefenderFleet}
+          gameConfig={gameConfig}
+        />
+      )}
     </div>
   );
 }

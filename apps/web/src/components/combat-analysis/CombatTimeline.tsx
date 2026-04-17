@@ -16,11 +16,12 @@ export function CombatTimeline({
   onSelectRound,
   totalRounds,
 }: CombatTimelineProps) {
-  // Round labels: 0 = "Init", 1..N = "R1"..
+  // Round labels: 0 = "Init", 1..N = "R1".., N+1 = "Fin"
   const labels: { index: number; label: string }[] = [];
   for (let i = 0; i <= totalRounds; i++) {
     labels.push({ index: i, label: i === 0 ? 'Init' : `R${i}` });
   }
+  labels.push({ index: totalRounds + 1, label: 'Fin' });
 
   // Selected round stats
   const roundData = selectedRound > 0 ? rounds[selectedRound - 1] : undefined;
@@ -64,7 +65,11 @@ export function CombatTimeline({
       </div>
 
       {/* Round summary stats */}
-      {selectedRound === 0 ? (
+      {selectedRound === totalRounds + 1 ? (
+        <div className="text-xs text-muted-foreground text-center">
+          Bilan de fin de combat
+        </div>
+      ) : selectedRound === 0 ? (
         <div className="text-xs text-muted-foreground text-center">
           Deploiement initial des forces
         </div>
