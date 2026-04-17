@@ -23,6 +23,7 @@ interface RoundShotDetailProps {
   unitNumberMap: Map<string, number>;
   gameConfig: any;
   perspective?: 'attacker' | 'defender';
+  onSelectUnit?: (unitId: string) => void;
 }
 
 /** Readable label: "Frégate #3" */
@@ -152,10 +153,12 @@ function IndividualShotRow({
   event,
   gameConfig,
   numberMap,
+  onSelectUnit,
 }: {
   event: CombatEvent;
   gameConfig: any;
   numberMap: Map<string, number>;
+  onSelectUnit?: (unitId: string) => void;
 }) {
   const targetLabel = unitLabel(event.targetId, event.targetType, gameConfig, numberMap);
 
@@ -164,7 +167,17 @@ function IndividualShotRow({
       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 shrink-0">
         <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
       </svg>
-      <span className="text-foreground truncate">{targetLabel}</span>
+      {onSelectUnit ? (
+        <button
+          type="button"
+          className="text-foreground truncate underline decoration-border/30 underline-offset-2 hover:text-blue-400 transition-colors text-left"
+          onClick={() => onSelectUnit(event.targetId)}
+        >
+          {targetLabel}
+        </button>
+      ) : (
+        <span className="text-foreground truncate">{targetLabel}</span>
+      )}
       <span className="ml-auto flex items-center gap-1.5 shrink-0">
         {event.shieldAbsorbed > 0 && <span className="text-cyan-400 font-mono">{fmt(event.shieldAbsorbed)}</span>}
         {event.hullDamage > 0 && <span className="text-orange-400 font-mono">{fmt(event.hullDamage)}</span>}
@@ -183,10 +196,12 @@ function ShooterBlock({
   group,
   gameConfig,
   numberMap,
+  onSelectUnit,
 }: {
   group: ShooterGroup;
   gameConfig: any;
   numberMap: Map<string, number>;
+  onSelectUnit?: (unitId: string) => void;
 }) {
   const label = unitLabel(group.shooterId, group.shooterType, gameConfig, numberMap);
   const totalShield = group.shots.reduce((s, e) => s + e.shieldAbsorbed, 0);
@@ -196,7 +211,17 @@ function ShooterBlock({
   return (
     <div className="rounded-md bg-white/[0.02] border border-border/10 px-2 py-1.5">
       <div className="flex items-center justify-between text-xs mb-0.5">
-        <span className="font-medium text-foreground">{label}</span>
+        {onSelectUnit ? (
+          <button
+            type="button"
+            className="font-medium text-foreground underline decoration-border/30 underline-offset-2 hover:text-blue-400 transition-colors"
+            onClick={() => onSelectUnit(group.shooterId)}
+          >
+            {label}
+          </button>
+        ) : (
+          <span className="font-medium text-foreground">{label}</span>
+        )}
         <span className="text-[10px] text-muted-foreground">
           {group.shots.length} tir{group.shots.length > 1 ? 's' : ''}
           {totalShield > 0 && <span className="text-cyan-400/70 ml-1">{fmt(totalShield)}</span>}
@@ -206,7 +231,7 @@ function ShooterBlock({
       </div>
       <div className="space-y-0">
         {group.shots.map((e, i) => (
-          <IndividualShotRow key={i} event={e} gameConfig={gameConfig} numberMap={numberMap} />
+          <IndividualShotRow key={i} event={e} gameConfig={gameConfig} numberMap={numberMap} onSelectUnit={onSelectUnit} />
         ))}
       </div>
     </div>
@@ -222,6 +247,7 @@ export function RoundShotDetail({
   unitNumberMap,
   gameConfig,
   perspective,
+  onSelectUnit,
 }: RoundShotDetailProps) {
   const [viewMode, setViewMode] = useState<'summary' | 'individual'>('summary');
 
@@ -295,14 +321,14 @@ export function RoundShotDetail({
             <div className="text-[10px] uppercase tracking-wider text-blue-400 font-semibold">{leftLabel}</div>
             {indLeft.length === 0
               ? <div className="text-[10px] text-muted-foreground/60">Aucun tir</div>
-              : indLeft.map((g) => <ShooterBlock key={g.shooterId} group={g} gameConfig={gameConfig} numberMap={unitNumberMap} />)
+              : indLeft.map((g) => <ShooterBlock key={g.shooterId} group={g} gameConfig={gameConfig} numberMap={unitNumberMap} onSelectUnit={onSelectUnit} />)
             }
           </div>
           <div className="space-y-1.5">
             <div className="text-[10px] uppercase tracking-wider text-rose-400 font-semibold">{rightLabel}</div>
             {indRight.length === 0
               ? <div className="text-[10px] text-muted-foreground/60">Aucun tir</div>
-              : indRight.map((g) => <ShooterBlock key={g.shooterId} group={g} gameConfig={gameConfig} numberMap={unitNumberMap} />)
+              : indRight.map((g) => <ShooterBlock key={g.shooterId} group={g} gameConfig={gameConfig} numberMap={unitNumberMap} onSelectUnit={onSelectUnit} />)
             }
           </div>
         </div>

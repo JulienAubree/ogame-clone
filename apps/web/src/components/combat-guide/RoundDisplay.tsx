@@ -4,6 +4,7 @@ import type { CombatResult } from '@exilium/game-engine';
 import { getUnitName } from '@/lib/entity-names';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { RoundShotDetail } from './RoundShotDetail';
+import { UnitTimeline } from './UnitTimeline';
 
 interface DetailedCombatLog {
   events: { round: number; shooterId: string; shooterType: string; targetId: string; targetType: string; damage: number; shieldAbsorbed: number; armorBlocked: number; hullDamage: number; targetDestroyed: boolean }[];
@@ -38,6 +39,7 @@ export function RoundDisplay({
   const { data: gameConfig } = useGameConfig();
   const [displayedRound, setDisplayedRound] = useState(0); // 0 = initial state
   const [shotDetailOpen, setShotDetailOpen] = useState(false);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const totalRounds = result.rounds.length;
 
   // Build maps from the detailed log's initial units
@@ -225,10 +227,26 @@ export function RoundDisplay({
                 unitNumberMap={unitNumberMap}
                 gameConfig={gameConfig}
                 perspective={perspective}
+                onSelectUnit={setSelectedUnitId}
               />
             </div>
           )}
         </div>
+      )}
+
+      {/* Unit timeline (click on a unit to see full history) */}
+      {selectedUnitId && detailedLog && (
+        <UnitTimeline
+          unitId={selectedUnitId}
+          events={detailedLog.events}
+          snapshots={detailedLog.snapshots}
+          initialUnits={detailedLog.initialUnits}
+          totalRounds={totalRounds}
+          unitNumberMap={unitNumberMap}
+          gameConfig={gameConfig}
+          onClose={() => setSelectedUnitId(null)}
+          onSelectUnit={setSelectedUnitId}
+        />
       )}
 
       {/* Manual controls if no auto-play */}
