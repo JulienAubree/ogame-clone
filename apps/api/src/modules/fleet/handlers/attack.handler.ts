@@ -417,7 +417,7 @@ export class AttackHandler implements MissionHandler {
         departureTime: fleetEvent.departureTime,
         completionTime: fleetEvent.arrivalTime,
         result: reportResult,
-        detailedLog: (result?.detailedLog as Record<string, unknown>) ?? null,
+        detailedLog: (result?.detailedLog as unknown as Record<string, unknown>) ?? null,
       });
       reportId = report.id;
       const defenderReportResult = { ...reportResult, perspective: 'defender' as const };
@@ -440,7 +440,7 @@ export class AttackHandler implements MissionHandler {
         departureTime: fleetEvent.departureTime,
         completionTime: fleetEvent.arrivalTime,
         result: defenderReportResult,
-        detailedLog: (result?.detailedLog as Record<string, unknown>) ?? null,
+        detailedLog: (result?.detailedLog as unknown as Record<string, unknown>) ?? null,
       });
       defenderReportId = defenderReport.id;
     }
