@@ -200,6 +200,7 @@ export class AttackHandler implements MissionHandler {
         shipIds: shipIdSet,
         defenseIds: defenseIdSet,
         planetaryShieldCapacity,
+        detailedLog: true,
       };
       result = simulateCombat(combatInput);
       outcome = result.outcome;
@@ -416,6 +417,7 @@ export class AttackHandler implements MissionHandler {
         departureTime: fleetEvent.departureTime,
         completionTime: fleetEvent.arrivalTime,
         result: reportResult,
+        detailedLog: (result?.detailedLog as Record<string, unknown>) ?? null,
       });
       reportId = report.id;
       const defenderReportResult = { ...reportResult, perspective: 'defender' as const };
@@ -438,6 +440,7 @@ export class AttackHandler implements MissionHandler {
         departureTime: fleetEvent.departureTime,
         completionTime: fleetEvent.arrivalTime,
         result: defenderReportResult,
+        detailedLog: (result?.detailedLog as Record<string, unknown>) ?? null,
       });
       defenderReportId = defenderReport.id;
     }

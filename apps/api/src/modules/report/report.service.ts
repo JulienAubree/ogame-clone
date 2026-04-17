@@ -17,6 +17,7 @@ export function createReportService(db: Database) {
       departureTime: Date;
       completionTime: Date;
       result: Record<string, unknown>;
+      detailedLog?: Record<string, unknown> | null;
     }) {
       const [report] = await db
         .insert(missionReports)
@@ -33,6 +34,7 @@ export function createReportService(db: Database) {
           departureTime: data.departureTime,
           completionTime: data.completionTime,
           result: data.result,
+          detailedLog: data.detailedLog ?? null,
         })
         .returning();
       return report;
@@ -106,6 +108,15 @@ export function createReportService(db: Database) {
       }
 
       return report ?? null;
+    },
+
+    async getDetailedLog(userId: string, reportId: string) {
+      const [report] = await db
+        .select({ detailedLog: missionReports.detailedLog })
+        .from(missionReports)
+        .where(and(eq(missionReports.id, reportId), eq(missionReports.userId, userId)))
+        .limit(1);
+      return report?.detailedLog ?? null;
     },
 
     async getByMessageId(userId: string, messageId: string) {

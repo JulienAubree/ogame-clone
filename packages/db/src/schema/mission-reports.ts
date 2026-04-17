@@ -18,6 +18,7 @@ export const missionReports = pgTable('mission_reports', {
   departureTime: timestamp('departure_time', { withTimezone: true }).notNull(),
   completionTime: timestamp('completion_time', { withTimezone: true }).notNull(),
   result: jsonb('result').notNull(),
+  detailedLog: jsonb('detailed_log'),
   read: boolean('read').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

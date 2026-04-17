@@ -48,6 +48,7 @@ export interface CombatInput {
   defenseIds: Set<string>;
   rngSeed?: number;
   planetaryShieldCapacity?: number;
+  detailedLog?: boolean;
 }
 
 interface CombatUnit {
@@ -111,6 +112,7 @@ export interface CombatResult {
   repairedDefenses: Record<string, number>;
   attackerStats: CombatSideStats;
   defenderStats: CombatSideStats;
+  detailedLog?: Record<string, unknown>;
 }
 
 // ── Private helpers ──

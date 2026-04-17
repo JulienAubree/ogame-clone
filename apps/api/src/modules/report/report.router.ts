@@ -27,6 +27,12 @@ export function createReportRouter(reportService: ReturnType<typeof createReport
         return reportService.getById(ctx.userId!, input.id);
       }),
 
+    detailedLog: protectedProcedure
+      .input(z.object({ reportId: z.string().uuid() }))
+      .query(async ({ ctx, input }) => {
+        return reportService.getDetailedLog(ctx.userId!, input.reportId);
+      }),
+
     byMessage: protectedProcedure
       .input(z.object({ messageId: z.string().uuid() }))
       .query(async ({ ctx, input }) => {
