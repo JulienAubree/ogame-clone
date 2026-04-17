@@ -143,7 +143,7 @@ export default function Fleet() {
       utils.planet.empire.invalidate();
       utils.tutorial.getCurrent.invalidate();
       await utils.fleet.movements.invalidate();
-      navigate('/fleet/movements');
+      navigate('/fleet');
     },
   });
 
