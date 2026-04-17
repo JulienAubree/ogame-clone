@@ -179,6 +179,7 @@ export default function ReportDetail() {
           missionType={report.missionType as 'attack' | 'pirate'}
           gameConfig={gameConfig}
           coordinates={coords}
+          reportId={report.id}
         />
       )}
       {report.missionType === 'mine' && (

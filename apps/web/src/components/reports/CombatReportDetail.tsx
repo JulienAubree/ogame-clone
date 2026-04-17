@@ -19,9 +19,10 @@ interface CombatReportDetailProps {
   missionType: 'attack' | 'pirate';
   gameConfig: any;
   coordinates?: { galaxy: number; system: number; position: number };
+  reportId?: string;
 }
 
-export function CombatReportDetail({ result, missionType, gameConfig, coordinates }: CombatReportDetailProps) {
+export function CombatReportDetail({ result, missionType, gameConfig, coordinates, reportId }: CombatReportDetailProps) {
   const [replayOpen, setReplayOpen] = useState(false);
 
   const outcome = result.outcome as string;
@@ -401,6 +402,22 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
           </div>
         );
       })()}
+
+      {/* Analyse button (attack only) */}
+      {missionType === 'attack' && reportId && (
+        <div className="flex justify-center">
+          <Link
+            to={`/reports/${reportId}/analysis`}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-500/20 px-4 py-2.5 text-sm font-semibold text-blue-400 transition-colors hover:bg-blue-500/30"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 21H4.6c-.56 0-.84 0-1.054-.109a1 1 0 0 1-.437-.437C3 20.24 3 19.96 3 19.4V3" />
+              <path d="m7 14 4-4 4 4 6-6" />
+            </svg>
+            Analyser le combat
+          </Link>
+        </div>
+      )}
 
       {/* Replay section (collapsible) */}
       {combatResultForReplay && combatResultForReplay.rounds.length > 0 && (
