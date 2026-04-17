@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { getUnitName } from '@/lib/entity-names';
 import { DamagePanel } from './DamagePanel';
+import { ShotLog } from './ShotLog';
 import { DeathsList } from './DeathsList';
 import { UnitGrid } from './UnitGrid';
 import type { CombatEvent, UnitSnapshot, DetailedCombatLog, RoundResult, UnitTypeHP } from './types';
@@ -29,6 +31,7 @@ export function UnitDetailPanel({
   expandedUnitId,
   onExpandUnit,
 }: UnitDetailPanelProps) {
+  const [damageView, setDamageView] = useState<'summary' | 'shots'>('summary');
   if (!selectedUnitType) {
     return (
       <div className="glass-card flex items-center justify-center p-8 min-h-[300px]">
@@ -170,13 +173,54 @@ export function UnitDetailPanel({
 
       {/* Damage panels (only for rounds > 0) */}
       {selectedRound > 0 && events.length > 0 && (
-        <DamagePanel
-          events={events}
-          unitType={selectedUnitType}
-          round={selectedRound}
-          side={selectedSide}
-          gameConfig={gameConfig}
-        />
+        <div className="space-y-2">
+          {/* View toggle */}
+          {detailedLog?.initialUnits && (
+            <div className="flex items-center gap-1 text-[10px]">
+              <button
+                type="button"
+                className={`px-2.5 py-1 rounded transition-colors ${damageView === 'summary' ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => setDamageView('summary')}
+              >
+                Resume
+              </button>
+              <button
+                type="button"
+                className={`px-2.5 py-1 rounded transition-colors ${damageView === 'shots' ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => setDamageView('shots')}
+              >
+                Tir par tir
+              </button>
+              {damageView === 'shots' && (
+                <span className="text-muted-foreground/50 ml-1">
+                  <span className="text-cyan-400/50">bouclier</span>{' / '}
+                  <span className="text-orange-400/50">coque</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {damageView === 'summary' && (
+            <DamagePanel
+              events={events}
+              unitType={selectedUnitType}
+              round={selectedRound}
+              side={selectedSide}
+              gameConfig={gameConfig}
+            />
+          )}
+
+          {damageView === 'shots' && detailedLog?.initialUnits && (
+            <ShotLog
+              events={events}
+              initialUnits={detailedLog.initialUnits}
+              unitType={selectedUnitType}
+              side={selectedSide}
+              round={selectedRound}
+              gameConfig={gameConfig}
+            />
+          )}
+        </div>
       )}
 
       {/* Deaths list */}
