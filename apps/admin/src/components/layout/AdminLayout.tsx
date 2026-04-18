@@ -5,7 +5,7 @@ import {
   Building2, FlaskConical, Rocket, Shield, Zap,
   Factory, Globe, Users, LogOut, LayoutGrid, Orbit,
   Skull, GraduationCap, Compass, Tag, Sparkles, MessageSquare, FileText, Bolt, Key,
-  Menu, X, CircleUserRound,
+  Menu, X, CircleUserRound, Megaphone,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -41,6 +41,7 @@ const NAV_SECTIONS = [
       { to: '/players', label: 'Gestion joueurs', icon: Users },
       { to: '/feedbacks', label: 'Feedback', icon: MessageSquare },
       { to: '/changelogs', label: 'Changelogs', icon: FileText },
+      { to: '/announcements', label: 'Annonces', icon: Megaphone },
     ],
   },
 ];

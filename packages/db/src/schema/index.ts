@@ -31,6 +31,7 @@ export * from './flagship-talents.js';
 export * from './flagship-cooldowns.js';
 export * from './feedbacks.js';
 export * from './changelogs.js';
+export * from './announcements.js';
 export * from './notification-preferences.js';
 export * from './biomes.js';
 export * from './exploration-reports.js';

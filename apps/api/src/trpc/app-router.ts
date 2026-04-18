@@ -57,6 +57,8 @@ import { createFeedbackService } from '../modules/feedback/feedback.service.js';
 import { createFeedbackRouter } from '../modules/feedback/feedback.router.js';
 import { createChangelogService } from '../modules/changelog/changelog.service.js';
 import { createChangelogRouter } from '../modules/changelog/changelog.router.js';
+import { createAnnouncementService } from '../modules/announcement/announcement.service.js';
+import { createAnnouncementRouter } from '../modules/announcement/announcement.router.js';
 import { createNotificationPreferencesService } from '../modules/notification/notification-preferences.service.js';
 import { createNotificationPreferencesRouter } from '../modules/notification/notification-preferences.router.js';
 import { createExplorationReportService } from '../modules/exploration-report/exploration-report.service.js';
@@ -101,6 +103,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis, dailyQuestService, exiliumService, talentService, gameEventService);
   const feedbackService = createFeedbackService(db);
   const changelogService = createChangelogService(db);
+  const announcementService = createAnnouncementService(db);
   const notificationPreferencesService = createNotificationPreferencesService(db);
   const explorationReportService = createExplorationReportService(db, resourceService, gameConfigService);
 
@@ -131,6 +134,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const dailyQuestRouter = createDailyQuestRouter(dailyQuestService, gameConfigService);
   const feedbackRouter = createFeedbackRouter(feedbackService, adminProcedure);
   const changelogRouter = createChangelogRouter(changelogService, adminProcedure);
+  const announcementRouter = createAnnouncementRouter(announcementService, adminProcedure);
   const notificationPreferencesRouter = createNotificationPreferencesRouter(notificationPreferencesService);
   const explorationReportRouter = createExplorationReportRouter(explorationReportService);
   const colonizationRouter = createColonizationRouter(colonizationService);
@@ -167,6 +171,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     dailyQuest: dailyQuestRouter,
     feedback: feedbackRouter,
     changelog: changelogRouter,
+    announcement: announcementRouter,
     notificationPreferences: notificationPreferencesRouter,
     explorationReport: explorationReportRouter,
     colonization: colonizationRouter,
