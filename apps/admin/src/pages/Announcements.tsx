@@ -77,7 +77,6 @@ export default function Announcements() {
   const deleteMutation = trpc.announcement.admin.delete.useMutation({
     onSuccess: async () => {
       await refetch();
-      setDeleteId(null);
     },
   });
 
@@ -179,7 +178,8 @@ export default function Announcements() {
                   <td>
                     <button
                       onClick={() => handleToggleActive(item)}
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                      disabled={setActiveMutation.isPending}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         item.active
                           ? 'bg-green-900/40 text-green-400 hover:bg-green-900/60'
                           : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700/80'
@@ -332,7 +332,10 @@ export default function Announcements() {
         confirmLabel="Supprimer"
         danger
         onConfirm={() => {
-          if (deleteId) deleteMutation.mutate({ id: deleteId });
+          if (!deleteId) return;
+          const id = deleteId;
+          setDeleteId(null);
+          deleteMutation.mutate({ id });
         }}
         onCancel={() => setDeleteId(null)}
       />
