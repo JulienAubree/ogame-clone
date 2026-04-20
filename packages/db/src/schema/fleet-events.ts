@@ -6,7 +6,7 @@ import { pveMissions } from './pve-missions.js';
 import { marketOffers } from './market-offers.js';
 
 export const fleetMissionEnum = pgEnum('fleet_mission', [
-  'transport', 'station', 'spy', 'attack', 'colonize', 'recycle', 'mine', 'pirate', 'trade', 'scan', 'explore', 'colonize_supply', 'colonize_reinforce',
+  'transport', 'station', 'spy', 'attack', 'colonize', 'recycle', 'mine', 'pirate', 'trade', 'scan', 'explore', 'colonize_supply', 'colonize_reinforce', 'abandon_return',
 ]);
 
 export const fleetPhaseEnum = pgEnum('fleet_phase', ['outbound', 'prospecting', 'mining', 'exploring', 'return']);
@@ -16,7 +16,7 @@ export const fleetStatusEnum = pgEnum('fleet_status', ['active', 'completed', 'r
 export const fleetEvents = pgTable('fleet_events', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  originPlanetId: uuid('origin_planet_id').notNull().references(() => planets.id, { onDelete: 'cascade' }),
+  originPlanetId: uuid('origin_planet_id').references(() => planets.id, { onDelete: 'set null' }),
   targetPlanetId: uuid('target_planet_id').references(() => planets.id, { onDelete: 'set null' }),
   targetGalaxy: smallint('target_galaxy').notNull(),
   targetSystem: smallint('target_system').notNull(),
