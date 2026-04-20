@@ -26,3 +26,12 @@ const envSchema = z.object({
 });
 
 export const env = envSchema.parse(process.env);
+
+// Fail fast when production uses a dev fallback for WEB_APP_URL. This powers
+// CORS, email links, and verification flows; a localhost default in prod is
+// almost certainly a missing .env entry.
+if (env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(env.WEB_APP_URL)) {
+  throw new Error(
+    `WEB_APP_URL must be set to a public URL in production (got "${env.WEB_APP_URL}").`,
+  );
+}

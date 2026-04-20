@@ -11,7 +11,27 @@ import { env } from './config/env.js';
 import { registerSSE } from './modules/notification/notification.sse.js';
 import { registerAssetUploadRoute } from './modules/admin/asset-upload.route.js';
 
-const server = Fastify({ logger: true, maxParamLength: 500 });
+const isProd = env.NODE_ENV === 'production';
+
+const server = Fastify({
+  maxParamLength: 500,
+  logger: {
+    level: isProd ? 'warn' : 'info',
+    // Redact anything that might contain a bearer token or short-lived SSE
+    // token. Pino's redact paths apply to the structured log object, so the
+    // common shapes produced by fastify's request logger are covered here.
+    redact: {
+      paths: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'req.query.token',
+        'headers.authorization',
+        'headers.cookie',
+      ],
+      censor: '[redacted]',
+    },
+  },
+});
 
 // Allow the configured web app URL plus localhost dev origins. We can't use
 // origin:true because it reflects any origin, which defeats CORS.
@@ -45,8 +65,7 @@ server.get('/health', async () => {
 
 const db = createDb(env.DATABASE_URL);
 const redis = new Redis(env.REDIS_URL);
-const JWT_SECRET = new TextEncoder().encode(env.JWT_SECRET);
-const appRouter = buildAppRouter(db, redis);
+const { router: appRouter, authService } = buildAppRouter(db, redis);
 
 await server.register(fastifyTRPCPlugin, {
   prefix: '/trpc',
@@ -56,7 +75,7 @@ await server.register(fastifyTRPCPlugin, {
   },
 });
 
-registerSSE(server, env.REDIS_URL, JWT_SECRET);
+registerSSE(server, env.REDIS_URL, redis, authService);
 registerAssetUploadRoute(server, db);
 
 try {

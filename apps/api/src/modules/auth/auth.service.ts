@@ -35,6 +35,8 @@ const EMAIL_VERIFY_RESEND_LIMIT = 3;
 const EMAIL_VERIFY_RESEND_WINDOW_SECONDS = 3600;
 /** Max concurrent refresh tokens per user. Oldest are evicted when exceeded. */
 const MAX_SESSIONS_PER_USER = 5;
+/** Lifetime of a single-use SSE ticket (seconds). Short to limit log exposure. */
+const SSE_TICKET_TTL_SECONDS = 60;
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -420,6 +422,27 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
       if (user.emailVerifiedAt) return; // Already verified — silent no-op.
 
       await sendVerificationEmail(user);
+    },
+
+    /**
+     * Issue a short-lived, single-use ticket for opening an SSE stream.
+     * The raw ticket goes to the caller; we store only its hash in Redis so
+     * server log leaks don't reveal the underlying bearer JWT (the prior design
+     * put the JWT directly in the /sse query string, where it ended up in access logs).
+     */
+    async issueSseToken(userId: string): Promise<string> {
+      const raw = randomBytes(32).toString('hex');
+      await redis.set(`sse-ticket:${hashToken(raw)}`, userId, 'EX', SSE_TICKET_TTL_SECONDS);
+      return raw;
+    },
+
+    /** Consume a ticket. Returns the owning userId on success, null on miss/expired. */
+    async consumeSseToken(rawToken: string): Promise<string | null> {
+      const key = `sse-ticket:${hashToken(rawToken)}`;
+      const userId = await redis.get(key);
+      if (!userId) return null;
+      await redis.del(key);
+      return userId;
     },
 
     async verifyAccessToken(token: string): Promise<{ userId: string }> {

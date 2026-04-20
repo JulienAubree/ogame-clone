@@ -89,5 +89,16 @@ export function createAuthRouter(
       await authService.resendVerification(ctx.userId!);
       return { ok: true };
     }),
+
+    /**
+     * Mint a short-lived SSE ticket. The browser's EventSource API cannot set
+     * custom headers, so we would otherwise have to pass the JWT in the URL.
+     * Instead, the client asks for this ticket over tRPC (Authorization header)
+     * and passes it to /sse, so the long-lived JWT never appears in access logs.
+     */
+    getSseToken: protectedProcedure.mutation(async ({ ctx }) => {
+      const token = await authService.issueSseToken(ctx.userId!);
+      return { token };
+    }),
   });
 }

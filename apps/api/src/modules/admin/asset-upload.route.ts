@@ -113,6 +113,9 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     }
 
     const { planetClassId } = request.params as { planetClassId: string };
+    if (!/^[a-z0-9_-]+$/i.test(planetClassId)) {
+      return reply.status(400).send({ error: 'Invalid planetClassId' });
+    }
     const indexes = listPlanetImageIndexes(planetClassId, env.ASSETS_DIR);
     const images = indexes.map((index) => ({
       index,
@@ -146,6 +149,9 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     }
 
     const { hullId } = request.params as { hullId: string };
+    if (!/^[a-z0-9_-]+$/i.test(hullId)) {
+      return reply.status(400).send({ error: 'Invalid hullId' });
+    }
     const indexes = listFlagshipImageIndexes(hullId, env.ASSETS_DIR);
     const images = indexes.map((index) => ({
       index,

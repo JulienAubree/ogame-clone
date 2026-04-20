@@ -141,7 +141,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const explorationReportRouter = createExplorationReportRouter(explorationReportService);
   const colonizationRouter = createColonizationRouter(colonizationService);
 
-  return router({
+  const appRouter = router({
     health: publicProcedure.query(() => ({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -178,6 +178,8 @@ export function buildAppRouter(db: Database, redis: Redis) {
     explorationReport: explorationReportRouter,
     colonization: colonizationRouter,
   });
+
+  return { router: appRouter, authService };
 }
 
-export type AppRouter = ReturnType<typeof buildAppRouter>;
+export type AppRouter = ReturnType<typeof buildAppRouter>['router'];

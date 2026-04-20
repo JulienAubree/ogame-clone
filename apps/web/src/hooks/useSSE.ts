@@ -6,6 +6,27 @@ type SSEHandler = (event: { type: string; payload: Record<string, unknown> }) =>
 const INITIAL_RETRY_MS = 1_000;
 const MAX_RETRY_MS = 30_000;
 
+// EventSource cannot set custom headers, so we exchange the JWT for a
+// short-lived single-use ticket and put that in the URL instead. This keeps
+// the long-lived access token out of server access logs.
+async function fetchSseTicket(accessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch('/trpc/auth.getSseToken', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ json: {} }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.result?.data?.json?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function useSSE(onEvent: SSEHandler) {
   const token = useAuthStore((s) => s.accessToken);
   const onEventRef = useRef(onEvent);
@@ -14,15 +35,35 @@ export function useSSE(onEvent: SSEHandler) {
   const esRef = useRef<EventSource | null>(null);
   const retryDelay = useRef(INITIAL_RETRY_MS);
   const retryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Invalidates in-flight ticket fetches when the hook reconnects or unmounts.
+  const generationRef = useRef(0);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!token) return;
 
-    // Clean up previous connection
     esRef.current?.close();
+    esRef.current = null;
     clearTimeout(retryTimer.current);
 
-    const es = new EventSource(`/sse?token=${token}`);
+    const generation = ++generationRef.current;
+
+    const ticket = await fetchSseTicket(token);
+    if (generation !== generationRef.current) return;
+
+    const scheduleRetry = () => {
+      const delay = retryDelay.current;
+      retryDelay.current = Math.min(delay * 2, MAX_RETRY_MS);
+      retryTimer.current = setTimeout(() => {
+        void connect();
+      }, delay);
+    };
+
+    if (!ticket) {
+      scheduleRetry();
+      return;
+    }
+
+    const es = new EventSource(`/sse?token=${ticket}`);
     esRef.current = es;
 
     es.onopen = () => {
@@ -40,28 +81,24 @@ export function useSSE(onEvent: SSEHandler) {
 
     es.onerror = () => {
       es.close();
-      esRef.current = null;
-
-      // Reconnect with exponential backoff
-      const delay = retryDelay.current;
-      retryDelay.current = Math.min(delay * 2, MAX_RETRY_MS);
-      retryTimer.current = setTimeout(connect, delay);
+      if (esRef.current === es) esRef.current = null;
+      scheduleRetry();
     };
   }, [token]);
 
   useEffect(() => {
-    connect();
+    void connect();
 
-    // Reconnect when tab becomes visible again
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && !esRef.current) {
         retryDelay.current = INITIAL_RETRY_MS;
-        connect();
+        void connect();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      generationRef.current++;
       esRef.current?.close();
       esRef.current = null;
       clearTimeout(retryTimer.current);
