@@ -12,4 +12,5 @@ export enum MissionType {
   Explore = 'explore',
   ColonizeSupply = 'colonize_supply',
   ColonizeReinforce = 'colonize_reinforce',
+  AbandonReturn = 'abandon_return',
 }

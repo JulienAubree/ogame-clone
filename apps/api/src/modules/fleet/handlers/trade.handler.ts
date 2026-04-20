@@ -313,9 +313,11 @@ export class TradeHandler implements MissionHandler {
         if (ctx.reportService) {
           const config = await ctx.gameConfigService.getFullConfig();
           const shipStatsMap = buildShipStatsMap(config);
-          const [originPlanet] = await ctx.db.select({
-            galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
-          }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+          const [originPlanet] = fleetEvent.originPlanetId
+            ? await ctx.db.select({
+                galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
+              }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1)
+            : [];
 
           await ctx.reportService.create({
             userId: fleetEvent.userId,

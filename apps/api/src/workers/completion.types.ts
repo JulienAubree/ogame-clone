@@ -15,7 +15,7 @@ export type BuildCompletionResult = {
 
 export type FleetCompletionResult = {
   userId: string;
-  planetId: string;
+  planetId: string | null;
   mission: string;
   eventType: string;
   notificationPayload: Record<string, unknown>;

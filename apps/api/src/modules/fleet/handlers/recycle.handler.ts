@@ -41,9 +41,11 @@ export class RecycleHandler implements MissionHandler {
       if (ctx.reportService) {
         const config = await ctx.gameConfigService.getFullConfig();
         const shipStatsMap = buildShipStatsMap(config);
-        const [originPlanet] = await ctx.db.select({
-          galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
-        }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+        const [originPlanet] = fleetEvent.originPlanetId
+          ? await ctx.db.select({
+              galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
+            }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1)
+          : [];
         const report = await ctx.reportService.create({
           userId: fleetEvent.userId,
           fleetEventId: fleetEvent.id,
@@ -134,12 +136,14 @@ export class RecycleHandler implements MissionHandler {
     const coords = `[${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}]`;
 
     // Fetch origin planet for report
-    const [originPlanet] = await ctx.db.select({
-      galaxy: planets.galaxy,
-      system: planets.system,
-      position: planets.position,
-      name: planets.name,
-    }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+    const [originPlanet] = fleetEvent.originPlanetId
+      ? await ctx.db.select({
+          galaxy: planets.galaxy,
+          system: planets.system,
+          position: planets.position,
+          name: planets.name,
+        }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1)
+      : [];
 
     // Create mission report
     let reportId: string | undefined;

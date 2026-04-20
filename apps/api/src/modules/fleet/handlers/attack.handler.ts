@@ -109,9 +109,11 @@ export class AttackHandler implements MissionHandler {
     if (!targetPlanet) {
       let reportId: string | undefined;
       if (ctx.reportService) {
-        const [originPlanet] = await ctx.db.select({
-          galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
-        }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+        const [originPlanet] = fleetEvent.originPlanetId
+          ? await ctx.db.select({
+              galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
+            }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1)
+          : [];
         const report = await ctx.reportService.create({
           userId: fleetEvent.userId,
           fleetEventId: fleetEvent.id,
@@ -343,12 +345,14 @@ export class AttackHandler implements MissionHandler {
     }
 
     // Fetch origin planet for report
-    const [originPlanet] = await ctx.db.select({
-      galaxy: planets.galaxy,
-      system: planets.system,
-      position: planets.position,
-      name: planets.name,
-    }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+    const [originPlanet] = fleetEvent.originPlanetId
+      ? await ctx.db.select({
+          galaxy: planets.galaxy,
+          system: planets.system,
+          position: planets.position,
+          name: planets.name,
+        }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1)
+      : [];
 
     // Compute FP for both sides
     const { attackerFP, defenderFP } = computeBothFP(config, ships, defenderFleet, defenderDefenses, shipCombatConfigs);

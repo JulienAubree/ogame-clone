@@ -1,8 +1,20 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createPlanetService } from './planet.service.js';
+import type { createPlanetAbandonService } from './planet-abandon.service.js';
 
-export function createPlanetRouter(planetService: ReturnType<typeof createPlanetService>) {
+const abandonInputSchema = z.object({
+  planetId: z.string().uuid(),
+  destinationPlanetId: z.string().uuid(),
+}).refine(
+  (v) => v.planetId !== v.destinationPlanetId,
+  { message: 'La destination doit être différente de la planète abandonnée', path: ['destinationPlanetId'] },
+);
+
+export function createPlanetRouter(
+  planetService: ReturnType<typeof createPlanetService>,
+  abandonService: ReturnType<typeof createPlanetAbandonService>,
+) {
   return router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return planetService.listPlanets(ctx.userId!);
@@ -37,5 +49,17 @@ export function createPlanetRouter(planetService: ReturnType<typeof createPlanet
     empire: protectedProcedure.query(async ({ ctx }) => {
       return planetService.getEmpireOverview(ctx.userId!);
     }),
+
+    abandonPreview: protectedProcedure
+      .input(abandonInputSchema)
+      .query(async ({ ctx, input }) => {
+        return abandonService.preview(ctx.userId!, input.planetId, input.destinationPlanetId);
+      }),
+
+    abandon: protectedProcedure
+      .input(abandonInputSchema)
+      .mutation(async ({ ctx, input }) => {
+        return abandonService.abandon(ctx.userId!, input.planetId, input.destinationPlanetId);
+      }),
   });
 }

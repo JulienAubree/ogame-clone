@@ -13,6 +13,7 @@ import { RecycleReportDetail } from '@/components/reports/RecycleReportDetail';
 import { ExploreReportDetail } from '@/components/reports/ExploreReportDetail';
 import { TradeReportDetail } from '@/components/reports/TradeReportDetail';
 import { TransportReportDetail } from '@/components/reports/TransportReportDetail';
+import { AbandonReportDetail } from '@/components/reports/AbandonReportDetail';
 import { CoordsLink } from '@/components/common/CoordsLink';
 
 function formatDate(date: string | Date) {
@@ -195,6 +196,9 @@ export default function ReportDetail() {
       )}
       {report.missionType === 'transport' && (
         <TransportReportDetail result={result} coordinates={coords} />
+      )}
+      {report.missionType === 'abandon_return' && (
+        <AbandonReportDetail result={result} gameConfig={gameConfig} />
       )}
     </div>
   );

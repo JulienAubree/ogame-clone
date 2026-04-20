@@ -47,7 +47,7 @@ export interface ResourceCargo {
 export type FleetEvent = {
   id: string;
   userId: string;
-  originPlanetId: string;
+  originPlanetId: string | null;
   targetPlanetId: string | null;
   targetGalaxy: number;
   targetSystem: number;
