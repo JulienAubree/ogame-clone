@@ -29,6 +29,7 @@ export function createUserService(db: Database, assetsDir: string) {
         seekingAlliance: users.seekingAlliance,
         profileVisibility: users.profileVisibility,
         createdAt: users.createdAt,
+        emailVerifiedAt: users.emailVerifiedAt,
       }).from(users).where(eq(users.id, userId)).limit(1);
       if (!user) throw new TRPCError({ code: 'NOT_FOUND' });
 

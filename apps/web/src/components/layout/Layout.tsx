@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/Toaster';
 import { UpdatePrompt } from '@/components/pwa/UpdatePrompt';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { AnnouncementBanner } from './AnnouncementBanner';
+import { EmailVerificationBanner } from './EmailVerificationBanner';
 import { ChatOverlay } from '@/components/chat/ChatOverlay';
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
 import { trpc } from '@/trpc';
@@ -71,6 +72,7 @@ export function Layout() {
       <div className="flex flex-1 flex-col min-h-0 lg:ml-56">
         <TopBar planetId={resolvedPlanetId} planets={planets ?? []} />
         <OfflineBanner />
+        <EmailVerificationBanner />
         <AnnouncementBanner />
         <ResourceBar planetId={resolvedPlanetId} />
         <HostileAlertBanner hostileFleets={hostileFleets} fixed />

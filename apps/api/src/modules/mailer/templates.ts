@@ -42,6 +42,25 @@ function button(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;padding:12px 24px;background:${BUTTON_BG};color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">${label}</a>`;
 }
 
+export function emailVerificationEmail(params: { username: string; verifyUrl: string; expiresInHours: number }) {
+  const subject = 'Vérifiez votre adresse email Exilium';
+  const html = wrap(subject, `
+    <h2 style="margin:0 0 16px 0;font-size:18px;">Bienvenue ${params.username} !</h2>
+    <p>Merci d'avoir rejoint Exilium. Pour finaliser la création de votre compte, confirmez votre adresse email en cliquant sur le bouton ci-dessous&nbsp;:</p>
+    <p style="margin:24px 0;">${button(params.verifyUrl, 'Vérifier mon email')}</p>
+    <p style="color:${MUTED};font-size:13px;">Ce lien est valable ${params.expiresInHours} heures. Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.</p>
+    <p style="color:${MUTED};font-size:13px;word-break:break-all;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br/><a href="${params.verifyUrl}" style="color:${ACCENT};">${params.verifyUrl}</a></p>
+  `);
+  const text = `Bienvenue ${params.username} !
+
+Merci d'avoir rejoint Exilium. Pour finaliser la création de votre compte, vérifiez votre email en ouvrant ce lien (valable ${params.expiresInHours} h) :
+
+${params.verifyUrl}
+
+Si vous n'êtes pas à l'origine de cette inscription, ignorez cet email.`;
+  return { subject, html, text };
+}
+
 export function passwordResetEmail(params: { username: string; resetUrl: string; expiresInMinutes: number }) {
   const subject = 'Réinitialisation de votre mot de passe Exilium';
   const html = wrap(subject, `

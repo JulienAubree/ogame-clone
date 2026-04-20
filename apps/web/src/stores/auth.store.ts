@@ -5,6 +5,7 @@ interface AuthUser {
   email: string;
   username: string;
   avatarId?: string | null;
+  emailVerifiedAt?: string | null;
 }
 
 interface AuthState {
@@ -13,6 +14,7 @@ interface AuthState {
   user: AuthUser | null;
   setAuth: (accessToken: string, refreshToken: string, user: AuthUser) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  setUser: (user: AuthUser) => void;
   clearAuth: () => void;
 }
 
@@ -32,6 +34,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     set({ accessToken, refreshToken });
+  },
+
+  setUser: (user) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ user });
   },
 
   clearAuth: () => {

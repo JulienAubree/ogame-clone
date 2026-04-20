@@ -3,13 +3,13 @@ import { hash, verify } from 'argon2';
 import { SignJWT, jwtVerify } from 'jose';
 import { randomBytes, createHash } from 'crypto';
 import { TRPCError } from '@trpc/server';
-import { users, refreshTokens, loginEvents, passwordResetTokens } from '@exilium/db';
+import { users, refreshTokens, loginEvents, passwordResetTokens, emailVerificationTokens } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
 import { env } from '../../config/env.js';
 import { enforceRateLimit } from '../../lib/rate-limit.js';
 import type { MailerService } from '../mailer/mailer.service.js';
-import { passwordResetEmail } from '../mailer/templates.js';
+import { passwordResetEmail, emailVerificationEmail } from '../mailer/templates.js';
 
 const JWT_SECRET = new TextEncoder().encode(env.JWT_SECRET);
 
@@ -27,6 +27,12 @@ const PASSWORD_RESET_EXPIRES_MINUTES = 30;
 const PASSWORD_RESET_PER_EMAIL_LIMIT = 3;
 /** Window (seconds) for PASSWORD_RESET_PER_EMAIL_LIMIT. */
 const PASSWORD_RESET_PER_EMAIL_WINDOW_SECONDS = 3600;
+/** How long an email verification token stays valid. */
+const EMAIL_VERIFY_EXPIRES_HOURS = 24;
+/** Max verification resend requests per user per hour. */
+const EMAIL_VERIFY_RESEND_LIMIT = 3;
+/** Window (seconds) for EMAIL_VERIFY_RESEND_LIMIT. */
+const EMAIL_VERIFY_RESEND_WINDOW_SECONDS = 3600;
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -73,6 +79,28 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
     });
   }
 
+  /** Generate a fresh verification token and email the user. Mailer errors are swallowed. */
+  async function sendVerificationEmail(user: { id: string; email: string; username: string }) {
+    const rawToken = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + EMAIL_VERIFY_EXPIRES_HOURS * 3600_000);
+    await db.insert(emailVerificationTokens).values({
+      userId: user.id,
+      tokenHash: hashToken(rawToken),
+      expiresAt,
+    });
+    const verifyUrl = `${env.WEB_APP_URL.replace(/\/$/, '')}/verify-email?token=${rawToken}`;
+    const mail = emailVerificationEmail({
+      username: user.username,
+      verifyUrl,
+      expiresInHours: EMAIL_VERIFY_EXPIRES_HOURS,
+    });
+    try {
+      await mailer.send({ to: user.email, subject: mail.subject, html: mail.html, text: mail.text });
+    } catch (err) {
+      console.error('[auth] verification email failed:', err);
+    }
+  }
+
   return {
     async register(email: string, username: string, password: string, ctx: AuthContext = {}) {
       await rateLimitAuth('register', ctx);
@@ -84,6 +112,10 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
         .returning({ id: users.id, email: users.email, username: users.username });
 
       if (!user) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+      // Fire-and-log: don't block registration if the mailer is misconfigured.
+      await sendVerificationEmail(user);
+
       return user;
     },
 
@@ -175,7 +207,14 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
       return {
         accessToken,
         refreshToken: rawRefresh,
-        user: { id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin, avatarId: user.avatarId },
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          isAdmin: user.isAdmin,
+          avatarId: user.avatarId,
+          emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+        },
       };
     },
 
@@ -310,6 +349,59 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
 
       // Revoke all existing sessions — force re-login everywhere.
       await db.delete(refreshTokens).where(eq(refreshTokens.userId, stored.userId));
+    },
+
+    /** Consume a verification token and mark the user's email as verified. Idempotent-ish: already-verified users succeed silently. */
+    async verifyEmail(rawToken: string) {
+      const tokenHash = hashToken(rawToken);
+      const [stored] = await db
+        .select()
+        .from(emailVerificationTokens)
+        .where(
+          and(
+            eq(emailVerificationTokens.tokenHash, tokenHash),
+            isNull(emailVerificationTokens.usedAt),
+            gt(emailVerificationTokens.expiresAt, new Date()),
+          ),
+        )
+        .limit(1);
+
+      if (!stored) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Lien invalide ou expiré. Demandez un nouveau lien de vérification.',
+        });
+      }
+
+      await db
+        .update(users)
+        .set({ emailVerifiedAt: sql`now()` })
+        .where(eq(users.id, stored.userId));
+
+      await db
+        .update(emailVerificationTokens)
+        .set({ usedAt: sql`now()` })
+        .where(eq(emailVerificationTokens.id, stored.id));
+    },
+
+    /** Resend a verification email to the current user. Rate-limited per-user to prevent spam. */
+    async resendVerification(userId: string) {
+      await enforceRateLimit(redis, {
+        key: `ratelimit:auth:verify-resend:${userId}`,
+        limit: EMAIL_VERIFY_RESEND_LIMIT,
+        windowSeconds: EMAIL_VERIFY_RESEND_WINDOW_SECONDS,
+      });
+
+      const [user] = await db
+        .select({ id: users.id, email: users.email, username: users.username, emailVerifiedAt: users.emailVerifiedAt })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (user.emailVerifiedAt) return; // Already verified — silent no-op.
+
+      await sendVerificationEmail(user);
     },
 
     async verifyAccessToken(token: string): Promise<{ userId: string }> {

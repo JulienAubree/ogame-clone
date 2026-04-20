@@ -8,7 +8,7 @@ Audit initial de l'auth (voir fin du document pour l'état des lieux). Ce
 plan couvre les améliorations séquentielles, regroupées en 3 phases selon
 leurs dépendances.
 
-## Phase 1 — Sans email (on peut faire tout de suite)
+## Phase 1 — Sans email (on peut faire tout de suite) ✅
 
 Dépendances : Redis (déjà en place via BullMQ/ioredis).
 
@@ -33,7 +33,7 @@ Dépendances : Redis (déjà en place via BullMQ/ioredis).
 - Colonne `users.last_login_at` mise à jour sur succès
 - Support futur : détection d'anomalies, "nouvelle connexion depuis X"
 
-## Phase 2 — Setup email (bloquant pour la suite)
+## Phase 2 — Setup email (bloquant pour la suite) ✅
 
 ### 2.1 Provider
 
@@ -48,9 +48,9 @@ Dépendances : Redis (déjà en place via BullMQ/ioredis).
 - Template de base (header/footer Exilium)
 - Log d'envoi (succès/échec)
 
-## Phase 3 — Flows qui ont besoin d'email
+## Phase 3 — Flows qui ont besoin d'email ✅
 
-### 3.1 Password reset
+### 3.1 Password reset ✅
 
 - Table `password_reset_tokens` (userId, tokenHash, expiresAt)
 - Endpoint `auth.requestPasswordReset(email)` — toujours renvoyer OK (ne pas leak l'existence)
@@ -58,7 +58,7 @@ Dépendances : Redis (déjà en place via BullMQ/ioredis).
 - Page frontend `/forgot-password` + `/reset-password?token=...`
 - Invalider tous les refresh tokens du user après reset
 
-### 3.2 Email verification
+### 3.2 Email verification ✅
 
 - Colonne `users.email_verified_at timestamp nullable`
 - Envoi automatique d'email à l'inscription

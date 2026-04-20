@@ -62,6 +62,11 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorFallback />,
   },
   {
+    path: '/verify-email',
+    lazy: lazyLoad(() => import('./pages/VerifyEmail')),
+    errorElement: <RouteErrorFallback />,
+  },
+  {
     path: '/',
     element: (
       <AuthGuard>

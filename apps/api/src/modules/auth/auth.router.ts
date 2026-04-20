@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../../trpc/router.js';
+import { publicProcedure, protectedProcedure, router } from '../../trpc/router.js';
 import type { createAuthService, AuthContext } from './auth.service.js';
 import type { createPlanetService } from '../planet/planet.service.js';
 import type { Context } from '../../trpc/context.js';
@@ -77,5 +77,17 @@ export function createAuthRouter(
         await authService.resetPassword(input.token, input.password);
         return { ok: true };
       }),
+
+    verifyEmail: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        await authService.verifyEmail(input.token);
+        return { ok: true };
+      }),
+
+    resendVerification: protectedProcedure.mutation(async ({ ctx }) => {
+      await authService.resendVerification(ctx.userId!);
+      return { ok: true };
+    }),
   });
 }
