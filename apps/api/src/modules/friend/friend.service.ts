@@ -5,6 +5,10 @@ import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
 import { publishNotification } from '../notification/notification.publisher.js';
 import type { createGameEventService } from '../game-event/game-event.service.js';
+import { enforceRateLimit } from '../../lib/rate-limit.js';
+
+const FRIEND_REQUEST_LIMIT = 10;
+const FRIEND_REQUEST_WINDOW_SECONDS = 3600;
 
 export function createFriendService(
   db: Database,
@@ -75,6 +79,12 @@ export function createFriendService(
       if (requesterId === addresseeId) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Auto-demande impossible' });
       }
+
+      await enforceRateLimit(redis, {
+        key: `ratelimit:friend:request:${requesterId}`,
+        limit: FRIEND_REQUEST_LIMIT,
+        windowSeconds: FRIEND_REQUEST_WINDOW_SECONDS,
+      });
 
       const [existing] = await db.select()
         .from(friendships)

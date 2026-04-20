@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Redis from 'ioredis';
@@ -12,7 +13,28 @@ import { registerAssetUploadRoute } from './modules/admin/asset-upload.route.js'
 
 const server = Fastify({ logger: true, maxParamLength: 500 });
 
-await server.register(cors, { origin: true });
+// Allow the configured web app URL plus localhost dev origins. We can't use
+// origin:true because it reflects any origin, which defeats CORS.
+const allowedOrigins = new Set<string>([
+  env.WEB_APP_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+]);
+
+await server.register(cors, {
+  origin(origin, cb) {
+    // Same-origin or non-browser requests have no Origin header — allow them.
+    if (!origin) return cb(null, true);
+    cb(null, allowedOrigins.has(origin));
+  },
+  credentials: true,
+});
+
+// Helmet applies sane security headers (HSTS, X-Frame-Options, etc.).
+// CSP is disabled for now — we serve uploaded assets and the Vite dev server
+// from cross-origin, which would require a per-environment policy to tune.
+await server.register(helmet, { contentSecurityPolicy: false });
+
 await server.register(multipart, {
   limits: { fileSize: 10 * 1024 * 1024 },
 });

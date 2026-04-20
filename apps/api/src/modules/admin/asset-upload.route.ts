@@ -213,6 +213,10 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     }
 
     const { index } = request.params as { index: string };
+    // Harden against path traversal: accept digits only.
+    if (!/^\d+$/.test(index)) {
+      return reply.status(400).send({ error: 'Invalid index' });
+    }
     const dir = join(env.ASSETS_DIR, 'avatars');
     const heroPath = join(dir, `${index}.webp`);
 

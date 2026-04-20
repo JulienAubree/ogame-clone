@@ -1,4 +1,4 @@
-import { eq, sql, and, isNull, gt } from 'drizzle-orm';
+import { eq, sql, and, isNull, gt, desc, notInArray } from 'drizzle-orm';
 import { hash, verify } from 'argon2';
 import { SignJWT, jwtVerify } from 'jose';
 import { randomBytes, createHash } from 'crypto';
@@ -33,6 +33,8 @@ const EMAIL_VERIFY_EXPIRES_HOURS = 24;
 const EMAIL_VERIFY_RESEND_LIMIT = 3;
 /** Window (seconds) for EMAIL_VERIFY_RESEND_LIMIT. */
 const EMAIL_VERIFY_RESEND_WINDOW_SECONDS = 3600;
+/** Max concurrent refresh tokens per user. Oldest are evicted when exceeded. */
+const MAX_SESSIONS_PER_USER = 5;
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -99,6 +101,21 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
     } catch (err) {
       console.error('[auth] verification email failed:', err);
     }
+  }
+
+  /** Enforce per-user session cap: keep the N most recent tokens, drop the rest. */
+  async function evictExcessSessions(userId: string) {
+    const keep = await db
+      .select({ id: refreshTokens.id })
+      .from(refreshTokens)
+      .where(eq(refreshTokens.userId, userId))
+      .orderBy(desc(refreshTokens.createdAt))
+      .limit(MAX_SESSIONS_PER_USER);
+    if (keep.length < MAX_SESSIONS_PER_USER) return;
+    const keepIds = keep.map((r) => r.id);
+    await db
+      .delete(refreshTokens)
+      .where(and(eq(refreshTokens.userId, userId), notInArray(refreshTokens.id, keepIds)));
   }
 
   return {
@@ -203,6 +220,7 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
         tokenHash: hashToken(rawRefresh),
         expiresAt,
       });
+      await evictExcessSessions(user.id);
 
       return {
         accessToken,

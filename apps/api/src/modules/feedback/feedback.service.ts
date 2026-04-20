@@ -2,8 +2,15 @@ import { eq, and, ne, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { feedbacks, feedbackVotes, feedbackComments, users } from '@exilium/db';
 import type { Database } from '@exilium/db';
+import type Redis from 'ioredis';
+import { enforceRateLimit } from '../../lib/rate-limit.js';
 
-export function createFeedbackService(db: Database) {
+const FEEDBACK_CREATE_LIMIT = 5;
+const FEEDBACK_CREATE_WINDOW_SECONDS = 3600;
+const FEEDBACK_COMMENT_LIMIT = 20;
+const FEEDBACK_COMMENT_WINDOW_SECONDS = 3600;
+
+export function createFeedbackService(db: Database, redis: Redis) {
   return {
     async list(options?: {
       type?: 'bug' | 'idea' | 'feedback';
@@ -126,6 +133,11 @@ export function createFeedbackService(db: Database) {
     },
 
     async create(userId: string, input: { type: 'bug' | 'idea' | 'feedback'; title: string; description: string }) {
+      await enforceRateLimit(redis, {
+        key: `ratelimit:feedback:create:${userId}`,
+        limit: FEEDBACK_CREATE_LIMIT,
+        windowSeconds: FEEDBACK_CREATE_WINDOW_SECONDS,
+      });
       const [created] = await db
         .insert(feedbacks)
         .values({
@@ -174,6 +186,13 @@ export function createFeedbackService(db: Database) {
     },
 
     async comment(userId: string, feedbackId: string, content: string, isAdmin: boolean = false) {
+      if (!isAdmin) {
+        await enforceRateLimit(redis, {
+          key: `ratelimit:feedback:comment:${userId}`,
+          limit: FEEDBACK_COMMENT_LIMIT,
+          windowSeconds: FEEDBACK_COMMENT_WINDOW_SECONDS,
+        });
+      }
       const [feedback] = await db
         .select({ id: feedbacks.id })
         .from(feedbacks)

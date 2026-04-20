@@ -103,7 +103,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const playerAdminService = createPlayerAdminService(db, fleetQueue);
   const tutorialService = createTutorialService(db, pveService, exiliumService);
   const marketService = createMarketService(db, resourceService, gameConfigService, marketQueue, redis, dailyQuestService, exiliumService, talentService, gameEventService);
-  const feedbackService = createFeedbackService(db);
+  const feedbackService = createFeedbackService(db, redis);
   const changelogService = createChangelogService(db);
   const announcementService = createAnnouncementService(db);
   const notificationPreferencesService = createNotificationPreferencesService(db);

@@ -25,6 +25,7 @@
     "@exilium/game-engine": "workspace:*",
     "@exilium/shared": "workspace:*",
     "@fastify/cors": "^10.0.2",
+    "@fastify/helmet": "^13.0.2",
     "@fastify/multipart": "^9.4.0",
     "@trpc/server": "^11.0.0-rc.682",
     "argon2": "^0.41.1",

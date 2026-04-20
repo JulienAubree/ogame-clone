@@ -5,10 +5,24 @@ import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
 import { publishNotification } from '../notification/notification.publisher.js';
 import type { createPushService } from '../push/push.service.js';
+import { enforceRateLimit } from '../../lib/rate-limit.js';
+
+/** Per-user cap on messages sent (any combination of new/reply/alliance-chat). */
+const MESSAGE_SEND_LIMIT = 20;
+const MESSAGE_SEND_WINDOW_SECONDS = 60;
 
 export function createMessageService(db: Database, redis: Redis, pushService: ReturnType<typeof createPushService>) {
+  async function rateLimitSend(senderId: string) {
+    await enforceRateLimit(redis, {
+      key: `ratelimit:message:send:${senderId}`,
+      limit: MESSAGE_SEND_LIMIT,
+      windowSeconds: MESSAGE_SEND_WINDOW_SECONDS,
+    });
+  }
+
   return {
     async sendMessage(senderId: string, recipientUsername: string, subject: string, body: string, _threadId?: string) {
+      await rateLimitSend(senderId);
       const [recipient] = await db
         .select({ id: users.id })
         .from(users)
@@ -86,6 +100,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
     },
 
     async replyToMessage(senderId: string, originalMessageId: string, body: string) {
+      await rateLimitSend(senderId);
       // Find the original message to get thread info
       const [original] = await db
         .select({
@@ -461,6 +476,7 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
     },
 
     async sendAllianceChat(senderId: string, body: string) {
+      await rateLimitSend(senderId);
       const [membership] = await db
         .select({
           allianceId: allianceMembers.allianceId,
