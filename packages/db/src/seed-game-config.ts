@@ -424,6 +424,7 @@ const MISSION_DEFINITIONS = [
   },
   { id: 'explore', label: 'Explorer', hint: "Envoyez des explorateurs découvrir les biomes d'une planète", buttonLabel: 'Explorer', color: '#06b6d4', sortOrder: 10, dangerous: false, requiredShipRoles: ['exploration'], exclusive: true, recommendedShipRoles: ['exploration'], requiresPveMission: false },
   { id: 'colonize_reinforce', label: 'Renfort colonie', hint: 'Envoyez des vaisseaux pour sécuriser votre colonie', buttonLabel: 'Renforcer', color: '#3b82f6', sortOrder: 11, dangerous: false, requiredShipRoles: null, exclusive: false, recommendedShipRoles: null, requiresPveMission: false },
+  { id: 'abandon_return', label: 'Abandon de colonie', hint: "Retour forcé après abandon d'une colonie", buttonLabel: 'Retour', color: '#f97316', sortOrder: 14, dangerous: false, requiredShipRoles: null, exclusive: false, recommendedShipRoles: null, requiresPveMission: true },
 ];
 
 // ── UI labels data ──
