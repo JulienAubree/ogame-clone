@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Hammer, FlaskConical, Rocket, ShieldAlert, Check, Building2, Wrench, Layers, Shield, ShieldPlus, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -7,6 +8,7 @@ import { ShipyardIcon, FlagshipIcon } from '@/lib/icons';
 import { Timer } from '@/components/common/Timer';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { getBuildingName, getResearchName, getShipName, getDefenseName } from '@/lib/entity-names';
+import { AbandonColonyModal, type AbandonModalPlanet } from '@/components/empire/AbandonColonyModal';
 
 interface EmpirePlanet {
   id: string;
@@ -46,11 +48,26 @@ function formatRate(value: number): string {
   return String(Math.floor(value));
 }
 
-export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; isFirst: boolean }) {
+export function EmpirePlanetCard({ planet, isFirst, allPlanets }: { planet: EmpirePlanet; isFirst: boolean; allPlanets: AbandonModalPlanet[] }) {
   const navigate = useNavigate();
   const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
   const { data: gameConfig } = useGameConfig();
   const hasAttack = !!planet.inboundAttack;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [abandonOpen, setAbandonOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const canAbandon = planet.planetClassId !== 'homeworld' && planet.status === 'active';
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
 
   const goTo = (path: string) => {
     setActivePlanet(planet.id);
@@ -113,6 +130,7 @@ export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; is
   const hasActivity = planet.activeBuild || planet.activeResearch || planet.activeShipyard || planet.activeDefense || planet.outboundFleets || planet.inboundFriendlyFleets || hasAttack;
 
   return (
+    <>
     <div className={cn(
       'flex flex-col rounded-xl border bg-card/80 overflow-hidden transition-colors',
       hasAttack
@@ -153,6 +171,38 @@ export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; is
         )}>
           {isFirst ? 'Capitale' : 'Colonie'}
         </span>
+        {canAbandon && (
+          <div className="relative shrink-0" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Actions"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <span className="text-base leading-none">{'\u22EF'}</span>
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-30 mt-1 min-w-48 rounded-md border border-white/10 bg-card/95 backdrop-blur-lg shadow-lg animate-slide-up"
+              >
+                <button
+                  role="menuitem"
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setAbandonOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                >
+                  Abandonner la colonie
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Resource bars */}
@@ -267,5 +317,14 @@ export function EmpirePlanetCard({ planet, isFirst }: { planet: EmpirePlanet; is
         ))}
       </div>
     </div>
+    {canAbandon && (
+      <AbandonColonyModal
+        planet={planet}
+        allPlanets={allPlanets}
+        open={abandonOpen}
+        onOpenChange={setAbandonOpen}
+      />
+    )}
+    </>
   );
 }

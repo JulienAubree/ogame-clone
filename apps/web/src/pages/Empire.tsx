@@ -70,7 +70,7 @@ export default function Empire() {
           {/* Desktop grid */}
           <div className="hidden lg:grid lg:grid-cols-[repeat(auto-fill,minmax(340px,1fr))] lg:gap-4">
             {data.planets.map((planet, i) => (
-              <EmpirePlanetCard key={planet.id} planet={planet} isFirst={i === 0} />
+              <EmpirePlanetCard key={planet.id} planet={planet} isFirst={i === 0} allPlanets={data.planets} />
             ))}
           </div>
 
@@ -82,6 +82,7 @@ export default function Empire() {
                 planet={planet}
                 isFirst={i === 0}
                 isLast={i === data.planets.length - 1}
+                allPlanets={data.planets}
               />
             ))}
           </div>
