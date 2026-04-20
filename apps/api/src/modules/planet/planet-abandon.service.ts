@@ -18,6 +18,7 @@ import type { ShipStats, FleetConfig } from '@exilium/game-engine';
 import { buildShipStatsMap } from '../fleet/fleet.types.js';
 import type { Queue } from 'bullmq';
 import type Redis from 'ioredis';
+import { enforceRateLimit } from '../../lib/rate-limit.js';
 import { publishNotification } from '../notification/notification.publisher.js';
 
 export interface ResourceBundle {
@@ -285,6 +286,12 @@ export function createPlanetAbandonService(
     },
 
     async abandon(userId: string, planetId: string, destinationPlanetId: string) {
+      await enforceRateLimit(redis, {
+        key: `ratelimit:planet:abandon:${userId}`,
+        limit: 3,
+        windowSeconds: 60,
+      });
+
       const config = await gameConfigService.getFullConfig();
       const shipStatsMap = buildShipStatsMap(config);
 
