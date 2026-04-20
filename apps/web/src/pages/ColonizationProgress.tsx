@@ -517,7 +517,7 @@ export default function ColonizationProgress() {
                   </span>
                   {status.totalRateBonus > 0 && (
                     <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0 text-[10px] font-bold text-emerald-300">
-                      +{Math.round(status.totalRateBonus * 100)}% bonus
+                      +{(status.totalRateBonus * 100).toFixed(0)}%/h bonus
                     </span>
                   )}
                   {!status.stockSufficient && (
@@ -532,41 +532,48 @@ export default function ColonizationProgress() {
             {!outpostNotEstablished && (
               <div className="mt-2">
                 <ExpandableInfo label="Decomposition du taux" accent="amber">
-                  <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-[11px]">
-                    <span className="text-muted-foreground">Taux de base</span>
-                    <span className="tabular-nums font-medium">{(status.basePassiveRate * 100).toFixed(1)}%/h</span>
-                    <span className="text-muted-foreground">× Difficulte</span>
-                    <span className="tabular-nums font-medium">×{status.difficultyFactor.toFixed(2)}</span>
-                    <span className="text-muted-foreground">× Multiplicateur stock</span>
-                    <span className={cn('tabular-nums font-medium', status.stockSufficient ? 'text-emerald-300' : 'text-red-300')}>
-                      ×{status.stockSufficient ? '1.00' : '0.50'}
-                    </span>
-                    <span className={cn('text-muted-foreground', !status.garrisonBonusActive && 'opacity-50')}>
-                      {status.garrisonBonusActive ? '+ Bonus garnison' : 'Bonus garnison (>=' + status.garrisonFpThreshold + ' FP)'}
-                    </span>
-                    <span className={cn('tabular-nums font-medium', status.garrisonBonusActive ? 'text-emerald-300' : 'text-muted-foreground opacity-50')}>
-                      {status.garrisonBonusActive ? `+${Math.round(status.garrisonBonusValue * 100)}%` : `+${Math.round(status.garrisonBonusValue * 100)}%`}
-                    </span>
-                    <span className={cn('text-muted-foreground', !status.convoyBonusActive && 'opacity-50')}>
-                      {status.convoyBonusActive ? '+ Bonus convoi recent' : `Bonus convoi (${status.convoyWindowHours}h apres livraison)`}
-                    </span>
-                    <span className={cn('tabular-nums font-medium', status.convoyBonusActive ? 'text-emerald-300' : 'text-muted-foreground opacity-50')}>
-                      +{Math.round(status.convoyBonusValue * 100)}%
-                    </span>
-                    {status.totalRateBonus > 0 && (
-                      <>
-                        <span className="text-muted-foreground">× Bonus total</span>
-                        <span className="tabular-nums font-medium text-emerald-300">
-                          ×{(1 + status.totalRateBonus).toFixed(2)}
-                          {status.totalRateBonus >= status.bonusCap && (
-                            <span className="ml-1 text-[10px] text-muted-foreground">(plafond)</span>
-                          )}
+                  {(() => {
+                    const baseRow = status.basePassiveRate * status.difficultyFactor * (status.stockSufficient ? 1 : 0.5);
+                    return (
+                      <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-[11px]">
+                        <span className="text-muted-foreground">Taux de base</span>
+                        <span className="tabular-nums font-medium">{(status.basePassiveRate * 100).toFixed(1)}%/h</span>
+                        <span className="text-muted-foreground">× Difficulte</span>
+                        <span className="tabular-nums font-medium">×{status.difficultyFactor.toFixed(2)}</span>
+                        <span className="text-muted-foreground">× Multiplicateur stock</span>
+                        <span className={cn('tabular-nums font-medium', status.stockSufficient ? 'text-emerald-300' : 'text-red-300')}>
+                          ×{status.stockSufficient ? '1.00' : '0.50'}
                         </span>
-                      </>
-                    )}
-                    <span className="text-muted-foreground border-t border-border/30 pt-1">Taux effectif</span>
-                    <span className="tabular-nums font-bold text-amber-300 border-t border-border/30 pt-1">{passiveRatePct}%/h</span>
-                  </div>
+                        <span className="text-muted-foreground border-t border-border/30 pt-1">Sous-total</span>
+                        <span className="tabular-nums font-medium border-t border-border/30 pt-1">{(baseRow * 100).toFixed(1)}%/h</span>
+                        <span className={cn('text-muted-foreground', !status.garrisonBonusActive && 'opacity-60')}>
+                          {status.garrisonBonusActive ? '+ Bonus garnison' : `Bonus garnison (>=${status.garrisonFpThreshold} FP)`}
+                        </span>
+                        <span className={cn('tabular-nums font-medium', status.garrisonBonusActive ? 'text-emerald-300' : 'text-muted-foreground opacity-60')}>
+                          +{(status.garrisonBonusValue * 100).toFixed(0)}%/h
+                        </span>
+                        <span className={cn('text-muted-foreground', !status.convoyBonusActive && 'opacity-60')}>
+                          {status.convoyBonusActive ? '+ Bonus convoi recent' : `Bonus convoi (${status.convoyWindowHours}h apres livraison)`}
+                        </span>
+                        <span className={cn('tabular-nums font-medium', status.convoyBonusActive ? 'text-emerald-300' : 'text-muted-foreground opacity-60')}>
+                          +{(status.convoyBonusValue * 100).toFixed(0)}%/h
+                        </span>
+                        {status.totalRateBonus > 0 && (
+                          <>
+                            <span className="text-muted-foreground">Total bonus</span>
+                            <span className="tabular-nums font-medium text-emerald-300">
+                              +{(status.totalRateBonus * 100).toFixed(0)}%/h
+                              {status.totalRateBonus >= status.bonusCap && (
+                                <span className="ml-1 text-[10px] text-muted-foreground">(plafond)</span>
+                              )}
+                            </span>
+                          </>
+                        )}
+                        <span className="text-muted-foreground border-t border-border/30 pt-1">Taux effectif</span>
+                        <span className="tabular-nums font-bold text-amber-300 border-t border-border/30 pt-1">{passiveRatePct}%/h</span>
+                      </div>
+                    );
+                  })()}
                   {status.convoyBonusActive && status.convoyBonusEndsAt && (
                     <p className="text-emerald-300">
                       Bonus convoi actif encore <BonusCountdown target={new Date(status.convoyBonusEndsAt)} />. Chaque nouveau convoi remet le compteur a zero.
@@ -576,7 +583,7 @@ export default function ColonizationProgress() {
                     A ce rythme, {Math.round((1 - status.progress) * 100)}% restants arrivent dans ~<span className="text-foreground font-medium">{etaDisplay.replace('~', '')}</span>.
                   </p>
                   <p className="text-muted-foreground">
-                    Bonus cumulables jusqu'a +{Math.round(status.bonusCap * 100)}% : stationner au moins <span className="text-foreground font-medium">{status.garrisonFpThreshold} FP</span> (+{Math.round(status.garrisonBonusValue * 100)}%) et livrer regulierement des ressources (+{Math.round(status.convoyBonusValue * 100)}% pendant {status.convoyWindowHours}h).
+                    Bonus cumulables jusqu'a +{(status.bonusCap * 100).toFixed(0)}%/h : stationner au moins <span className="text-foreground font-medium">{status.garrisonFpThreshold} FP</span> (+{(status.garrisonBonusValue * 100).toFixed(0)}%/h) et livrer regulierement des ressources (+{(status.convoyBonusValue * 100).toFixed(0)}%/h pendant {status.convoyWindowHours}h).
                   </p>
                   {!status.stockSufficient && (
                     <p className="text-red-300">
@@ -621,10 +628,10 @@ export default function ColonizationProgress() {
                   </p>
                   <p>
                     Temps estime jusqu'a 100% sans rupture : ~<span className="font-medium text-foreground">{formatHoursMinutes(1 / (status.basePassiveRate * status.difficultyFactor))}</span>
-                    {' '}— reductible jusqu'a ~<span className="font-medium text-emerald-300">{formatHoursMinutes(1 / (status.basePassiveRate * status.difficultyFactor * (1 + status.bonusCap)))}</span> avec les bonus actifs.
+                    {' '}— reductible jusqu'a ~<span className="font-medium text-emerald-300">{formatHoursMinutes(1 / (status.basePassiveRate * status.difficultyFactor + status.bonusCap))}</span> avec les bonus actifs.
                   </p>
                   <p className="text-emerald-300">
-                    Bonus cumulables (plafond +{Math.round(status.bonusCap * 100)}%) : stationner au moins <span className="font-medium">{status.garrisonFpThreshold} FP</span> (+{Math.round(status.garrisonBonusValue * 100)}%) et livrer regulierement des ressources (+{Math.round(status.convoyBonusValue * 100)}% pendant {status.convoyWindowHours}h apres chaque convoi).
+                    Bonus cumulables (plafond +{(status.bonusCap * 100).toFixed(0)}%/h) : stationner au moins <span className="font-medium">{status.garrisonFpThreshold} FP</span> (+{(status.garrisonBonusValue * 100).toFixed(0)}%/h) et livrer regulierement des ressources (+{(status.convoyBonusValue * 100).toFixed(0)}%/h pendant {status.convoyWindowHours}h apres chaque convoi).
                   </p>
                   <p className="text-muted-foreground">
                     Apres livraison : 1h de sursis sans consommation, puis la planete consomme{' '}
@@ -792,11 +799,11 @@ export default function ColonizationProgress() {
                 </p>
                 {status.convoyBonusActive && status.convoyBonusEndsAt ? (
                   <p className="mt-1 text-[11px] text-emerald-300">
-                    Convoi recent actif : <span className="font-bold">+{Math.round(status.convoyBonusValue * 100)}%</span> de taux encore <BonusCountdown target={new Date(status.convoyBonusEndsAt)} />.
+                    Convoi recent actif : <span className="font-bold">+{(status.convoyBonusValue * 100).toFixed(0)}%/h</span> encore <BonusCountdown target={new Date(status.convoyBonusEndsAt)} />.
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    Chaque livraison declenche <span className="text-emerald-300 font-medium">+{Math.round(status.convoyBonusValue * 100)}% de taux pendant {status.convoyWindowHours}h</span>.
+                    Chaque livraison declenche <span className="text-emerald-300 font-medium">+{(status.convoyBonusValue * 100).toFixed(0)}%/h pendant {status.convoyWindowHours}h</span>.
                   </p>
                 )}
                 <div className="mt-1.5">
@@ -806,7 +813,7 @@ export default function ColonizationProgress() {
                       <span className="text-silicium font-medium">{formatNumber(status.consumptionSiliciumPerHour)} silicium/h</span>.
                     </p>
                     <p className="text-emerald-300">
-                      Bonus convoi : chaque livraison (meme symbolique) accorde <span className="font-bold">+{Math.round(status.convoyBonusValue * 100)}% de taux pendant {status.convoyWindowHours}h</span>. Le compteur se remet a zero a chaque nouveau convoi — enchainez les livraisons pour maintenir le bonus en continu.
+                      Bonus convoi : chaque livraison (meme symbolique) accorde <span className="font-bold">+{(status.convoyBonusValue * 100).toFixed(0)}%/h pendant {status.convoyWindowHours}h</span>. Le compteur se remet a zero a chaque nouveau convoi — enchainez les livraisons pour maintenir le bonus en continu.
                     </p>
                     <div className="rounded-md bg-card/60 border border-border/20 p-2 space-y-1">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Prolongation d'autonomie</p>
@@ -909,11 +916,11 @@ export default function ColonizationProgress() {
                 </p>
                 {status.garrisonBonusActive ? (
                   <p className="mt-1 text-[11px] text-emerald-300">
-                    Bonus garnison actif : <span className="font-bold">+{Math.round(status.garrisonBonusValue * 100)}%</span> de taux tant que la garnison reste au-dessus de {status.garrisonFpThreshold} FP.
+                    Bonus garnison actif : <span className="font-bold">+{(status.garrisonBonusValue * 100).toFixed(0)}%/h</span> tant que la garnison reste au-dessus de {status.garrisonFpThreshold} FP.
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    Atteignez <span className="text-blue-300 font-medium">{status.garrisonFpThreshold} FP</span> stationnes pour debloquer <span className="text-emerald-300 font-medium">+{Math.round(status.garrisonBonusValue * 100)}% de taux</span> en continu.
+                    Atteignez <span className="text-blue-300 font-medium">{status.garrisonFpThreshold} FP</span> stationnes pour debloquer <span className="text-emerald-300 font-medium">+{(status.garrisonBonusValue * 100).toFixed(0)}%/h</span> en continu.
                     {status.stationedFP > 0 && (
                       <span className="text-muted-foreground"> (actuellement {formatNumber(status.stationedFP)} FP)</span>
                     )}
@@ -926,7 +933,7 @@ export default function ColonizationProgress() {
                       Elle intercepte les raids pirates a leur arrivee.
                     </p>
                     <p className="text-emerald-300">
-                      Bonus garnison : avec au moins <span className="font-bold">{status.garrisonFpThreshold} FP stationnes</span>, la colonisation gagne <span className="font-bold">+{Math.round(status.garrisonBonusValue * 100)}% de taux</span> en permanence. Cumulable avec le bonus convoi (plafond +{Math.round(status.bonusCap * 100)}%).
+                      Bonus garnison : avec au moins <span className="font-bold">{status.garrisonFpThreshold} FP stationnes</span>, la colonisation gagne <span className="font-bold">+{(status.garrisonBonusValue * 100).toFixed(0)}%/h</span> en permanence. Cumulable avec le bonus convoi (plafond +{(status.bonusCap * 100).toFixed(0)}%/h).
                     </p>
                     <p>
                       La taille des raids croit avec le niveau IPC (actuellement <span className="text-foreground font-medium">niv. {status.ipcLevel}</span>) et, dans une moindre mesure, avec votre garnison elle-meme. Maintenez un FP suffisant pour vaincre les raids sans surdimensionner.

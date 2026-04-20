@@ -598,10 +598,10 @@ const UNIVERSE_CONFIG = [
   { key: 'colonization_distance_penalty_per_hop', value: 0.01 },
   { key: 'colonization_distance_floor', value: 0.90 },
   { key: 'colonization_rate_garrison_fp_threshold', value: 50 },
-  { key: 'colonization_rate_garrison_bonus', value: 0.15 },
-  { key: 'colonization_rate_convoy_bonus', value: 0.15 },
+  { key: 'colonization_rate_garrison_bonus', value: 0.05 },
+  { key: 'colonization_rate_convoy_bonus', value: 0.05 },
   { key: 'colonization_rate_convoy_window_hours', value: 2 },
-  { key: 'colonization_rate_bonus_cap', value: 0.30 },
+  { key: 'colonization_rate_bonus_cap', value: 0.10 },
 
   // ── Daily Quests ──
   { key: 'daily_quest_count', value: 3 },

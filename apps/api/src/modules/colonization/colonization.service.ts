@@ -138,12 +138,12 @@ export function createColonizationService(
         }
       }
       const convoyBonus = convoyBonusActive ? convoyBonusValue : 0;
+      // Additive bonuses in percentage points per hour (e.g. 0.05 = +5%/h)
       const totalBonus = Math.min(bonusCap, garrisonBonus + convoyBonus);
 
-      // Effective rate = base × difficulty × stockMult × (1 + bonus)
-      const effectiveRate = process.outpostEstablished
-        ? passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5) * (1 + totalBonus)
-        : 0;
+      // Effective rate = base × difficulty × stockMult + bonus_pp
+      const baseEffective = passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5);
+      const effectiveRate = process.outpostEstablished ? baseEffective + totalBonus : 0;
       const remaining = Math.max(0, 1 - process.progress);
       const estimatedCompletionHours = effectiveRate > 0 ? remaining / effectiveRate : Infinity;
 
@@ -473,8 +473,9 @@ export function createColonizationService(
         }
       }
 
+      // Additive bonuses in percentage points per hour (e.g. 0.05 = +5%/h)
       const totalBonus = Math.min(bonusCap, garrisonBonus + convoyBonus);
-      const effectiveRate = passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5) * (1 + totalBonus);
+      const effectiveRate = passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5) + totalBonus;
 
       const progressDelta = effectiveRate * elapsedHours;
       const newProgress = Math.min(1, process.progress + progressDelta);
