@@ -29,16 +29,20 @@ export function calculateGovernancePenalty(
 /**
  * Calculate colonization difficulty factor from planet type and distance.
  * Lower factor = slower passive progress.
+ *
+ * @param distancePenaltyPerHop - Fraction subtracted per system hop (default 0.01)
+ * @param distanceFloor - Minimum distance factor (default 0.90)
  */
 export function calculateColonizationDifficulty(
   planetClassId: string,
   homeworldSystem: number,
   targetSystem: number,
   difficultyMap: Record<string, number>,
+  distancePenaltyPerHop = 0.01,
+  distanceFloor = 0.90,
 ): number {
-  const typeFactor = difficultyMap[planetClassId] ?? 0.7;
+  const typeFactor = difficultyMap[planetClassId] ?? 0.9;
   const systemDistance = Math.abs(targetSystem - homeworldSystem);
-  // Distance penalty: -2% per system hop, minimum 0.3
-  const distanceFactor = Math.max(0.3, 1 - systemDistance * 0.02);
+  const distanceFactor = Math.max(distanceFloor, 1 - systemDistance * distancePenaltyPerHop);
   return typeFactor * distanceFactor;
 }

@@ -83,13 +83,6 @@ export function createColonizationService(
         hoursUntilStockout = Math.min(hoursMinerai, hoursSilicium);
       }
 
-      // Effective rate
-      const effectiveRate = process.outpostEstablished
-        ? passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5)
-        : 0;
-      const remaining = Math.max(0, 1 - process.progress);
-      const estimatedCompletionHours = effectiveRate > 0 ? remaining / effectiveRate : Infinity;
-
       // Garrison info
       const [ships] = await db
         .select()
@@ -123,6 +116,37 @@ export function createColonizationService(
         stationedFP = computeFleetFP(stationedShips, shipStats, fpConfig);
       }
 
+      // Rate bonuses (garrison + recent convoy), capped
+      const nowMs = Date.now();
+      const garrisonFpThreshold = Number(config.universe.colonization_rate_garrison_fp_threshold) || 50;
+      const garrisonBonusValue = Number(config.universe.colonization_rate_garrison_bonus) || 0;
+      const convoyBonusValue = Number(config.universe.colonization_rate_convoy_bonus) || 0;
+      const convoyWindowHours = Number(config.universe.colonization_rate_convoy_window_hours) || 2;
+      const bonusCap = Number(config.universe.colonization_rate_bonus_cap) || 0.30;
+
+      const garrisonBonusActive = stationedFP >= garrisonFpThreshold;
+      const garrisonBonus = garrisonBonusActive ? garrisonBonusValue : 0;
+
+      let convoyBonusActive = false;
+      let convoyBonusEndsAt: Date | null = null;
+      if (process.lastConvoySupplyAt) {
+        const windowMs = convoyWindowHours * 60 * 60 * 1000;
+        const endsAtMs = new Date(process.lastConvoySupplyAt).getTime() + windowMs;
+        if (endsAtMs > nowMs) {
+          convoyBonusActive = true;
+          convoyBonusEndsAt = new Date(endsAtMs);
+        }
+      }
+      const convoyBonus = convoyBonusActive ? convoyBonusValue : 0;
+      const totalBonus = Math.min(bonusCap, garrisonBonus + convoyBonus);
+
+      // Effective rate = base × difficulty × stockMult × (1 + bonus)
+      const effectiveRate = process.outpostEstablished
+        ? passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5) * (1 + totalBonus)
+        : 0;
+      const remaining = Math.max(0, 1 - process.progress);
+      const estimatedCompletionHours = effectiveRate > 0 ? remaining / effectiveRate : Infinity;
+
       // Outpost thresholds
       const outpostThresholdMinerai = this.scaleCost(
         Number(config.universe.colonization_outpost_threshold_minerai) || 500,
@@ -139,7 +163,6 @@ export function createColonizationService(
       const gracePeriodHours = Number(config.universe.colonization_grace_period_hours) || 0;
       const outpostTimeoutHours = Number(config.universe.colonization_outpost_timeout_hours) || 0;
       const startedAtMs = new Date(process.startedAt).getTime();
-      const nowMs = Date.now();
       const gracePeriodEndsAt = new Date(startedAtMs + gracePeriodHours * 60 * 60 * 1000);
       const outpostTimeoutAt = new Date(startedAtMs + outpostTimeoutHours * 60 * 60 * 1000);
       const inGracePeriod = nowMs < gracePeriodEndsAt.getTime();
@@ -163,6 +186,16 @@ export function createColonizationService(
         gracePeriodEndsAt,
         outpostTimeoutAt,
         inGracePeriod,
+        // Rate bonuses
+        garrisonBonusActive,
+        garrisonBonusValue,
+        garrisonFpThreshold,
+        convoyBonusActive,
+        convoyBonusValue,
+        convoyBonusEndsAt,
+        convoyWindowHours,
+        totalRateBonus: totalBonus,
+        bonusCap,
       };
     },
 
@@ -381,10 +414,68 @@ export function createColonizationService(
 
       const config = await gameConfigService.getFullConfig();
       const passiveRate = Number(config.universe.colonization_passive_rate) || 0.10;
-      const effectiveRate = passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5);
-
       const now = new Date();
-      const elapsedHours = (now.getTime() - new Date(process.lastTickAt).getTime()) / (1000 * 60 * 60);
+      const nowMs = now.getTime();
+
+      // Rate bonuses (garrison FP + recent convoy). Evaluate averaged over the
+      // tick interval, not just at "now", so a bonus that expires mid-interval
+      // gets partial credit and we don't over/under-shoot the UI preview.
+      const lastTickMs = new Date(process.lastTickAt).getTime();
+      const elapsedHours = (nowMs - lastTickMs) / (1000 * 60 * 60);
+
+      const garrisonFpThreshold = Number(config.universe.colonization_rate_garrison_fp_threshold) || 50;
+      const garrisonBonusValue = Number(config.universe.colonization_rate_garrison_bonus) || 0;
+      const convoyBonusValue = Number(config.universe.colonization_rate_convoy_bonus) || 0;
+      const convoyWindowHours = Number(config.universe.colonization_rate_convoy_window_hours) || 2;
+      const bonusCap = Number(config.universe.colonization_rate_bonus_cap) || 0.30;
+
+      // Garrison bonus: read current stationed FP
+      let stationedFP = 0;
+      const [ships] = await db
+        .select()
+        .from(planetShips)
+        .where(eq(planetShips.planetId, process.planetId))
+        .limit(1);
+      if (ships) {
+        const stationedShips: Record<string, number> = {};
+        for (const [key, value] of Object.entries(ships)) {
+          if (key === 'planetId') continue;
+          const count = Number(value) || 0;
+          if (count > 0) stationedShips[key] = count;
+        }
+        const shipStats: Record<string, UnitCombatStats> = {};
+        for (const [id, ship] of Object.entries(config.ships)) {
+          shipStats[id] = {
+            weapons: ship.weapons,
+            shotCount: ship.shotCount ?? 1,
+            shield: ship.shield,
+            hull: ship.hull,
+          };
+        }
+        const fpConfig: FPConfig = {
+          shotcountExponent: Number(config.universe.fp_shotcount_exponent) || 1.5,
+          divisor: Number(config.universe.fp_divisor) || 100,
+        };
+        stationedFP = computeFleetFP(stationedShips, shipStats, fpConfig);
+      }
+      const garrisonBonus = stationedFP >= garrisonFpThreshold ? garrisonBonusValue : 0;
+
+      // Convoy bonus: fraction of the tick interval covered by an active window
+      let convoyBonus = 0;
+      if (process.lastConvoySupplyAt) {
+        const convoyStartMs = new Date(process.lastConvoySupplyAt).getTime();
+        const convoyEndMs = convoyStartMs + convoyWindowHours * 60 * 60 * 1000;
+        const overlapStart = Math.max(lastTickMs, convoyStartMs);
+        const overlapEnd = Math.min(nowMs, convoyEndMs);
+        const overlapHours = Math.max(0, (overlapEnd - overlapStart) / (1000 * 60 * 60));
+        if (elapsedHours > 0) {
+          convoyBonus = convoyBonusValue * (overlapHours / elapsedHours);
+        }
+      }
+
+      const totalBonus = Math.min(bonusCap, garrisonBonus + convoyBonus);
+      const effectiveRate = passiveRate * process.difficultyFactor * (stockSufficient ? 1 : 0.5) * (1 + totalBonus);
+
       const progressDelta = effectiveRate * elapsedHours;
       const newProgress = Math.min(1, process.progress + progressDelta);
 
@@ -394,6 +485,17 @@ export function createColonizationService(
         .where(eq(colonizationProcesses.id, processId));
 
       return { ...process, progress: newProgress };
+    },
+
+    /** Record a supply convoy arrival for the recent-convoy rate bonus */
+    async updateLastConvoySupplyAt(planetId: string) {
+      await db
+        .update(colonizationProcesses)
+        .set({ lastConvoySupplyAt: new Date() })
+        .where(and(
+          eq(colonizationProcesses.planetId, planetId),
+          eq(colonizationProcesses.status, 'active'),
+        ));
     },
 
     /** Player-triggered completion -- validates progress >= 0.995 */

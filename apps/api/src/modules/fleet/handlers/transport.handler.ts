@@ -91,6 +91,11 @@ export class TransportHandler implements MissionHandler {
             .where(eq(colonizationProcesses.id, process.id));
         }
       }
+
+      // Trigger the "recent convoy" rate bonus on any delivery with cargo
+      if (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0) {
+        await ctx.colonizationService.updateLastConvoySupplyAt(targetPlanet.id);
+      }
     }
 
     const reportId = await createTransportReport(

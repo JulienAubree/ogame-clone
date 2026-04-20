@@ -99,6 +99,11 @@ export class ColonizeReinforceHandler implements MissionHandler {
       })
       .where(eq(planets.id, targetPlanet.id));
 
+    // Trigger the "recent convoy" rate bonus on any resource delivery
+    if ((mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0) && ctx.colonizationService) {
+      await ctx.colonizationService.updateLastConvoySupplyAt(targetPlanet.id);
+    }
+
     // Transfer ships to planetShips — atomic increment, safe under concurrent arrivals
     const shipUpdates: Record<string, any> = {};
     for (const [shipId, count] of Object.entries(ships)) {

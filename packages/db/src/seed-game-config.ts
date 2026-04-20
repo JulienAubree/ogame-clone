@@ -572,7 +572,7 @@ const UNIVERSE_CONFIG = [
   { key: 'flagship_instant_repair_exilium_cost', value: 2 },
 
   // ── Colonization & Governance ──
-  { key: 'colonization_passive_rate', value: 0.10 },
+  { key: 'colonization_passive_rate', value: 0.11 },
   { key: 'colonization_consumption_minerai', value: 200 },
   { key: 'colonization_consumption_silicium', value: 100 },
   { key: 'colonization_outpost_threshold_minerai', value: 500 },
@@ -591,10 +591,17 @@ const UNIVERSE_CONFIG = [
   { key: 'governance_penalty_harvest', value: [0.15, 0.35, 0.60] },
   { key: 'governance_penalty_construction', value: [0.15, 0.35, 0.60] },
   { key: 'colonization_difficulty_temperate', value: 1.0 },
-  { key: 'colonization_difficulty_arid', value: 0.7 },
-  { key: 'colonization_difficulty_glacial', value: 0.7 },
-  { key: 'colonization_difficulty_volcanic', value: 0.5 },
-  { key: 'colonization_difficulty_gaseous', value: 0.5 },
+  { key: 'colonization_difficulty_arid', value: 0.95 },
+  { key: 'colonization_difficulty_glacial', value: 0.95 },
+  { key: 'colonization_difficulty_volcanic', value: 0.90 },
+  { key: 'colonization_difficulty_gaseous', value: 0.90 },
+  { key: 'colonization_distance_penalty_per_hop', value: 0.01 },
+  { key: 'colonization_distance_floor', value: 0.90 },
+  { key: 'colonization_rate_garrison_fp_threshold', value: 50 },
+  { key: 'colonization_rate_garrison_bonus', value: 0.15 },
+  { key: 'colonization_rate_convoy_bonus', value: 0.15 },
+  { key: 'colonization_rate_convoy_window_hours', value: 2 },
+  { key: 'colonization_rate_bonus_cap', value: 0.30 },
 
   // ── Daily Quests ──
   { key: 'daily_quest_count', value: 3 },

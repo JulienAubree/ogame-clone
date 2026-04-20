@@ -235,11 +235,15 @@ export class ColonizeHandler implements MissionHandler {
         difficultyMap[key.replace('colonization_difficulty_', '')] = Number(config2.universe[key]);
       }
     }
+    const distancePenaltyPerHop = Number(config2.universe.colonization_distance_penalty_per_hop) || 0.01;
+    const distanceFloor = Number(config2.universe.colonization_distance_floor) || 0.90;
     const difficulty = calculateColonizationDifficulty(
       planetTypeForPos?.id ?? 'temperate',
       homeworld?.system ?? fleetEvent.targetSystem,
       fleetEvent.targetSystem,
       difficultyMap,
+      distancePenaltyPerHop,
+      distanceFloor,
     );
 
     // If the colony ship's cargo already meets outpost thresholds, establish it immediately
