@@ -131,7 +131,7 @@ export function createPlanetAbandonService(
       .where(and(
         eq(fleetEvents.targetPlanetId, planetId),
         eq(fleetEvents.status, 'active'),
-        inArray(fleetEvents.mission, ['attack', 'spy', 'pirate']),
+        inArray(fleetEvents.mission, ['attack', 'spy', 'pirate', 'colonization_raid']),
       ));
     const inboundHostile = Number(inboundRow?.count ?? 0);
 
@@ -294,7 +294,7 @@ export function createPlanetAbandonService(
           .where(and(
             eq(fleetEvents.targetPlanetId, planetId),
             eq(fleetEvents.status, 'active'),
-            inArray(fleetEvents.mission, ['attack', 'spy', 'pirate']),
+            inArray(fleetEvents.mission, ['attack', 'spy', 'pirate', 'colonization_raid']),
           ));
         const inboundHostile = Number(inboundRow?.count ?? 0);
 

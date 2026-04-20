@@ -72,6 +72,13 @@ describe('detectBlockers', () => {
     expect(detectBlockers(ctx)).toContain('inbound_hostile');
   });
 
+  it('blocks on inbound colonization_raid fleet (hostile mission)', () => {
+    // colonization_raid is a hostile mission (spec §Blocages, line 33) and must
+    // be counted by the DB query filter — inboundHostile > 0 triggers the blocker.
+    const ctx = { ...baseCtx, inboundHostile: 1 };
+    expect(detectBlockers(ctx)).toContain('inbound_hostile');
+  });
+
   it('blocks on outbound active fleets', () => {
     const ctx = { ...baseCtx, outboundActive: 2 };
     expect(detectBlockers(ctx)).toContain('outbound_active');

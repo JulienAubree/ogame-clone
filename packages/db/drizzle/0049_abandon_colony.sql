@@ -5,6 +5,7 @@
 --    fleet we create when abandoning a colony gets cascade-deleted along
 --    with the planet and the ships/resources aboard vanish.
 
+ALTER TYPE "fleet_mission" ADD VALUE IF NOT EXISTS 'colonization_raid';
 ALTER TYPE "fleet_mission" ADD VALUE IF NOT EXISTS 'abandon_return';
 
 ALTER TABLE "fleet_events"

@@ -6,7 +6,7 @@ import { pveMissions } from './pve-missions.js';
 import { marketOffers } from './market-offers.js';
 
 export const fleetMissionEnum = pgEnum('fleet_mission', [
-  'transport', 'station', 'spy', 'attack', 'colonize', 'recycle', 'mine', 'pirate', 'trade', 'scan', 'explore', 'colonize_supply', 'colonize_reinforce', 'abandon_return',
+  'transport', 'station', 'spy', 'attack', 'colonize', 'recycle', 'mine', 'pirate', 'trade', 'scan', 'explore', 'colonize_supply', 'colonize_reinforce', 'colonization_raid', 'abandon_return',
 ]);
 
 export const fleetPhaseEnum = pgEnum('fleet_phase', ['outbound', 'prospecting', 'mining', 'exploring', 'return']);
