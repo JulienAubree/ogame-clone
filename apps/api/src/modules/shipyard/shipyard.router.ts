@@ -21,7 +21,10 @@ export function createShipyardRouter(shipyardService: ReturnType<typeof createSh
         planetId: z.string().uuid(),
         facilityId: z.enum(['shipyard', 'commandCenter', 'arsenal']).optional(),
       }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        // Verify planet ownership — getShipyardQueue itself is unchecked
+        // because internal batch processors call it without a user context.
+        await shipyardService.getOwnedPlanet(ctx.userId!, input.planetId);
         return shipyardService.getShipyardQueue(input.planetId, input.facilityId);
       }),
 
