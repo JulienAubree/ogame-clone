@@ -160,9 +160,11 @@ export class ExploreHandler implements PhasedMissionHandler {
         return { id: b.id, name: (full as any)?.name ?? b.id, rarity: b.rarity, effects: b.effects };
       });
 
-      const [originPlanet] = await ctx.db.select({
-        galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
-      }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+      const [originPlanet] = fleetEvent.originPlanetId
+        ? await ctx.db.select({
+            galaxy: planets.galaxy, system: planets.system, position: planets.position, name: planets.name,
+          }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1)
+        : [];
 
       const report = await ctx.reportService.create({
         userId: fleetEvent.userId,

@@ -246,12 +246,14 @@ export class MineHandler implements PhasedMissionHandler {
     const originalDeparture = meta?.originalDepartureTime ? new Date(meta.originalDepartureTime) : fleetEvent.departureTime;
 
     // Fetch origin planet for coordinates
-    const [originPlanet] = await ctx.db.select({
-      galaxy: planets.galaxy,
-      system: planets.system,
-      position: planets.position,
-      name: planets.name,
-    }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1);
+    const [originPlanet] = fleetEvent.originPlanetId
+      ? await ctx.db.select({
+          galaxy: planets.galaxy,
+          system: planets.system,
+          position: planets.position,
+          name: planets.name,
+        }).from(planets).where(eq(planets.id, fleetEvent.originPlanetId)).limit(1)
+      : [];
 
     // Collect technologies that influenced the result
     // Note: `config` and `shipStatsMap` are already in scope from extraction logic above

@@ -717,7 +717,7 @@ export function createFleetService(
         missionLabel: config.missions[event.mission]?.label ?? event.mission,
       };
 
-      if (tier >= 1) {
+      if (tier >= 1 && event.originPlanetId) {
         const [originPlanet] = await db
           .select({ galaxy: planets.galaxy, system: planets.system, position: planets.position })
           .from(planets)
@@ -764,11 +764,13 @@ export function createFleetService(
       const siliciumCargo = Number(event.siliciumCargo);
       const hydrogeneCargo = Number(event.hydrogeneCargo);
 
-      const [originPlanet] = await db
-        .select({ name: planets.name })
-        .from(planets)
-        .where(eq(planets.id, event.originPlanetId))
-        .limit(1);
+      const [originPlanet] = event.originPlanetId
+        ? await db
+            .select({ name: planets.name })
+            .from(planets)
+            .where(eq(planets.id, event.originPlanetId))
+            .limit(1)
+        : [];
 
       const eventMeta = {
         userId: event.userId,
@@ -806,7 +808,7 @@ export function createFleetService(
         };
         const result = await handler.processArrival(handlerEvent, handlerCtx);
 
-        if (result.scheduleReturn) {
+        if (result.scheduleReturn && event.originPlanetId) {
           const cargo = result.cargo ?? { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo };
           const returnShips = result.shipsAfterArrival ?? ships;
           await this.scheduleReturn(
@@ -842,7 +844,7 @@ export function createFleetService(
             .values(returnData as typeof fleetEvents.$inferInsert)
             .returning();
 
-          if (insertedEvent) {
+          if (insertedEvent && event.originPlanetId) {
             const returnShips = (returnData.ships ?? ships) as Record<string, number>;
             const returnCargo = result.cargo ?? { minerai: 0, silicium: 0, hydrogene: 0 };
             await this.scheduleReturn(
@@ -904,12 +906,14 @@ export function createFleetService(
         };
       }
 
-      // Unknown mission — return fleet
-      await this.scheduleReturn(
-        event.id, event.originPlanetId,
-        { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-        ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
-      );
+      // Unknown mission — return fleet (only if origin still exists)
+      if (event.originPlanetId) {
+        await this.scheduleReturn(
+          event.id, event.originPlanetId,
+          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
+          ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
+        );
+      }
 
       return {
         userId: event.userId,
@@ -1006,7 +1010,7 @@ export function createFleetService(
         }).where(eq(fleetEvents.id, event.id));
       }
 
-      if (result.scheduleReturn) {
+      if (result.scheduleReturn && event.originPlanetId) {
         const cargo = result.cargo ?? { minerai: 0, silicium: 0, hydrogene: 0 };
         await this.scheduleReturn(
           event.id, event.originPlanetId,
@@ -1035,51 +1039,56 @@ export function createFleetService(
 
       const ships = event.ships as Record<string, number>;
 
-      const [originPlanet] = await db
-        .select({ name: planets.name })
-        .from(planets)
-        .where(eq(planets.id, event.originPlanetId))
-        .limit(1);
+      const [originPlanet] = event.originPlanetId
+        ? await db
+            .select({ name: planets.name })
+            .from(planets)
+            .where(eq(planets.id, event.originPlanetId))
+            .limit(1)
+        : [];
 
-      // Return flagship from mission if present
+      // Return flagship from mission if present (skip if origin planet was deleted)
       console.log(`[processReturn] fleetEventId=${fleetEventId}, ships=`, JSON.stringify(ships));
-      if (ships['flagship'] && ships['flagship'] > 0 && flagshipService) {
+      if (ships['flagship'] && ships['flagship'] > 0 && flagshipService && event.originPlanetId) {
         console.log(`[processReturn] calling returnFromMission for userId=${event.userId}, originPlanetId=${event.originPlanetId}`);
         await flagshipService.returnFromMission(event.userId, event.originPlanetId);
       }
 
       // Merge returning ships + PvE bonus ships into a single atomic update
+      // Skip ship restoration if origin planet was deleted (abandon_return after colony abandoned)
       const meta = event.metadata as { bonusShips?: Record<string, number>; reportId?: string } | null;
-      await this.getOrCreateShips(event.originPlanetId);
-      // Compute total increment per ship type, then apply as atomic SQL
-      const shipIncrements: Record<string, number> = {};
-      for (const [shipId, count] of Object.entries(ships)) {
-        if (count > 0 && shipId !== 'flagship') {
-          shipIncrements[shipId] = (shipIncrements[shipId] ?? 0) + count;
+      if (event.originPlanetId) {
+        await this.getOrCreateShips(event.originPlanetId);
+        // Compute total increment per ship type, then apply as atomic SQL
+        const shipIncrements: Record<string, number> = {};
+        for (const [shipId, count] of Object.entries(ships)) {
+          if (count > 0 && shipId !== 'flagship') {
+            shipIncrements[shipId] = (shipIncrements[shipId] ?? 0) + count;
+          }
         }
-      }
-      if (meta?.bonusShips) {
-        for (const [shipId, count] of Object.entries(meta.bonusShips)) {
-          shipIncrements[shipId] = (shipIncrements[shipId] ?? 0) + count;
+        if (meta?.bonusShips) {
+          for (const [shipId, count] of Object.entries(meta.bonusShips)) {
+            shipIncrements[shipId] = (shipIncrements[shipId] ?? 0) + count;
+          }
         }
-      }
-      const shipUpdates: Record<string, any> = {};
-      for (const [shipId, total] of Object.entries(shipIncrements)) {
-        const col = planetShips[shipId as keyof typeof planetShips];
-        shipUpdates[shipId] = sql`${col} + ${total}`;
-      }
-      if (Object.keys(shipUpdates).length > 0) {
-        await db
-          .update(planetShips)
-          .set(shipUpdates)
-          .where(eq(planetShips.planetId, event.originPlanetId));
+        const shipUpdates: Record<string, any> = {};
+        for (const [shipId, total] of Object.entries(shipIncrements)) {
+          const col = planetShips[shipId as keyof typeof planetShips];
+          shipUpdates[shipId] = sql`${col} + ${total}`;
+        }
+        if (Object.keys(shipUpdates).length > 0) {
+          await db
+            .update(planetShips)
+            .set(shipUpdates)
+            .where(eq(planetShips.planetId, event.originPlanetId));
+        }
       }
 
       const mineraiCargo = Number(event.mineraiCargo);
       const siliciumCargo = Number(event.siliciumCargo);
       const hydrogeneCargo = Number(event.hydrogeneCargo);
 
-      if (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0) {
+      if (event.originPlanetId && (mineraiCargo > 0 || siliciumCargo > 0 || hydrogeneCargo > 0)) {
         const [originPlanetData] = await db
           .select()
           .from(planets)
