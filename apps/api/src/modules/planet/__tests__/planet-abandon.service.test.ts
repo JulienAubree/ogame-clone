@@ -41,3 +41,59 @@ describe('computeCargoLoad', () => {
     expect(res.overflow).toEqual({ minerai: 0, silicium: 5, hydrogene: 10 });
   });
 });
+
+import { detectBlockers, type AbandonContext } from '../planet-abandon.service.js';
+
+describe('detectBlockers', () => {
+  const baseCtx: AbandonContext = {
+    planet: { id: 'p1', userId: 'u1', status: 'active', planetClassId: 'rocky' } as any,
+    destinationPlanet: { id: 'p2', userId: 'u1', status: 'active' } as any,
+    inboundHostile: 0,
+    outboundActive: 0,
+    activeMarketOffers: 0,
+  };
+
+  it('returns empty list when everything is fine', () => {
+    expect(detectBlockers(baseCtx)).toEqual([]);
+  });
+
+  it('blocks homeworld', () => {
+    const ctx = { ...baseCtx, planet: { ...baseCtx.planet, planetClassId: 'homeworld' } as any };
+    expect(detectBlockers(ctx)).toContain('homeworld');
+  });
+
+  it('blocks colonizing planet', () => {
+    const ctx = { ...baseCtx, planet: { ...baseCtx.planet, status: 'colonizing' } as any };
+    expect(detectBlockers(ctx)).toContain('colonizing');
+  });
+
+  it('blocks on inbound hostile fleets', () => {
+    const ctx = { ...baseCtx, inboundHostile: 1 };
+    expect(detectBlockers(ctx)).toContain('inbound_hostile');
+  });
+
+  it('blocks on outbound active fleets', () => {
+    const ctx = { ...baseCtx, outboundActive: 2 };
+    expect(detectBlockers(ctx)).toContain('outbound_active');
+  });
+
+  it('blocks on active market offers', () => {
+    const ctx = { ...baseCtx, activeMarketOffers: 1 };
+    expect(detectBlockers(ctx)).toContain('market_offers');
+  });
+
+  it('blocks if destination is the abandoned planet itself', () => {
+    const ctx = { ...baseCtx, destinationPlanet: baseCtx.planet };
+    expect(detectBlockers(ctx)).toContain('destination_invalid');
+  });
+
+  it('blocks if destination is not active', () => {
+    const ctx = { ...baseCtx, destinationPlanet: { ...baseCtx.destinationPlanet, status: 'colonizing' } as any };
+    expect(detectBlockers(ctx)).toContain('destination_invalid');
+  });
+
+  it('blocks if destination belongs to another user', () => {
+    const ctx = { ...baseCtx, destinationPlanet: { ...baseCtx.destinationPlanet, userId: 'other' } as any };
+    expect(detectBlockers(ctx)).toContain('destination_invalid');
+  });
+});

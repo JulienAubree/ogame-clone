@@ -29,3 +29,47 @@ export function computeCargoLoad(stock: ResourceBundle, capacity: number): Cargo
     },
   };
 }
+
+export type AbandonBlocker =
+  | 'homeworld'
+  | 'colonizing'
+  | 'inbound_hostile'
+  | 'outbound_active'
+  | 'market_offers'
+  | 'destination_invalid';
+
+export interface AbandonContext {
+  planet: {
+    id: string;
+    userId: string;
+    status: string;
+    planetClassId: string | null;
+  };
+  destinationPlanet: {
+    id: string;
+    userId: string;
+    status: string;
+  } | null;
+  inboundHostile: number;
+  outboundActive: number;
+  activeMarketOffers: number;
+}
+
+export function detectBlockers(ctx: AbandonContext): AbandonBlocker[] {
+  const blockers: AbandonBlocker[] = [];
+  if (ctx.planet.planetClassId === 'homeworld') blockers.push('homeworld');
+  if (ctx.planet.status === 'colonizing') blockers.push('colonizing');
+  if (ctx.inboundHostile > 0) blockers.push('inbound_hostile');
+  if (ctx.outboundActive > 0) blockers.push('outbound_active');
+  if (ctx.activeMarketOffers > 0) blockers.push('market_offers');
+  const dest = ctx.destinationPlanet;
+  if (
+    !dest ||
+    dest.id === ctx.planet.id ||
+    dest.userId !== ctx.planet.userId ||
+    dest.status !== 'active'
+  ) {
+    blockers.push('destination_invalid');
+  }
+  return blockers;
+}
