@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb, pgEnum, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, text, jsonb, pgEnum, index, integer } from 'drizzle-orm/pg-core';
 
 export const playstyleEnum = pgEnum('playstyle', ['miner', 'warrior', 'explorer']);
 
@@ -16,7 +16,25 @@ export const users = pgTable('users', {
   seekingAlliance: boolean('seeking_alliance').notNull().default(false),
   theme: varchar('theme', { length: 16 }).notNull().default('dark'),
   profileVisibility: jsonb('profile_visibility').notNull().default({ bio: true, playstyle: true, stats: true }),
+  failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
 });
+
+export const loginEvents = pgTable('login_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  email: varchar('email', { length: 255 }).notNull(),
+  success: boolean('success').notNull(),
+  reason: varchar('reason', { length: 64 }),
+  ipAddress: varchar('ip_address', { length: 64 }),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('login_events_user_id_idx').on(table.userId),
+  index('login_events_email_idx').on(table.email),
+  index('login_events_created_at_idx').on(table.createdAt),
+]);
 
 export const refreshTokens = pgTable('refresh_tokens', {
   id: uuid('id').primaryKey().defaultRandom(),
