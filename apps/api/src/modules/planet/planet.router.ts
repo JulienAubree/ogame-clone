@@ -1,8 +1,12 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createPlanetService } from './planet.service.js';
+import type { createPlanetAbandonService } from './planet-abandon.service.js';
 
-export function createPlanetRouter(planetService: ReturnType<typeof createPlanetService>) {
+export function createPlanetRouter(
+  planetService: ReturnType<typeof createPlanetService>,
+  abandonService: ReturnType<typeof createPlanetAbandonService>,
+) {
   return router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return planetService.listPlanets(ctx.userId!);
@@ -37,5 +41,23 @@ export function createPlanetRouter(planetService: ReturnType<typeof createPlanet
     empire: protectedProcedure.query(async ({ ctx }) => {
       return planetService.getEmpireOverview(ctx.userId!);
     }),
+
+    abandonPreview: protectedProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        destinationPlanetId: z.string().uuid(),
+      }))
+      .query(async ({ ctx, input }) => {
+        return abandonService.preview(ctx.userId!, input.planetId, input.destinationPlanetId);
+      }),
+
+    abandon: protectedProcedure
+      .input(z.object({
+        planetId: z.string().uuid(),
+        destinationPlanetId: z.string().uuid(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return abandonService.abandon(ctx.userId!, input.planetId, input.destinationPlanetId);
+      }),
   });
 }

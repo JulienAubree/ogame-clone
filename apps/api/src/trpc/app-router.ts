@@ -3,6 +3,7 @@ import { createAuthRouter } from '../modules/auth/auth.router.js';
 import { createAuthService } from '../modules/auth/auth.service.js';
 import { createPlanetService } from '../modules/planet/planet.service.js';
 import { createPlanetRouter } from '../modules/planet/planet.router.js';
+import { createPlanetAbandonService } from '../modules/planet/planet-abandon.service.js';
 import { createResourceService } from '../modules/resource/resource.service.js';
 import { createResourceRouter } from '../modules/resource/resource.router.js';
 import { createBuildingService } from '../modules/building/building.service.js';
@@ -81,6 +82,8 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const authService = createAuthService(db, redis, mailerService);
   const resourceService = createResourceService(db, gameConfigService, dailyQuestService, talentService);
   const planetService = createPlanetService(db, gameConfigService, env.ASSETS_DIR, resourceService);
+  const reportService = createReportService(db);
+  const planetAbandonService = createPlanetAbandonService(db, gameConfigService, reportService, fleetQueue, redis);
   const buildingService = createBuildingService(db, resourceService, buildCompletionQueue, gameConfigService, talentService, dailyQuestService);
   const researchService = createResearchService(db, resourceService, buildCompletionQueue, gameConfigService, talentService, dailyQuestService);
   const galaxyService = createGalaxyService(db, gameConfigService);
@@ -90,7 +93,6 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const asteroidBeltService = createAsteroidBeltService(db);
   const pirateService = createPirateService(db, gameConfigService);
   const pveService = createPveService(db, asteroidBeltService, pirateService, gameConfigService, talentService);
-  const reportService = createReportService(db);
   const userService = createUserService(db, env.ASSETS_DIR);
   const gameEventService = createGameEventService(db);
   const friendService = createFriendService(db, redis, gameEventService);
@@ -110,7 +112,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const explorationReportService = createExplorationReportService(db, resourceService, gameConfigService);
 
   const authRouter = createAuthRouter(authService, planetService);
-  const planetRouter = createPlanetRouter(planetService);
+  const planetRouter = createPlanetRouter(planetService, planetAbandonService);
   const resourceRouter = createResourceRouter(resourceService, planetService, db, gameConfigService);
   const buildingRouter = createBuildingRouter(buildingService);
   const researchRouter = createResearchRouter(researchService);
