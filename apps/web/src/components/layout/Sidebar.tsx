@@ -1,7 +1,8 @@
+import { useMemo } from 'react';
 import { NavLink } from 'react-router';
 import { cn } from '@/lib/utils';
 import { MessageSquarePlus } from 'lucide-react';
-import { getVisibleSidebarPaths } from '@exilium/game-engine';
+import { getVisibleSidebarPaths, type SidebarPath } from '@exilium/game-engine';
 import { trpc } from '@/trpc';
 import { useSidebarNewItems } from './useSidebarNewItems';
 import {
@@ -27,7 +28,7 @@ import {
 
 interface NavItem {
   label: string;
-  path: string;
+  path: SidebarPath;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
@@ -88,18 +89,25 @@ export function Sidebar() {
   const { data: planets } = trpc.planet.list.useQuery();
 
   const isComplete = tutorialData?.isComplete ?? false;
-  const chapterOrder = tutorialData?.chapter
-    ? (parseInt(tutorialData.chapter.id.replace('chapter_', ''), 10) || 1)
+  // TODO(api): prefer tutorial.getCurrent exposing chapter.order directly
+  const parsedChapter = tutorialData?.chapter
+    ? Number.parseInt(tutorialData.chapter.id.replace('chapter_', ''), 10)
+    : NaN;
+  const chapterOrder = Number.isFinite(parsedChapter)
+    ? parsedChapter
     : (isComplete ? 4 : 1);
   const colonyCount = planets?.length ?? 1;
 
-  const visiblePaths = getVisibleSidebarPaths({ chapterOrder, isComplete, colonyCount });
+  const visiblePaths = useMemo(
+    () => getVisibleSidebarPaths({ chapterOrder, isComplete, colonyCount }),
+    [chapterOrder, isComplete, colonyCount],
+  );
   const { newPaths, markSeen } = useSidebarNewItems(visiblePaths);
 
   const renderedSections = sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => visiblePaths.has(item.path as any)),
+      items: section.items.filter((item) => visiblePaths.has(item.path)),
     }))
     .filter((section) => section.items.length > 0);
 
@@ -138,7 +146,7 @@ export function Sidebar() {
                       {isNew && (
                         <span
                           aria-label="Nouveau"
-                          className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_6px_currentColor]"
+                          className="ml-auto h-1.5 w-1.5 rounded-full bg-primary text-primary shadow-[0_0_6px_currentColor]"
                         />
                       )}
                     </NavLink>
