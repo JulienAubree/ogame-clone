@@ -11,6 +11,8 @@ type Props = {
 
 /**
  * Relative luminance (WCAG) of a #RRGGBB color. Returns [0, 1].
+ * The perceptual crossover for black-vs-white contrast is ~0.179:
+ * below 0.179 white gives better contrast; at or above, black does.
  */
 function luminance(hex: string): number {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -29,7 +31,7 @@ export function AllianceBlason({ blason, size, className, title }: Props) {
   // For split shapes, pick black or white for the icon based on average luminance
   // of the two halves. For solid shapes, icon uses color2 (same as the border).
   const iconColor = isSplit
-    ? ((luminance(blason.color1) + luminance(blason.color2)) / 2 > 0.5 ? '#000000' : '#ffffff')
+    ? ((luminance(blason.color1) + luminance(blason.color2)) / 2 > 0.179 ? '#000000' : '#ffffff')
     : blason.color2;
 
   // Icon is in a 24x24 local space, we scale it to ~60% of the shape and center at (50,50).
@@ -45,7 +47,7 @@ export function AllianceBlason({ blason, size, className, title }: Props) {
       viewBox="0 0 100 100"
       className={className}
       role={title ? 'img' : 'presentation'}
-      aria-label={title}
+      aria-label={title ?? undefined}
     >
       {title && <title>{title}</title>}
       <Shape color1={blason.color1} color2={blason.color2} id={id} />
