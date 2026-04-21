@@ -400,6 +400,15 @@ export default function Overview() {
         planetTypeName={resourceData?.planetTypeName}
         planetTypeBonus={resourceData?.planetTypeBonus}
         governance={effectiveGovernance}
+        allPlanets={planets.map((p) => ({
+          id: p.id,
+          name: p.name,
+          galaxy: p.galaxy,
+          system: p.system,
+          position: p.position,
+          planetClassId: p.planetClassId,
+          status: (p as any).status,
+        }))}
         renderBiomeBadge={(biome) => <BiomeBadge biome={biome} size="xs" />}
         renderPlanetDetail={(p) => <PlanetDetailContent planet={p} resourceData={resourceData} gameConfig={gameConfig} governance={effectiveGovernance} />}
       />

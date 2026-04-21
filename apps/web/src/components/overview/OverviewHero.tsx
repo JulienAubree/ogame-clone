@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FlagshipIcon } from '@/lib/icons';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
 import { getPlanetImageUrl } from '@/lib/assets';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
+import { AbandonColonyModal, type AbandonModalPlanet } from '@/components/empire/AbandonColonyModal';
 import { trpc } from '@/trpc';
 
 // Reuse BiomeBadge from existing Overview — it will be extracted in the main page rewrite
@@ -37,15 +38,35 @@ interface OverviewHeroProps {
   planetTypeName?: string;
   planetTypeBonus?: { mineraiBonus: number; siliciumBonus: number; hydrogeneBonus: number };
   governance?: GovernanceData | null;
+  allPlanets: AbandonModalPlanet[];
   renderBiomeBadge: (biome: any) => React.ReactNode;
   renderPlanetDetail: (planet: any) => React.ReactNode;
 }
 
-export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetTypeBonus, governance, renderBiomeBadge, renderPlanetDetail }: OverviewHeroProps) {
+export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetTypeBonus, governance, allPlanets, renderBiomeBadge, renderPlanetDetail }: OverviewHeroProps) {
   const utils = trpc.useUtils();
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState('');
   const [showDetail, setShowDetail] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [abandonOpen, setAbandonOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const isHomeworld = planet.planetClassId === 'homeworld';
+  const canAbandon = !isHomeworld;
+  const canRename = !planet.renamed;
+  const hasMenu = canRename || canAbandon;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
 
   const renameMutation = trpc.planet.rename.useMutation({
     onSuccess: () => {
@@ -98,6 +119,56 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
         </div>
+
+        {/* Actions menu (top-right) */}
+        {hasMenu && (
+          <div ref={menuRef} className="absolute right-3 top-3 z-20 lg:right-4 lg:top-4">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Actions"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-background/40 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-background/70 hover:text-foreground"
+            >
+              <span className="text-base leading-none">{'⋯'}</span>
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-30 mt-1 min-w-48 rounded-md border border-white/10 bg-card/95 backdrop-blur-lg shadow-lg animate-slide-up"
+              >
+                {canRename && (
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setNewName(planet.name);
+                      setIsRenaming(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground hover:bg-accent"
+                  >
+                    Renommer la colonie
+                  </button>
+                )}
+                {canAbandon && (
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setAbandonOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                  >
+                    Abandonner la colonie
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="relative px-5 pt-8 pb-6 lg:px-8 lg:pt-12 lg:pb-8">
           <div className="flex items-start gap-5">
@@ -211,6 +282,23 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
       <EntityDetailOverlay open={showDetail} onClose={() => setShowDetail(false)} title={planet.name}>
         {renderPlanetDetail(planet)}
       </EntityDetailOverlay>
+
+      {canAbandon && (
+        <AbandonColonyModal
+          planet={{
+            id: planet.id,
+            name: planet.name,
+            galaxy: planet.galaxy,
+            system: planet.system,
+            position: planet.position,
+            planetClassId: planet.planetClassId,
+            status: 'active',
+          }}
+          allPlanets={allPlanets}
+          open={abandonOpen}
+          onOpenChange={setAbandonOpen}
+        />
+      )}
     </>
   );
 }
