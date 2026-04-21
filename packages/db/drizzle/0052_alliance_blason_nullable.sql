@@ -1,4 +1,4 @@
--- Alliance blason + motto — add as nullable for now. Backfill via scripts/migrate-alliance-blason.ts, then NOT NULL in 0053.
+-- Alliance blason + motto — add as nullable. 0053 backfills deterministically from tag and enforces NOT NULL.
 ALTER TABLE "alliances" ADD COLUMN "blason_shape" varchar(32);
 ALTER TABLE "alliances" ADD COLUMN "blason_icon" varchar(32);
 ALTER TABLE "alliances" ADD COLUMN "blason_color1" varchar(7);
