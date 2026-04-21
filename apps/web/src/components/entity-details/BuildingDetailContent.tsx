@@ -581,7 +581,10 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
 function GovernanceSection({ currentLevel }: { currentLevel: number }) {
   const { data: governance } = trpc.colonization.governance.useQuery();
 
-  const capacity = 1 + currentLevel;
+  // Use server-side capacity when available so the panel stays consistent
+  // with the governance alert/penalty computation (which reads the homeworld
+  // IPC, not the currently-viewed planet's row).
+  const capacity = governance?.capacity ?? (1 + currentLevel);
   const colonyCount = governance?.colonyCount ?? 0;
   const overextend = governance?.overextend ?? 0;
 

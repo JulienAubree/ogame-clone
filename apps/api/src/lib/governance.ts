@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { planets, planetBuildings } from '@exilium/db';
 import { calculateGovernancePenalty } from '@exilium/game-engine';
 import type { Database } from '@exilium/db';
@@ -19,13 +19,19 @@ export async function getGovernancePenalty(
     .from(planets).where(eq(planets.userId, userId));
   const colonyCount = Math.max(0, userPlanets.filter(p => p.status === 'active').length - 1);
 
-  // Find Imperial Power Center level on any of user's planets
-  const allIpc = await db.select({ planetId: planetBuildings.planetId, level: planetBuildings.level })
+  // IPC is homeworld-only by design — read only the homeworld row to avoid
+  // picking stale rows on other planets non-deterministically.
+  const [ipcRow] = await db
+    .select({ level: planetBuildings.level })
     .from(planetBuildings)
-    .where(eq(planetBuildings.buildingId, 'imperialPowerCenter'));
-  const userPlanetIds = new Set(userPlanets.map(p => p.id));
-  const ipc = allIpc.find(b => userPlanetIds.has(b.planetId));
-  const capacity = 1 + (ipc?.level ?? 0);
+    .innerJoin(planets, eq(planets.id, planetBuildings.planetId))
+    .where(and(
+      eq(planets.userId, userId),
+      eq(planets.planetClassId, 'homeworld'),
+      eq(planetBuildings.buildingId, 'imperialPowerCenter'),
+    ))
+    .limit(1);
+  const capacity = 1 + (ipcRow?.level ?? 0);
 
   const harvestPenalties = (config.universe.governance_penalty_harvest as number[]) ?? [0.15, 0.35, 0.60];
   const constructionPenalties = (config.universe.governance_penalty_construction as number[]) ?? [0.15, 0.35, 0.60];

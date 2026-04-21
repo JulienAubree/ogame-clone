@@ -10,24 +10,24 @@ export function createColonizationService(
   gameConfigService: GameConfigService,
 ) {
   return {
-    /** Get Imperial Power Center level for a user */
+    /** Get Imperial Power Center level for a user.
+     * IPC is homeworld-only (allowedPlanetTypes=['homeworld']), so read the
+     * homeworld's IPC row directly. Any stale rows on other planets (e.g.
+     * legacy data from before the restriction, or rows on abandoned planets)
+     * are ignored — otherwise `find()` could non-deterministically pick them.
+     */
     async getIpcLevel(userId: string): Promise<number> {
-      const userPlanets = await db
-        .select({ id: planets.id })
-        .from(planets)
-        .where(eq(planets.userId, userId));
-
-      if (userPlanets.length === 0) return 0;
-
-      const userPlanetIds = new Set(userPlanets.map(p => p.id));
-
-      const allIpc = await db
-        .select()
+      const [row] = await db
+        .select({ level: planetBuildings.level })
         .from(planetBuildings)
-        .where(eq(planetBuildings.buildingId, 'imperialPowerCenter'));
-
-      const ipc = allIpc.find(b => userPlanetIds.has(b.planetId));
-      return ipc?.level ?? 0;
+        .innerJoin(planets, eq(planets.id, planetBuildings.planetId))
+        .where(and(
+          eq(planets.userId, userId),
+          eq(planets.planetClassId, 'homeworld'),
+          eq(planetBuildings.buildingId, 'imperialPowerCenter'),
+        ))
+        .limit(1);
+      return row?.level ?? 0;
     },
 
     /** Scale a base cost by IPC level and scaling factor */
