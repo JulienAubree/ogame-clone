@@ -16,7 +16,7 @@ const afterTutorialWithColonies = (min: number): SidebarVisibilityRule =>
   (ctx) => ctx.isComplete && ctx.colonyCount >= min;
 
 /** Source of truth: path → visibility rule. Order reflects the sidebar layout. */
-export const SIDEBAR_VISIBILITY_RULES: Record<string, SidebarVisibilityRule> = {
+export const SIDEBAR_VISIBILITY_RULES = {
   '/empire': afterTutorialWithColonies(2),
   '/research': atChapter(2),
   '/flagship': atChapter(3),
@@ -36,15 +36,19 @@ export const SIDEBAR_VISIBILITY_RULES: Record<string, SidebarVisibilityRule> = {
   '/alliance-ranking': afterTutorial,
   '/changelog': always,
   '/feedback': always,
-};
+} as const satisfies Record<string, SidebarVisibilityRule>;
 
-export const ALWAYS_VISIBLE_PATHS: readonly string[] = Object.entries(SIDEBAR_VISIBILITY_RULES)
+export type SidebarPath = keyof typeof SIDEBAR_VISIBILITY_RULES;
+
+export const ALWAYS_VISIBLE_PATHS: readonly SidebarPath[] = (
+  Object.entries(SIDEBAR_VISIBILITY_RULES) as [SidebarPath, SidebarVisibilityRule][]
+)
   .filter(([, rule]) => rule === always)
   .map(([path]) => path);
 
-export function getVisibleSidebarPaths(ctx: SidebarContext): Set<string> {
-  const visible = new Set<string>();
-  for (const [path, rule] of Object.entries(SIDEBAR_VISIBILITY_RULES)) {
+export function getVisibleSidebarPaths(ctx: SidebarContext): Set<SidebarPath> {
+  const visible = new Set<SidebarPath>();
+  for (const [path, rule] of Object.entries(SIDEBAR_VISIBILITY_RULES) as [SidebarPath, SidebarVisibilityRule][]) {
     if (rule(ctx)) visible.add(path);
   }
   return visible;
