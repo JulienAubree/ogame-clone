@@ -316,9 +316,13 @@ export function createColonizationService(
       const intervalMax = Number(config.universe.colonization_raid_interval_max) || 5400;
       const travelMin = Number(config.universe.colonization_raid_travel_min) || 1800;
       const travelMax = Number(config.universe.colonization_raid_travel_max) || 3600;
-      const baseFP = Number(config.universe.colonization_raid_base_fp) || 50;
-      const stationedFPRatio = Number(config.universe.colonization_raid_stationed_fp_ratio) || 0.3;
-      const sf = Number(config.universe.colonization_cost_scaling_factor) || 0.5;
+      const baseStartFP = Number(config.universe.colonization_raid_base_start_fp) || 10;
+      const ipcStartExp = Number(config.universe.colonization_raid_ipc_start_exponent) || 1.4;
+      const baseCapFP = Number(config.universe.colonization_raid_base_cap_fp) || 35;
+      const ipcCapExp = Number(config.universe.colonization_raid_ipc_cap_exponent) || 1.8;
+      const waveGrowth = Number(config.universe.colonization_raid_wave_growth) || 2.0;
+      const stationedFPRatio = Number(config.universe.colonization_raid_stationed_fp_ratio) || 0.001;
+      const stationedMaxBonus = Number(config.universe.colonization_raid_stationed_max_bonus) || 0.5;
 
       const now = new Date();
       const elapsed = (now.getTime() - new Date(process.lastRaidAt ?? process.startedAt).getTime()) / 1000;
@@ -360,8 +364,14 @@ export function createColonizationService(
         stationedFP = computeFleetFP(fleet, shipStats, fpConfig);
       }
 
-      // Target FP for the pirate raid
-      const targetFP = Math.round(baseFP * (1 + sf * ipcLevel) * (1 + stationedFPRatio * stationedFP));
+      // Target FP for the pirate raid (wave-based, IPC-scaled, capped)
+      const waveIndex = (process.raidCount ?? 0) + 1;
+      const ipc = Math.max(ipcLevel, 1);
+      const garrisonBonus = Math.min(stationedFPRatio * stationedFP, stationedMaxBonus);
+      const startFP = baseStartFP * Math.pow(ipc, ipcStartExp) * (1 + garrisonBonus);
+      const capFP = baseCapFP * Math.pow(ipc, ipcCapExp);
+      const waveFP = Math.min(startFP * Math.pow(waveGrowth, waveIndex - 1), capFP);
+      const targetFP = Math.round(waveFP);
 
       // Random travel time
       const travelTime = Math.round(travelMin + Math.random() * (travelMax - travelMin));
@@ -375,10 +385,12 @@ export function createColonizationService(
 
       if (!planet) return null;
 
-      // Update lastRaidAt
       await db
         .update(colonizationProcesses)
-        .set({ lastRaidAt: now })
+        .set({
+          lastRaidAt: now,
+          raidCount: sql`${colonizationProcesses.raidCount} + 1`,
+        })
         .where(eq(colonizationProcesses.id, processId));
 
       return {
