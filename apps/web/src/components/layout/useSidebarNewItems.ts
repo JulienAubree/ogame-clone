@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
 const STORAGE_KEY = 'exilium.sidebar.seenItems';
 
@@ -37,15 +37,22 @@ export function useSidebarNewItems(visiblePaths: Set<string>): {
   const [seen, setSeen] = useState<Set<string>>(() => readSeen());
   const initialized = useRef(false);
 
-  // First mount: if localStorage has no entry yet, initialize with currently visible paths
+  // First mount: if localStorage has no entry yet, initialize with currently visible paths.
+  // Skip seeding when visiblePaths is still empty (loading state) so that a later
+  // render with the real paths can seed correctly without flooding the user with badges.
   useEffect(() => {
     if (initialized.current) return;
+    if (visiblePaths.size === 0) return;
     initialized.current = true;
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === null) {
-      const initial = new Set(visiblePaths);
-      writeSeen(initial);
-      setSeen(initial);
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === null) {
+        const initial = new Set(visiblePaths);
+        writeSeen(initial);
+        setSeen(initial);
+      }
+    } catch {
+      // localStorage unavailable (Safari private mode, blocked storage) — silent fallback
     }
   }, [visiblePaths]);
 
@@ -59,10 +66,13 @@ export function useSidebarNewItems(visiblePaths: Set<string>): {
     });
   }, []);
 
-  const newPaths = new Set<string>();
-  for (const path of visiblePaths) {
-    if (!seen.has(path)) newPaths.add(path);
-  }
+  const newPaths = useMemo(() => {
+    const result = new Set<string>();
+    for (const path of visiblePaths) {
+      if (!seen.has(path)) result.add(path);
+    }
+    return result;
+  }, [visiblePaths, seen]);
 
   return { newPaths, markSeen };
 }
