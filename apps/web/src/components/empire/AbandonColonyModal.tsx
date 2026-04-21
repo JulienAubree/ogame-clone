@@ -6,7 +6,9 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { getShipName } from '@/lib/entity-names';
 import { useToastStore } from '@/stores/toast.store';
 import { cn } from '@/lib/utils';
-import { FlagshipIcon } from '@/lib/icons';
+import { BuildingsIcon, DefenseIcon, FleetIcon, FlagshipIcon, ShipyardIcon } from '@/lib/icons';
+import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
+import { GameImage } from '@/components/common/GameImage';
 
 export interface AbandonModalPlanet {
   id: string;
@@ -177,103 +179,12 @@ export function AbandonColonyModal({
                   </ul>
                 </div>
               ) : (
-                <>
-                  <section>
-                    <h3 className="mb-1.5 text-sm font-semibold text-foreground">Sauvé</h3>
-                    <ul className="space-y-0.5 text-sm text-muted-foreground">
-                      {Object.entries(preview.data.ships).map(([shipId, count]) => (
-                        <li key={shipId} className="flex items-center gap-1.5">
-                          <span>
-                            {count}× {getShipName(shipId, gameConfig)}
-                          </span>
-                          {shipId === 'flagship' && (
-                            <span className="inline-flex items-center gap-1 text-energy">
-                              <FlagshipIcon width={12} height={12} />
-                              <span className="text-[11px]">(vaisseau amiral inclus)</span>
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                      {preview.data.flagshipIncluded && !('flagship' in preview.data.ships) && (
-                        <li className="flex items-center gap-1.5 text-energy">
-                          <FlagshipIcon width={12} height={12} />
-                          <span>Vaisseau amiral inclus</span>
-                        </li>
-                      )}
-                      <li>
-                        Minerai chargé :{' '}
-                        <span className="text-minerai">
-                          {preview.data.loaded.minerai.toLocaleString('fr-FR')}
-                        </span>
-                      </li>
-                      <li>
-                        Silicium chargé :{' '}
-                        <span className="text-silicium">
-                          {preview.data.loaded.silicium.toLocaleString('fr-FR')}
-                        </span>
-                      </li>
-                      <li>
-                        Hydrogène chargé :{' '}
-                        <span className="text-hydrogene">
-                          {preview.data.loaded.hydrogene.toLocaleString('fr-FR')}
-                        </span>
-                      </li>
-                      <li>
-                        Arrivée :{' '}
-                        {new Date(preview.data.arrivalTime).toLocaleString('fr-FR')} (
-                        {formatDuration(preview.data.travelSeconds)})
-                      </li>
-                    </ul>
-                  </section>
-
-                  <section>
-                    <h3 className="mb-1.5 text-sm font-semibold text-foreground">
-                      Champ de débris
-                    </h3>
-                    <ul className="space-y-0.5 text-sm text-muted-foreground">
-                      <li>
-                        Minerai :{' '}
-                        <span className="text-minerai">
-                          {preview.data.overflow.minerai.toLocaleString('fr-FR')}
-                        </span>
-                      </li>
-                      <li>
-                        Silicium :{' '}
-                        <span className="text-silicium">
-                          {preview.data.overflow.silicium.toLocaleString('fr-FR')}
-                        </span>
-                      </li>
-                    </ul>
-                    <p className="mt-1 text-xs text-muted-foreground/80">
-                      Un recycleur peut les récupérer — y compris les vôtres.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h3 className="mb-1.5 text-sm font-semibold text-destructive">
-                      Perdu définitivement
-                    </h3>
-                    <ul className="space-y-0.5 text-sm text-muted-foreground">
-                      <li>{preview.data.buildingsLost} niveau(x) de bâtiments</li>
-                      <li>{preview.data.defensesLost} défense(s)</li>
-                      <li>{preview.data.queuesLost} élément(s) en file de construction</li>
-                      <li>
-                        {preview.data.overflow.hydrogene.toLocaleString('fr-FR')} hydrogène
-                        (non récupérable)
-                      </li>
-                    </ul>
-                  </section>
-
-                  <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={confirmed}
-                      onChange={(e) => setConfirmed(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 accent-destructive"
-                    />
-                    <span>J'ai compris ce que je vais perdre.</span>
-                  </label>
-                </>
+                <AbandonSummary
+                  preview={preview.data}
+                  gameConfig={gameConfig}
+                  confirmed={confirmed}
+                  onConfirmChange={setConfirmed}
+                />
               )}
             </>
           )}
@@ -304,5 +215,315 @@ export function AbandonColonyModal({
         </div>
       )}
     </Modal>
+  );
+}
+
+type PreviewData = {
+  blockers: string[];
+  ships: Record<string, number>;
+  cargoCapacity: number;
+  loaded: { minerai: number; silicium: number; hydrogene: number };
+  overflow: { minerai: number; silicium: number; hydrogene: number };
+  stock: { minerai: number; silicium: number; hydrogene: number };
+  travelSeconds: number;
+  arrivalTime: string | Date;
+  flagshipIncluded: boolean;
+  buildingsLost: number;
+  defensesLost: number;
+  queuesLost: number;
+};
+
+function AbandonSummary({
+  preview,
+  gameConfig,
+  confirmed,
+  onConfirmChange,
+}: {
+  preview: PreviewData;
+  gameConfig: ReturnType<typeof useGameConfig>['data'];
+  confirmed: boolean;
+  onConfirmChange: (v: boolean) => void;
+}) {
+  const shipEntries = Object.entries(preview.ships).filter(([, n]) => n > 0);
+  const overflowMinerai = Math.floor(preview.overflow.minerai);
+  const overflowSilicium = Math.floor(preview.overflow.silicium);
+  const overflowHydrogene = Math.floor(preview.overflow.hydrogene);
+  const hasDebris = overflowMinerai > 0 || overflowSilicium > 0;
+  const hasLoss =
+    preview.buildingsLost > 0 ||
+    preview.defensesLost > 0 ||
+    preview.queuesLost > 0 ||
+    overflowHydrogene > 0;
+
+  return (
+    <div className="space-y-3">
+      <FleetCard preview={preview} gameConfig={gameConfig} shipEntries={shipEntries} />
+      {hasDebris && (
+        <DebrisCard minerai={overflowMinerai} silicium={overflowSilicium} />
+      )}
+      {hasLoss && (
+        <LossCard
+          buildings={preview.buildingsLost}
+          defenses={preview.defensesLost}
+          queues={preview.queuesLost}
+          hydrogene={overflowHydrogene}
+        />
+      )}
+
+      <label className="flex cursor-pointer items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">
+        <input
+          type="checkbox"
+          checked={confirmed}
+          onChange={(e) => onConfirmChange(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-destructive"
+        />
+        <span>J'ai compris ce que je vais perdre.</span>
+      </label>
+    </div>
+  );
+}
+
+function Card({
+  accent,
+  icon,
+  title,
+  subtitle,
+  children,
+}: {
+  accent: 'success' | 'warning' | 'destructive';
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const accentMap = {
+    success: { border: 'border-emerald-500/30', stripe: 'bg-emerald-500', text: 'text-emerald-400' },
+    warning: { border: 'border-amber-500/30', stripe: 'bg-amber-500', text: 'text-amber-400' },
+    destructive: { border: 'border-destructive/40', stripe: 'bg-destructive', text: 'text-destructive' },
+  };
+  const a = accentMap[accent];
+  return (
+    <div className={cn('relative overflow-hidden rounded-lg border bg-card/40', a.border)}>
+      <div className={cn('absolute inset-y-0 left-0 w-1', a.stripe)} />
+      <div className="pl-4 pr-3 py-3">
+        <div className="mb-2 flex items-center gap-2">
+          <span className={a.text}>{icon}</span>
+          <h3 className={cn('text-sm font-semibold', a.text)}>{title}</h3>
+        </div>
+        {subtitle && <div className="mb-2 text-xs text-muted-foreground">{subtitle}</div>}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FleetCard({
+  preview,
+  gameConfig,
+  shipEntries,
+}: {
+  preview: PreviewData;
+  gameConfig: ReturnType<typeof useGameConfig>['data'];
+  shipEntries: [string, number][];
+}) {
+  const loaded = preview.loaded;
+  const capacity = preview.cargoCapacity;
+  const loadedTotal = loaded.minerai + loaded.silicium + loaded.hydrogene;
+  const pct = (n: number) => (capacity > 0 ? (n / capacity) * 100 : 0);
+  const cargoFull = loadedTotal >= capacity && capacity > 0;
+
+  return (
+    <Card
+      accent="success"
+      icon={<FleetIcon width={16} height={16} />}
+      title="Flotte de retour"
+      subtitle={
+        <div className="flex items-center gap-1.5">
+          <ClockIcon />
+          <span>
+            {new Date(preview.arrivalTime).toLocaleString('fr-FR', {
+              day: '2-digit',
+              month: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+            {' · '}
+            {formatDuration(preview.travelSeconds)}
+          </span>
+        </div>
+      }
+    >
+      {shipEntries.length > 0 && (
+        <ul className="mb-3 space-y-1">
+          {shipEntries.map(([shipId, count]) => (
+            <li key={shipId} className="flex items-center gap-2 text-sm text-foreground">
+              {shipId === 'flagship' ? (
+                <FlagshipIcon width={16} height={16} className="text-energy shrink-0" />
+              ) : (
+                <GameImage
+                  category="ships"
+                  id={shipId}
+                  size="icon"
+                  alt=""
+                  className="h-5 w-5 shrink-0 rounded"
+                />
+              )}
+              <span className="tabular-nums text-muted-foreground w-8 text-right">{count}×</span>
+              <span className="truncate">
+                {shipId === 'flagship' ? 'Vaisseau amiral' : getShipName(shipId, gameConfig)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {capacity > 0 && (
+        <div>
+          <div className="mb-1 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Soutes</span>
+            <span
+              className={cn(
+                'tabular-nums font-medium',
+                cargoFull ? 'text-amber-400' : 'text-muted-foreground',
+              )}
+            >
+              {Math.floor(loadedTotal).toLocaleString('fr-FR')} /{' '}
+              {capacity.toLocaleString('fr-FR')}
+            </span>
+          </div>
+          <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+            {loaded.minerai > 0 && (
+              <div className="bg-minerai" style={{ width: `${pct(loaded.minerai)}%` }} />
+            )}
+            {loaded.silicium > 0 && (
+              <div className="bg-silicium" style={{ width: `${pct(loaded.silicium)}%` }} />
+            )}
+            {loaded.hydrogene > 0 && (
+              <div className="bg-hydrogene" style={{ width: `${pct(loaded.hydrogene)}%` }} />
+            )}
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] tabular-nums">
+            <span className="inline-flex items-center gap-1 text-minerai">
+              <MineraiIcon size={10} /> {loaded.minerai.toLocaleString('fr-FR')}
+            </span>
+            <span className="inline-flex items-center gap-1 text-silicium">
+              <SiliciumIcon size={10} /> {loaded.silicium.toLocaleString('fr-FR')}
+            </span>
+            <span className="inline-flex items-center gap-1 text-hydrogene">
+              <HydrogeneIcon size={10} /> {loaded.hydrogene.toLocaleString('fr-FR')}
+            </span>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function DebrisCard({ minerai, silicium }: { minerai: number; silicium: number }) {
+  return (
+    <Card
+      accent="warning"
+      icon={<DebrisIcon />}
+      title="Champ de débris"
+      subtitle="Récupérable par tout recycleur — y compris les vôtres."
+    >
+      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+        {minerai > 0 && (
+          <span className="inline-flex items-center gap-1.5">
+            <MineraiIcon size={14} className="text-minerai" />
+            <span className="font-semibold tabular-nums text-minerai">
+              {minerai.toLocaleString('fr-FR')}
+            </span>
+          </span>
+        )}
+        {silicium > 0 && (
+          <span className="inline-flex items-center gap-1.5">
+            <SiliciumIcon size={14} className="text-silicium" />
+            <span className="font-semibold tabular-nums text-silicium">
+              {silicium.toLocaleString('fr-FR')}
+            </span>
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function LossCard({
+  buildings,
+  defenses,
+  queues,
+  hydrogene,
+}: {
+  buildings: number;
+  defenses: number;
+  queues: number;
+  hydrogene: number;
+}) {
+  return (
+    <Card accent="destructive" icon={<TrashIcon />} title="Perdu définitivement">
+      <ul className="space-y-1 text-sm text-muted-foreground">
+        {buildings > 0 && (
+          <li className="flex items-center gap-2">
+            <BuildingsIcon width={14} height={14} className="text-destructive/80 shrink-0" />
+            <span className="tabular-nums text-foreground">{buildings}</span>
+            <span>niveau{buildings > 1 ? 'x' : ''} de bâtiments</span>
+          </li>
+        )}
+        {defenses > 0 && (
+          <li className="flex items-center gap-2">
+            <DefenseIcon width={14} height={14} className="text-destructive/80 shrink-0" />
+            <span className="tabular-nums text-foreground">{defenses}</span>
+            <span>défense{defenses > 1 ? 's' : ''}</span>
+          </li>
+        )}
+        {queues > 0 && (
+          <li className="flex items-center gap-2">
+            <ShipyardIcon width={14} height={14} className="text-destructive/80 shrink-0" />
+            <span className="tabular-nums text-foreground">{queues}</span>
+            <span>élément{queues > 1 ? 's' : ''} en file</span>
+          </li>
+        )}
+        {hydrogene > 0 && (
+          <li className="flex items-center gap-2">
+            <HydrogeneIcon size={14} className="text-hydrogene/80 shrink-0" />
+            <span className="tabular-nums text-hydrogene">
+              {hydrogene.toLocaleString('fr-FR')}
+            </span>
+            <span>hydrogène (non récupérable)</span>
+          </li>
+        )}
+      </ul>
+    </Card>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function DebrisIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 7l4-4 4 4-4 4z" />
+      <path d="M14 14l6-3-2 7-6 2z" />
+      <circle cx="17" cy="6" r="2" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
   );
 }
