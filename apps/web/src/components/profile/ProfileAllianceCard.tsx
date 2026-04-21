@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
-import { AllianceTagBadge } from './AllianceTagBadge';
+import { AllianceBlason } from '@/components/alliance/AllianceBlason';
+import type { Blason } from '@exilium/shared';
 
 const ROLE_LABELS: Record<string, string> = {
   founder: 'Fondateur',
@@ -10,6 +11,7 @@ const ROLE_LABELS: Record<string, string> = {
 interface ProfileAllianceCardProps {
   allianceName: string;
   allianceTag: string;
+  blason: Blason;
   allianceRole?: 'founder' | 'officer' | 'member' | null;
   isOwn: boolean;
 }
@@ -17,12 +19,13 @@ interface ProfileAllianceCardProps {
 export function ProfileAllianceCard({
   allianceName,
   allianceTag,
+  blason,
   allianceRole,
   isOwn,
 }: ProfileAllianceCardProps) {
   const inner = (
     <div className="flex items-center gap-4">
-      <AllianceTagBadge tag={allianceTag} size="lg" />
+      <AllianceBlason blason={blason} size={48} title={`[${allianceTag}] ${allianceName}`} />
       <div className="flex-1 min-w-0">
         <div className="text-base font-bold text-foreground truncate">{allianceName}</div>
         {isOwn && allianceRole && (

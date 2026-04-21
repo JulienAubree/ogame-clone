@@ -123,6 +123,10 @@ export function createUserService(db: Database, assetsDir: string) {
         allianceTag: alliances.tag,
         allianceId: alliances.id,
         allianceRole: allianceMembers.role,
+        blasonShape: alliances.blasonShape,
+        blasonIcon: alliances.blasonIcon,
+        blasonColor1: alliances.blasonColor1,
+        blasonColor2: alliances.blasonColor2,
       }).from(allianceMembers)
         .innerJoin(alliances, eq(allianceMembers.allianceId, alliances.id))
         .where(eq(allianceMembers.userId, userId))
@@ -136,6 +140,10 @@ export function createUserService(db: Database, assetsDir: string) {
         allianceTag: membership?.allianceTag ?? null,
         allianceId: membership?.allianceId ?? null,
         allianceRole: membership?.allianceRole ?? null,
+        blasonShape: membership?.blasonShape ?? null,
+        blasonIcon: membership?.blasonIcon ?? null,
+        blasonColor1: membership?.blasonColor1 ?? null,
+        blasonColor2: membership?.blasonColor2 ?? null,
       };
     },
 
