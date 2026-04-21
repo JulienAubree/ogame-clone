@@ -36,6 +36,23 @@ interface MarketReportsBuyProps {
   planetId: string;
 }
 
+type Offer = {
+  offerId: string;
+  galaxy: number;
+  systemMin: number;
+  systemMax: number;
+  planetClassId: string;
+  biomeCount: number;
+  maxRarity: string;
+  isComplete: boolean;
+  priceMinerai: number;
+  priceSilicium: number;
+  priceHydrogene: number;
+  sellerUsername: string;
+  sellerCoords: { galaxy: number; system: number; position: number };
+  knownBiomeCount: number;
+};
+
 export function MarketReportsBuy({ planetId: _planetId }: MarketReportsBuyProps) {
   const navigate = useNavigate();
   const { data: gameConfig } = useGameConfig();
@@ -43,6 +60,7 @@ export function MarketReportsBuy({ planetId: _planetId }: MarketReportsBuyProps)
   const [galaxyFilter, setGalaxyFilter] = useState<string>('');
   const [systemFilter, setSystemFilter] = useState<string>('');
   const [minRarityFilter, setMinRarityFilter] = useState<string>('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const galaxy = galaxyFilter ? Number(galaxyFilter) : undefined;
   const system = systemFilter ? Number(systemFilter) : undefined;
@@ -56,13 +74,7 @@ export function MarketReportsBuy({ planetId: _planetId }: MarketReportsBuyProps)
     },
   );
 
-  const handleBuy = (offer: {
-    offerId: string;
-    priceMinerai: number;
-    priceSilicium: number;
-    priceHydrogene: number;
-    sellerCoords: { galaxy: number; system: number; position: number };
-  }) => {
+  const handleBuy = (offer: Offer) => {
     navigate(
       `/fleet/send?mission=trade&galaxy=${offer.sellerCoords.galaxy}&system=${offer.sellerCoords.system}&position=${offer.sellerCoords.position}&tradeId=${offer.offerId}&cargoMi=${offer.priceMinerai}&cargoSi=${offer.priceSilicium}&cargoH2=${offer.priceHydrogene}`,
     );
@@ -74,7 +86,7 @@ export function MarketReportsBuy({ planetId: _planetId }: MarketReportsBuyProps)
     return pt?.name ?? planetClassId;
   };
 
-  const offers = data?.offers ?? [];
+  const offers = (data?.offers ?? []) as Offer[];
 
   return (
     <div>
@@ -140,66 +152,78 @@ export function MarketReportsBuy({ planetId: _planetId }: MarketReportsBuyProps)
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => {
             const rarityColor = RARITY_COLORS[offer.maxRarity] ?? '#9ca3af';
+            const isExpanded = expandedId === offer.offerId;
             return (
               <div key={offer.offerId} className="retro-card p-4 flex flex-col gap-3">
-                {/* Header: planet dot + coords + seller */}
+                {/* Header: planet dot + bucket coords + class + rarity */}
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 mt-0.5">
                     <PlanetDot planetClassId={offer.planetClassId} size={40} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-foreground">
-                        <span className="font-mono text-muted-foreground">{offer.galaxy}:{offer.system}:?</span>
-                        {' '}
-                        <span className="text-cyan-400/70">—</span>
-                        {' '}
-                        Planete {resolvePlanetName(offer.planetClassId)}
+                    <div className="font-mono text-xs text-muted-foreground">
+                      {offer.galaxy}:{offer.systemMin}-{offer.systemMax}:?
+                    </div>
+                    <div className="text-sm font-bold text-foreground mt-0.5">
+                      Planete {resolvePlanetName(offer.planetClassId)}
+                    </div>
+                    <div className="mt-1">
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                        style={{ color: rarityColor, backgroundColor: `${rarityColor}20` }}
+                      >
+                        {RARITY_LABELS[offer.maxRarity] ?? offer.maxRarity}
                       </span>
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                      par {offer.sellerUsername}
-                    </div>
                   </div>
                 </div>
 
-                {/* Badges */}
-                <div className="flex flex-wrap gap-1.5">
-                  <span
-                    className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    style={{ color: rarityColor, backgroundColor: `${rarityColor}20` }}
+                {/* Price */}
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Prix</span>
+                  <span className="text-foreground">
+                    {formatPrice(offer.priceMinerai, offer.priceSilicium, offer.priceHydrogene)}
+                  </span>
+                </div>
+
+                {/* Expand toggle */}
+                <button
+                  type="button"
+                  onClick={() => setExpandedId(isExpanded ? null : offer.offerId)}
+                  className="flex items-center justify-between text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <span>{isExpanded ? 'Masquer les details' : 'Voir les details'}</span>
+                  <svg
+                    className={cn('h-3 w-3 transition-transform', isExpanded && 'rotate-180')}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   >
-                    {RARITY_LABELS[offer.maxRarity] ?? offer.maxRarity}
-                  </span>
-                  <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-cyan-500/15 text-cyan-400">
-                    {offer.biomeCount} biome{offer.biomeCount > 1 ? 's' : ''}
-                  </span>
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-[10px] font-medium',
-                      offer.isComplete
-                        ? 'bg-emerald-500/15 text-emerald-400'
-                        : 'bg-amber-500/15 text-amber-400',
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="space-y-1.5 text-[11px] border-t border-border/50 pt-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Vendeur</span>
+                      <span className="text-foreground">{offer.sellerUsername}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Biomes</span>
+                      <span className="text-foreground">
+                        {offer.biomeCount} · {offer.isComplete ? 'Complet' : 'Partiel'}
+                      </span>
+                    </div>
+                    {offer.knownBiomeCount > 0 && (
+                      <div className="text-amber-400/80">
+                        {offer.knownBiomeCount} biome{offer.knownBiomeCount > 1 ? 's' : ''} deja connu{offer.knownBiomeCount > 1 ? 's' : ''}
+                      </div>
                     )}
-                  >
-                    {offer.isComplete ? 'Complet' : 'Partiel'}
-                  </span>
-                </div>
-
-                {/* Price + known biomes */}
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Prix</span>
-                    <span className="text-foreground">
-                      {formatPrice(offer.priceMinerai, offer.priceSilicium, offer.priceHydrogene)}
-                    </span>
                   </div>
-                  {offer.knownBiomeCount > 0 && (
-                    <div className="text-amber-400/80 text-[10px]">
-                      {offer.knownBiomeCount} biome{offer.knownBiomeCount > 1 ? 's' : ''} deja connu{offer.knownBiomeCount > 1 ? 's' : ''}
-                    </div>
-                  )}
-                </div>
+                )}
 
                 {/* Buy button */}
                 <Button

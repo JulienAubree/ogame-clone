@@ -391,7 +391,10 @@ export function createMarketService(
         conditions.push(eq(explorationReports.galaxy, options.galaxy));
       }
       if (options?.system !== undefined) {
-        conditions.push(eq(explorationReports.system, options.system));
+        const bucketStart = Math.floor((options.system - 1) / 10) * 10 + 1;
+        conditions.push(
+          sql`${explorationReports.system} BETWEEN ${bucketStart} AND ${bucketStart + 9}`,
+        );
       }
       if (options?.minRarity) {
         const minIdx = RARITY_ORDER.indexOf(options.minRarity as typeof RARITY_ORDER[number]);
@@ -488,10 +491,12 @@ export function createMarketService(
         const knownSet = discoveredByCoord.get(coordKey(r.galaxy, r.system, r.position));
         const knownBiomeCount = knownSet ? biomes.reduce((n, b) => n + (knownSet.has(b.id) ? 1 : 0), 0) : 0;
 
+        const bucketStart = Math.floor((r.system - 1) / 10) * 10 + 1;
         return {
           offerId: r.offerId,
           galaxy: r.galaxy,
-          system: r.system,
+          systemMin: bucketStart,
+          systemMax: bucketStart + 9,
           planetClassId: r.planetClassId,
           biomeCount: r.biomeCount,
           maxRarity: r.maxRarity,
