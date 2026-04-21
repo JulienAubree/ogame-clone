@@ -3,6 +3,7 @@ import { planets, users, debrisFields, allianceMembers, alliances, planetBiomes,
 import type { Database } from '@exilium/db';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import { seededRandom, coordinateSeed, generateBiomeCount, pickPlanetTypeForPosition, calculateMaxTemp } from '@exilium/game-engine';
+import type { Blason } from '@exilium/shared';
 
 export function createGalaxyService(db: Database, gameConfigService: GameConfigService) {
   return {
@@ -71,6 +72,10 @@ export function createGalaxyService(db: Database, gameConfigService: GameConfigS
           username: users.username,
           allianceId: allianceMembers.allianceId,
           allianceTag: alliances.tag,
+          blasonShape: alliances.blasonShape,
+          blasonIcon: alliances.blasonIcon,
+          blasonColor1: alliances.blasonColor1,
+          blasonColor2: alliances.blasonColor2,
           planetClassId: planets.planetClassId,
           planetImageIndex: planets.planetImageIndex,
           status: planets.status,

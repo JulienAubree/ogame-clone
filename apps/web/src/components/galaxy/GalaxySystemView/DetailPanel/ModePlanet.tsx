@@ -18,6 +18,7 @@ import { BiomeChips } from './BiomeChips';
 import { PlanetDot } from '../../PlanetDot';
 import { PlanetVisual } from '../../PlanetVisual';
 import { DebrisFieldIcon } from '../../DebrisFieldIcon';
+import { AllianceBlason } from '../../../alliance/AllianceBlason';
 
 type PlanetLikeView = Extract<
   SlotView,
@@ -208,10 +209,13 @@ export function ModePlanet({ view, ctx, actions }: Props): ReactElement {
           className={`flex items-center gap-2 mt-3 px-3 py-2 rounded-md ${RELATION_BANNER[view.relation]}`}
         >
           <div className="flex-1 min-w-0">
-            <div className="text-sm truncate">
+            <div className="flex items-center gap-1 text-sm truncate">
               {displayName}
               {view.allianceTag && (
-                <span className="text-xs text-muted-foreground ml-1">
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {view.ownerAllianceBlason && (
+                    <AllianceBlason blason={view.ownerAllianceBlason} size={14} />
+                  )}
                   [{view.allianceTag}]
                 </span>
               )}

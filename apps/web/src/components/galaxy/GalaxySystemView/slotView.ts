@@ -11,6 +11,8 @@
  * `undiscovered` kind (same visual as a defensive `null`).
  */
 
+import type { Blason } from '@exilium/shared';
+
 export type Relation = 'mine' | 'ally' | 'enemy';
 
 export interface BiomeView {
@@ -33,6 +35,7 @@ export type SlotView =
       username: string | null;
       allianceId: string | null;
       allianceTag: string | null;
+      ownerAllianceBlason: Blason | null;
       biomes: BiomeView[];
       debris?: { minerai: number; silicium: number };
       status: string;
@@ -135,6 +138,20 @@ export function toSlotView(
       ? { minerai: debrisRaw.minerai, silicium: debrisRaw.silicium }
       : undefined;
 
+  const blasonShape = typeof rawSlot.blasonShape === 'string' ? rawSlot.blasonShape : null;
+  const blasonIcon = typeof rawSlot.blasonIcon === 'string' ? rawSlot.blasonIcon : null;
+  const blasonColor1 = typeof rawSlot.blasonColor1 === 'string' ? rawSlot.blasonColor1 : null;
+  const blasonColor2 = typeof rawSlot.blasonColor2 === 'string' ? rawSlot.blasonColor2 : null;
+  const ownerAllianceBlason: Blason | null =
+    blasonShape && blasonIcon && blasonColor1 && blasonColor2
+      ? {
+          shape: blasonShape as Blason['shape'],
+          icon: blasonIcon as Blason['icon'],
+          color1: blasonColor1,
+          color2: blasonColor2,
+        }
+      : null;
+
   return {
     kind: 'planet',
     position: slotPosition,
@@ -148,6 +165,7 @@ export function toSlotView(
     username: typeof rawSlot.username === 'string' ? rawSlot.username : null,
     allianceId,
     allianceTag: typeof rawSlot.allianceTag === 'string' ? rawSlot.allianceTag : null,
+    ownerAllianceBlason,
     biomes: asBiomes(rawSlot.biomes),
     debris,
     status: typeof rawSlot.status === 'string' ? rawSlot.status : 'active',
