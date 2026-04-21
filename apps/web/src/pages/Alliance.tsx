@@ -186,6 +186,16 @@ function AllianceView({ alliance }: {
   const [editBlason, setEditBlason] = useState<Blason>(currentBlason);
   const [editMotto, setEditMotto] = useState<string | null>(alliance.motto);
 
+  useEffect(() => {
+    setEditBlason({
+      shape: alliance.blasonShape as Blason['shape'],
+      icon: alliance.blasonIcon as Blason['icon'],
+      color1: alliance.blasonColor1,
+      color2: alliance.blasonColor2,
+    });
+    setEditMotto(alliance.motto);
+  }, [alliance.blasonShape, alliance.blasonIcon, alliance.blasonColor1, alliance.blasonColor2, alliance.motto]);
+
   const { data: applications } = trpc.alliance.applications.useQuery(undefined, {
     enabled: showApplications && (alliance.myRole === 'founder' || alliance.myRole === 'officer'),
   });
@@ -210,12 +220,12 @@ function AllianceView({ alliance }: {
   });
 
   const blasonDirty = useMemo(() => {
-    return editBlason.shape !== currentBlason.shape
-      || editBlason.icon !== currentBlason.icon
-      || editBlason.color1.toLowerCase() !== currentBlason.color1.toLowerCase()
-      || editBlason.color2.toLowerCase() !== currentBlason.color2.toLowerCase()
+    return editBlason.shape !== (alliance.blasonShape as Blason['shape'])
+      || editBlason.icon !== (alliance.blasonIcon as Blason['icon'])
+      || editBlason.color1.toLowerCase() !== alliance.blasonColor1.toLowerCase()
+      || editBlason.color2.toLowerCase() !== alliance.blasonColor2.toLowerCase()
       || (editMotto ?? '') !== (alliance.motto ?? '');
-  }, [editBlason, editMotto, currentBlason, alliance.motto]);
+  }, [editBlason, editMotto, alliance.blasonShape, alliance.blasonIcon, alliance.blasonColor1, alliance.blasonColor2, alliance.motto]);
 
   const isLeader = alliance.myRole === 'founder' || alliance.myRole === 'officer';
   const isFounder = alliance.myRole === 'founder';
