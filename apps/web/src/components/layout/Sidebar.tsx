@@ -1,6 +1,9 @@
 import { NavLink } from 'react-router';
 import { cn } from '@/lib/utils';
 import { MessageSquarePlus } from 'lucide-react';
+import { getVisibleSidebarPaths } from '@exilium/game-engine';
+import { trpc } from '@/trpc';
+import { useSidebarNewItems } from './useSidebarNewItems';
 import {
   OverviewIcon,
   ResourcesIcon,
@@ -81,38 +84,67 @@ const sections: { title: string; items: NavItem[] }[] = [
 ];
 
 export function Sidebar() {
+  const { data: tutorialData } = trpc.tutorial.getCurrent.useQuery();
+  const { data: planets } = trpc.planet.list.useQuery();
+
+  const isComplete = tutorialData?.isComplete ?? false;
+  const chapterOrder = tutorialData?.chapter
+    ? (parseInt(tutorialData.chapter.id.replace('chapter_', ''), 10) || 1)
+    : (isComplete ? 4 : 1);
+  const colonyCount = planets?.length ?? 1;
+
+  const visiblePaths = getVisibleSidebarPaths({ chapterOrder, isComplete, colonyCount });
+  const { newPaths, markSeen } = useSidebarNewItems(visiblePaths);
+
+  const renderedSections = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => visiblePaths.has(item.path as any)),
+    }))
+    .filter((section) => section.items.length > 0);
+
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-56 lg:flex-col bg-card/80 backdrop-blur-md border-r border-white/10">
       <div className="flex h-14 items-center border-b border-border/50 px-4">
         <span className="text-lg font-bold text-primary glow-silicium">Exilium</span>
       </div>
       <nav className="flex-1 overflow-y-auto p-2">
-        {sections.map((section, idx) => (
-          <div key={section.title}>
+        {renderedSections.map((section, idx) => (
+          <div key={section.title} className="sidebar-section-fade-in">
             {idx > 0 && <div className="mx-3 my-2 border-t border-border/30" />}
             <p className="mb-1 px-3 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
               {section.title}
             </p>
             <ul className="space-y-0.5">
-              {section.items.map((item) => (
-                <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    end={item.path === '/'}
-                    className={({ isActive }) =>
-                      cn(
-                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                        isActive
-                          ? 'border-l-2 border-primary bg-primary/10 text-primary'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                      )
-                    }
-                  >
-                    <item.icon width={18} height={18} />
-                    <span>{item.label}</span>
-                  </NavLink>
-                </li>
-              ))}
+              {section.items.map((item) => {
+                const isNew = newPaths.has(item.path);
+                return (
+                  <li key={item.path} className={isNew ? 'sidebar-item-new' : undefined}>
+                    <NavLink
+                      to={item.path}
+                      end={item.path === '/'}
+                      onClick={() => markSeen(item.path)}
+                      className={({ isActive }) =>
+                        cn(
+                          'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                          isActive
+                            ? 'border-l-2 border-primary bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                        )
+                      }
+                    >
+                      <item.icon width={18} height={18} />
+                      <span>{item.label}</span>
+                      {isNew && (
+                        <span
+                          aria-label="Nouveau"
+                          className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_6px_currentColor]"
+                        />
+                      )}
+                    </NavLink>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}

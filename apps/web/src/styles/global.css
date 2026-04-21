@@ -133,3 +133,32 @@
     @apply transition-transform duration-150 active:scale-[0.97] active:opacity-80;
   }
 }
+
+@keyframes sidebar-item-new-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-6px);
+    filter: drop-shadow(0 0 0 rgba(186, 146, 255, 0));
+  }
+  60% {
+    filter: drop-shadow(0 0 4px rgba(186, 146, 255, 0.6));
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: drop-shadow(0 0 0 rgba(186, 146, 255, 0));
+  }
+}
+
+.sidebar-item-new {
+  animation: sidebar-item-new-in 600ms ease-out;
+}
+
+@keyframes sidebar-section-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.sidebar-section-fade-in {
+  animation: sidebar-section-fade-in 400ms ease-out;
+}
