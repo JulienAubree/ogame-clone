@@ -10,6 +10,11 @@ export const alliances = pgTable('alliances', {
   tag: varchar('tag', { length: 8 }).notNull().unique(),
   description: text('description'),
   founderId: uuid('founder_id').notNull().references(() => users.id),
+  blasonShape: varchar('blason_shape', { length: 32 }).notNull(),
+  blasonIcon: varchar('blason_icon', { length: 32 }).notNull(),
+  blasonColor1: varchar('blason_color1', { length: 7 }).notNull(),
+  blasonColor2: varchar('blason_color2', { length: 7 }).notNull(),
+  motto: varchar('motto', { length: 100 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
