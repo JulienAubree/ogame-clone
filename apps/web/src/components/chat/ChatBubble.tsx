@@ -33,7 +33,7 @@ export function ChatBubble({ body, isSent, senderUsername, senderAvatarId, allia
         {showName && senderUsername && (
           <p className="text-[10px] font-semibold text-primary/80 mb-0.5 flex items-center gap-0.5">
             {allianceBlason && (
-              <AllianceBlason blason={allianceBlason} size={16} className="inline-block align-middle mr-1" />
+              <AllianceBlason blason={allianceBlason} size={16} />
             )}
             {senderUsername}
           </p>

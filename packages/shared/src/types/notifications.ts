@@ -1,3 +1,13 @@
+import type { Blason } from '../alliance-blason/catalog.js';
+
+export type NewAllianceMessagePayload = {
+  allianceId: string;
+  allianceTag: string;
+  senderUsername: string | null;
+  senderId: string;
+  allianceBlason: Blason | null;
+};
+
 export const NOTIFICATION_CATEGORIES = [
   'building',
   'research',

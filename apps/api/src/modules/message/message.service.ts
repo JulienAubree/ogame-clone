@@ -6,7 +6,7 @@ import type Redis from 'ioredis';
 import { publishNotification } from '../notification/notification.publisher.js';
 import type { createPushService } from '../push/push.service.js';
 import { enforceRateLimit } from '../../lib/rate-limit.js';
-import type { Blason } from '@exilium/shared';
+import type { Blason, BlasonShape, BlasonIcon } from '@exilium/shared';
 
 /** Per-user cap on messages sent (any combination of new/reply/alliance-chat). */
 const MESSAGE_SEND_LIMIT = 20;
@@ -500,6 +500,10 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
         .select({
           allianceId: allianceMembers.allianceId,
           allianceTag: alliances.tag,
+          blasonShape: alliances.blasonShape,
+          blasonIcon: alliances.blasonIcon,
+          blasonColor1: alliances.blasonColor1,
+          blasonColor2: alliances.blasonColor2,
         })
         .from(allianceMembers)
         .innerJoin(alliances, eq(alliances.id, allianceMembers.allianceId))
@@ -543,6 +547,12 @@ export function createMessageService(db: Database, redis: Redis, pushService: Re
             allianceTag: membership.allianceTag,
             senderUsername: sender?.username ?? null,
             senderId,
+            allianceBlason: {
+              shape: membership.blasonShape as BlasonShape,
+              icon: membership.blasonIcon as BlasonIcon,
+              color1: membership.blasonColor1,
+              color2: membership.blasonColor2,
+            } satisfies Blason,
           },
         });
       }
