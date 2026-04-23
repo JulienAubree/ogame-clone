@@ -170,7 +170,7 @@ function AllianceView({ alliance }: {
   };
 }) {
   const utils = trpc.useUtils();
-  const [activeTab, setActiveTab] = useState<'info' | 'members' | 'manage'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'members' | 'activity' | 'manage'>('info');
   const [inviteUsername, setInviteUsername] = useState('');
   const [description, setDescription] = useState(alliance.description ?? '');
   const [showApplications, setShowApplications] = useState(false);
@@ -230,9 +230,10 @@ function AllianceView({ alliance }: {
   const isLeader = alliance.myRole === 'founder' || alliance.myRole === 'officer';
   const isFounder = alliance.myRole === 'founder';
 
-  const tabs: { id: 'info' | 'members' | 'manage'; label: string; show: boolean }[] = [
+  const tabs: { id: 'info' | 'members' | 'activity' | 'manage'; label: string; show: boolean }[] = [
     { id: 'info', label: 'Infos', show: true },
     { id: 'members', label: 'Membres', show: true },
+    { id: 'activity', label: 'Activité', show: true },
     { id: 'manage', label: 'Gestion', show: isLeader },
   ];
 
@@ -331,6 +332,13 @@ function AllianceView({ alliance }: {
           </div>
         ))}
       </div>
+    </section>
+  );
+
+  const renderActivitySection = () => (
+    <section className="glass-card p-4 space-y-3">
+      <h3 className="text-base font-semibold">Activité</h3>
+      <p className="text-sm text-muted-foreground">Aucune activité pour le moment.</p>
     </section>
   );
 
@@ -440,6 +448,7 @@ function AllianceView({ alliance }: {
       <div className="lg:hidden space-y-4">
         {activeTab === 'info' && renderInfoSection()}
         {activeTab === 'members' && renderMembersSection()}
+        {activeTab === 'activity' && renderActivitySection()}
         {activeTab === 'manage' && isLeader && renderManageSection()}
       </div>
 
@@ -447,6 +456,7 @@ function AllianceView({ alliance }: {
       <div className="hidden lg:block space-y-6">
         {renderInfoSection()}
         {renderMembersSection()}
+        {renderActivitySection()}
         {isLeader && renderManageSection()}
       </div>
 
