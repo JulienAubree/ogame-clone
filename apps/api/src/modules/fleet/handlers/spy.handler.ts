@@ -1,6 +1,6 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, planetBuildings, userResearch, flagships, flagshipTalents } from '@exilium/db';
+import { planets, planetShips, planetDefenses, planetBuildings, userResearch, flagships, flagshipTalents, allianceMembers, alliances } from '@exilium/db';
 import { calculateSpyReport, calculateDetectionChance, totalCargoCapacity, simulateCombat } from '@exilium/game-engine';
 import type { Database } from '@exilium/db';
 import type { CombatInput } from '@exilium/game-engine';
@@ -22,6 +22,71 @@ import {
   outcomeText,
   defenderOutcome,
 } from '../combat.helpers.js';
+
+async function emitEspionageAllianceLogs(
+  ctx: MissionHandlerContext,
+  args: {
+    spyUserId: string;
+    targetUserId: string;
+    spyName: string;
+    targetName: string;
+    targetPlanetName: string;
+    coords: string;
+    reportId: string;
+  },
+): Promise<void> {
+  if (!ctx.allianceLogService) return;
+
+  const membershipRows = await ctx.db
+    .select({
+      userId: allianceMembers.userId,
+      allianceId: allianceMembers.allianceId,
+      allianceTag: alliances.tag,
+    })
+    .from(allianceMembers)
+    .innerJoin(alliances, eq(alliances.id, allianceMembers.allianceId))
+    .where(inArray(allianceMembers.userId, [args.spyUserId, args.targetUserId]));
+
+  const byUser = new Map(membershipRows.map((r) => [r.userId, r]));
+  const spyAlliance = byUser.get(args.spyUserId);
+  const targetAlliance = byUser.get(args.targetUserId);
+
+  if (spyAlliance) {
+    await ctx.allianceLogService.add({
+      allianceId: spyAlliance.allianceId,
+      visibility: 'all',
+      payload: {
+        type: 'espionage.outgoing',
+        memberId: args.spyUserId,
+        memberName: args.spyName,
+        targetId: args.targetUserId,
+        targetName: args.targetName,
+        targetAllianceTag: targetAlliance?.allianceTag,
+        planetName: args.targetPlanetName,
+        coords: args.coords,
+        reportId: args.reportId,
+      },
+    });
+  }
+
+  if (targetAlliance) {
+    await ctx.allianceLogService.add({
+      allianceId: targetAlliance.allianceId,
+      visibility: 'all',
+      payload: {
+        type: 'espionage.incoming',
+        memberId: args.targetUserId,
+        memberName: args.targetName,
+        planetName: args.targetPlanetName,
+        coords: args.coords,
+        spyId: args.spyUserId,
+        spyName: args.spyName,
+        spyAllianceTag: spyAlliance?.allianceTag,
+        reportId: args.reportId,
+      },
+    });
+  }
+}
 
 export class SpyHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
@@ -265,6 +330,19 @@ export class SpyHandler implements MissionHandler {
         result: reportResult,
       });
       reportId = report.id;
+    }
+
+    if (detected && reportId && ctx.allianceLogService) {
+      const { attackerUsername: spyUsername, defenderUsername } = await fetchUsernames(ctx.db, fleetEvent.userId, targetPlanet.userId);
+      await emitEspionageAllianceLogs(ctx, {
+        spyUserId: fleetEvent.userId,
+        targetUserId: targetPlanet.userId,
+        spyName: spyUsername,
+        targetName: defenderUsername,
+        targetPlanetName: targetPlanet.name,
+        coords: `${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}`,
+        reportId,
+      });
     }
 
     if (detected) {
