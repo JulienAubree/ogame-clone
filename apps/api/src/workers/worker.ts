@@ -30,6 +30,7 @@ import { eventCatchup } from '../cron/event-catchup.js';
 import { resourceTick } from '../cron/resource-tick.js';
 import { rankingUpdate } from '../cron/ranking-update.js';
 import { eventCleanup } from '../cron/event-cleanup.js';
+import { allianceLogPurge } from '../cron/alliance-log-purge.js';
 
 // Shared instances
 const db = createDb(env.DATABASE_URL);
@@ -105,6 +106,19 @@ setInterval(async () => {
   } catch (err) { console.error('[deposit-regen] Error:', err); }
 }, 30 * 60_000);
 console.log('[worker] Deposit regeneration cron started (30min)');
+
+// Hourly: purge alliance_logs older than 30 days.
+setInterval(async () => {
+  try {
+    const res = await allianceLogPurge(db);
+    if (res.deleted > 0) {
+      console.log(`[alliance-log-purge] Deleted ${res.deleted} rows.`);
+    }
+  } catch (err) {
+    console.error('[alliance-log-purge] Error:', err);
+  }
+}, 60 * 60_000);
+console.log('[worker] Alliance log purge cron started (1h)');
 
 process.on('SIGTERM', () => {
   console.log('[worker] Shutting down...');
