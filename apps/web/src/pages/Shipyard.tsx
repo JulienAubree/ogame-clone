@@ -11,6 +11,7 @@ import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ShipyardHero } from '@/components/shipyard/ShipyardHero';
 import { ShipyardQueue } from '@/components/shipyard/ShipyardQueue';
+import { ShipyardUpgradeCard } from '@/components/shipyard/ShipyardUpgradeCard';
 import { ShipyardRoleFilter, type ShipyardFilter } from '@/components/shipyard/ShipyardRoleFilter';
 import { ShipCard } from '@/components/shipyard/ShipCard';
 import { ShipMobileRow } from '@/components/shipyard/ShipMobileRow';
@@ -35,7 +36,8 @@ export default function Shipyard() {
     { planetId: planetId! },
     { enabled: !!planetId },
   );
-  const shipyardLevel = buildings?.find((b) => b.id === 'shipyard')?.currentLevel ?? 0;
+  const shipyardBuilding = buildings?.find((b) => b.id === 'shipyard');
+  const shipyardLevel = shipyardBuilding?.currentLevel ?? 0;
 
   const { data: ships, isLoading } = trpc.shipyard.ships.useQuery(
     { planetId: planetId! },
@@ -111,6 +113,24 @@ export default function Shipyard() {
       utils.shipyard.ships.invalidate();
       utils.shipyard.defenses.invalidate();
       utils.resource.production.invalidate();
+      utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
+    },
+  });
+
+  const upgradeMutation = trpc.building.upgrade.useMutation({
+    onSuccess: () => {
+      utils.building.list.invalidate({ planetId: planetId! });
+      utils.resource.production.invalidate({ planetId: planetId! });
+      utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
+    },
+  });
+
+  const buildingCancelMutation = trpc.building.cancel.useMutation({
+    onSuccess: () => {
+      utils.building.list.invalidate({ planetId: planetId! });
+      utils.resource.production.invalidate({ planetId: planetId! });
       utils.planet.empire.invalidate();
       utils.tutorial.getCurrent.invalidate();
     },
@@ -201,7 +221,32 @@ export default function Shipyard() {
   // ── Main layout ───────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <ShipyardHero level={shipyardLevel} onOpenHelp={() => setHelpOpen(true)}>
+      <ShipyardHero
+        level={shipyardLevel}
+        onOpenHelp={() => setHelpOpen(true)}
+        upgradeCard={shipyardBuilding && (
+          <ShipyardUpgradeCard
+            currentLevel={shipyardBuilding.currentLevel}
+            nextLevelCost={shipyardBuilding.nextLevelCost}
+            nextLevelTime={shipyardBuilding.nextLevelTime}
+            prerequisites={shipyardBuilding.prerequisites as any}
+            isUpgrading={!!shipyardBuilding.isUpgrading}
+            upgradeEndTime={shipyardBuilding.upgradeEndTime ?? null}
+            resources={{ minerai: resources.minerai, silicium: resources.silicium, hydrogene: resources.hydrogene }}
+            buildingLevels={buildingLevels}
+            isAnyUpgrading={buildings?.some((b) => b.isUpgrading) ?? false}
+            upgradePending={upgradeMutation.isPending}
+            cancelPending={buildingCancelMutation.isPending}
+            gameConfig={gameConfig}
+            onUpgrade={() => upgradeMutation.mutate({ planetId: planetId!, buildingId: 'shipyard' as any })}
+            onCancel={() => buildingCancelMutation.mutate({ planetId: planetId! })}
+            onTimerComplete={() => {
+              utils.building.list.invalidate({ planetId: planetId! });
+              utils.resource.production.invalidate({ planetId: planetId! });
+            }}
+          />
+        )}
+      >
         <ShipyardQueue
           queue={shipQueue}
           ships={ships}
