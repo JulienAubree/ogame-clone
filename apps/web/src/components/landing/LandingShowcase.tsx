@@ -47,7 +47,9 @@ export function LandingShowcase() {
                   src={item.src}
                   alt={item.alt}
                   loading="lazy"
-                  className="h-full w-full object-cover"
+                  width={1600}
+                  height={900}
+                  className="aspect-video h-auto w-full object-cover"
                 />
               </div>
               <div>

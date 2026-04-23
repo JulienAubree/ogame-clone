@@ -10,22 +10,25 @@ export function LandingHero() {
 
   return (
     <section className="relative overflow-hidden">
-      <div
+      <img
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          backgroundImage: 'url(/assets/landing/planet-hero.webp)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(18px) brightness(0.45)',
-          transform: 'scale(1.08)',
-        }}
+        src="/assets/landing/planet-hero.webp"
+        alt=""
+        loading="lazy"
+        fetchPriority="low"
+        width={1600}
+        height={1000}
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full scale-[1.08] object-cover"
+        style={{ filter: 'blur(18px) brightness(0.45)' }}
       />
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-background/60" />
 
       <div className="mx-auto flex min-h-[85vh] max-w-3xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6 sm:py-24">
         <p className="mb-4 text-xs uppercase tracking-[0.3em] text-primary/80">Stratégie spatiale</p>
-        <h1 className="text-4xl font-extrabold leading-[1.05] text-foreground sm:text-6xl">
+        <h1
+          className="text-4xl font-extrabold leading-[1.05] text-foreground sm:text-6xl"
+          aria-label="Bâtissez votre empire spatial"
+        >
           Bâtissez votre
           <br />
           <span className="glow-silicium">empire spatial.</span>

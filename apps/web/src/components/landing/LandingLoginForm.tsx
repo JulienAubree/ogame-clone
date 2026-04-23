@@ -31,7 +31,10 @@ export function LandingLoginForm() {
   };
 
   return (
-    <section id="connexion" className="mx-auto max-w-md px-4 py-16 sm:px-6 sm:py-24">
+    <section
+      id="connexion"
+      className="mx-auto max-w-md px-4 py-16 scroll-mt-20 sm:px-6 sm:py-24"
+    >
       <h2 className="mb-6 text-center text-2xl font-semibold text-foreground">Déjà empereur ?</h2>
       <div className="glass-card p-6 animate-slide-up">
         <form onSubmit={handleSubmit} className="space-y-4">
