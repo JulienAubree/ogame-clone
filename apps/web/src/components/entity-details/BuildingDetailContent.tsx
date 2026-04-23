@@ -27,6 +27,7 @@ interface Props {
   buildingId: string;
   buildings: BuildingListItem[];
   planetContext?: PlanetContext;
+  planetClassId?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -169,7 +170,7 @@ const fmt = (n: number) => n.toLocaleString('fr-FR');
 // Component
 // ---------------------------------------------------------------------------
 
-export function BuildingDetailContent({ buildingId, buildings, planetContext }: Props) {
+export function BuildingDetailContent({ buildingId, buildings, planetContext, planetClassId }: Props) {
   const { data: gameConfig } = useGameConfig();
 
   const building = buildings.find((b) => b.id === buildingId);
@@ -177,6 +178,8 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
   const configDef = gameConfig?.buildings[buildingId];
   const name = getBuildingName(buildingId, gameConfig);
   const flavorText = configDef?.flavorText ?? '';
+  const variantPlanetTypes = configDef?.variantPlanetTypes ?? [];
+  const hasVariant = !!planetClassId && variantPlanetTypes.includes(planetClassId);
   const prerequisites = building?.prerequisites ?? configDef?.prerequisites ?? [];
 
   // Bonus provided BY this building
@@ -238,6 +241,8 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext }: 
           size="full"
           alt={name}
           className="w-full h-full object-cover"
+          planetType={planetClassId ?? undefined}
+          hasVariant={hasVariant}
         />
         <span className="absolute bottom-3 right-3 bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-full">
           Niveau {currentLevel}

@@ -16,11 +16,14 @@ interface Props {
   researchLevels: Record<string, number>;
   buildingLevels?: Record<string, number>;
   timePerUnit?: number;
+  planetClassId?: string | null;
 }
 
-export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels, timePerUnit }: Props) {
+export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels, timePerUnit, planetClassId }: Props) {
   const { data: gameConfig } = useGameConfig();
   const details = getDefenseDetails(defenseId, gameConfig ?? undefined);
+  const variantPlanetTypes = gameConfig?.defenses[defenseId]?.variantPlanetTypes ?? [];
+  const hasVariant = !!planetClassId && variantPlanetTypes.includes(planetClassId);
 
   const effective = useMemo(() => {
     const defs = gameConfig?.bonuses ?? [];
@@ -53,6 +56,8 @@ export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels
           size="full"
           alt={details.name}
           className="w-full h-full object-cover"
+          planetType={planetClassId ?? undefined}
+          hasVariant={hasVariant}
         />
       </div>
 

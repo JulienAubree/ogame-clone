@@ -567,6 +567,7 @@ export default function Buildings() {
           <BuildingDetailContent
             buildingId={detailId}
             buildings={buildings}
+            planetClassId={planetClassId}
             planetContext={
               resourceData
                 ? {
