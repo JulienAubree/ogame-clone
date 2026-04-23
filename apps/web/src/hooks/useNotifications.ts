@@ -363,6 +363,11 @@ export function useNotifications() {
         }
         break;
       }
+      case 'alliance-log:new': {
+        utils.alliance.activity.invalidate();
+        utils.alliance.activityUnreadCount.invalidate();
+        break;
+      }
     }
   });
 }
