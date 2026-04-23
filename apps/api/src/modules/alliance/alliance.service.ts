@@ -12,6 +12,7 @@ import {
 } from '@exilium/shared';
 import { publishNotification } from '../notification/notification.publisher.js';
 import type { AllianceLogService } from './alliance-log.service.js';
+import { bucketMilitaryOutcomes, type MilitaryOutcome } from './alliance.military.js';
 
 export function canSeeVisibility(role: 'founder' | 'officer' | 'member', visibility: 'all' | 'officers'): boolean {
   if (visibility === 'all') return true;
@@ -395,6 +396,19 @@ export function createAllianceService(db: Database, redis: Redis | undefined, al
         .from(allianceApplications)
         .innerJoin(users, eq(users.id, allianceApplications.applicantUserId))
         .where(and(eq(allianceApplications.allianceId, membership.allianceId), eq(allianceApplications.status, 'pending')));
+    },
+
+    async getRecentMilitary(allianceId: string): Promise<{ wins: number; losses: number; windowDays: number }> {
+      const rows = await db
+        .select({ outcome: sql<MilitaryOutcome>`${allianceLogs.payload}->>'outcome'` })
+        .from(allianceLogs)
+        .where(and(
+          eq(allianceLogs.allianceId, allianceId),
+          like(allianceLogs.type, 'combat.%'),
+          gte(allianceLogs.createdAt, sql`now() - interval '7 days'`),
+        ));
+      const { wins, losses } = bucketMilitaryOutcomes(rows);
+      return { wins, losses, windowDays: 7 };
     },
 
     async ranking(page: number = 1) {
