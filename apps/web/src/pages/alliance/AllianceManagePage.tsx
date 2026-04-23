@@ -61,92 +61,94 @@ export function AllianceManagePage({ alliance }: AllianceManagePageProps) {
   if (!isLeader) return <Navigate to="/alliance" replace />;
 
   return (
-    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-      <PageHeader
-        title="Gestion"
-        actions={
-          <Link
-            to="/alliance"
-            className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-sm hover:bg-accent"
-          >
-            ← Alliance
-          </Link>
-        }
-      />
+    <div className="px-4 py-4 lg:px-6 lg:py-6">
+      <div className="mx-auto w-full max-w-[720px] space-y-4">
+        <PageHeader
+          title="Gestion"
+          actions={
+            <Link
+              to="/alliance"
+              className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-sm hover:bg-accent"
+            >
+              ← Alliance
+            </Link>
+          }
+        />
 
-      <section className="glass-card space-y-3 p-4">
-        <h3 className="text-base font-semibold">
-          Candidatures{applications && applications.length > 0 ? ` (${applications.length})` : ''}
-        </h3>
-        {!applications || applications.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucune candidature en attente.</p>
-        ) : (
-          <div className="space-y-2">
-            {applications.map((app) => (
-              <div key={app.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 py-2">
-                <span className="text-sm">{app.applicantUsername}</span>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: true })}>Accepter</Button>
-                  <Button size="sm" variant="outline" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: false })}>Décliner</Button>
+        <section className="glass-card space-y-3 p-4">
+          <h3 className="text-base font-semibold">
+            Candidatures{applications && applications.length > 0 ? ` (${applications.length})` : ''}
+          </h3>
+          {!applications || applications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune candidature en attente.</p>
+          ) : (
+            <div className="space-y-2">
+              {applications.map((app) => (
+                <div key={app.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 py-2">
+                  <span className="text-sm">{app.applicantUsername}</span>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: true })}>Accepter</Button>
+                    <Button size="sm" variant="outline" onClick={() => respondAppMutation.mutate({ applicationId: app.id, accept: false })}>Décliner</Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {isFounder && (
-        <section className="glass-card space-y-4 p-4">
-          <h3 className="text-base font-semibold">Blason &amp; devise</h3>
-          <BlasonEditor
-            blason={editBlason}
-            motto={editMotto}
-            onBlasonChange={setEditBlason}
-            onMottoChange={setEditMotto}
-            allianceName={alliance.name}
-            allianceTag={alliance.tag}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { setEditBlason(currentBlason); setEditMotto(alliance.motto); }}
-              disabled={!blasonDirty || updateBlasonMutation.isPending}
-            >
-              Annuler
-            </Button>
-            <Button
-              onClick={() => updateBlasonMutation.mutate({ blason: editBlason, motto: editMotto })}
-              disabled={!blasonDirty || updateBlasonMutation.isPending}
-            >
-              Enregistrer
-            </Button>
-          </div>
-          {updateBlasonMutation.error && (
-            <p className="text-sm text-destructive">{updateBlasonMutation.error.message}</p>
+              ))}
+            </div>
           )}
         </section>
-      )}
 
-      <section className="glass-card space-y-3 p-4">
-        <h3 className="text-base font-semibold">Description</h3>
-        <textarea
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <Button onClick={() => updateMutation.mutate({ description })} disabled={updateMutation.isPending}>
-          Mettre à jour
-        </Button>
-      </section>
+        {isFounder && (
+          <section className="glass-card space-y-4 p-4">
+            <h3 className="text-base font-semibold">Blason &amp; devise</h3>
+            <BlasonEditor
+              blason={editBlason}
+              motto={editMotto}
+              onBlasonChange={setEditBlason}
+              onMottoChange={setEditMotto}
+              allianceName={alliance.name}
+              allianceTag={alliance.tag}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { setEditBlason(currentBlason); setEditMotto(alliance.motto); }}
+                disabled={!blasonDirty || updateBlasonMutation.isPending}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={() => updateBlasonMutation.mutate({ blason: editBlason, motto: editMotto })}
+                disabled={!blasonDirty || updateBlasonMutation.isPending}
+              >
+                Enregistrer
+              </Button>
+            </div>
+            {updateBlasonMutation.error && (
+              <p className="text-sm text-destructive">{updateBlasonMutation.error.message}</p>
+            )}
+          </section>
+        )}
 
-      <section className="glass-card space-y-3 p-4">
-        <h3 className="text-base font-semibold">Membres &amp; rôles</h3>
-        <p className="text-sm text-muted-foreground">
-          Les actions promouvoir / rétrograder / expulser sont accessibles sur{' '}
-          <Link to="/alliance/membres" className="text-primary hover:underline">la liste des membres</Link>.
-        </p>
-      </section>
+        <section className="glass-card space-y-3 p-4">
+          <h3 className="text-base font-semibold">Description</h3>
+          <textarea
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <Button onClick={() => updateMutation.mutate({ description })} disabled={updateMutation.isPending}>
+            Mettre à jour
+          </Button>
+        </section>
+
+        <section className="glass-card space-y-3 p-4">
+          <h3 className="text-base font-semibold">Membres &amp; rôles</h3>
+          <p className="text-sm text-muted-foreground">
+            Les actions promouvoir / rétrograder / expulser sont accessibles sur{' '}
+            <Link to="/alliance/membres" className="text-primary hover:underline">la liste des membres</Link>.
+          </p>
+        </section>
+      </div>
     </div>
   );
 }

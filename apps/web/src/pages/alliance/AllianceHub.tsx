@@ -1,4 +1,3 @@
-import { PageHeader } from '@/components/common/PageHeader';
 import { AllianceHero } from '@/components/alliance/AllianceHero';
 import { ActivityPreviewCard } from '@/components/alliance/ActivityPreviewCard';
 import { ChatPreviewCard } from '@/components/alliance/ChatPreviewCard';
@@ -28,16 +27,16 @@ export function AllianceHub({ alliance }: AllianceHubProps) {
   const isLeader = alliance.myRole === 'founder' || alliance.myRole === 'officer';
 
   return (
-    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-      <PageHeader title="Alliance" />
-
+    <div className="space-y-4">
       <AllianceHero alliance={alliance} />
 
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr] lg:gap-6">
-        <ActivityPreviewCard />
-        <ChatPreviewCard />
-        <MembersPreviewCard members={alliance.members} />
-        {isLeader && <ManageShortcutCard />}
+      <div className="px-4 pb-4 lg:px-6 lg:pb-6">
+        <div className="mx-auto w-full max-w-[720px] space-y-4">
+          <ActivityPreviewCard />
+          <ChatPreviewCard />
+          <MembersPreviewCard members={alliance.members} />
+          {isLeader && <ManageShortcutCard />}
+        </div>
       </div>
     </div>
   );

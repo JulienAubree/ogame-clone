@@ -22,43 +22,45 @@ export function AllianceMembersPage({ alliance }: AllianceMembersPageProps) {
   });
 
   return (
-    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-      <PageHeader
-        title="Membres"
-        actions={
-          <Link
-            to="/alliance"
-            className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-sm hover:bg-accent"
-          >
-            ← Alliance
-          </Link>
-        }
-      />
-
-      {isLeader && (
-        <section className="glass-card space-y-3 p-4">
-          <h3 className="text-base font-semibold">Inviter un joueur</h3>
-          <div className="flex flex-wrap gap-2">
-            <Input
-              value={inviteUsername}
-              onChange={(e) => setInviteUsername(e.target.value)}
-              placeholder="Nom du joueur"
-              className="w-60"
-            />
-            <Button
-              onClick={() => inviteMutation.mutate({ username: inviteUsername })}
-              disabled={inviteMutation.isPending || !inviteUsername}
+    <div className="px-4 py-4 lg:px-6 lg:py-6">
+      <div className="mx-auto w-full max-w-[720px] space-y-4">
+        <PageHeader
+          title="Membres"
+          actions={
+            <Link
+              to="/alliance"
+              className="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-sm hover:bg-accent"
             >
-              Inviter
-            </Button>
-            {inviteMutation.error && (
-              <span className="self-center text-sm text-destructive">{inviteMutation.error.message}</span>
-            )}
-          </div>
-        </section>
-      )}
+              ← Alliance
+            </Link>
+          }
+        />
 
-      <MembersTable members={alliance.members} myRole={alliance.myRole} />
+        {isLeader && (
+          <section className="glass-card space-y-3 p-4">
+            <h3 className="text-base font-semibold">Inviter un joueur</h3>
+            <div className="flex flex-wrap gap-2">
+              <Input
+                value={inviteUsername}
+                onChange={(e) => setInviteUsername(e.target.value)}
+                placeholder="Nom du joueur"
+                className="w-60"
+              />
+              <Button
+                onClick={() => inviteMutation.mutate({ username: inviteUsername })}
+                disabled={inviteMutation.isPending || !inviteUsername}
+              >
+                Inviter
+              </Button>
+              {inviteMutation.error && (
+                <span className="self-center text-sm text-destructive">{inviteMutation.error.message}</span>
+              )}
+            </div>
+          </section>
+        )}
+
+        <MembersTable members={alliance.members} myRole={alliance.myRole} />
+      </div>
     </div>
   );
 }
