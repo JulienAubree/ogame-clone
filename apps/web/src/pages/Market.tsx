@@ -10,6 +10,7 @@ import { MarketReportsInventory } from '@/components/market/MarketReportsInvento
 import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/assets';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
+import { KpiTile } from '@/components/common/KpiTile';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -51,34 +52,6 @@ function resolveInitialFilter(param: string | null, viewParam: string | null): M
   if (param === 'exploration') return 'planets';
   if (viewParam?.startsWith('report')) return 'planets';
   return 'all';
-}
-
-// ── KPI Tile ─────────────────────────────────────────────────────────
-
-function KpiTile({ label, value, icon, color, onClick }: {
-  label: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color: string;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-xl border border-border/30 bg-card/60 px-4 py-3 text-left transition-colors hover:bg-card/80 hover:border-primary/20 cursor-pointer"
-    >
-      <div className="flex items-center gap-3">
-        <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg bg-white/5', color)}>
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <div className={cn('text-lg font-bold tabular-nums leading-tight', color)}>{value}</div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">{label}</div>
-        </div>
-      </div>
-    </button>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────
