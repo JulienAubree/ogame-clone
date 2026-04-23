@@ -35,6 +35,7 @@ import { buildShipStatsMap } from './fleet.types.js';
 import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
 import type { PhasedMissionHandler, MissionHandler, MissionHandlerContext, SendFleetInput, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
+import type { AllianceLogService } from '../alliance/alliance-log.service.js';
 
 export function createFleetService(
   db: Database,
@@ -53,6 +54,7 @@ export function createFleetService(
   talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
   gameEventService?: ReturnType<typeof import('../game-event/game-event.service.js').createGameEventService>,
   colonizationService?: ReturnType<typeof import('../colonization/colonization.service.js').createColonizationService>,
+  allianceLogService?: AllianceLogService,
 ) {
   const handlers: Record<string, MissionHandler> = {
     transport: new TransportHandler(),
@@ -84,6 +86,7 @@ export function createFleetService(
     dailyQuestService,
     flagshipService,
     talentService,
+    allianceLogService,
     fleetQueue,
     assetsDir: env.ASSETS_DIR,
     redis,

@@ -15,6 +15,7 @@ import type { createDailyQuestService } from '../daily-quest/daily-quest.service
 import type { createFlagshipService } from '../flagship/flagship.service.js';
 import type { createGameEventService } from '../game-event/game-event.service.js';
 import type { createColonizationService } from '../colonization/colonization.service.js';
+import type { AllianceLogService } from '../alliance/alliance-log.service.js';
 import type { Queue } from 'bullmq';
 import type Redis from 'ioredis';
 
@@ -86,6 +87,7 @@ export interface MissionHandlerContext {
   gameEventService?: ReturnType<typeof createGameEventService>;
   colonizationService?: ReturnType<typeof createColonizationService>;
   talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> };
+  allianceLogService?: AllianceLogService;
   fleetQueue: Queue;
   assetsDir: string;
   redis?: Redis;

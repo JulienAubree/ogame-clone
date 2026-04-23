@@ -1,6 +1,6 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, planetBuildings, userResearch } from '@exilium/db';
+import { planets, planetShips, planetDefenses, planetBuildings, userResearch, allianceMembers, alliances } from '@exilium/db';
 import { simulateCombat, totalCargoCapacity, calculateShieldCapacity, calculateProtectedResources } from '@exilium/game-engine';
 import type { CombatInput, RoundResult } from '@exilium/game-engine';
 import type { MissionHandler, SendFleetInput, GameConfig, MissionHandlerContext, FleetEvent, ArrivalResult } from '../fleet.types.js';
@@ -19,6 +19,86 @@ import {
   outcomeText,
   defenderOutcome,
 } from '../combat.helpers.js';
+
+type CombatOutcome = 'victory' | 'defeat' | 'draw';
+
+export function outcomeFromAttackerSide(r: 'attacker' | 'defender' | 'draw'): CombatOutcome {
+  return r === 'attacker' ? 'victory' : r === 'defender' ? 'defeat' : 'draw';
+}
+
+export function outcomeFromDefenderSide(r: 'attacker' | 'defender' | 'draw'): CombatOutcome {
+  return r === 'defender' ? 'victory' : r === 'attacker' ? 'defeat' : 'draw';
+}
+
+async function emitCombatAllianceLogs(
+  ctx: MissionHandlerContext,
+  args: {
+    attackerUserId: string;
+    defenderUserId: string;
+    attackerName: string;
+    defenderName: string;
+    targetPlanetId: string;
+    targetPlanetName: string;
+    coords: string;
+    rawOutcome: 'attacker' | 'defender' | 'draw';
+    reportId: string;
+  },
+): Promise<void> {
+  if (!ctx.allianceLogService) return;
+
+  const membershipRows = await ctx.db
+    .select({
+      userId: allianceMembers.userId,
+      allianceId: allianceMembers.allianceId,
+      allianceTag: alliances.tag,
+    })
+    .from(allianceMembers)
+    .innerJoin(alliances, eq(alliances.id, allianceMembers.allianceId))
+    .where(inArray(allianceMembers.userId, [args.attackerUserId, args.defenderUserId]));
+
+  const byUser = new Map(membershipRows.map((r) => [r.userId, r]));
+  const atkAlliance = byUser.get(args.attackerUserId);
+  const defAlliance = byUser.get(args.defenderUserId);
+
+  if (atkAlliance) {
+    await ctx.allianceLogService.add({
+      allianceId: atkAlliance.allianceId,
+      visibility: 'all',
+      payload: {
+        type: 'combat.attack',
+        memberId: args.attackerUserId,
+        memberName: args.attackerName,
+        targetId: args.defenderUserId,
+        targetName: args.defenderName,
+        targetAllianceTag: defAlliance?.allianceTag,
+        planetName: args.targetPlanetName,
+        coords: args.coords,
+        outcome: outcomeFromAttackerSide(args.rawOutcome),
+        reportId: args.reportId,
+      },
+    });
+  }
+
+  if (defAlliance) {
+    await ctx.allianceLogService.add({
+      allianceId: defAlliance.allianceId,
+      visibility: 'all',
+      payload: {
+        type: 'combat.defense',
+        memberId: args.defenderUserId,
+        memberName: args.defenderName,
+        planetId: args.targetPlanetId,
+        planetName: args.targetPlanetName,
+        coords: args.coords,
+        attackerId: args.attackerUserId,
+        attackerName: args.attackerName,
+        attackerAllianceTag: atkAlliance?.allianceTag,
+        outcome: outcomeFromDefenderSide(args.rawOutcome),
+        reportId: args.reportId,
+      },
+    });
+  }
+}
 
 export class AttackHandler implements MissionHandler {
   async validateFleet(input: SendFleetInput, _config: GameConfig, ctx: MissionHandlerContext): Promise<void> {
@@ -447,6 +527,21 @@ export class AttackHandler implements MissionHandler {
         detailedLog: (result?.detailedLog as unknown as Record<string, unknown>) ?? null,
       });
       defenderReportId = defenderReport.id;
+    }
+
+    // Hook: alliance combat logs
+    if (reportId && ctx.allianceLogService) {
+      await emitCombatAllianceLogs(ctx, {
+        attackerUserId: fleetEvent.userId,
+        defenderUserId: targetPlanet.userId,
+        attackerName: attackerUsername,
+        defenderName: defenderUsername,
+        targetPlanetId: targetPlanet.id,
+        targetPlanetName,
+        coords: `${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}`,
+        rawOutcome: outcome,
+        reportId,
+      });
     }
 
     // Hook: daily quest detection for PvP battle
