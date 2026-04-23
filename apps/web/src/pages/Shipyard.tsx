@@ -181,6 +181,28 @@ export default function Shipyard() {
   // ── Visible categories based on filter ────────────────────────────────
   const visibleCategories = filter === 'all' ? shipCategories : shipCategories.filter((c) => c.id === filter);
 
+  // ── Per-ship derived values (qty, affordability, highlight) ───────────
+  const derivations = new Map<string, {
+    qty: number;
+    maxAffordable: number;
+    canAfford: boolean;
+    highlighted: boolean;
+  }>();
+  for (const ship of ships) {
+    const qty = quantities[ship.id] || 1;
+    const maxAffordable = Math.max(1, Math.min(
+      ship.cost.minerai > 0 ? Math.floor(resources.minerai / ship.cost.minerai) : 9999,
+      ship.cost.silicium > 0 ? Math.floor(resources.silicium / ship.cost.silicium) : 9999,
+      ship.cost.hydrogene > 0 ? Math.floor(resources.hydrogene / ship.cost.hydrogene) : 9999,
+      9999,
+    ));
+    const canAfford =
+      resources.minerai >= ship.cost.minerai * qty &&
+      resources.silicium >= ship.cost.silicium * qty &&
+      resources.hydrogene >= ship.cost.hydrogene * qty;
+    derivations.set(ship.id, { qty, maxAffordable, canAfford, highlighted: tutorialTargetId === ship.id });
+  }
+
   // ── Main layout ───────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
@@ -227,23 +249,7 @@ export default function Shipyard() {
                 {/* Mobile compact list */}
                 <div className="space-y-1 lg:hidden">
                   {categoryShips.map((ship) => {
-                    const qty = quantities[ship.id] || 1;
-                    const maxAffordable = Math.max(1, Math.min(
-                      ship.cost.minerai > 0 ? Math.floor(resources.minerai / ship.cost.minerai) : 9999,
-                      ship.cost.silicium > 0 ? Math.floor(resources.silicium / ship.cost.silicium) : 9999,
-                      ship.cost.hydrogene > 0 ? Math.floor(resources.hydrogene / ship.cost.hydrogene) : 9999,
-                      9999,
-                    ));
-                    const totalCost = {
-                      minerai: ship.cost.minerai * qty,
-                      silicium: ship.cost.silicium * qty,
-                      hydrogene: ship.cost.hydrogene * qty,
-                    };
-                    const canAfford =
-                      resources.minerai >= totalCost.minerai &&
-                      resources.silicium >= totalCost.silicium &&
-                      resources.hydrogene >= totalCost.hydrogene;
-                    const highlighted = tutorialTargetId === ship.id;
+                    const { qty, maxAffordable, canAfford, highlighted } = derivations.get(ship.id)!;
 
                     return (
                       <ShipMobileRow
@@ -265,23 +271,7 @@ export default function Shipyard() {
                 {/* Desktop vertical card grid */}
                 <div className="hidden lg:grid lg:gap-4 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                   {categoryShips.map((ship) => {
-                    const qty = quantities[ship.id] || 1;
-                    const maxAffordable = Math.max(1, Math.min(
-                      ship.cost.minerai > 0 ? Math.floor(resources.minerai / ship.cost.minerai) : 9999,
-                      ship.cost.silicium > 0 ? Math.floor(resources.silicium / ship.cost.silicium) : 9999,
-                      ship.cost.hydrogene > 0 ? Math.floor(resources.hydrogene / ship.cost.hydrogene) : 9999,
-                      9999,
-                    ));
-                    const totalCost = {
-                      minerai: ship.cost.minerai * qty,
-                      silicium: ship.cost.silicium * qty,
-                      hydrogene: ship.cost.hydrogene * qty,
-                    };
-                    const canAfford =
-                      resources.minerai >= totalCost.minerai &&
-                      resources.silicium >= totalCost.silicium &&
-                      resources.hydrogene >= totalCost.hydrogene;
-                    const highlighted = tutorialTargetId === ship.id;
+                    const { qty, maxAffordable, canAfford, highlighted } = derivations.get(ship.id)!;
 
                     return (
                       <ShipCard
