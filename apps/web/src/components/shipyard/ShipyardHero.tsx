@@ -2,10 +2,11 @@ import { getAssetUrl } from '@/lib/assets';
 
 interface ShipyardHeroProps {
   level: number;
+  inProduction: number;
   onOpenHelp: () => void;
 }
 
-export function ShipyardHero({ level, onOpenHelp }: ShipyardHeroProps) {
+export function ShipyardHero({ level, inProduction, onOpenHelp }: ShipyardHeroProps) {
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0">
@@ -19,8 +20,8 @@ export function ShipyardHero({ level, onOpenHelp }: ShipyardHeroProps) {
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
 
-      <div className="relative px-5 pt-8 pb-6 lg:px-8 lg:pt-10 lg:pb-8">
-        <div className="flex items-start gap-5">
+      <div className="relative px-4 pt-5 pb-4 lg:px-6 lg:pt-6 lg:pb-5">
+        <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={onOpenHelp}
@@ -30,11 +31,11 @@ export function ShipyardHero({ level, onOpenHelp }: ShipyardHeroProps) {
             <img
               src={getAssetUrl('buildings', 'shipyard', 'thumb')}
               alt="Chantier spatial"
-              className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-cyan-500/10 transition-opacity group-hover:opacity-80"
+              className="h-16 w-16 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-cyan-500/10 transition-opacity group-hover:opacity-80"
               onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                 <path d="M12 17h.01" />
@@ -42,12 +43,16 @@ export function ShipyardHero({ level, onOpenHelp }: ShipyardHeroProps) {
             </div>
           </button>
 
-          <div className="flex-1 min-w-0 pt-1">
-            <h1 className="text-xl lg:text-2xl font-bold text-foreground">Chantier spatial</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Niveau {level}</p>
-            <p className="text-xs text-muted-foreground/70 mt-2 max-w-lg leading-relaxed hidden lg:block">
-              Assemblez les vaisseaux industriels de votre empire : transporteurs, prospecteurs, récupérateurs.
-              Chaque niveau du chantier débloque un slot de production parallèle supplémentaire.
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">Chantier spatial</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Niveau {level}
+              {inProduction > 0 && (
+                <>
+                  <span className="mx-1.5 text-muted-foreground/40">·</span>
+                  <span className="text-amber-400">{inProduction} vaisseau{inProduction > 1 ? 'x' : ''} en production</span>
+                </>
+              )}
             </p>
           </div>
         </div>

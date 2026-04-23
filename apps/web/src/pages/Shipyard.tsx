@@ -11,7 +11,6 @@ import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ShipyardHero } from '@/components/shipyard/ShipyardHero';
-import { ShipyardKpis } from '@/components/shipyard/ShipyardKpis';
 import { ShipyardQueue } from '@/components/shipyard/ShipyardQueue';
 import { ShipyardRoleFilter, type ShipyardFilter } from '@/components/shipyard/ShipyardRoleFilter';
 import { ShipCard } from '@/components/shipyard/ShipCard';
@@ -173,10 +172,8 @@ export default function Shipyard() {
     );
   }
 
-  // ── Derived totals for KPIs ───────────────────────────────────────────
-  const stationedCount = ships.reduce((sum, s) => sum + (s.count ?? 0), 0);
-  const buildingCount = shipQueue.reduce((sum, e) => sum + (e.quantity - (e.completedCount ?? 0)), 0);
-  const activeBatches = shipQueue.filter((e) => e.status === 'active').length;
+  // ── Total units currently in production (for hero pill) ───────────────
+  const inProduction = shipQueue.reduce((sum, e) => sum + (e.quantity - (e.completedCount ?? 0)), 0);
 
   // ── Visible categories based on filter ────────────────────────────────
   const visibleCategories = filter === 'all' ? shipCategories : shipCategories.filter((c) => c.id === filter);
@@ -206,15 +203,13 @@ export default function Shipyard() {
   // ── Main layout ───────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <ShipyardHero level={shipyardLevel} onOpenHelp={() => setHelpOpen(true)} />
+      <ShipyardHero
+        level={shipyardLevel}
+        inProduction={inProduction}
+        onOpenHelp={() => setHelpOpen(true)}
+      />
 
       <div className="space-y-4 px-4 pb-4 lg:px-6 lg:pb-6">
-        <ShipyardKpis
-          stationedCount={stationedCount}
-          buildingCount={buildingCount}
-          activeBatches={activeBatches}
-        />
-
         <ShipyardQueue
           queue={shipQueue}
           ships={ships}
