@@ -32,7 +32,7 @@ async function requireRole(db: Database, userId: string, roles: string[]) {
   return membership;
 }
 
-export function createAllianceService(db: Database, redis?: Redis, allianceLogService?: AllianceLogService) {
+export function createAllianceService(db: Database, redis: Redis | undefined, allianceLogService: AllianceLogService) {
   return {
     async create(userId: string, params: { name: string; tag: string; blason: Blason; motto: string | null }) {
       const existing = await getMembership(db, userId);
@@ -101,13 +101,11 @@ export function createAllianceService(db: Database, redis?: Redis, allianceLogSe
 
       await db.delete(allianceMembers).where(eq(allianceMembers.id, membership.id));
 
-      if (allianceLogService) {
-        await allianceLogService.add({
-          allianceId: allianceIdForLog,
-          visibility: 'all',
-          payload: { type: 'member.left', memberId: userId, memberName },
-        });
-      }
+      await allianceLogService.add({
+        allianceId: allianceIdForLog,
+        visibility: 'all',
+        payload: { type: 'member.left', memberId: userId, memberName },
+      });
 
       return { dissolved: false };
     },
@@ -127,21 +125,19 @@ export function createAllianceService(db: Database, redis?: Redis, allianceLogSe
 
       await db.delete(allianceMembers).where(eq(allianceMembers.id, target.id));
 
-      if (allianceLogService) {
-        const byName = await fetchUsername(db, userId);
-        const memberName = await fetchUsername(db, targetUserId);
-        await allianceLogService.add({
-          allianceId: membership.allianceId,
-          visibility: 'officers',
-          payload: {
-            type: 'member.kicked',
-            memberId: targetUserId,
-            memberName,
-            byId: userId,
-            byName,
-          },
-        });
-      }
+      const byName = await fetchUsername(db, userId);
+      const memberName = await fetchUsername(db, targetUserId);
+      await allianceLogService.add({
+        allianceId: membership.allianceId,
+        visibility: 'officers',
+        payload: {
+          type: 'member.kicked',
+          memberId: targetUserId,
+          memberName,
+          byId: userId,
+          byName,
+        },
+      });
 
       return { success: true };
     },
@@ -164,7 +160,7 @@ export function createAllianceService(db: Database, redis?: Redis, allianceLogSe
 
       await db.update(allianceMembers).set({ role }).where(eq(allianceMembers.id, target.id));
 
-      if (allianceLogService && oldRole !== newRole) {
+      if (oldRole !== newRole) {
         const byName = await fetchUsername(db, userId);
         const memberName = await fetchUsername(db, targetUserId);
         if (oldRole === 'member' && newRole === 'officer') {
@@ -242,18 +238,16 @@ export function createAllianceService(db: Database, redis?: Redis, allianceLogSe
         if (existing) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vous êtes déjà dans une alliance.' });
         await db.insert(allianceMembers).values({ allianceId: invitation.allianceId, userId, role: 'member' });
         const memberName = await fetchUsername(db, userId);
-        if (allianceLogService) {
-          await allianceLogService.add({
-            allianceId: invitation.allianceId,
-            visibility: 'all',
-            payload: {
-              type: 'member.joined',
-              memberId: userId,
-              memberName,
-              via: 'invitation',
-            },
-          });
-        }
+        await allianceLogService.add({
+          allianceId: invitation.allianceId,
+          visibility: 'all',
+          payload: {
+            type: 'member.joined',
+            memberId: userId,
+            memberName,
+            via: 'invitation',
+          },
+        });
       }
 
       await db.update(allianceInvitations).set({ status: accept ? 'accepted' : 'declined' }).where(eq(allianceInvitations.id, invitationId));
@@ -307,18 +301,16 @@ export function createAllianceService(db: Database, redis?: Redis, allianceLogSe
         if (existingMembership) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Ce joueur est déjà dans une alliance.' });
         await db.insert(allianceMembers).values({ allianceId: membership!.allianceId, userId: application.applicantUserId, role: 'member' });
         const memberName = await fetchUsername(db, application.applicantUserId);
-        if (allianceLogService) {
-          await allianceLogService.add({
-            allianceId: membership!.allianceId,
-            visibility: 'all',
-            payload: {
-              type: 'member.joined',
-              memberId: application.applicantUserId,
-              memberName,
-              via: 'application',
-            },
-          });
-        }
+        await allianceLogService.add({
+          allianceId: membership!.allianceId,
+          visibility: 'all',
+          payload: {
+            type: 'member.joined',
+            memberId: application.applicantUserId,
+            memberName,
+            via: 'application',
+          },
+        });
       }
 
       await db.update(allianceApplications).set({ status: accept ? 'accepted' : 'declined' }).where(eq(allianceApplications.id, applicationId));
