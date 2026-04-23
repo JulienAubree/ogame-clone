@@ -1,4 +1,4 @@
-import { eq, and, ilike, or, sql, asc, desc, lt, gt, like, count } from 'drizzle-orm';
+import { eq, and, ilike, or, sql, asc, desc, lt, gt, gte, like, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { alliances, allianceMembers, allianceInvitations, allianceApplications, allianceLogs, users, rankings } from '@exilium/db';
 import type { Database } from '@exilium/db';
@@ -466,7 +466,7 @@ export function createAllianceService(db: Database, redis: Redis | undefined, al
 
       const whereClauses = [
         eq(allianceLogs.allianceId, membership.allianceId),
-        gt(allianceLogs.createdAt, membership.joinedAt),
+        gte(allianceLogs.createdAt, membership.joinedAt),
       ];
       if (!canSeeOfficers) whereClauses.push(eq(allianceLogs.visibility, 'all'));
       if (args.cursor) whereClauses.push(lt(allianceLogs.createdAt, new Date(args.cursor)));
@@ -518,7 +518,7 @@ export function createAllianceService(db: Database, redis: Redis | undefined, al
       const whereClauses = [
         eq(allianceLogs.allianceId, membership.allianceId),
         gt(allianceLogs.createdAt, seenAt),
-        gt(allianceLogs.createdAt, joinedAt),
+        gte(allianceLogs.createdAt, joinedAt),
       ];
       if (!canSeeOfficers) whereClauses.push(eq(allianceLogs.visibility, 'all'));
 
