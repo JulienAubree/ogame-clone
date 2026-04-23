@@ -173,22 +173,19 @@ Option retenue : extension de `alliance.myAlliance` pour renvoyer un champ `rece
 
 ### 4.2 Calcul
 
-```
+Les types de log combat sont `combat.attack` et `combat.defense` (cf. `packages/shared/src/alliance-log.ts`). Le résultat du combat vit dans `payload.outcome: 'victory' | 'defeat' | 'draw'` — il n'y a **pas** de suffixe `.won`/`.lost` dans le `type`.
+
+```sql
 SELECT
-  SUM(CASE WHEN type IN ('combat.attack.won', 'combat.defense.won') THEN 1 ELSE 0 END) AS wins,
-  SUM(CASE WHEN type IN ('combat.attack.lost', 'combat.defense.lost') THEN 1 ELSE 0 END) AS losses
+  SUM(CASE WHEN payload->>'outcome' = 'victory' THEN 1 ELSE 0 END) AS wins,
+  SUM(CASE WHEN payload->>'outcome' = 'defeat'  THEN 1 ELSE 0 END) AS losses
 FROM alliance_logs
 WHERE alliance_id = $1
   AND created_at >= now() - interval '7 days'
   AND type LIKE 'combat.%'
 ```
 
-Le service `alliance.service.ts` expose une méthode `getRecentMilitary(allianceId)` qui exécute cette requête. Résultat injecté dans la réponse `myAlliance`.
-
-Le classement win/lose se fait au niveau applicatif en lisant les types depuis l'enum `AllianceLogType` de `@exilium/shared` (clé de vérité unique). Les deux ensembles sont :
-- **wins :** types qui se terminent par `.won`
-- **losses :** types qui se terminent par `.lost`
-Le filtre SQL grossier (`type LIKE 'combat.%'`) reste identique ; le bucketing wins/losses est fait en JS à partir du résultat pour éviter de coder en dur la liste des types.
+Les matchs nuls (`draw`) ne sont comptés ni en W ni en L. Le service `alliance.service.ts` expose une méthode `getRecentMilitary(allianceId)` qui exécute cette requête via `drizzle`+`sql` templating. Résultat injecté dans la réponse `myAlliance`.
 
 ### 4.3 Performance
 
