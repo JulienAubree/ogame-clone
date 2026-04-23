@@ -18,26 +18,38 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
 import { cn } from '@/lib/utils';
 import { useTutorialTargetId } from '@/hooks/useTutorialHighlight';
-import { ResearchIcon, BuildingsIcon, GalaxyIcon, FlagshipIcon, EmpireIcon } from '@/lib/icons';
-
+import { FacilityHero } from '@/components/common/FacilityHero';
+import { BuildingUpgradeCard } from '@/components/common/BuildingUpgradeCard';
+import { ResearchActivePanel } from '@/components/research/ResearchActivePanel';
+import { ResearchRoleFilter, type ResearchFilter } from '@/components/research/ResearchRoleFilter';
+import { ResearchHelp } from '@/components/research/ResearchHelp';
+import { RESEARCH_CATEGORIES, RESEARCH_CATEGORY_MAP, type ResearchCategoryId } from '@/components/research/research-icons';
 
 export default function Research() {
   const planetId = usePlanetStore((s) => s.activePlanetId);
   const utils = trpc.useUtils();
-  const [cancelConfirm, setCancelConfirm] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: gameConfig } = useGameConfig();
   const tutorialTargetId = useTutorialTargetId();
 
-  const researchCategories = (gameConfig?.categories ?? [])
-    .filter((c) => c.entityType === 'research')
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [filter, setFilter] = useState<ResearchFilter>('all');
 
   const { data: researchData, isLoading } = trpc.research.list.useQuery();
   const techs = researchData?.items;
   const bonuses = researchData?.bonuses;
   const labLevel = bonuses?.labLevel ?? 0;
+
+  // ── Home planet (researchLab lives there) ─────────────────────────────
+  const { data: planets } = trpc.planet.list.useQuery();
+  const homePlanet = planets?.find((p) => p.planetClassId === 'homeworld');
+  const { data: homeBuildings } = trpc.building.list.useQuery(
+    { planetId: homePlanet?.id ?? '' },
+    { enabled: !!homePlanet?.id },
+  );
+  const researchLabBuilding = homeBuildings?.find((b) => b.id === 'researchLab');
+  const isAnyBuildingUpgrading = homeBuildings?.some((b) => b.isUpgrading) ?? false;
 
   const { data: resourceData } = trpc.resource.production.useQuery(
     { planetId: planetId! },
@@ -80,6 +92,25 @@ export default function Research() {
     },
   });
 
+  const upgradeMutation = trpc.building.upgrade.useMutation({
+    onSuccess: () => {
+      if (homePlanet?.id) utils.building.list.invalidate({ planetId: homePlanet.id });
+      utils.research.list.invalidate();
+      utils.resource.production.invalidate();
+      utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
+    },
+  });
+
+  const buildingCancelMutation = trpc.building.cancel.useMutation({
+    onSuccess: () => {
+      if (homePlanet?.id) utils.building.list.invalidate({ planetId: homePlanet.id });
+      utils.resource.production.invalidate();
+      utils.planet.empire.invalidate();
+      utils.tutorial.getCurrent.invalidate();
+    },
+  });
+
   const researchLevels = useMemo(() => {
     const levels: Record<string, number> = {};
     techs?.forEach((t) => { levels[t.id] = t.currentLevel; });
@@ -97,6 +128,7 @@ export default function Research() {
     return levels;
   }, [bonuses]);
 
+  // ── Loading ───────────────────────────────────────────────────────────
   if (isLoading || !researchData || !techs) {
     return (
       <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
@@ -106,17 +138,35 @@ export default function Research() {
     );
   }
 
+  // ── Locked state (lab not built) ──────────────────────────────────────
   if (bonuses && labLevel < 1) {
     return (
-      <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-        <PageHeader title="Recherche" />
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-sm text-muted-foreground mb-2">
-            Avant de pouvoir accéder à la recherche, veuillez construire le <span className="text-foreground font-semibold">Laboratoire de recherche</span>.
-          </p>
-          <Link to="/buildings" className="text-xs text-primary hover:underline">
-            Aller aux bâtiments
-          </Link>
+      <div className="space-y-4">
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/80 via-slate-950 to-purple-950/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+          <div className="relative flex flex-col items-center justify-center px-5 py-16 lg:py-24 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-muted-foreground/20 bg-card/50 mb-6">
+              <svg className="h-10 w-10 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 3h6" />
+                <path d="M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" />
+              </svg>
+            </div>
+            <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-2">Laboratoire de recherche</h1>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md">
+              Construisez le <span className="text-foreground font-semibold">Laboratoire de recherche</span> sur votre planète-mère pour démarrer le programme scientifique de votre empire.
+            </p>
+            <Link
+              to="/buildings"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/30 px-5 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              Aller aux bâtiments
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -125,171 +175,91 @@ export default function Research() {
   const researchingTech = techs.find((t) => t.isResearching && t.researchEndTime);
   const isAnyResearching = techs.some((t) => t.isResearching);
 
+  // ── Group techs by category ───────────────────────────────────────────
+  const techsByCategory = new Map<ResearchCategoryId, typeof techs>();
+  for (const tech of techs) {
+    const catId = gameConfig?.research[tech.id]?.categoryId as ResearchCategoryId | undefined;
+    if (!catId || !RESEARCH_CATEGORY_MAP[catId]) continue;
+    const list = techsByCategory.get(catId) ?? [];
+    list.push(tech);
+    techsByCategory.set(catId, list);
+  }
+  const availableCategories = RESEARCH_CATEGORIES.filter((c) => techsByCategory.has(c.id)).map((c) => c.id);
+  const visibleCategories = filter === 'all' ? availableCategories : availableCategories.filter((id) => id === filter);
+
+  // ── Main layout ───────────────────────────────────────────────────────
   return (
-    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-      <PageHeader title="Recherche" />
+    <div className="space-y-4">
+      <FacilityHero
+        buildingId="researchLab"
+        title="Laboratoire de recherche"
+        level={labLevel}
+        planetClassId={homePlanet?.planetClassId}
+        planetImageIndex={homePlanet?.planetImageIndex}
+        onOpenHelp={() => setHelpOpen(true)}
+        upgradeCard={researchLabBuilding && homePlanet && (
+          <BuildingUpgradeCard
+            currentLevel={researchLabBuilding.currentLevel}
+            nextLevelCost={researchLabBuilding.nextLevelCost}
+            nextLevelTime={researchLabBuilding.nextLevelTime}
+            prerequisites={researchLabBuilding.prerequisites as any}
+            isUpgrading={!!researchLabBuilding.isUpgrading}
+            upgradeEndTime={researchLabBuilding.upgradeEndTime ?? null}
+            resources={{ minerai: resources.minerai, silicium: resources.silicium, hydrogene: resources.hydrogene }}
+            buildingLevels={buildingLevels}
+            isAnyUpgrading={isAnyBuildingUpgrading}
+            upgradePending={upgradeMutation.isPending}
+            cancelPending={buildingCancelMutation.isPending}
+            gameConfig={gameConfig}
+            onUpgrade={() => upgradeMutation.mutate({ planetId: homePlanet.id, buildingId: 'researchLab' as any })}
+            onCancel={() => buildingCancelMutation.mutate({ planetId: homePlanet.id })}
+            onTimerComplete={() => {
+              if (homePlanet.id) utils.building.list.invalidate({ planetId: homePlanet.id });
+              utils.research.list.invalidate();
+            }}
+          />
+        )}
+      >
+        {bonuses && (
+          <ResearchActivePanel
+            bonuses={bonuses}
+            researchingTech={researchingTech ?? null}
+            onTimerComplete={() => {
+              utils.research.list.invalidate();
+              utils.tutorial.getCurrent.invalidate();
+            }}
+            onCancel={() => setCancelConfirm(true)}
+            cancelPending={cancelMutation.isPending}
+          />
+        )}
+      </FacilityHero>
 
-      {/* Research Dashboard — unified card */}
-      {bonuses && (() => {
-        const totalReduction = Math.round((1 - bonuses.totalMultiplier) * 100);
-        const labReduction = Math.round((1 - bonuses.labMultiplier) * 100);
-        const annexReduction = Math.round((1 - bonuses.annexMultiplier) * 100);
-        const biomeReduction = Math.round((1 - bonuses.biomeMultiplier) * 100);
-        const talentReduction = Math.round((1 - bonuses.talentMultiplier) * 100);
-        const hullReduction = Math.round((1 - bonuses.hullMultiplier) * 100);
+      <div className="space-y-4 px-4 pb-4 lg:px-6 lg:pb-6">
+        <ResearchRoleFilter value={filter} onChange={setFilter} availableCategories={availableCategories} />
 
-        const ANNEX_NAMES: Record<string, string> = {
-          labVolcanic: 'Forge Volcanique',
-          labArid: 'Laboratoire Aride',
-          labTemperate: 'Bio-Laboratoire',
-          labGlacial: 'Cryo-Laboratoire',
-          labGaseous: 'Nebula-Lab',
-        };
+        <section className="glass-card p-4 lg:p-5 space-y-8">
+          {visibleCategories.map((categoryId) => {
+            const categoryTechs = techsByCategory.get(categoryId) ?? [];
+            if (categoryTechs.length === 0) return null;
+            const category = RESEARCH_CATEGORY_MAP[categoryId];
+            const { Icon: CategoryIcon, label } = category;
 
-        return (
-          <section className="glass-card p-4 space-y-3">
-            {/* Active research */}
-            {researchingTech ? (
-              <div className="flex items-center gap-3 rounded-md bg-card/50 p-3 border-l-4 border-l-orange-500">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {researchingTech.name} <span className="text-muted-foreground">Niv. {researchingTech.currentLevel + 1}</span>
-                  </p>
-                  <Timer
-                    endTime={new Date(researchingTech.researchEndTime!)}
-                    totalDuration={researchingTech.nextLevelTime}
-                    onComplete={() => {
-                      utils.research.list.invalidate();
-                      utils.tutorial.getCurrent.invalidate();
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={() => cancelMutation.mutate()}
-                  disabled={cancelMutation.isPending}
-                  className="text-sm text-destructive hover:text-destructive/80 font-medium shrink-0"
-                >
-                  Annuler
-                </button>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">Aucune recherche en cours</p>
-            )}
-
-            {/* Speed summary — always visible */}
-            <button
-              onClick={() => setCollapsed(prev => ({ ...prev, __bonusDetails: !prev.__bonusDetails }))}
-              className="flex items-center justify-between w-full py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span className="flex items-center gap-1.5">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                  <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-                </svg>
-                <span>Vitesse de recherche</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="font-semibold text-emerald-400">-{totalReduction}%</span>
-                <svg
-                  width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                  className={cn('transition-transform', collapsed.__bonusDetails ? '' : 'rotate-180')}
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </span>
-            </button>
-
-            {/* Expandable bonus details */}
-            {collapsed.__bonusDetails && (
-              <div className="flex flex-col lg:flex-row gap-4 pt-1">
-                {/* Left: Labs */}
-                <div className="flex-1 space-y-2">
-                  <h3 className="text-[10px] uppercase tracking-wider font-semibold text-violet-400 flex items-center gap-1.5">
-                    <BuildingsIcon width={14} height={14} />
-                    Laboratoires de l'empire
+            return (
+              <div key={categoryId}>
+                {filter === 'all' && (
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    <CategoryIcon className="h-3.5 w-3.5" />
+                    {label}
                   </h3>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 bg-card/50 border border-white/10 rounded-lg px-3 py-1.5">
-                      <ResearchIcon width={14} height={14} className="text-violet-400 shrink-0" />
-                      <span className="text-xs text-foreground font-medium">Laboratoire de recherche</span>
-                      <span className="ml-auto text-xs text-violet-400 font-semibold">Niv. {bonuses.labLevel}</span>
-                    </div>
-                    {bonuses.annexDetails.map((annex, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-card/50 border border-white/10 rounded-lg px-3 py-1.5">
-                        <BuildingsIcon width={12} height={12} className="text-violet-400/60 shrink-0" />
-                        <span className="text-xs text-foreground truncate">{ANNEX_NAMES[annex.buildingId] ?? annex.buildingId}</span>
-                        <span className="text-[10px] text-muted-foreground truncate">({annex.planetName})</span>
-                        <span className="ml-auto text-xs text-violet-400/80 font-semibold shrink-0">Niv. {annex.level}</span>
-                      </div>
-                    ))}
-                    {bonuses.annexDetails.length === 0 && (
-                      <p className="text-[11px] text-muted-foreground italic px-1">Aucun laboratoire annexe</p>
-                    )}
-                  </div>
-                </div>
+                )}
 
-                {/* Divider */}
-                <div className="hidden lg:block w-px bg-white/10" />
-                <div className="lg:hidden h-px bg-white/10" />
-
-                {/* Right: Bonuses */}
-                <div className="flex-1 space-y-2">
-                  <h3 className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400 flex items-center gap-1.5">
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-                    </svg>
-                    Bonus de vitesse
-                  </h3>
-                  <div className="space-y-0.5">
-                    <BonusLine icon={<ResearchIcon width={12} height={12} />} label="Labo principal" detail={`Niv. ${bonuses.labLevel}`} reduction={labReduction} color="text-violet-400" />
-                    <BonusLine icon={<BuildingsIcon width={12} height={12} />} label="Labos annexes" detail={`${bonuses.annexLevelsSum} niv.`} reduction={annexReduction} color="text-violet-400" />
-                    <BonusLine icon={<GalaxyIcon width={12} height={12} />} label="Biomes actifs" detail={`${bonuses.discoveredBiomesCount}`} reduction={biomeReduction} color="text-amber-400" />
-                    {talentReduction > 0 && <BonusLine icon={<EmpireIcon width={12} height={12} />} label="Talents" reduction={talentReduction} color="text-emerald-400" />}
-                    {hullReduction > 0 && <BonusLine icon={<FlagshipIcon width={12} height={12} />} label="Vaisseau amiral" reduction={hullReduction} color="text-cyan-400" />}
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-        );
-      })()}
-
-      {researchCategories.map((category) => {
-        const categoryTechs = techs.filter((t) =>
-          gameConfig?.research[t.id]?.categoryId === category.id,
-        );
-        if (categoryTechs.length === 0) return null;
-        const isCollapsed = collapsed[category.id] ?? false;
-
-        return (
-          <div key={category.id}>
-            <button
-              onClick={() =>
-                setCollapsed((prev) => ({ ...prev, [category.id]: !prev[category.id] }))
-              }
-              className="flex w-full items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
-            >
-              <span>{category.name}</span>
-              <svg
-                className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-
-            {!isCollapsed && (
-              <>
-                {/* Mobile: compact list */}
+                {/* Mobile compact list */}
                 <div className="space-y-1 lg:hidden">
                   {categoryTechs.map((tech) => {
                     const canAfford =
                       resources.minerai >= tech.nextLevelCost.minerai &&
                       resources.silicium >= tech.nextLevelCost.silicium &&
                       resources.hydrogene >= tech.nextLevelCost.hydrogene;
-
                     const highlighted = tutorialTargetId === tech.id;
 
                     return (
@@ -360,7 +330,6 @@ export default function Research() {
                       resources.minerai >= tech.nextLevelCost.minerai &&
                       resources.silicium >= tech.nextLevelCost.silicium &&
                       resources.hydrogene >= tech.nextLevelCost.hydrogene;
-
                     const highlighted = tutorialTargetId === tech.id;
 
                     return (
@@ -447,18 +416,24 @@ export default function Research() {
                     );
                   })}
                 </div>
-              </>
-            )}
-          </div>
-        );
-      })}
+              </div>
+            );
+          })}
+        </section>
+      </div>
 
+      {/* Detail overlay */}
       <EntityDetailOverlay
         open={!!detailId}
         onClose={() => setDetailId(null)}
         title={detailId ? gameConfig?.research[detailId]?.name ?? '' : ''}
       >
         {detailId && <ResearchDetailContent researchId={detailId} researchLevels={researchLevels} buildingLevels={buildingLevels} />}
+      </EntityDetailOverlay>
+
+      {/* Help overlay */}
+      <EntityDetailOverlay open={helpOpen} onClose={() => setHelpOpen(false)} title="Laboratoire de recherche">
+        <ResearchHelp level={labLevel} />
       </EntityDetailOverlay>
 
       <ConfirmDialog
@@ -470,33 +445,6 @@ export default function Research() {
         variant="destructive"
         confirmLabel="Annuler la recherche"
       />
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Bonus line helper                                                 */
-/* ------------------------------------------------------------------ */
-
-function BonusLine({ icon, label, detail, reduction, color }: {
-  icon: React.ReactNode;
-  label: string;
-  detail?: string;
-  reduction: number;
-  color: string;
-}) {
-  const active = reduction > 0;
-  return (
-    <div className="flex items-center gap-2 px-2 py-1">
-      <span className={cn('shrink-0', active ? color : 'text-muted-foreground/50')}>{icon}</span>
-      <span className={cn('text-[11px] flex-1 min-w-0 truncate', active ? 'text-foreground' : 'text-muted-foreground')}>
-        {label}
-        {detail && <span className="text-muted-foreground ml-1">({detail})</span>}
-      </span>
-      <span className={cn('text-[11px] font-semibold shrink-0', active ? 'text-emerald-400' : 'text-muted-foreground/50')}>-{reduction}%</span>
-      <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden shrink-0">
-        <div className="h-full rounded-full bg-emerald-500/60" style={{ width: `${Math.min(reduction, 100)}%` }} />
-      </div>
     </div>
   );
 }
