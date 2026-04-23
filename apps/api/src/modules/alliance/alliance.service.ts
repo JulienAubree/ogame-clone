@@ -1,11 +1,29 @@
-import { eq, and, ilike, or, sql, asc, desc } from 'drizzle-orm';
+import { eq, and, ilike, or, sql, asc, desc, lt, gt, like, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { alliances, allianceMembers, allianceInvitations, allianceApplications, users, rankings } from '@exilium/db';
+import { alliances, allianceMembers, allianceInvitations, allianceApplications, allianceLogs, users, rankings } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
 import type { Blason } from '@exilium/shared';
+import {
+  AllianceLogCategorySchema as _AllianceLogCategorySchema,
+  type AllianceLog,
+  type AllianceLogCategory,
+  type AllianceLogType,
+} from '@exilium/shared';
 import { publishNotification } from '../notification/notification.publisher.js';
 import type { AllianceLogService } from './alliance-log.service.js';
+
+export function canSeeVisibility(role: 'founder' | 'officer' | 'member', visibility: 'all' | 'officers'): boolean {
+  if (visibility === 'all') return true;
+  return role === 'founder' || role === 'officer';
+}
+
+export function categoriesToTypePrefixes(categories: AllianceLogCategory[]): ('combat.' | 'espionage.' | 'member.')[] {
+  const prefixes: ('combat.' | 'espionage.' | 'member.')[] = [];
+  if (categories.includes('military')) prefixes.push('combat.', 'espionage.');
+  if (categories.includes('members')) prefixes.push('member.');
+  return prefixes;
+}
 
 async function fetchUsername(db: Database, userId: string): Promise<string> {
   const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
@@ -430,6 +448,88 @@ export function createAllianceService(db: Database, redis: Redis | undefined, al
         .where(or(ilike(alliances.name, `%${query}%`), ilike(alliances.tag, `%${query}%`)))
         .groupBy(alliances.id, alliances.name, alliances.tag)
         .limit(20);
+    },
+
+    async activity(userId: string, args: {
+      categories?: AllianceLogCategory[];
+      cursor?: string;
+      limit: number;
+    }): Promise<{ items: AllianceLog[]; nextCursor: string | null }> {
+      const membership = await getMembership(db, userId);
+      if (!membership) throw new TRPCError({ code: 'FORBIDDEN', message: 'Vous n\'êtes pas dans une alliance.' });
+
+      const role = membership.role as 'founder' | 'officer' | 'member';
+      const canSeeOfficers = canSeeVisibility(role, 'officers');
+
+      const prefixes = args.categories ? categoriesToTypePrefixes(args.categories) : null;
+
+      const whereClauses = [eq(allianceLogs.allianceId, membership.allianceId)];
+      if (!canSeeOfficers) whereClauses.push(eq(allianceLogs.visibility, 'all'));
+      if (args.cursor) whereClauses.push(lt(allianceLogs.createdAt, new Date(args.cursor)));
+      if (prefixes && prefixes.length > 0) {
+        const orClauses = prefixes.map((p) => like(allianceLogs.type, `${p}%`));
+        whereClauses.push(or(...orClauses)!);
+      } else if (prefixes && prefixes.length === 0) {
+        return { items: [], nextCursor: null };
+      }
+
+      const rows = await db
+        .select()
+        .from(allianceLogs)
+        .where(and(...whereClauses))
+        .orderBy(desc(allianceLogs.createdAt))
+        .limit(args.limit + 1);
+
+      const hasMore = rows.length > args.limit;
+      const slice = hasMore ? rows.slice(0, args.limit) : rows;
+
+      return {
+        items: slice.map((r) => ({
+          id: r.id,
+          allianceId: r.allianceId,
+          type: r.type as AllianceLogType,
+          visibility: r.visibility as 'all' | 'officers',
+          payload: r.payload,
+          createdAt: r.createdAt.toISOString(),
+        })),
+        nextCursor: hasMore ? slice[slice.length - 1].createdAt.toISOString() : null,
+      };
+    },
+
+    async activityUnreadCount(userId: string): Promise<{ count: number }> {
+      const membership = await getMembership(db, userId);
+      if (!membership) return { count: 0 };
+
+      const [me] = await db
+        .select({ seenAt: allianceMembers.activitySeenAt })
+        .from(allianceMembers)
+        .where(eq(allianceMembers.id, membership.id))
+        .limit(1);
+
+      const seenAt = me!.seenAt;
+      const role = membership.role as 'founder' | 'officer' | 'member';
+      const canSeeOfficers = canSeeVisibility(role, 'officers');
+
+      const whereClauses = [
+        eq(allianceLogs.allianceId, membership.allianceId),
+        gt(allianceLogs.createdAt, seenAt),
+      ];
+      if (!canSeeOfficers) whereClauses.push(eq(allianceLogs.visibility, 'all'));
+
+      const [row] = await db
+        .select({ c: count() })
+        .from(allianceLogs)
+        .where(and(...whereClauses));
+
+      return { count: Number(row?.c ?? 0) };
+    },
+
+    async activityMarkSeen(userId: string): Promise<{ seenAt: string }> {
+      const membership = await getMembership(db, userId);
+      if (!membership) throw new TRPCError({ code: 'FORBIDDEN' });
+      const now = new Date();
+      await db.update(allianceMembers).set({ activitySeenAt: now }).where(eq(allianceMembers.id, membership.id));
+      return { seenAt: now.toISOString() };
     },
   };
 }

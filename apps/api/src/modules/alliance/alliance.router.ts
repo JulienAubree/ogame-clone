@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BlasonSchema, MottoSchema } from '@exilium/shared';
+import { BlasonSchema, MottoSchema, AllianceLogCategorySchema } from '@exilium/shared';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createAllianceService } from './alliance.service.js';
 
@@ -106,6 +106,26 @@ export function createAllianceRouter(allianceService: ReturnType<typeof createAl
       .input(z.object({ query: z.string().min(1).max(100) }))
       .query(async ({ input }) => {
         return allianceService.search(input.query);
+      }),
+
+    activity: protectedProcedure
+      .input(z.object({
+        categories: z.array(AllianceLogCategorySchema).optional(),
+        cursor: z.string().datetime().optional(),
+        limit: z.number().int().min(1).max(50).default(30),
+      }))
+      .query(async ({ ctx, input }) => {
+        return allianceService.activity(ctx.userId!, input);
+      }),
+
+    activityUnreadCount: protectedProcedure
+      .query(async ({ ctx }) => {
+        return allianceService.activityUnreadCount(ctx.userId!);
+      }),
+
+    activityMarkSeen: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        return allianceService.activityMarkSeen(ctx.userId!);
       }),
   });
 }
