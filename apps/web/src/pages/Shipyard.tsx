@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { ComponentType, SVGProps } from 'react';
 import { useOutletContext, Link } from 'react-router';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
@@ -16,12 +15,7 @@ import { ShipyardRoleFilter, type ShipyardFilter } from '@/components/shipyard/S
 import { ShipCard } from '@/components/shipyard/ShipCard';
 import { ShipMobileRow } from '@/components/shipyard/ShipMobileRow';
 import { ShipyardHelp } from '@/components/shipyard/ShipyardHelp';
-import { RoleAllIcon, RoleTransportIcon, RoleUtilityIcon } from '@/components/shipyard/role-icons';
-
-const CATEGORY_ICON: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
-  ship_transport: RoleTransportIcon,
-  ship_utilitaire: RoleUtilityIcon,
-};
+import { SHIPYARD_ROLES, SHIPYARD_ROLE_MAP, type ShipyardRoleId } from '@/components/shipyard/role-icons';
 
 export default function Shipyard() {
   const { planetId } = useOutletContext<{ planetId?: string }>();
@@ -36,10 +30,6 @@ export default function Shipyard() {
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [filter, setFilter] = useState<ShipyardFilter>('all');
-
-  const shipCategories = (gameConfig?.categories ?? [])
-    .filter((c) => c.entityType === 'ship' && c.id !== 'ship_combat')
-    .sort((a, b) => a.sortOrder - b.sortOrder);
 
   const { data: buildings } = trpc.building.list.useQuery(
     { planetId: planetId! },
@@ -172,8 +162,19 @@ export default function Shipyard() {
     );
   }
 
-  // ── Visible categories based on filter ────────────────────────────────
-  const visibleCategories = filter === 'all' ? shipCategories : shipCategories.filter((c) => c.id === filter);
+  // ── Group shipyard-buildable ships by mission role ────────────────────
+  const shipsByRole = new Map<ShipyardRoleId, typeof ships>();
+  for (const ship of ships) {
+    const role = gameConfig?.ships[ship.id]?.role as ShipyardRoleId | undefined;
+    if (!role || !SHIPYARD_ROLE_MAP[role]) continue; // skip combat ships and anything unknown
+    const list = shipsByRole.get(role) ?? [];
+    list.push(ship);
+    shipsByRole.set(role, list);
+  }
+  const availableRoles = SHIPYARD_ROLES.filter((r) => shipsByRole.has(r.id)).map((r) => r.id);
+  const visibleRoles = filter === 'all'
+    ? availableRoles
+    : availableRoles.filter((id) => id === filter);
 
   // ── Per-ship derived values (qty, affordability, highlight) ───────────
   const derivations = new Map<string, {
@@ -217,26 +218,27 @@ export default function Shipyard() {
       </ShipyardHero>
 
       <div className="space-y-4 px-4 pb-4 lg:px-6 lg:pb-6">
-        <ShipyardRoleFilter value={filter} onChange={setFilter} />
+        <ShipyardRoleFilter value={filter} onChange={setFilter} availableRoles={availableRoles} />
 
         <section className="glass-card p-4 lg:p-5 space-y-8">
-          {visibleCategories.map((category) => {
-            const categoryShips = ships.filter((s) => gameConfig?.ships[s.id]?.categoryId === category.id);
-            if (categoryShips.length === 0) return null;
-            const CategoryIcon = CATEGORY_ICON[category.id] ?? RoleAllIcon;
+          {visibleRoles.map((roleId) => {
+            const roleShips = shipsByRole.get(roleId) ?? [];
+            if (roleShips.length === 0) return null;
+            const role = SHIPYARD_ROLE_MAP[roleId];
+            const { Icon: RoleIcon, label } = role;
 
             return (
-              <div key={category.id}>
+              <div key={roleId}>
                 {filter === 'all' && (
                   <h3 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                    <CategoryIcon className="h-3.5 w-3.5" />
-                    {category.name}
+                    <RoleIcon className="h-3.5 w-3.5" />
+                    {label}
                   </h3>
                 )}
 
                 {/* Mobile compact list */}
                 <div className="space-y-1 lg:hidden">
-                  {categoryShips.map((ship) => {
+                  {roleShips.map((ship) => {
                     const { qty, maxAffordable, canAfford, highlighted } = derivations.get(ship.id)!;
 
                     return (
@@ -258,7 +260,7 @@ export default function Shipyard() {
 
                 {/* Desktop vertical card grid */}
                 <div className="hidden lg:grid lg:gap-4 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
-                  {categoryShips.map((ship) => {
+                  {roleShips.map((ship) => {
                     const { qty, maxAffordable, canAfford, highlighted } = derivations.get(ship.id)!;
 
                     return (

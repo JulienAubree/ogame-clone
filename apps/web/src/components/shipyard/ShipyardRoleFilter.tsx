@@ -1,31 +1,40 @@
-import type { ComponentType, SVGProps } from 'react';
 import { cn } from '@/lib/utils';
-import { RoleAllIcon, RoleTransportIcon, RoleUtilityIcon } from './role-icons';
+import { RoleAllIcon, SHIPYARD_ROLES, type ShipyardRoleId } from './role-icons';
 
-export type ShipyardFilter = 'all' | 'ship_transport' | 'ship_utilitaire';
+export type ShipyardFilter = 'all' | ShipyardRoleId;
 
 interface ShipyardRoleFilterProps {
   value: ShipyardFilter;
   onChange: (value: ShipyardFilter) => void;
+  availableRoles: ShipyardRoleId[];
 }
 
-const FILTERS: { key: ShipyardFilter; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
-  { key: 'all', label: 'Tout', Icon: RoleAllIcon },
-  { key: 'ship_transport', label: 'Transport', Icon: RoleTransportIcon },
-  { key: 'ship_utilitaire', label: 'Utilitaire', Icon: RoleUtilityIcon },
-];
+export function ShipyardRoleFilter({ value, onChange, availableRoles }: ShipyardRoleFilterProps) {
+  const visibleRoles = SHIPYARD_ROLES.filter((r) => availableRoles.includes(r.id));
 
-export function ShipyardRoleFilter({ value, onChange }: ShipyardRoleFilterProps) {
   return (
-    <div className="flex gap-0.5 bg-card/30 rounded-lg p-0.5 border border-border/20 w-fit">
-      {FILTERS.map(({ key, label, Icon }) => (
+    <div className="flex flex-wrap gap-0.5 bg-card/30 rounded-lg p-0.5 border border-border/20">
+      <button
+        type="button"
+        onClick={() => onChange('all')}
+        className={cn(
+          'px-3 py-1.5 rounded-md text-xs font-medium transition-colors inline-flex items-center gap-1.5',
+          value === 'all'
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        <RoleAllIcon className="h-3.5 w-3.5" />
+        Tout
+      </button>
+      {visibleRoles.map(({ id, label, Icon }) => (
         <button
-          key={key}
+          key={id}
           type="button"
-          onClick={() => onChange(key)}
+          onClick={() => onChange(id)}
           className={cn(
             'px-3 py-1.5 rounded-md text-xs font-medium transition-colors inline-flex items-center gap-1.5',
-            value === key
+            value === id
               ? 'bg-primary/10 text-primary'
               : 'text-muted-foreground hover:text-foreground',
           )}

@@ -28,11 +28,13 @@ export function ShipyardHelp({ level }: ShipyardHelpProps) {
             <rect x="3" y="14" width="7" height="7" />
             <rect x="14" y="14" width="7" height="7" />
           </svg>
-          Catégories
+          Rôles de mission
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Le chantier assemble les vaisseaux <span className="text-foreground font-medium">transport</span> (petit, grand, colonisateur)
-          et <span className="text-foreground font-medium">utilitaires</span> (prospecteurs, récupérateurs).
+          Les vaisseaux sont regroupés par rôle&nbsp;: <span className="text-foreground font-medium">transport</span>,
+          <span className="text-foreground font-medium"> minier</span>, <span className="text-foreground font-medium">recyclage</span>,
+          <span className="text-foreground font-medium"> colonisation</span>, <span className="text-foreground font-medium">exploration</span>,
+          <span className="text-foreground font-medium"> espionnage</span> et <span className="text-foreground font-medium">énergie</span>.
           Les vaisseaux de combat sont construits au Centre de commandement.
         </p>
       </div>
