@@ -25,6 +25,7 @@ export const buildingDefinitions = pgTable('building_definitions', {
   role: varchar('role', { length: 64 }).unique(),
   flavorText: text('flavor_text'),
   allowedPlanetTypes: jsonb('allowed_planet_types'),
+  variantPlanetTypes: jsonb('variant_planet_types').notNull().default([]),
 });
 
 export const buildingPrerequisites = pgTable('building_prerequisites', {
@@ -130,6 +131,7 @@ export const defenseDefinitions = pgTable('defense_definitions', {
   categoryId: varchar('category_id', { length: 64 }).references(() => entityCategories.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
   flavorText: text('flavor_text'),
+  variantPlanetTypes: jsonb('variant_planet_types').notNull().default([]),
 });
 
 export const defensePrerequisites = pgTable('defense_prerequisites', {
