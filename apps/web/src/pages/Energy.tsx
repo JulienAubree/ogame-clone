@@ -7,12 +7,14 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { buildProductionConfig } from '@/lib/production-config';
 import { solarSatelliteEnergy, calculateShieldCapacity } from '@exilium/game-engine';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
+import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
 import { DefenseIcon } from '@/lib/icons';
 import { getPlanetImageUrl } from '@/lib/assets';
 import { EnergyBar } from '@/components/energy/EnergyBar';
 import { FluxView } from '@/components/energy/FluxView';
 import { TableView } from '@/components/energy/TableView';
+import { EnergyHelp } from '@/components/energy/EnergyHelp';
 
 type View = 'flux' | 'table';
 
@@ -145,6 +147,7 @@ export default function Energy() {
   );
 
   const [bonusExpanded, setBonusExpanded] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   if (isLoading || !data) {
     return (
@@ -283,17 +286,31 @@ export default function Energy() {
 
         <div className="relative px-5 pt-8 pb-6 lg:px-8 lg:pt-12 lg:pb-8">
           <div className="flex items-start gap-5">
-            {data.planetClassId && data.planetImageIndex != null ? (
-              <img
-                src={getPlanetImageUrl(data.planetClassId, data.planetImageIndex, 'thumb')}
-                alt={data.planetName}
-                className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-primary/10 shrink-0"
-              />
-            ) : (
-              <div className="flex h-20 w-20 lg:h-24 lg:w-24 items-center justify-center rounded-full border-2 border-primary/30 bg-card text-2xl font-bold text-primary shadow-lg shadow-primary/10 shrink-0">
-                {data.planetName.charAt(0)}
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="relative group shrink-0"
+              title="Comment fonctionne l'énergie ?"
+            >
+              {data.planetClassId && data.planetImageIndex != null ? (
+                <img
+                  src={getPlanetImageUrl(data.planetClassId, data.planetImageIndex, 'thumb')}
+                  alt={data.planetName}
+                  className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-primary/10 transition-opacity group-hover:opacity-80"
+                />
+              ) : (
+                <div className="flex h-20 w-20 lg:h-24 lg:w-24 items-center justify-center rounded-full border-2 border-primary/30 bg-card text-2xl font-bold text-primary shadow-lg shadow-primary/10">
+                  {data.planetName.charAt(0)}
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <path d="M12 17h.01" />
+                </svg>
               </div>
-            )}
+            </button>
 
             <div className="flex-1 min-w-0 pt-1">
               <h1 className="text-xl lg:text-2xl font-bold text-foreground truncate">{data.planetName}</h1>
@@ -451,6 +468,14 @@ export default function Energy() {
           />
         )}
       </div>
+
+      <EntityDetailOverlay open={helpOpen} onClose={() => setHelpOpen(false)} title="Énergie">
+        <EnergyHelp
+          planetName={data.planetName}
+          planetClassId={data.planetClassId}
+          planetImageIndex={data.planetImageIndex}
+        />
+      </EntityDetailOverlay>
     </div>
   );
 }
