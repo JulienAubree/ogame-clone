@@ -143,7 +143,7 @@ function estimateRefund(
 }
 
 export default function Buildings() {
-  const { planetId } = useOutletContext<{ planetId?: string }>();
+  const { planetId, planetClassId } = useOutletContext<{ planetId?: string; planetClassId?: string | null }>();
   const utils = trpc.useUtils();
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -222,6 +222,13 @@ export default function Buildings() {
   const buildingCategories = (gameConfig?.categories ?? [])
     .filter((c) => c.entityType === 'building')
     .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const getBuildingVariantProps = (buildingId: string) => {
+    const def = gameConfig?.buildings?.[buildingId];
+    const variants = def?.variantPlanetTypes ?? [];
+    const hasVariant = !!planetClassId && variants.includes(planetClassId);
+    return { planetType: planetClassId ?? undefined, hasVariant };
+  };
 
   return (
     <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
@@ -322,6 +329,7 @@ export default function Buildings() {
                           size="icon"
                           alt={building.name}
                           className="h-11 w-11 rounded"
+                          {...getBuildingVariantProps(building.id)}
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
@@ -445,6 +453,7 @@ export default function Buildings() {
                             size="full"
                             alt={building.name}
                             className="w-full h-full object-cover"
+                            {...getBuildingVariantProps(building.id)}
                           />
                           <span className="absolute top-2 right-2 bg-emerald-700 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
                             Niv. {building.currentLevel}{building.id === 'planetaryShield' && shieldLevelBonus > 0 && <span className="text-cyan-300 ml-0.5">+{shieldLevelBonus}</span>}

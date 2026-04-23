@@ -21,7 +21,7 @@ import { useTutorialTargetId } from '@/hooks/useTutorialHighlight';
 
 
 export default function Defense() {
-  const { planetId } = useOutletContext<{ planetId?: string }>();
+  const { planetId, planetClassId } = useOutletContext<{ planetId?: string; planetClassId?: string | null }>();
   const utils = trpc.useUtils();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   useEffect(() => { setQuantities({}); }, [planetId]);
@@ -34,6 +34,13 @@ export default function Defense() {
   const defenseCategories = (gameConfig?.categories ?? [])
     .filter((c) => c.entityType === 'defense')
     .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const getDefenseVariantProps = (defenseId: string) => {
+    const def = gameConfig?.defenses?.[defenseId];
+    const variants = def?.variantPlanetTypes ?? [];
+    const hasVariant = !!planetClassId && variants.includes(planetClassId);
+    return { planetType: planetClassId ?? undefined, hasVariant };
+  };
 
   const { data: buildings } = trpc.building.list.useQuery(
     { planetId: planetId! },
@@ -302,7 +309,7 @@ export default function Defense() {
                             Objectif
                           </span>
                         )}
-                        <GameImage category="defenses" id={defense.id} size="icon" alt={defense.name} className="h-8 w-8 rounded" />
+                        <GameImage category="defenses" id={defense.id} size="icon" alt={defense.name} className="h-8 w-8 rounded" {...getDefenseVariantProps(defense.id)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium truncate">{defense.name}</span>
@@ -407,6 +414,7 @@ export default function Defense() {
                             size="full"
                             alt={defense.name}
                             className="w-full h-full object-cover"
+                            {...getDefenseVariantProps(defense.id)}
                           />
                           <span className="absolute top-2 right-2 bg-slate-700/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
                             x{defense.count}
