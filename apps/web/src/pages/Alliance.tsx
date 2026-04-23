@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
+import { ActivityFeed } from '@/components/alliance/ActivityFeed';
 
 export default function Alliance() {
   const { data: myAlliance, isLoading } = trpc.alliance.myAlliance.useQuery();
@@ -335,12 +336,7 @@ function AllianceView({ alliance }: {
     </section>
   );
 
-  const renderActivitySection = () => (
-    <section className="glass-card p-4 space-y-3">
-      <h3 className="text-base font-semibold">Activité</h3>
-      <p className="text-sm text-muted-foreground">Aucune activité pour le moment.</p>
-    </section>
-  );
+  const renderActivitySection = () => <ActivityFeed />;
 
   const renderManageSection = () => (
     <>
