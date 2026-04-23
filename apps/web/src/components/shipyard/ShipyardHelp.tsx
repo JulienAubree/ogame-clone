@@ -47,8 +47,7 @@ export function ShipyardHelp({ level }: ShipyardHelpProps) {
           Slots parallèles
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Chaque niveau du chantier et certains talents industriels débloquent un <span className="text-foreground font-medium">slot de production supplémentaire</span>,
-          permettant d'assembler plusieurs vaisseaux simultanément.
+          Par défaut, vous disposez d'un seul slot de production. Les <span className="text-foreground font-medium">talents industriels</span> (<span className="text-foreground font-medium">Production parallèle</span>) débloquent des slots supplémentaires, permettant d'assembler plusieurs vaisseaux simultanément.
         </p>
       </div>
 
