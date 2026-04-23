@@ -354,19 +354,41 @@ export function createAllianceService(db: Database, redis: Redis | undefined, al
       if (!membership) return null;
 
       const [alliance] = await db.select().from(alliances).where(eq(alliances.id, membership.allianceId)).limit(1);
+
       const members = await db
         .select({
           userId: allianceMembers.userId,
           username: users.username,
           role: allianceMembers.role,
           joinedAt: allianceMembers.joinedAt,
+          totalPoints: sql<number>`coalesce(${rankings.totalPoints}, 0)::int`,
         })
         .from(allianceMembers)
         .innerJoin(users, eq(users.id, allianceMembers.userId))
+        .leftJoin(rankings, eq(rankings.userId, allianceMembers.userId))
         .where(eq(allianceMembers.allianceId, membership.allianceId))
         .orderBy(asc(allianceMembers.joinedAt));
 
-      return { ...alliance, myRole: membership.role, members };
+      const totalPoints = members.reduce((sum, m) => sum + (m.totalPoints ?? 0), 0);
+
+      // Rank = number of alliances with strictly more aggregated points + 1
+      const [rankRow] = await db.execute<{ rank: number }>(sql`
+        SELECT count(*)::int + 1 AS rank
+        FROM (
+          SELECT coalesce(sum(r.total_points), 0) AS pts
+          FROM alliances a
+          INNER JOIN alliance_members am ON am.alliance_id = a.id
+          LEFT JOIN rankings r ON r.user_id = am.user_id
+          WHERE a.id <> ${membership.allianceId}
+          GROUP BY a.id
+        ) sub
+        WHERE sub.pts > ${totalPoints}
+      `);
+      const rank = rankRow?.rank ?? 1;
+
+      const recentMilitary = await this.getRecentMilitary(membership.allianceId);
+
+      return { ...alliance, myRole: membership.role, members, totalPoints, rank, recentMilitary };
     },
 
     async myInvitations(userId: string) {
