@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { Blason } from '@exilium/shared';
 import { ChatBubble } from './ChatBubble';
 
@@ -34,9 +34,15 @@ function getDateKey(date: Date): string {
 export function ChatMessageList({ messages, currentUserId, className = '', showSenderName = false }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hasScrolledInitialRef = useRef(false);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useLayoutEffect(() => {
+    if (messages.length === 0) return;
+    bottomRef.current?.scrollIntoView({
+      behavior: hasScrolledInitialRef.current ? 'smooth' : 'auto',
+      block: 'end',
+    });
+    hasScrolledInitialRef.current = true;
   }, [messages.length]);
 
   const enriched = messages.map((msg, i) => {
