@@ -171,6 +171,11 @@ function AllianceView({ alliance }: {
   };
 }) {
   const utils = trpc.useUtils();
+  const { data: unread } = trpc.alliance.activityUnreadCount.useQuery(undefined, {
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  });
+  const unreadCount = unread?.count ?? 0;
   const [activeTab, setActiveTab] = useState<'info' | 'members' | 'activity' | 'manage'>('info');
   const [inviteUsername, setInviteUsername] = useState('');
   const [description, setDescription] = useState(alliance.description ?? '');
@@ -234,7 +239,7 @@ function AllianceView({ alliance }: {
   const tabs: { id: 'info' | 'members' | 'activity' | 'manage'; label: string; show: boolean }[] = [
     { id: 'info', label: 'Infos', show: true },
     { id: 'members', label: 'Membres', show: true },
-    { id: 'activity', label: 'Activité', show: true },
+    { id: 'activity', label: unreadCount > 0 ? `Activité (${unreadCount})` : 'Activité', show: true },
     { id: 'manage', label: 'Gestion', show: isLeader },
   ];
 
@@ -336,7 +341,9 @@ function AllianceView({ alliance }: {
     </section>
   );
 
-  const renderActivitySection = () => <ActivityFeed />;
+  const renderActivitySection = () => (
+    <ActivityFeed unreadCount={unreadCount} onOpened={() => utils.alliance.activityUnreadCount.invalidate()} />
+  );
 
   const renderManageSection = () => (
     <>

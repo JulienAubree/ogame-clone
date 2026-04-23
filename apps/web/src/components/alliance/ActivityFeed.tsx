@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AllianceLogCategory } from '@exilium/shared';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,16 @@ const ALL_CATEGORIES: { id: AllianceLogCategory; label: string }[] = [
   { id: 'members', label: 'Membres' },
 ];
 
-export function ActivityFeed() {
+type Props = { unreadCount: number; onOpened: () => void };
+export function ActivityFeed({ unreadCount, onOpened }: Props) {
   const [active, setActive] = useState<AllianceLogCategory | null>(null);
+
+  const utils = trpc.useUtils();
+  const markSeen = trpc.alliance.activityMarkSeen.useMutation({
+    onSuccess: () => {
+      utils.alliance.activityUnreadCount.invalidate();
+    },
+  });
 
   const query = trpc.alliance.activity.useInfiniteQuery(
     { categories: active ? [active] : undefined, limit: 30 },
@@ -23,10 +31,23 @@ export function ActivityFeed() {
 
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
 
+  useEffect(() => {
+    if (!query.isLoading) {
+      markSeen.mutate();
+      onOpened();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.isLoading]);
+
   return (
     <section className="glass-card p-4 space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
         <h3 className="text-base font-semibold">Activité</h3>
+        {unreadCount > 0 && (
+          <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs text-primary">
+            {unreadCount} nouveau{unreadCount > 1 ? 'x' : ''}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
