@@ -23,6 +23,7 @@ import { createMessageRouter } from '../modules/message/message.router.js';
 import { createRankingService } from '../modules/ranking/ranking.service.js';
 import { createRankingRouter } from '../modules/ranking/ranking.router.js';
 import { createAllianceService } from '../modules/alliance/alliance.service.js';
+import { createAllianceLogService } from '../modules/alliance/alliance-log.service.js';
 import { createAllianceRouter } from '../modules/alliance/alliance.router.js';
 import { createGameConfigService } from '../modules/admin/game-config.service.js';
 import { createGameConfigRouter } from '../modules/admin/game-config.router.js';
@@ -100,7 +101,8 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const shipyardService = createShipyardService(db, resourceService, buildCompletionQueue, gameConfigService, talentService, flagshipService);
   const colonizationService = createColonizationService(db, gameConfigService);
   const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, redis, pveService, asteroidBeltService, pirateService, reportService, exiliumService, dailyQuestService, flagshipService, talentService, gameEventService, colonizationService);
-  const allianceService = createAllianceService(db, redis);
+  const allianceLogService = createAllianceLogService(db, redis);
+  const allianceService = createAllianceService(db, redis, allianceLogService);
   const contactService = createContactService(db, friendService, allianceService);
   const playerAdminService = createPlayerAdminService(db, fleetQueue);
   const tutorialService = createTutorialService(db, pveService, exiliumService);

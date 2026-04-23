@@ -5,6 +5,12 @@ import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
 import type { Blason } from '@exilium/shared';
 import { publishNotification } from '../notification/notification.publisher.js';
+import type { AllianceLogService } from './alliance-log.service.js';
+
+async function fetchUsername(db: Database, userId: string): Promise<string> {
+  const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
+  return u?.username ?? 'inconnu';
+}
 
 async function getMembership(db: Database, userId: string) {
   const [membership] = await db
@@ -26,7 +32,7 @@ async function requireRole(db: Database, userId: string, roles: string[]) {
   return membership;
 }
 
-export function createAllianceService(db: Database, redis?: Redis) {
+export function createAllianceService(db: Database, redis?: Redis, allianceLogService?: AllianceLogService) {
   return {
     async create(userId: string, params: { name: string; tag: string; blason: Blason; motto: string | null }) {
       const existing = await getMembership(db, userId);
@@ -71,7 +77,11 @@ export function createAllianceService(db: Database, redis?: Redis) {
 
       const members = await db.select().from(allianceMembers).where(eq(allianceMembers.allianceId, membership.allianceId));
 
-      if (members.length === 1) {
+      const memberName = await fetchUsername(db, userId);
+      const allianceIdForLog = membership.allianceId;
+      const willDissolve = members.length === 1;
+
+      if (willDissolve) {
         await db.delete(alliances).where(eq(alliances.id, membership.allianceId));
         return { dissolved: true };
       }
@@ -90,6 +100,15 @@ export function createAllianceService(db: Database, redis?: Redis) {
       }
 
       await db.delete(allianceMembers).where(eq(allianceMembers.id, membership.id));
+
+      if (allianceLogService) {
+        await allianceLogService.add({
+          allianceId: allianceIdForLog,
+          visibility: 'all',
+          payload: { type: 'member.left', memberId: userId, memberName },
+        });
+      }
+
       return { dissolved: false };
     },
 
@@ -107,6 +126,23 @@ export function createAllianceService(db: Database, redis?: Redis) {
       if (target.role === 'officer' && membership.role !== 'founder') throw new TRPCError({ code: 'FORBIDDEN', message: 'Seul le fondateur peut expulser un officier.' });
 
       await db.delete(allianceMembers).where(eq(allianceMembers.id, target.id));
+
+      if (allianceLogService) {
+        const byName = await fetchUsername(db, userId);
+        const memberName = await fetchUsername(db, targetUserId);
+        await allianceLogService.add({
+          allianceId: membership.allianceId,
+          visibility: 'officers',
+          payload: {
+            type: 'member.kicked',
+            memberId: targetUserId,
+            memberName,
+            byId: userId,
+            byName,
+          },
+        });
+      }
+
       return { success: true };
     },
 
@@ -123,7 +159,45 @@ export function createAllianceService(db: Database, redis?: Redis) {
       if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'Membre introuvable.' });
       if (target.userId === userId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vous ne pouvez pas changer votre propre rôle.' });
 
+      const oldRole = target.role;
+      const newRole = role;
+
       await db.update(allianceMembers).set({ role }).where(eq(allianceMembers.id, target.id));
+
+      if (allianceLogService && oldRole !== newRole) {
+        const byName = await fetchUsername(db, userId);
+        const memberName = await fetchUsername(db, targetUserId);
+        if (oldRole === 'member' && newRole === 'officer') {
+          await allianceLogService.add({
+            allianceId: membership!.allianceId,
+            visibility: 'all',
+            payload: {
+              type: 'member.promoted',
+              memberId: targetUserId,
+              memberName,
+              byId: userId,
+              byName,
+              fromRole: 'member',
+              toRole: 'officer',
+            },
+          });
+        } else if (oldRole === 'officer' && newRole === 'member') {
+          await allianceLogService.add({
+            allianceId: membership!.allianceId,
+            visibility: 'all',
+            payload: {
+              type: 'member.demoted',
+              memberId: targetUserId,
+              memberName,
+              byId: userId,
+              byName,
+              fromRole: 'officer',
+              toRole: 'member',
+            },
+          });
+        }
+      }
+
       return { success: true };
     },
 
@@ -167,6 +241,19 @@ export function createAllianceService(db: Database, redis?: Redis) {
         const existing = await getMembership(db, userId);
         if (existing) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vous êtes déjà dans une alliance.' });
         await db.insert(allianceMembers).values({ allianceId: invitation.allianceId, userId, role: 'member' });
+        const memberName = await fetchUsername(db, userId);
+        if (allianceLogService) {
+          await allianceLogService.add({
+            allianceId: invitation.allianceId,
+            visibility: 'all',
+            payload: {
+              type: 'member.joined',
+              memberId: userId,
+              memberName,
+              via: 'invitation',
+            },
+          });
+        }
       }
 
       await db.update(allianceInvitations).set({ status: accept ? 'accepted' : 'declined' }).where(eq(allianceInvitations.id, invitationId));
@@ -219,6 +306,19 @@ export function createAllianceService(db: Database, redis?: Redis) {
         const existingMembership = await getMembership(db, application.applicantUserId);
         if (existingMembership) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Ce joueur est déjà dans une alliance.' });
         await db.insert(allianceMembers).values({ allianceId: membership!.allianceId, userId: application.applicantUserId, role: 'member' });
+        const memberName = await fetchUsername(db, application.applicantUserId);
+        if (allianceLogService) {
+          await allianceLogService.add({
+            allianceId: membership!.allianceId,
+            visibility: 'all',
+            payload: {
+              type: 'member.joined',
+              memberId: application.applicantUserId,
+              memberName,
+              via: 'application',
+            },
+          });
+        }
       }
 
       await db.update(allianceApplications).set({ status: accept ? 'accepted' : 'declined' }).where(eq(allianceApplications.id, applicationId));
