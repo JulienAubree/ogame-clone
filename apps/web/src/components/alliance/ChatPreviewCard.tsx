@@ -8,10 +8,10 @@ export function ChatPreviewCard() {
   );
 
   return (
-    <section className="glass-card flex flex-col p-4">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-base font-semibold">Chat</h3>
-        <Link to="/alliance/chat" className="text-xs text-primary hover:underline">
+    <section className="glass-card flex min-w-0 flex-col p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="truncate text-base font-semibold">Chat</h3>
+        <Link to="/alliance/chat" className="shrink-0 whitespace-nowrap text-xs text-primary hover:underline">
           Ouvrir →
         </Link>
       </div>
@@ -21,7 +21,7 @@ export function ChatPreviewCard() {
       ) : !messages || messages.length === 0 ? (
         <p className="text-sm text-muted-foreground">Silence radio.</p>
       ) : (
-        <ul className="space-y-1.5 text-sm">
+        <ul className="min-w-0 space-y-1.5 text-sm">
           {messages.map((m) => (
             <li key={m.id} className="truncate">
               <span className="font-medium">{m.senderUsername ?? 'inconnu'} :</span>{' '}

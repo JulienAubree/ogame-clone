@@ -25,11 +25,11 @@ export function MembersPreviewCard({ members }: MembersPreviewCardProps) {
   const overflow = staff.length - visible.length;
 
   return (
-    <section className="glass-card flex flex-col p-4">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-base font-semibold">État-major</h3>
-        <Link to="/alliance/membres" className="text-xs text-primary hover:underline">
-          Voir tous les membres →
+    <section className="glass-card flex min-w-0 flex-col p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="truncate text-base font-semibold">État-major</h3>
+        <Link to="/alliance/membres" className="shrink-0 whitespace-nowrap text-xs text-primary hover:underline">
+          Voir tout →
         </Link>
       </div>
 
