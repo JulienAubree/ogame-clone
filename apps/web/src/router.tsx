@@ -215,8 +215,35 @@ export const router = createBrowserRouter([
       },
       {
         path: 'alliance',
-        lazy: lazyLoad(() => import('./pages/Alliance')),
+        lazy: lazyLoad(() => import('./pages/alliance/AlliancePage')),
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+        children: [
+          {
+            index: true,
+            lazy: lazyLoad(() => import('./pages/alliance/AllianceHubRoute')),
+            errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+          },
+          {
+            path: 'activite',
+            lazy: lazyLoad(() => import('./pages/alliance/AllianceActivityRoute')),
+            errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+          },
+          {
+            path: 'membres',
+            lazy: lazyLoad(() => import('./pages/alliance/AllianceMembersRoute')),
+            errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+          },
+          {
+            path: 'chat',
+            lazy: lazyLoad(() => import('./pages/alliance/AllianceChatRoute')),
+            errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+          },
+          {
+            path: 'gestion',
+            lazy: lazyLoad(() => import('./pages/alliance/AllianceManageRoute')),
+            errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+          },
+        ],
       },
       {
         path: 'alliance-ranking',
