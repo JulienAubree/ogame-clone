@@ -9,9 +9,10 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { ShipDetailContent } from '@/components/entity-details/ShipDetailContent';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { ShipyardHero } from '@/components/shipyard/ShipyardHero';
-import { ShipyardQueue } from '@/components/shipyard/ShipyardQueue';
-import { ShipyardUpgradeCard } from '@/components/shipyard/ShipyardUpgradeCard';
+import { FacilityHero } from '@/components/common/FacilityHero';
+import { FacilityQueue } from '@/components/common/FacilityQueue';
+import { getShipName } from '@/lib/entity-names';
+import { BuildingUpgradeCard } from '@/components/common/BuildingUpgradeCard';
 import { ShipyardRoleFilter, type ShipyardFilter } from '@/components/shipyard/ShipyardRoleFilter';
 import { ShipCard } from '@/components/shipyard/ShipCard';
 import { ShipMobileRow } from '@/components/shipyard/ShipMobileRow';
@@ -221,13 +222,15 @@ export default function Shipyard() {
   // ── Main layout ───────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <ShipyardHero
+      <FacilityHero
+        buildingId="shipyard"
+        title="Chantier spatial"
         level={shipyardLevel}
         planetClassId={resourceData?.planetClassId}
         planetImageIndex={resourceData?.planetImageIndex}
         onOpenHelp={() => setHelpOpen(true)}
         upgradeCard={shipyardBuilding && (
-          <ShipyardUpgradeCard
+          <BuildingUpgradeCard
             currentLevel={shipyardBuilding.currentLevel}
             nextLevelCost={shipyardBuilding.nextLevelCost}
             nextLevelTime={shipyardBuilding.nextLevelTime}
@@ -249,10 +252,12 @@ export default function Shipyard() {
           />
         )}
       >
-        <ShipyardQueue
+        <FacilityQueue
           queue={shipQueue}
-          ships={ships}
-          gameConfig={gameConfig}
+          items={ships}
+          getItemName={(id) => getShipName(id, gameConfig)}
+          itemNoun="vaisseau"
+          itemNounPlural="vaisseaux"
           onTimerComplete={() => {
             utils.shipyard.queue.invalidate({ planetId: planetId!, facilityId: 'shipyard' });
             utils.shipyard.ships.invalidate({ planetId: planetId! });
@@ -262,7 +267,7 @@ export default function Shipyard() {
           reducePending={reduceMutation.isPending}
           cancelPending={cancelMutation.isPending}
         />
-      </ShipyardHero>
+      </FacilityHero>
 
       <div className="space-y-4 px-4 pb-4 lg:px-6 lg:pb-6">
         <ShipyardRoleFilter value={filter} onChange={setFilter} availableRoles={availableRoles} />

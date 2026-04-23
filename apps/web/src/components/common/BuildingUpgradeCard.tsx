@@ -10,7 +10,7 @@ type GameConfigData = ReturnType<typeof useGameConfig>['data'];
 
 type BuildingPrereq = { buildingId: string; level: number; currentLevel?: number };
 
-interface ShipyardUpgradeCardProps {
+interface BuildingUpgradeCardProps {
   currentLevel: number;
   nextLevelCost: { minerai: number; silicium: number; hydrogene: number };
   nextLevelTime: number;
@@ -28,7 +28,7 @@ interface ShipyardUpgradeCardProps {
   onTimerComplete: () => void;
 }
 
-export function ShipyardUpgradeCard({
+export function BuildingUpgradeCard({
   currentLevel,
   nextLevelCost,
   nextLevelTime,
@@ -44,7 +44,7 @@ export function ShipyardUpgradeCard({
   onUpgrade,
   onCancel,
   onTimerComplete,
-}: ShipyardUpgradeCardProps) {
+}: BuildingUpgradeCardProps) {
   const nextLevel = currentLevel + 1;
 
   const canAfford =

@@ -1,23 +1,29 @@
 import type { ReactNode } from 'react';
 import { getAssetUrl, getPlanetImageUrl } from '@/lib/assets';
 
-interface ShipyardHeroProps {
+interface FacilityHeroProps {
+  buildingId: string;
+  title: string;
   level: number;
   planetClassId?: string | null;
   planetImageIndex?: number | null;
+  helpTitle?: string;
   onOpenHelp: () => void;
   upgradeCard?: ReactNode;
   children?: ReactNode;
 }
 
-export function ShipyardHero({
+export function FacilityHero({
+  buildingId,
+  title,
   level,
   planetClassId,
   planetImageIndex,
+  helpTitle,
   onOpenHelp,
   upgradeCard,
   children,
-}: ShipyardHeroProps) {
+}: FacilityHeroProps) {
   const hasPlanetImage = !!planetClassId && planetImageIndex != null;
   return (
     <div className="relative overflow-hidden">
@@ -31,7 +37,7 @@ export function ShipyardHero({
           />
         ) : (
           <img
-            src={getAssetUrl('buildings', 'shipyard')}
+            src={getAssetUrl('buildings', buildingId)}
             alt=""
             className="h-full w-full object-cover opacity-40 blur-sm scale-110"
             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
@@ -48,11 +54,11 @@ export function ShipyardHero({
               type="button"
               onClick={onOpenHelp}
               className="relative group shrink-0"
-              title="Comment fonctionne le chantier spatial ?"
+              title={helpTitle ?? `Comment fonctionne ${title} ?`}
             >
               <img
-                src={getAssetUrl('buildings', 'shipyard', 'thumb')}
-                alt="Chantier spatial"
+                src={getAssetUrl('buildings', buildingId, 'thumb')}
+                alt={title}
                 className="h-20 w-20 lg:h-24 lg:w-24 rounded-full border-2 border-primary/30 object-cover shadow-lg shadow-cyan-500/10 transition-opacity group-hover:opacity-80"
                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               />
@@ -66,7 +72,7 @@ export function ShipyardHero({
             </button>
 
             <div className="flex-1 min-w-0 pt-1">
-              <h1 className="text-xl lg:text-2xl font-bold text-foreground">Chantier spatial</h1>
+              <h1 className="text-xl lg:text-2xl font-bold text-foreground">{title}</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Niveau {level}</p>
               {children}
             </div>

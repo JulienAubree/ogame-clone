@@ -2,10 +2,6 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Timer } from '@/components/common/Timer';
 import { cn } from '@/lib/utils';
-import { getShipName } from '@/lib/entity-names';
-import { useGameConfig } from '@/hooks/useGameConfig';
-
-type GameConfigData = ReturnType<typeof useGameConfig>['data'];
 
 type QueueEntry = {
   id: string;
@@ -17,12 +13,16 @@ type QueueEntry = {
   endTime?: string | Date | null;
 };
 
-type ShipRef = { id: string; timePerUnit: number };
+type ItemRef = { id: string; timePerUnit: number };
 
-interface ShipyardQueueProps {
+interface FacilityQueueProps {
   queue: QueueEntry[];
-  ships: ShipRef[];
-  gameConfig: GameConfigData;
+  items: ItemRef[];
+  /** Resolve an itemId to its display name (e.g. getShipName, getDefenseName). */
+  getItemName: (itemId: string) => string;
+  /** Singular noun used in the summary line (e.g. "vaisseau"). Plural = noun + "x". */
+  itemNoun: string;
+  itemNounPlural?: string;
   onTimerComplete: () => void;
   onReduce: (batchId: string) => void;
   onCancel: (batchId: string) => void;
@@ -30,20 +30,21 @@ interface ShipyardQueueProps {
   cancelPending: boolean;
 }
 
-export function ShipyardQueue({
+export function FacilityQueue({
   queue,
-  ships,
-  gameConfig,
+  items,
+  getItemName,
+  itemNoun,
+  itemNounPlural,
   onTimerComplete,
   onReduce,
   onCancel,
   reducePending,
   cancelPending,
-}: ShipyardQueueProps) {
+}: FacilityQueueProps) {
   const [expanded, setExpanded] = useState(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
 
-  // Tick every second so the collapsed-state progress bar animates smoothly.
   useEffect(() => {
     if (queue.length === 0) return;
     const id = window.setInterval(() => setNowTick(Date.now()), 1000);
@@ -72,15 +73,14 @@ export function ShipyardQueue({
   }
   totalMs = longestActiveMs;
   if (totalQueuedUnits > 0 && parallelSlots > 0) {
-    const sampleShip = ships.find((s) => s.id === queuedItems[0]?.itemId);
-    if (sampleShip) {
-      totalMs += Math.ceil(totalQueuedUnits / Math.max(1, parallelSlots)) * sampleShip.timePerUnit * 1000;
+    const sampleItem = items.find((s) => s.id === queuedItems[0]?.itemId);
+    if (sampleItem) {
+      totalMs += Math.ceil(totalQueuedUnits / Math.max(1, parallelSlots)) * sampleItem.timePerUnit * 1000;
     }
   }
   if (totalMs > 0) queueEndTime = new Date(nowTick + totalMs);
 
-  // ── Current unit progress (for the collapsed progress bar) ─────────────
-  // Pick the soonest-finishing active entry so the bar reflects the next completion.
+  // ── Soonest active batch progress ──────────────────────────────────────
   let progressPercent = 0;
   let soonest: QueueEntry | null = null;
   let soonestEnd = Infinity;
@@ -98,7 +98,9 @@ export function ShipyardQueue({
     progressPercent = Math.max(0, Math.min(100, ((nowTick - start) / (end - start)) * 100));
   }
 
-  const soonestName = soonest ? getShipName(soonest.itemId, gameConfig) : null;
+  const soonestName = soonest ? getItemName(soonest.itemId) : null;
+  const pluralNoun = itemNounPlural ?? `${itemNoun}x`;
+  const summaryLabel = `${totalUnits} ${totalUnits > 1 ? pluralNoun : itemNoun} en construction`;
 
   return (
     <div
@@ -125,12 +127,10 @@ export function ShipyardQueue({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 text-xs">
-            <span className="font-semibold text-foreground">
-              {totalUnits} vaisseau{totalUnits > 1 ? 'x' : ''} en construction
-            </span>
+            <span className="font-semibold text-foreground">{summaryLabel}</span>
             {soonestName && (
               <span className="text-muted-foreground truncate hidden sm:inline">
-                · prochain : <span className="text-foreground/80">{soonestName}</span>
+                · prochain&nbsp;: <span className="text-foreground/80">{soonestName}</span>
               </span>
             )}
             {parallelSlots > 1 && (
@@ -172,7 +172,7 @@ export function ShipyardQueue({
       {expanded && (
         <div className="border-t border-white/5 px-3.5 py-3 space-y-2.5">
           {queue.map((item) => {
-            const name = getShipName(item.itemId, gameConfig);
+            const name = getItemName(item.itemId);
             const remaining = item.quantity - (item.completedCount ?? 0);
             return (
               <div
