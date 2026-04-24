@@ -38,6 +38,7 @@ import { createListInboundFleets } from './operations/list-inbound.js';
 import { createRecallFleet } from './operations/recall-fleet.js';
 import { createScheduleReturn } from './operations/schedule-return.js';
 import { createFleetQueries } from './operations/fleet-queries.js';
+import { createProcessDetection } from './operations/process-detection.js';
 import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
 import type { PhasedMissionHandler, MissionHandler, MissionHandlerContext, SendFleetInput, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
@@ -148,6 +149,7 @@ export function createFleetService(
   const { getFleetSlots, listMovements, estimateFleet } = createFleetQueries({
     db, gameConfigService, flagshipService, talentService, getOwnedPlanet, getResearchLevels,
   });
+  const processDetection = createProcessDetection({ db, gameConfigService, redis });
 
   // Dispatcher for "phased" missions (mine, explore, prospect). Kept as a
   // closure so processProspectDone/MineDone/ExploreDone methods can call it.
@@ -231,76 +233,11 @@ export function createFleetService(
     getFleetSlots,
     listMovements,
     estimateFleet,
+    processDetection,
 
 
 
 
-    async processDetection(fleetEventId: string, defenderId: string) {
-      const [event] = await db
-        .select()
-        .from(fleetEvents)
-        .where(and(eq(fleetEvents.id, fleetEventId), eq(fleetEvents.status, 'active'), eq(fleetEvents.phase, 'outbound')))
-        .limit(1);
-
-      if (!event) return null;
-
-      // Mark as detected
-      await db
-        .update(fleetEvents)
-        .set({ detectedAt: new Date() })
-        .where(eq(fleetEvents.id, fleetEventId));
-
-      // Calculate tier for notification content
-      const config = await gameConfigService.getFullConfig();
-      const scoreThresholds: number[] = JSON.parse(String(config.universe.attack_detection_score_thresholds ?? '[0,1,3,5,7]'));
-
-      let tier = 0;
-      const score = event.detectionScore ?? 0;
-      for (let i = scoreThresholds.length - 1; i >= 0; i--) {
-        if (score >= scoreThresholds[i]) { tier = i; break; }
-      }
-
-      // Build notification payload — only include fields the defender can see
-      const payload: Record<string, unknown> = {
-        tier,
-        arrivalTime: event.arrivalTime.toISOString(),
-        targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
-        mission: event.mission,
-        missionLabel: config.missions[event.mission]?.label ?? event.mission,
-      };
-
-      if (tier >= 1 && event.originPlanetId) {
-        const [originPlanet] = await db
-          .select({ galaxy: planets.galaxy, system: planets.system, position: planets.position })
-          .from(planets)
-          .where(eq(planets.id, event.originPlanetId))
-          .limit(1);
-        if (originPlanet) {
-          payload.originCoords = `${originPlanet.galaxy}:${originPlanet.system}:${originPlanet.position}`;
-        }
-      }
-
-      if (tier >= 2) {
-        const ships = event.ships as Record<string, number>;
-        payload.shipCount = Object.values(ships).reduce((sum, n) => sum + n, 0);
-      }
-
-      if (tier >= 4) {
-        const [attacker] = await db
-          .select({ username: users.username })
-          .from(users)
-          .where(eq(users.id, event.userId))
-          .limit(1);
-        payload.attackerName = attacker?.username ?? null;
-      }
-
-      publishNotification(redis, defenderId, {
-        type: 'fleet-hostile-inbound',
-        payload,
-      });
-
-      return { detected: true };
-    },
 
     async processArrival(fleetEventId: string): Promise<FleetCompletionResult> {
       const [event] = await db
