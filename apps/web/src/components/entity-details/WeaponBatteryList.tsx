@@ -1,5 +1,6 @@
 import type { WeaponProfile } from '@/lib/entity-details';
 import { WeaponsIcon, ShotsIcon } from './stat-components';
+import { CombatTraitPopover } from './CombatTraitPopover';
 
 interface Props {
   profiles: WeaponProfile[];
@@ -8,11 +9,6 @@ interface Props {
 }
 
 const fmt = (n: number) => Math.round(n).toLocaleString('fr-FR');
-
-function fmtRafale(rafale: { category: string; count: number }, labels: Record<string, string>): string {
-  const cat = labels[rafale.category] ?? rafale.category;
-  return `Rafale ${rafale.count} ${cat}`;
-}
 
 export function WeaponBatteryList({ profiles, weaponsMultiplier, categoryLabels }: Props) {
   return (
@@ -52,20 +48,15 @@ export function WeaponBatteryList({ profiles, weaponsMultiplier, categoryLabels 
             {(w.rafale || w.hasChainKill) && (
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {w.rafale && (
-                  <span
-                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30"
-                    title={`Tire ${w.rafale.count} coups supplémentaires quand la cible est ${categoryLabels[w.rafale.category] ?? w.rafale.category}.`}
-                  >
-                    {fmtRafale(w.rafale, categoryLabels)}
-                  </span>
+                  <CombatTraitPopover
+                    variant="rafale"
+                    label={`Rafale ${w.rafale.count} ${categoryLabels[w.rafale.category] ?? w.rafale.category}`}
+                    categoryLabel={categoryLabels[w.rafale.category] ?? w.rafale.category}
+                    count={w.rafale.count}
+                  />
                 )}
                 {w.hasChainKill && (
-                  <span
-                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30"
-                    title="Sur destruction d'une cible, tire un coup bonus sur une unité de la même catégorie."
-                  >
-                    Enchaînement
-                  </span>
+                  <CombatTraitPopover variant="chainKill" label="Enchaînement" />
                 )}
               </div>
             )}

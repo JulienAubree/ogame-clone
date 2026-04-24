@@ -1,8 +1,16 @@
+export interface UnitWeaponProfile {
+  damage: number;
+  shots: number;
+}
+
 export interface UnitCombatStats {
   weapons: number;
   shotCount: number;
   shield: number;
   hull: number;
+  /** Multi-battery profile. If provided, DPS = sum(damage × shots) linearly,
+   *  ignoring the legacy `shotcountExponent`. */
+  weaponProfiles?: UnitWeaponProfile[];
 }
 
 export interface FPConfig {
@@ -12,10 +20,14 @@ export interface FPConfig {
 
 /**
  * Compute the Power Factor for a single unit type.
- * Formula: round((weapons * shotCount^exponent) * (shield + hull) / divisor)
+ *
+ * With weapon profiles: FP = round(sum(dmg × shots) × (shield + hull) / divisor).
+ * Legacy fallback: FP = round((weapons × shotCount^exponent) × (shield + hull) / divisor).
  */
 export function computeUnitFP(stats: UnitCombatStats, config: FPConfig): number {
-  const dps = stats.weapons * Math.pow(stats.shotCount, config.shotcountExponent);
+  const dps = stats.weaponProfiles && stats.weaponProfiles.length > 0
+    ? stats.weaponProfiles.reduce((s, w) => s + w.damage * w.shots, 0)
+    : stats.weapons * Math.pow(stats.shotCount, config.shotcountExponent);
   const durability = stats.shield + stats.hull;
   return Math.round((dps * durability) / config.divisor);
 }

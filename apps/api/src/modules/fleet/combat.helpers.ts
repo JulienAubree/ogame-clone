@@ -133,15 +133,33 @@ export function computeBothFP(
 ): { attackerFP: number; defenderFP: number } {
   const unitCombatStats: Record<string, UnitCombatStats> = {};
   for (const [id, ship] of Object.entries(config.ships)) {
-    unitCombatStats[id] = { weapons: ship.weapons, shotCount: ship.shotCount ?? 1, shield: ship.shield, hull: ship.hull };
+    unitCombatStats[id] = {
+      weapons: ship.weapons,
+      shotCount: ship.shotCount ?? 1,
+      shield: ship.shield,
+      hull: ship.hull,
+      weaponProfiles: ship.weaponProfiles,
+    };
   }
   for (const [id, def] of Object.entries(config.defenses)) {
-    unitCombatStats[id] = { weapons: def.weapons, shotCount: def.shotCount ?? 1, shield: def.shield, hull: def.hull };
+    unitCombatStats[id] = {
+      weapons: def.weapons,
+      shotCount: def.shotCount ?? 1,
+      shield: def.shield,
+      hull: def.hull,
+      weaponProfiles: def.weaponProfiles,
+    };
   }
   // Include flagship in FP calculation if present
   if (shipCombatConfigs['flagship']) {
     const fc = shipCombatConfigs['flagship'];
-    unitCombatStats['flagship'] = { weapons: fc.baseWeaponDamage, shotCount: fc.baseShotCount, shield: fc.baseShield, hull: fc.baseHull };
+    unitCombatStats['flagship'] = {
+      weapons: fc.baseWeaponDamage,
+      shotCount: fc.baseShotCount,
+      shield: fc.baseShield,
+      hull: fc.baseHull,
+      weaponProfiles: fc.weapons,
+    };
   }
   const fpConfig: FPConfig = {
     shotcountExponent: Number(config.universe.fp_shotcount_exponent) || 1.5,

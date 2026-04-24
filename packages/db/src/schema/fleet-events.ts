@@ -30,7 +30,6 @@ export const fleetEvents = pgTable('fleet_events', {
   siliciumCargo: numeric('silicium_cargo', { precision: 20, scale: 2 }).notNull().default('0'),
   hydrogeneCargo: numeric('hydrogene_cargo', { precision: 20, scale: 2 }).notNull().default('0'),
   ships: jsonb('ships').notNull().default('{}'),
-  targetPriority: varchar('target_priority', { length: 64 }),
   metadata: jsonb('metadata'),
   pveMissionId: uuid('pve_mission_id').references(() => pveMissions.id, { onDelete: 'set null' }),
   tradeId: uuid('trade_id').references(() => marketOffers.id, { onDelete: 'set null' }),

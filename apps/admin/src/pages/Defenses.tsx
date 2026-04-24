@@ -15,13 +15,33 @@ const FIELDS = [
   { key: 'costMinerai', label: 'Coût Minerai', type: 'number' as const },
   { key: 'costSilicium', label: 'Coût Silicium', type: 'number' as const },
   { key: 'costHydrogene', label: 'Coût Hydrogène', type: 'number' as const },
-  { key: 'weapons', label: 'Armes', type: 'number' as const },
+  { key: 'weapons', label: 'Armes (legacy FP)', type: 'number' as const },
   { key: 'shield', label: 'Bouclier', type: 'number' as const },
   { key: 'hull', label: 'Coque', type: 'number' as const },
+  { key: 'weaponProfilesJson', label: 'Batteries (JSON)', type: 'textarea' as const },
   { key: 'maxPerPlanet', label: 'Max par planete (0 = illimite)', type: 'number' as const },
   { key: 'flavorText', label: "Texte d'ambiance", type: 'textarea' as const },
   { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
 ];
+
+interface WeaponProfile {
+  damage: number;
+  shots: number;
+  targetCategory: string;
+  rafale?: { category: string; count: number };
+  hasChainKill?: boolean;
+}
+
+function parseWeaponProfiles(json: string): WeaponProfile[] | null {
+  const trimmed = (json ?? '').trim();
+  if (trimmed === '') return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 const CREATE_FIELDS = [
   { key: 'id', label: 'ID (identifiant unique)', type: 'text' as const },
@@ -179,10 +199,16 @@ export default function Defenses() {
             weapons: editingDef.weapons,
             shield: editingDef.shield,
             hull: editingDef.hull,
+            weaponProfilesJson: JSON.stringify((editingDef as { weaponProfiles?: WeaponProfile[] }).weaponProfiles ?? [], null, 2),
             maxPerPlanet: editingDef.maxPerPlanet ?? 0,
             sortOrder: editingDef.sortOrder,
           }}
           onSave={(values) => {
+            const profiles = parseWeaponProfiles(values.weaponProfilesJson as string);
+            if (profiles === null) {
+              alert('JSON des batteries invalide — doit être un tableau de profils.');
+              return;
+            }
             updateMutation.mutate({
               id: editing!,
               data: {
@@ -194,6 +220,7 @@ export default function Defenses() {
                 weapons: values.weapons as number,
                 shield: values.shield as number,
                 hull: values.hull as number,
+                weaponProfiles: profiles,
                 maxPerPlanet: (values.maxPerPlanet as number) || null,
                 sortOrder: values.sortOrder as number,
               },
@@ -220,10 +247,16 @@ export default function Defenses() {
             weapons: 0,
             shield: 0,
             hull: 0,
+            weaponProfilesJson: '[]',
             maxPerPlanet: 0,
             sortOrder: 0,
           }}
           onSave={(values) => {
+            const profiles = parseWeaponProfiles(values.weaponProfilesJson as string);
+            if (profiles === null) {
+              alert('JSON des batteries invalide — doit être un tableau de profils.');
+              return;
+            }
             createMutation.mutate({
               id: values.id as string,
               name: values.name as string,
@@ -235,6 +268,7 @@ export default function Defenses() {
               weapons: values.weapons as number,
               shield: values.shield as number,
               hull: values.hull as number,
+              weaponProfiles: profiles,
               maxPerPlanet: (values.maxPerPlanet as number) || null,
               sortOrder: values.sortOrder as number,
             });

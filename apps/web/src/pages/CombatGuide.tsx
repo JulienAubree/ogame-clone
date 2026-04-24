@@ -232,7 +232,10 @@ function ReferenceTab() {
   const shipRows = Object.entries(gameConfig.ships)
     .filter(([, s]) => s.weapons > 0)
     .map(([id, s]) => {
-      const stats: UnitCombatStats = { weapons: s.weapons, shotCount: s.shotCount, shield: s.shield, hull: s.hull };
+      const stats: UnitCombatStats = {
+        weapons: s.weapons, shotCount: s.shotCount, shield: s.shield, hull: s.hull,
+        weaponProfiles: (s as { weaponProfiles?: UnitCombatStats['weaponProfiles'] }).weaponProfiles,
+      };
       return { ...s, id, name: getShipName(id, gameConfig), fp: computeUnitFP(stats, fpConfig), category: s.combatCategoryId ?? '—' };
     })
     .sort((a, b) => b.fp - a.fp);
@@ -241,7 +244,10 @@ function ReferenceTab() {
   const defenseRows = Object.entries(gameConfig.defenses)
     .filter(([, d]) => d.weapons > 0)
     .map(([id, d]) => {
-      const stats: UnitCombatStats = { weapons: d.weapons, shotCount: d.shotCount, shield: d.shield, hull: d.hull };
+      const stats: UnitCombatStats = {
+        weapons: d.weapons, shotCount: d.shotCount, shield: d.shield, hull: d.hull,
+        weaponProfiles: (d as { weaponProfiles?: UnitCombatStats['weaponProfiles'] }).weaponProfiles,
+      };
       return { ...d, id, name: getDefenseName(id, gameConfig), fp: computeUnitFP(stats, fpConfig), category: d.combatCategoryId ?? '—' };
     })
     .sort((a, b) => b.fp - a.fp);
@@ -253,8 +259,13 @@ function ReferenceTab() {
         <h3 className="text-sm font-semibold text-primary">Formule du Facteur de Puissance</h3>
         <div className="text-xs text-muted-foreground space-y-2">
           <code className="block rounded bg-muted/50 p-3 text-foreground">
-            FP = Math.round((armes × shotCount<sup>{fpConfig.shotcountExponent}</sup>) × (bouclier + coque) / {fpConfig.divisor})
+            FP = Math.round(DPS × (bouclier + coque) / {fpConfig.divisor})<br />
+            DPS = somme(dégâts × tirs) sur toutes les batteries de l'unité
           </code>
+          <p>
+            Pour les unités sans batteries explicites (vaisseaux utilitaires), la formule legacy
+            <span className="font-mono"> armes × tirs<sup>{fpConfig.shotcountExponent}</sup></span> s'applique.
+          </p>
           <p>
             FP d'une flotte = somme de (FP unitaire × quantité) pour chaque type de vaisseau.
           </p>

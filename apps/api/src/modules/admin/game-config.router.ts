@@ -2,6 +2,14 @@ import { z } from 'zod';
 import { router, publicProcedure } from '../../trpc/router.js';
 import type { GameConfigService } from './game-config.service.js';
 
+const weaponProfileSchema = z.object({
+  damage: z.number(),
+  shots: z.number().int().min(0),
+  targetCategory: z.string().min(1),
+  rafale: z.object({ category: z.string().min(1), count: z.number().int().min(0) }).optional(),
+  hasChainKill: z.boolean().optional(),
+});
+
 export function createGameConfigRouter(
   gameConfigService: GameConfigService,
   adminProcedure: ReturnType<typeof import('../../trpc/router.js').createAdminProcedure>,
@@ -179,6 +187,7 @@ export function createGameConfigRouter(
         weapons: z.number().int().optional(),
         shield: z.number().int().optional(),
         hull: z.number().int().optional(),
+        weaponProfiles: z.array(weaponProfileSchema).optional(),
         flavorText: z.string().nullable().optional(),
         categoryId: z.string().nullable().optional(),
         sortOrder: z.number().int().optional(),
@@ -212,6 +221,7 @@ export function createGameConfigRouter(
           weapons: z.number().int().optional(),
           shield: z.number().int().optional(),
           hull: z.number().int().optional(),
+          weaponProfiles: z.array(weaponProfileSchema).optional(),
           flavorText: z.string().nullable().optional(),
           categoryId: z.string().nullable().optional(),
           sortOrder: z.number().int().optional(),
@@ -249,6 +259,7 @@ export function createGameConfigRouter(
         weapons: z.number().int().optional(),
         shield: z.number().int().optional(),
         hull: z.number().int().optional(),
+        weaponProfiles: z.array(weaponProfileSchema).optional(),
         maxPerPlanet: z.number().int().nullable().optional(),
         flavorText: z.string().nullable().optional(),
         categoryId: z.string().nullable().optional(),
@@ -278,6 +289,7 @@ export function createGameConfigRouter(
           weapons: z.number().int().optional(),
           shield: z.number().int().optional(),
           hull: z.number().int().optional(),
+          weaponProfiles: z.array(weaponProfileSchema).optional(),
           maxPerPlanet: z.number().int().nullable().optional(),
           flavorText: z.string().nullable().optional(),
           categoryId: z.string().nullable().optional(),

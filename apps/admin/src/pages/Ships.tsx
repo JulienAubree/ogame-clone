@@ -14,9 +14,10 @@ const FIELDS = [
   { key: 'costMinerai', label: 'Coût Minerai', type: 'number' as const },
   { key: 'costSilicium', label: 'Coût Silicium', type: 'number' as const },
   { key: 'costHydrogene', label: 'Coût Hydrogène', type: 'number' as const },
-  { key: 'weapons', label: 'Armes', type: 'number' as const },
+  { key: 'weapons', label: 'Armes (legacy FP)', type: 'number' as const },
   { key: 'shield', label: 'Bouclier', type: 'number' as const },
   { key: 'hull', label: 'Coque', type: 'number' as const },
+  { key: 'weaponProfilesJson', label: 'Batteries (JSON)', type: 'textarea' as const },
   { key: 'baseSpeed', label: 'Vitesse', type: 'number' as const },
   { key: 'fuelConsumption', label: 'Carburant', type: 'number' as const },
   { key: 'cargoCapacity', label: 'Cargo', type: 'number' as const },
@@ -24,6 +25,25 @@ const FIELDS = [
   { key: 'sortOrder', label: 'Ordre', type: 'number' as const },
   { key: 'role', label: 'Rôle', type: 'text' as const },
 ];
+
+interface WeaponProfile {
+  damage: number;
+  shots: number;
+  targetCategory: string;
+  rafale?: { category: string; count: number };
+  hasChainKill?: boolean;
+}
+
+function parseWeaponProfiles(json: string): WeaponProfile[] | null {
+  const trimmed = (json ?? '').trim();
+  if (trimmed === '') return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 const CREATE_FIELDS = [
   { key: 'id', label: 'ID (identifiant unique)', type: 'text' as const },
@@ -181,6 +201,7 @@ export default function Ships() {
             weapons: editingShip.weapons,
             shield: editingShip.shield,
             hull: editingShip.hull,
+            weaponProfilesJson: JSON.stringify((editingShip as { weaponProfiles?: WeaponProfile[] }).weaponProfiles ?? [], null, 2),
             baseSpeed: editingShip.baseSpeed,
             fuelConsumption: editingShip.fuelConsumption,
             cargoCapacity: editingShip.cargoCapacity,
@@ -188,6 +209,11 @@ export default function Ships() {
             role: editingShip.role ?? '',
           }}
           onSave={(values) => {
+            const profiles = parseWeaponProfiles(values.weaponProfilesJson as string);
+            if (profiles === null) {
+              alert('JSON des batteries invalide — doit être un tableau de profils.');
+              return;
+            }
             updateMutation.mutate({
               id: editing!,
               data: {
@@ -199,6 +225,7 @@ export default function Ships() {
                 weapons: values.weapons as number,
                 shield: values.shield as number,
                 hull: values.hull as number,
+                weaponProfiles: profiles,
                 baseSpeed: values.baseSpeed as number,
                 fuelConsumption: values.fuelConsumption as number,
                 cargoCapacity: values.cargoCapacity as number,
@@ -229,6 +256,7 @@ export default function Ships() {
             weapons: 0,
             shield: 0,
             hull: 0,
+            weaponProfilesJson: '[]',
             baseSpeed: 0,
             fuelConsumption: 0,
             cargoCapacity: 0,
@@ -236,6 +264,11 @@ export default function Ships() {
             role: '',
           }}
           onSave={(values) => {
+            const profiles = parseWeaponProfiles(values.weaponProfilesJson as string);
+            if (profiles === null) {
+              alert('JSON des batteries invalide — doit être un tableau de profils.');
+              return;
+            }
             createMutation.mutate({
               id: values.id as string,
               name: values.name as string,
@@ -248,6 +281,7 @@ export default function Ships() {
               weapons: values.weapons as number,
               shield: values.shield as number,
               hull: values.hull as number,
+              weaponProfiles: profiles,
               baseSpeed: values.baseSpeed as number,
               fuelConsumption: values.fuelConsumption as number,
               cargoCapacity: values.cargoCapacity as number,

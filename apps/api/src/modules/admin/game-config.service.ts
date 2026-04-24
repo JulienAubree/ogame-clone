@@ -25,7 +25,7 @@ import type { Database } from '@exilium/db';
 import type Redis from 'ioredis';
 import { TRPCError } from '@trpc/server';
 import { buildConfigFromDb } from './game-config/build-config.js';
-import type { GameConfig } from './game-config.types.js';
+import type { GameConfig, WeaponProfileConfig } from './game-config.types.js';
 
 // Re-export all config types so existing `import { GameConfig } from '.../game-config.service.js'`
 // keeps working across the codebase.
@@ -310,6 +310,7 @@ export function createGameConfigService(db: Database, redis?: Redis) {
       hull?: number;
       baseArmor?: number;
       shotCount?: number;
+      weaponProfiles?: WeaponProfileConfig[];
       combatCategoryId?: string | null;
       flavorText?: string | null;
       categoryId?: string | null;
@@ -334,6 +335,7 @@ export function createGameConfigService(db: Database, redis?: Redis) {
         hull: data.hull ?? 0,
         baseArmor: data.baseArmor ?? 0,
         shotCount: data.shotCount ?? 1,
+        weaponProfiles: data.weaponProfiles ?? [],
         combatCategoryId: data.combatCategoryId ?? null,
         flavorText: data.flavorText ?? null,
         categoryId: data.categoryId ?? null,
@@ -364,6 +366,7 @@ export function createGameConfigService(db: Database, redis?: Redis) {
       hull: number;
       baseArmor: number;
       shotCount: number;
+      weaponProfiles: WeaponProfileConfig[];
       combatCategoryId: string | null;
       flavorText: string | null;
       categoryId: string | null;
@@ -402,6 +405,7 @@ export function createGameConfigService(db: Database, redis?: Redis) {
       hull?: number;
       baseArmor?: number;
       shotCount?: number;
+      weaponProfiles?: WeaponProfileConfig[];
       combatCategoryId?: string | null;
       maxPerPlanet?: number | null;
       flavorText?: string | null;
@@ -421,6 +425,7 @@ export function createGameConfigService(db: Database, redis?: Redis) {
         hull: data.hull ?? 0,
         baseArmor: data.baseArmor ?? 0,
         shotCount: data.shotCount ?? 1,
+        weaponProfiles: data.weaponProfiles ?? [],
         combatCategoryId: data.combatCategoryId ?? null,
         maxPerPlanet: data.maxPerPlanet ?? null,
         flavorText: data.flavorText ?? null,
@@ -447,6 +452,7 @@ export function createGameConfigService(db: Database, redis?: Redis) {
       hull: number;
       baseArmor: number;
       shotCount: number;
+      weaponProfiles: WeaponProfileConfig[];
       combatCategoryId: string | null;
       maxPerPlanet: number | null;
       flavorText: string | null;
