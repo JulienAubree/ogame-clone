@@ -20,256 +20,22 @@ import {
   uiLabels,
   talentBranchDefinitions,
   talentDefinitions,
-  biomeDefinitions,
 } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import { TRPCError } from '@trpc/server';
+import { buildConfigFromDb } from './game-config/build-config.js';
+import type { GameConfig } from './game-config.types.js';
 
-export interface CategoryConfig {
-  id: string;
-  entityType: string;
-  name: string;
-  sortOrder: number;
-}
+// Re-export all config types so existing `import { GameConfig } from '.../game-config.service.js'`
+// keeps working across the codebase.
+export * from './game-config.types.js';
 
-export interface BonusConfig {
-  id: string;
-  sourceType: 'building' | 'research';
-  sourceId: string;
-  stat: string;
-  percentPerLevel: number;
-  category: string | null;
-  statLabel: string | null;
-}
-
-export interface MissionConfig {
-  id: string;
-  label: string;
-  hint: string;
-  buttonLabel: string;
-  color: string;
-  sortOrder: number;
-  dangerous: boolean;
-  requiredShipRoles: string[] | null;
-  exclusive: boolean;
-  recommendedShipRoles: string[] | null;
-  requiresPveMission: boolean;
-}
-
-export interface TalentBranchConfig {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  sortOrder: number;
-}
-
-export interface TalentConfig {
-  id: string;
-  branchId: string;
-  tier: number;
-  position: string;
-  name: string;
-  description: string;
-  maxRanks: number;
-  prerequisiteId: string | null;
-  effectType: string;
-  effectParams: Record<string, unknown>;
-  sortOrder: number;
-}
-
-export interface HullAbility {
-  id: string;
-  name: string;
-  description: string;
-  type: 'fleet_unlock' | 'active';
-  /** Missions que le flagship peut rejoindre (type fleet_unlock) */
-  unlockedMissions?: string[];
-  /** L'extraction miniere du flagship = sa soute (type fleet_unlock) */
-  miningExtractionEqualsCargo?: boolean;
-  /** Cooldown en secondes (type active) */
-  cooldownSeconds?: number;
-  /** Parametres specifiques a la capacite */
-  params?: Record<string, unknown>;
-}
-
-export interface HullConfig {
-  id: string;
-  name: string;
-  description: string;
-  playstyle: 'warrior' | 'miner' | 'explorer';
-  passiveBonuses: Record<string, number>;
-  abilities: HullAbility[];
-  changeCost: {
-    baseMultiplier: number;
-    resourceRatio: { minerai: number; silicium: number; hydrogene: number };
-  };
-  unavailabilitySeconds: number;
-  cooldownSeconds: number;
-  bonusLabels: string[];
-}
-
-export interface BiomeConfig {
-  id: string;
-  name: string;
-  description: string;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-  compatiblePlanetTypes: string[];
-  effects: Array<{ stat: string; category?: string; modifier: number }>;
-}
-
-export interface GameConfig {
-  categories: CategoryConfig[];
-  buildings: Record<string, BuildingConfig>;
-  research: Record<string, ResearchConfig>;
-  ships: Record<string, ShipConfig>;
-  defenses: Record<string, DefenseConfig>;
-  production: Record<string, ProductionConfigEntry>;
-  universe: Record<string, unknown>;
-  planetTypes: PlanetTypeConfig[];
-  pirateTemplates: PirateTemplateConfig[];
-  tutorialQuests: TutorialQuestConfig[];
-  bonuses: BonusConfig[];
-  missions: Record<string, MissionConfig>;
-  labels: Record<string, string>;
-  talentBranches: TalentBranchConfig[];
-  talents: Record<string, TalentConfig>;
-  hulls: Record<string, HullConfig>;
-  biomes: BiomeConfig[];
-}
-
-export interface BuildingConfig {
-  id: string;
-  name: string;
-  description: string;
-  baseCost: { minerai: number; silicium: number; hydrogene: number };
-  costFactor: number;
-  baseTime: number;
-  flavorText: string | null;
-  categoryId: string | null;
-  sortOrder: number;
-  role: string | null;
-  allowedPlanetTypes: string[] | null;
-  variantPlanetTypes: string[];
-  prerequisites: { buildingId: string; level: number }[];
-}
-
-export interface ResearchConfig {
-  id: string;
-  name: string;
-  description: string;
-  baseCost: { minerai: number; silicium: number; hydrogene: number };
-  costFactor: number;
-  flavorText: string | null;
-  effectDescription: string | null;
-  levelColumn: string;
-  categoryId: string | null;
-  sortOrder: number;
-  maxLevel: number | null;
-  requiredAnnexType: string | null;
-  prerequisites: {
-    buildings: { buildingId: string; level: number }[];
-    research: { researchId: string; level: number }[];
-  };
-}
-
-export interface ShipConfig {
-  id: string;
-  name: string;
-  description: string;
-  cost: { minerai: number; silicium: number; hydrogene: number };
-  countColumn: string;
-  baseSpeed: number;
-  fuelConsumption: number;
-  cargoCapacity: number;
-  driveType: string;
-  miningExtraction: number;
-  weapons: number;
-  shield: number;
-  hull: number;
-  baseArmor: number;
-  shotCount: number;
-  combatCategoryId: string | null;
-  flavorText: string | null;
-  categoryId: string | null;
-  sortOrder: number;
-  isStationary: boolean;
-  role: string | null;
-  prerequisites: {
-    buildings: { buildingId: string; level: number }[];
-    research: { researchId: string; level: number }[];
-  };
-}
-
-export interface DefenseConfig {
-  id: string;
-  name: string;
-  description: string;
-  cost: { minerai: number; silicium: number; hydrogene: number };
-  countColumn: string;
-  weapons: number;
-  shield: number;
-  hull: number;
-  baseArmor: number;
-  shotCount: number;
-  combatCategoryId: string | null;
-  maxPerPlanet: number | null;
-  flavorText: string | null;
-  categoryId: string | null;
-  sortOrder: number;
-  variantPlanetTypes: string[];
-  prerequisites: {
-    buildings: { buildingId: string; level: number }[];
-    research: { researchId: string; level: number }[];
-  };
-}
-
-export interface PlanetTypeConfig {
-  id: string;
-  name: string;
-  description: string;
-  positions: number[];
-  mineraiBonus: number;
-  siliciumBonus: number;
-  hydrogeneBonus: number;
-  diameterMin: number;
-  diameterMax: number;
-  sortOrder: number;
-  role: string | null;
-}
-
-export interface ProductionConfigEntry {
-  id: string;
-  baseProduction: number;
-  exponentBase: number;
-  energyConsumption: number | null;
-  storageBase: number | null;
-  tempCoeffA: number | null;
-  tempCoeffB: number | null;
-}
-
-export interface PirateTemplateConfig {
-  id: string;
-  name: string;
-  tier: string;
-  ships: Record<string, number>;
-  rewards: { minerai: number; silicium: number; hydrogene: number; bonusShips: { shipId: string; count: number; chance: number }[] };
-}
-
-export interface TutorialQuestConfig {
-  id: string;
-  order: number;
-  title: string;
-  narrativeText: string;
-  conditionType: string;
-  conditionTargetId: string;
-  conditionTargetValue: number;
-  rewardMinerai: number;
-  rewardSilicium: number;
-  rewardHydrogene: number;
-  conditionLabel: string | null;
-}
-
+/**
+ * In-memory snapshot of the full GameConfig. Cleared on any admin mutation
+ * via `invalidateCache()`, rebuilt lazily on the next `getFullConfig()` call.
+ * Kept at module scope so the cache is shared across all imports in the same
+ * process (PM2 fork = one cache per process, which is fine at current scale).
+ */
 let cache: GameConfig | null = null;
 
 export function createGameConfigService(db: Database) {
@@ -279,335 +45,15 @@ export function createGameConfigService(db: Database) {
 
   async function getFullConfig(): Promise<GameConfig> {
     if (cache) return cache;
-
-    // Load all data in parallel
-    const [
-      categoryRows,
-      buildingRows,
-      buildingPrereqRows,
-      researchRows,
-      researchPrereqRows,
-      shipRows,
-      shipPrereqRows,
-      defenseRows,
-      defensePrereqRows,
-      productionRows,
-      universeRows,
-      planetTypeRows,
-      pirateTemplateRows,
-      tutorialQuestRows,
-      bonusRows,
-      missionsRows,
-      labelsRows,
-      talentBranchRows,
-      talentRows,
-      biomeRows,
-    ] = await Promise.all([
-      db.select().from(entityCategories),
-      db.select().from(buildingDefinitions),
-      db.select().from(buildingPrerequisites),
-      db.select().from(researchDefinitions),
-      db.select().from(researchPrerequisites),
-      db.select().from(shipDefinitions),
-      db.select().from(shipPrerequisites),
-      db.select().from(defenseDefinitions),
-      db.select().from(defensePrerequisites),
-      db.select().from(productionConfig),
-      db.select().from(universeConfig),
-      db.select().from(planetTypes),
-      db.select().from(pirateTemplates),
-      db.select().from(tutorialQuestDefinitions),
-      db.select().from(bonusDefinitions),
-      db.select().from(missionDefinitions).orderBy(missionDefinitions.sortOrder),
-      db.select().from(uiLabels),
-      db.select().from(talentBranchDefinitions).orderBy(talentBranchDefinitions.sortOrder),
-      db.select().from(talentDefinitions),
-      db.select().from(biomeDefinitions).orderBy(biomeDefinitions.id),
-    ]);
-
-    // Categories
-    const categories: CategoryConfig[] = categoryRows.map(c => ({
-      id: c.id,
-      entityType: c.entityType,
-      name: c.name,
-      sortOrder: c.sortOrder,
-    }));
-
-    // Pre-index prerequisites into Maps (O(n) instead of O(n²) filter loops)
-    const buildingPrereqMap = new Map<string, typeof buildingPrereqRows>();
-    for (const p of buildingPrereqRows) {
-      const arr = buildingPrereqMap.get(p.buildingId);
-      if (arr) arr.push(p); else buildingPrereqMap.set(p.buildingId, [p]);
-    }
-    const researchPrereqMap = new Map<string, typeof researchPrereqRows>();
-    for (const p of researchPrereqRows) {
-      const arr = researchPrereqMap.get(p.researchId);
-      if (arr) arr.push(p); else researchPrereqMap.set(p.researchId, [p]);
-    }
-    const shipPrereqMap = new Map<string, typeof shipPrereqRows>();
-    for (const p of shipPrereqRows) {
-      const arr = shipPrereqMap.get(p.shipId);
-      if (arr) arr.push(p); else shipPrereqMap.set(p.shipId, [p]);
-    }
-    const defensePrereqMap = new Map<string, typeof defensePrereqRows>();
-    for (const p of defensePrereqRows) {
-      const arr = defensePrereqMap.get(p.defenseId);
-      if (arr) arr.push(p); else defensePrereqMap.set(p.defenseId, [p]);
-    }
-
-    // Buildings
-    const buildings: Record<string, BuildingConfig> = {};
-    for (const b of buildingRows) {
-      buildings[b.id] = {
-        id: b.id,
-        name: b.name,
-        description: b.description,
-        baseCost: { minerai: b.baseCostMinerai, silicium: b.baseCostSilicium, hydrogene: b.baseCostHydrogene },
-        costFactor: b.costFactor,
-        baseTime: b.baseTime,
-        flavorText: b.flavorText ?? null,
-        categoryId: b.categoryId,
-        sortOrder: b.sortOrder,
-        role: b.role ?? null,
-        allowedPlanetTypes: (b.allowedPlanetTypes as string[] | null) ?? null,
-        variantPlanetTypes: (b.variantPlanetTypes as string[] | null) ?? [],
-        prerequisites: (buildingPrereqMap.get(b.id) ?? [])
-          .map(p => ({ buildingId: p.requiredBuildingId, level: p.requiredLevel })),
-      };
-    }
-
-    // Research
-    const research: Record<string, ResearchConfig> = {};
-    for (const r of researchRows) {
-      const prereqs = researchPrereqMap.get(r.id) ?? [];
-      research[r.id] = {
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        baseCost: { minerai: r.baseCostMinerai, silicium: r.baseCostSilicium, hydrogene: r.baseCostHydrogene },
-        costFactor: r.costFactor,
-        flavorText: r.flavorText ?? null,
-        effectDescription: r.effectDescription ?? null,
-        levelColumn: r.levelColumn,
-        categoryId: r.categoryId,
-        sortOrder: r.sortOrder,
-        maxLevel: r.maxLevel ?? null,
-        requiredAnnexType: (r.requiredAnnexType as string | null) ?? null,
-        prerequisites: {
-          buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
-          research: prereqs.filter(p => p.requiredResearchId).map(p => ({ researchId: p.requiredResearchId!, level: p.requiredLevel })),
-        },
-      };
-    }
-
-    // Ships
-    const ships: Record<string, ShipConfig> = {};
-    for (const s of shipRows) {
-      const prereqs = shipPrereqMap.get(s.id) ?? [];
-      ships[s.id] = {
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        cost: { minerai: s.costMinerai, silicium: s.costSilicium, hydrogene: s.costHydrogene },
-        countColumn: s.countColumn,
-        baseSpeed: s.baseSpeed,
-        fuelConsumption: s.fuelConsumption,
-        cargoCapacity: s.cargoCapacity,
-        driveType: s.driveType,
-        miningExtraction: s.miningExtraction,
-        weapons: s.weapons,
-        shield: s.shield,
-        hull: s.hull,
-        baseArmor: s.baseArmor,
-        shotCount: s.shotCount,
-        combatCategoryId: s.combatCategoryId ?? null,
-        flavorText: s.flavorText ?? null,
-        categoryId: s.categoryId,
-        sortOrder: s.sortOrder,
-        isStationary: s.isStationary,
-        role: s.role ?? null,
-        prerequisites: {
-          buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
-          research: prereqs.filter(p => p.requiredResearchId).map(p => ({ researchId: p.requiredResearchId!, level: p.requiredLevel })),
-        },
-      };
-    }
-
-    // Defenses
-    const defenses: Record<string, DefenseConfig> = {};
-    for (const d of defenseRows) {
-      const prereqs = defensePrereqMap.get(d.id) ?? [];
-      defenses[d.id] = {
-        id: d.id,
-        name: d.name,
-        description: d.description,
-        cost: { minerai: d.costMinerai, silicium: d.costSilicium, hydrogene: d.costHydrogene },
-        countColumn: d.countColumn,
-        weapons: d.weapons,
-        shield: d.shield,
-        hull: d.hull,
-        baseArmor: d.baseArmor,
-        shotCount: d.shotCount,
-        combatCategoryId: d.combatCategoryId ?? null,
-        maxPerPlanet: d.maxPerPlanet,
-        flavorText: d.flavorText ?? null,
-        categoryId: d.categoryId,
-        sortOrder: d.sortOrder,
-        variantPlanetTypes: (d.variantPlanetTypes as string[] | null) ?? [],
-        prerequisites: {
-          buildings: prereqs.filter(p => p.requiredBuildingId).map(p => ({ buildingId: p.requiredBuildingId!, level: p.requiredLevel })),
-          research: prereqs.filter(p => p.requiredResearchId).map(p => ({ researchId: p.requiredResearchId!, level: p.requiredLevel })),
-        },
-      };
-    }
-
-    // Production
-    const production: Record<string, ProductionConfigEntry> = {};
-    for (const p of productionRows) {
-      production[p.id] = {
-        id: p.id,
-        baseProduction: p.baseProduction,
-        exponentBase: p.exponentBase,
-        energyConsumption: p.energyConsumption,
-        storageBase: p.storageBase,
-        tempCoeffA: p.tempCoeffA ?? null,
-        tempCoeffB: p.tempCoeffB ?? null,
-      };
-    }
-
-    // Universe
-    const universe: Record<string, unknown> = {};
-    for (const u of universeRows) {
-      universe[u.key] = u.value;
-    }
-
-    // Planet types
-    const ptConfigs: PlanetTypeConfig[] = planetTypeRows.map(pt => ({
-      id: pt.id,
-      name: pt.name,
-      description: pt.description,
-      positions: pt.positions as number[],
-      mineraiBonus: pt.mineraiBonus,
-      siliciumBonus: pt.siliciumBonus,
-      hydrogeneBonus: pt.hydrogeneBonus,
-      diameterMin: pt.diameterMin,
-      diameterMax: pt.diameterMax,
-      sortOrder: pt.sortOrder,
-      role: pt.role ?? null,
-    }));
-
-    // Pirate templates
-    const ptTemplates: PirateTemplateConfig[] = pirateTemplateRows.map(pt => ({
-      id: pt.id,
-      name: pt.name,
-      tier: pt.tier,
-      ships: pt.ships as Record<string, number>,
-      rewards: pt.rewards as { minerai: number; silicium: number; hydrogene: number; bonusShips: { shipId: string; count: number; chance: number }[] },
-    }));
-
-    // Tutorial quests
-    const tqConfigs: TutorialQuestConfig[] = tutorialQuestRows.map(tq => ({
-      id: tq.id,
-      order: tq.order,
-      title: tq.title,
-      narrativeText: tq.narrativeText,
-      conditionType: tq.conditionType,
-      conditionTargetId: tq.conditionTargetId,
-      conditionTargetValue: tq.conditionTargetValue,
-      rewardMinerai: tq.rewardMinerai,
-      rewardSilicium: tq.rewardSilicium,
-      rewardHydrogene: tq.rewardHydrogene,
-      conditionLabel: tq.conditionLabel ?? null,
-    }));
-
-    // Bonuses
-    const bonuses: BonusConfig[] = bonusRows.map(b => ({
-      id: b.id,
-      sourceType: b.sourceType as 'building' | 'research',
-      sourceId: b.sourceId,
-      stat: b.stat,
-      percentPerLevel: b.percentPerLevel,
-      category: b.category,
-      statLabel: b.statLabel ?? null,
-    }));
-
-    // Missions
-    const missions: Record<string, MissionConfig> = {};
-    for (const m of missionsRows) {
-      missions[m.id] = {
-        id: m.id,
-        label: m.label,
-        hint: m.hint,
-        buttonLabel: m.buttonLabel,
-        color: m.color,
-        sortOrder: m.sortOrder,
-        dangerous: m.dangerous,
-        requiredShipRoles: m.requiredShipRoles as string[] | null,
-        exclusive: m.exclusive,
-        recommendedShipRoles: m.recommendedShipRoles as string[] | null,
-        requiresPveMission: m.requiresPveMission,
-      };
-    }
-
-    // Labels
-    const labels: Record<string, string> = {};
-    for (const l of labelsRows) {
-      labels[l.key] = l.label;
-    }
-
-    // Talent branches
-    const talentBranches: TalentBranchConfig[] = talentBranchRows.map(b => ({
-      id: b.id,
-      name: b.name,
-      description: b.description,
-      color: b.color,
-      sortOrder: b.sortOrder,
-    }));
-
-    // Talents
-    const talents: Record<string, TalentConfig> = {};
-    for (const t of talentRows) {
-      talents[t.id] = {
-        id: t.id,
-        branchId: t.branchId,
-        tier: t.tier,
-        position: t.position,
-        name: t.name,
-        description: t.description,
-        maxRanks: t.maxRanks,
-        prerequisiteId: t.prerequisiteId,
-        effectType: t.effectType,
-        effectParams: (t.effectParams ?? {}) as Record<string, unknown>,
-        sortOrder: t.sortOrder,
-      };
-    }
-
-    // Hulls (stored as JSON array in universe_config with key 'hulls')
-    const hulls: Record<string, HullConfig> = {};
-    const hullsRaw = universe['hulls'] as HullConfig[] | undefined;
-    if (hullsRaw && Array.isArray(hullsRaw)) {
-      for (const h of hullsRaw) {
-        hulls[h.id] = h;
-      }
-    }
-
-    // Biomes
-    const biomes: BiomeConfig[] = biomeRows.map(b => ({
-      id: b.id,
-      name: b.name,
-      description: b.description,
-      rarity: b.rarity as BiomeConfig['rarity'],
-      compatiblePlanetTypes: b.compatiblePlanetTypes as string[],
-      effects: b.effects as Array<{ stat: string; category?: string; modifier: number }>,
-    }));
-
-    cache = { categories, buildings, research, ships, defenses, production, universe, planetTypes: ptConfigs, pirateTemplates: ptTemplates, tutorialQuests: tqConfigs, bonuses, missions, labels, talentBranches, talents, hulls, biomes };
+    cache = await buildConfigFromDb(db);
     return cache;
   }
 
   return {
     getFullConfig,
     invalidateCache,
+
+    // ── Categories ──
 
     async createCategory(data: { id: string; entityType: string; name: string; sortOrder: number }) {
       await db.insert(entityCategories).values(data);
@@ -623,6 +69,8 @@ export function createGameConfigService(db: Database) {
       await db.delete(entityCategories).where(eq(entityCategories.id, id));
       invalidateCache();
     },
+
+    // ── Buildings ──
 
     async createBuilding(data: {
       id: string;
@@ -657,44 +105,39 @@ export function createGameConfigService(db: Database) {
     },
 
     async deleteBuilding(id: string) {
-      // Check if referenced as prerequisite by other buildings
-      const buildingPrereqRefs = await db.select().from(buildingPrerequisites)
+      // Refuse deletion when this building is still referenced as a
+      // prerequisite — deleting would leave orphaned requirements and silently
+      // break progression for dependent entities.
+      const buildingRefs = await db.select({ ownerId: buildingPrerequisites.buildingId }).from(buildingPrerequisites)
         .where(eq(buildingPrerequisites.requiredBuildingId, id));
-      if (buildingPrereqRefs.length > 0) {
-        const refIds = [...new Set(buildingPrereqRefs.map(r => r.buildingId))];
+      if (buildingRefs.length > 0) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: `Ce bâtiment est requis comme prérequis par: ${refIds.join(', ')}`,
+          message: `Ce bâtiment est requis comme prérequis par: ${[...new Set(buildingRefs.map((r) => r.ownerId))].join(', ')}`,
         });
       }
-      // Check if referenced as prerequisite by research
-      const researchPrereqRefs = await db.select().from(researchPrerequisites)
+      const researchRefs = await db.select({ ownerId: researchPrerequisites.researchId }).from(researchPrerequisites)
         .where(eq(researchPrerequisites.requiredBuildingId, id));
-      if (researchPrereqRefs.length > 0) {
-        const refIds = [...new Set(researchPrereqRefs.map(r => r.researchId))];
+      if (researchRefs.length > 0) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: `Ce bâtiment est requis comme prérequis par les recherches: ${refIds.join(', ')}`,
+          message: `Ce bâtiment est requis comme prérequis par les recherches: ${[...new Set(researchRefs.map((r) => r.ownerId))].join(', ')}`,
         });
       }
-      // Check if referenced as prerequisite by ships
-      const shipPrereqRefs = await db.select().from(shipPrerequisites)
+      const shipRefs = await db.select({ ownerId: shipPrerequisites.shipId }).from(shipPrerequisites)
         .where(eq(shipPrerequisites.requiredBuildingId, id));
-      if (shipPrereqRefs.length > 0) {
-        const refIds = [...new Set(shipPrereqRefs.map(r => r.shipId))];
+      if (shipRefs.length > 0) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: `Ce bâtiment est requis comme prérequis par les vaisseaux: ${refIds.join(', ')}`,
+          message: `Ce bâtiment est requis comme prérequis par les vaisseaux: ${[...new Set(shipRefs.map((r) => r.ownerId))].join(', ')}`,
         });
       }
-      // Check if referenced as prerequisite by defenses
-      const defensePrereqRefs = await db.select().from(defensePrerequisites)
+      const defenseRefs = await db.select({ ownerId: defensePrerequisites.defenseId }).from(defensePrerequisites)
         .where(eq(defensePrerequisites.requiredBuildingId, id));
-      if (defensePrereqRefs.length > 0) {
-        const refIds = [...new Set(defensePrereqRefs.map(r => r.defenseId))];
+      if (defenseRefs.length > 0) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: `Ce bâtiment est requis comme prérequis par les défenses: ${refIds.join(', ')}`,
+          message: `Ce bâtiment est requis comme prérequis par les défenses: ${[...new Set(defenseRefs.map((r) => r.ownerId))].join(', ')}`,
         });
       }
       await db.delete(buildingDefinitions).where(eq(buildingDefinitions.id, id));
@@ -714,10 +157,10 @@ export function createGameConfigService(db: Database) {
       sortOrder: number;
       role: string | null;
     }>) {
-      // Defensive: never allow variantPlanetTypes to be overwritten via the
-      // regular edit form. The variant upload/delete endpoints manage that field.
-      const { variantPlanetTypes: _stripVariantPlanetTypes, ...safeData } = data as typeof data & { variantPlanetTypes?: unknown };
-      void _stripVariantPlanetTypes;
+      // Defensive: variantPlanetTypes is managed by dedicated upload/delete
+      // endpoints — never let the generic edit form overwrite it.
+      const { variantPlanetTypes: _strip, ...safeData } = data as typeof data & { variantPlanetTypes?: unknown };
+      void _strip;
       await db.update(buildingDefinitions).set(safeData).where(eq(buildingDefinitions.id, id));
       invalidateCache();
     },
@@ -725,10 +168,12 @@ export function createGameConfigService(db: Database) {
     async updateBuildingPrerequisites(buildingId: string, prereqs: { requiredBuildingId: string; requiredLevel: number }[]) {
       await db.delete(buildingPrerequisites).where(eq(buildingPrerequisites.buildingId, buildingId));
       if (prereqs.length > 0) {
-        await db.insert(buildingPrerequisites).values(prereqs.map(p => ({ buildingId, ...p })));
+        await db.insert(buildingPrerequisites).values(prereqs.map((p) => ({ buildingId, ...p })));
       }
       invalidateCache();
     },
+
+    // ── Research ──
 
     async createResearch(data: {
       id: string;
@@ -762,34 +207,28 @@ export function createGameConfigService(db: Database) {
     },
 
     async deleteResearch(id: string) {
-      // Check if referenced as prerequisite by other research
-      const researchPrereqRefs = await db.select().from(researchPrerequisites)
+      const researchRefs = await db.select({ ownerId: researchPrerequisites.researchId }).from(researchPrerequisites)
         .where(eq(researchPrerequisites.requiredResearchId, id));
-      if (researchPrereqRefs.length > 0) {
-        const refIds = [...new Set(researchPrereqRefs.map(r => r.researchId))];
+      if (researchRefs.length > 0) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: `Cette recherche est requise comme prérequis par: ${refIds.join(', ')}`,
+          message: `Cette recherche est requise comme prérequis par: ${[...new Set(researchRefs.map((r) => r.ownerId))].join(', ')}`,
         });
       }
-      // Check if referenced as prerequisite by ships
-      const shipPrereqRefs = await db.select().from(shipPrerequisites)
+      const shipRefs = await db.select({ ownerId: shipPrerequisites.shipId }).from(shipPrerequisites)
         .where(eq(shipPrerequisites.requiredResearchId, id));
-      if (shipPrereqRefs.length > 0) {
-        const refIds = [...new Set(shipPrereqRefs.map(r => r.shipId))];
+      if (shipRefs.length > 0) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: `Cette recherche est requise comme prérequis par les vaisseaux: ${refIds.join(', ')}`,
+          message: `Cette recherche est requise comme prérequis par les vaisseaux: ${[...new Set(shipRefs.map((r) => r.ownerId))].join(', ')}`,
         });
       }
-      // Check if referenced as prerequisite by defenses
-      const defensePrereqRefs = await db.select().from(defensePrerequisites)
+      const defenseRefs = await db.select({ ownerId: defensePrerequisites.defenseId }).from(defensePrerequisites)
         .where(eq(defensePrerequisites.requiredResearchId, id));
-      if (defensePrereqRefs.length > 0) {
-        const refIds = [...new Set(defensePrereqRefs.map(r => r.defenseId))];
+      if (defenseRefs.length > 0) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: `Cette recherche est requise comme prérequis par les défenses: ${refIds.join(', ')}`,
+          message: `Cette recherche est requise comme prérequis par les défenses: ${[...new Set(defenseRefs.map((r) => r.ownerId))].join(', ')}`,
         });
       }
       await db.delete(researchDefinitions).where(eq(researchDefinitions.id, id));
@@ -815,7 +254,7 @@ export function createGameConfigService(db: Database) {
     async updateResearchPrerequisites(researchId: string, prereqs: { requiredBuildingId?: string; requiredResearchId?: string; requiredLevel: number }[]) {
       await db.delete(researchPrerequisites).where(eq(researchPrerequisites.researchId, researchId));
       if (prereqs.length > 0) {
-        await db.insert(researchPrerequisites).values(prereqs.map(p => ({
+        await db.insert(researchPrerequisites).values(prereqs.map((p) => ({
           researchId,
           requiredBuildingId: p.requiredBuildingId ?? null,
           requiredResearchId: p.requiredResearchId ?? null,
@@ -824,6 +263,8 @@ export function createGameConfigService(db: Database) {
       }
       invalidateCache();
     },
+
+    // ── Ships ──
 
     async createShip(data: {
       id: string;
@@ -910,7 +351,7 @@ export function createGameConfigService(db: Database) {
     async updateShipPrerequisites(shipId: string, prereqs: { requiredBuildingId?: string; requiredResearchId?: string; requiredLevel: number }[]) {
       await db.delete(shipPrerequisites).where(eq(shipPrerequisites.shipId, shipId));
       if (prereqs.length > 0) {
-        await db.insert(shipPrerequisites).values(prereqs.map(p => ({
+        await db.insert(shipPrerequisites).values(prereqs.map((p) => ({
           shipId,
           requiredBuildingId: p.requiredBuildingId ?? null,
           requiredResearchId: p.requiredResearchId ?? null,
@@ -919,6 +360,8 @@ export function createGameConfigService(db: Database) {
       }
       invalidateCache();
     },
+
+    // ── Defenses ──
 
     async createDefense(data: {
       id: string;
@@ -984,10 +427,8 @@ export function createGameConfigService(db: Database) {
       categoryId: string | null;
       sortOrder: number;
     }>) {
-      // Defensive: never allow variantPlanetTypes to be overwritten via the
-      // regular edit form. The variant upload/delete endpoints manage that field.
-      const { variantPlanetTypes: _stripVariantPlanetTypes, ...safeData } = data as typeof data & { variantPlanetTypes?: unknown };
-      void _stripVariantPlanetTypes;
+      const { variantPlanetTypes: _strip, ...safeData } = data as typeof data & { variantPlanetTypes?: unknown };
+      void _strip;
       await db.update(defenseDefinitions).set(safeData).where(eq(defenseDefinitions.id, id));
       invalidateCache();
     },
@@ -995,7 +436,7 @@ export function createGameConfigService(db: Database) {
     async updateDefensePrerequisites(defenseId: string, prereqs: { requiredBuildingId?: string; requiredResearchId?: string; requiredLevel: number }[]) {
       await db.delete(defensePrerequisites).where(eq(defensePrerequisites.defenseId, defenseId));
       if (prereqs.length > 0) {
-        await db.insert(defensePrerequisites).values(prereqs.map(p => ({
+        await db.insert(defensePrerequisites).values(prereqs.map((p) => ({
           defenseId,
           requiredBuildingId: p.requiredBuildingId ?? null,
           requiredResearchId: p.requiredResearchId ?? null,
@@ -1004,6 +445,8 @@ export function createGameConfigService(db: Database) {
       }
       invalidateCache();
     },
+
+    // ── Production / universe ──
 
     async updateProductionConfig(id: string, data: Partial<{
       baseProduction: number;
@@ -1022,6 +465,8 @@ export function createGameConfigService(db: Database) {
         .onConflictDoUpdate({ target: universeConfig.key, set: { value } });
       invalidateCache();
     },
+
+    // ── Planet types ──
 
     async createPlanetType(data: {
       id: string;
@@ -1221,15 +666,9 @@ export function createGameConfigService(db: Database) {
       invalidateCache();
     },
 
-    // ── Talent Branches ──
+    // ── Talent branches ──
 
-    async createTalentBranch(data: {
-      id: string;
-      name: string;
-      description?: string;
-      color: string;
-      sortOrder?: number;
-    }) {
+    async createTalentBranch(data: { id: string; name: string; description?: string; color: string; sortOrder?: number }) {
       await db.insert(talentBranchDefinitions).values({
         id: data.id,
         name: data.name,
@@ -1240,12 +679,7 @@ export function createGameConfigService(db: Database) {
       invalidateCache();
     },
 
-    async updateTalentBranch(id: string, data: Partial<{
-      name: string;
-      description: string;
-      color: string;
-      sortOrder: number;
-    }>) {
+    async updateTalentBranch(id: string, data: Partial<{ name: string; description: string; color: string; sortOrder: number }>) {
       await db.update(talentBranchDefinitions).set(data).where(eq(talentBranchDefinitions.id, id));
       invalidateCache();
     },
