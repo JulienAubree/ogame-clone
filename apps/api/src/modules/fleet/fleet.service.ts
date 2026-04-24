@@ -3,7 +3,8 @@ import { TRPCError } from '@trpc/server';
 import { planets, planetShips, fleetEvents, userResearch, pveMissions, users, allianceMembers, alliances, marketOffers, fleetPhaseEnum } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import { fleetSpeed, travelTime, distance, fuelConsumption, totalCargoCapacity, resolveBonus, calculateAttackDetection, detectionDelay } from '@exilium/game-engine';
-import type { BonusDefinition, ShipStats, FleetConfig } from '@exilium/game-engine';
+import type { ShipStats } from '@exilium/game-engine';
+import { buildFleetConfig, buildSpeedMultipliers } from './fleet.helpers.js';
 import type { createResourceService } from '../resource/resource.service.js';
 import type { createMessageService } from '../message/message.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -93,18 +94,6 @@ export function createFleetService(
     gameEventService,
     colonizationService,
   };
-
-  function buildFleetConfig(config: { universe: Record<string, unknown> }): FleetConfig {
-    return {
-      galaxyFactor: Number(config.universe.fleet_distance_galaxy_factor) || 20000,
-      systemBase: Number(config.universe.fleet_distance_system_base) || 2700,
-      systemFactor: Number(config.universe.fleet_distance_system_factor) || 95,
-      positionBase: Number(config.universe.fleet_distance_position_base) || 1000,
-      positionFactor: Number(config.universe.fleet_distance_position_factor) || 5,
-      samePositionDistance: Number(config.universe.fleet_same_position_distance) || 5,
-      speedFactor: Number(config.universe.fleet_speed_factor) || 35000,
-    };
-  }
 
   return {
     async sendFleet(userId: string, input: SendFleetInput) {
@@ -216,7 +205,7 @@ export function createFleetService(
       // Fetch talent context for fleet bonuses
       const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
 
-      const baseSpeedMultipliers = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
+      const baseSpeedMultipliers = buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
       const talentSpeedFactor = 1 + (talentCtx['fleet_speed'] ?? 0);
       const speedMultipliers: Record<string, number> = {};
       for (const [k, v] of Object.entries(baseSpeedMultipliers)) {
@@ -1212,7 +1201,7 @@ export function createFleetService(
 
       const researchLevels = event ? await this.getResearchLevels(event.userId) : {};
       const returnTalentCtx = (event && talentService) ? await talentService.computeTalentContext(event.userId) : {};
-      const baseReturnSpeedMult = this.buildSpeedMultipliers(ships, shipStatsMap, researchLevels, config.bonuses);
+      const baseReturnSpeedMult = buildSpeedMultipliers(ships, shipStatsMap, researchLevels, config.bonuses);
       const returnTalentSpeedFactor = 1 + (returnTalentCtx['fleet_speed'] ?? 0);
       const speedMultipliers: Record<string, number> = {};
       for (const [k, v] of Object.entries(baseReturnSpeedMult)) {
@@ -1262,22 +1251,6 @@ export function createFleetService(
       return levels;
     },
 
-    buildSpeedMultipliers(
-      ships: Record<string, number>,
-      shipStatsMap: Record<string, ShipStats>,
-      researchLevels: Record<string, number>,
-      bonusDefs: BonusDefinition[],
-    ): Record<string, number> {
-      const multipliers: Record<string, number> = {};
-      for (const shipId of Object.keys(ships)) {
-        const stats = shipStatsMap[shipId];
-        if (stats) {
-          multipliers[shipId] = resolveBonus('ship_speed', stats.driveType, researchLevels, bonusDefs);
-        }
-      }
-      return multipliers;
-    },
-
     async getOrCreateShips(planetId: string) {
       const [existing] = await db.select().from(planetShips).where(eq(planetShips.planetId, planetId)).limit(1);
       if (existing) return existing;
@@ -1306,7 +1279,7 @@ export function createFleetService(
 
       const researchLevels = await this.getResearchLevels(userId);
       const estTalentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
-      const baseEstSpeedMult = this.buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
+      const baseEstSpeedMult = buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
       const estTalentSpeedFactor = 1 + (estTalentCtx['fleet_speed'] ?? 0);
       const estSpeedMultipliers: Record<string, number> = {};
       for (const [k, v] of Object.entries(baseEstSpeedMult)) {

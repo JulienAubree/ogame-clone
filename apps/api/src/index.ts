@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Redis from 'ioredis';
 import { sql } from 'drizzle-orm';
@@ -63,6 +64,25 @@ await server.register(multipart, {
 const db = createDb(env.DATABASE_URL);
 const redis = new Redis(env.REDIS_URL);
 const { router: appRouter, authService } = buildAppRouter(db, redis);
+
+// Global IP-based rate limit. The SPA polls tRPC ~6–12 req/min per user, and
+// IPs can be shared (NAT, households), so 300/min keeps room for multi-device
+// users while blocking obvious abuse. Per-endpoint limits (auth, messages…)
+// remain defined in their services via enforceRateLimit for tighter control.
+// /health is skipped so uptime monitors can poll freely.
+await server.register(rateLimit, {
+  global: true,
+  max: 300,
+  timeWindow: '1 minute',
+  redis,
+  keyGenerator: (req) => req.ip,
+  allowList: (req) => req.url === '/health',
+  errorResponseBuilder: (_req, context) => ({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: `Trop de requêtes. Réessaie dans ${Math.ceil(context.ttl / 1000)}s.`,
+  }),
+});
 
 // Liveness + dependency probe. Returns 503 when any dependency is unreachable
 // so external uptime monitors can alert without parsing the body.

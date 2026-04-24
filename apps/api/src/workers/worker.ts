@@ -32,6 +32,7 @@ import { resourceTick } from '../cron/resource-tick.js';
 import { rankingUpdate } from '../cron/ranking-update.js';
 import { eventCleanup } from '../cron/event-cleanup.js';
 import { allianceLogPurge } from '../cron/alliance-log-purge.js';
+import { scheduleCron } from '../lib/cron-lock.js';
 
 // Shared instances
 const db = createDb(env.DATABASE_URL);
@@ -82,45 +83,36 @@ console.log('[worker] Market worker started');
 startColonizationWorker(db, redis, colonizationService, gameConfigService, fleetQueue);
 console.log('[worker] Colonization worker started');
 
-// Crons (unchanged)
-setInterval(async () => {
-  try { await eventCatchup(db); } catch (err) { console.error('[event-catchup] Error:', err); }
-}, 30_000);
+// Crons — wrapped with a Redis lock so at most one worker runs a given tick
+// at a time. Safe for horizontal scaling and idempotent by design.
+scheduleCron(redis, () => eventCatchup(db), { name: 'event-catchup', intervalMs: 30_000 });
 console.log('[worker] Event catchup cron started (30s)');
 
-setInterval(async () => {
-  try { await resourceTick(db, gameConfigService); } catch (err) { console.error('[resource-tick] Error:', err); }
-}, 15 * 60_000);
+scheduleCron(redis, () => resourceTick(db, gameConfigService), { name: 'resource-tick', intervalMs: 15 * 60_000 });
 console.log('[worker] Resource tick cron started (15min)');
 
-setInterval(async () => {
-  try { await rankingUpdate(db); } catch (err) { console.error('[ranking-update] Error:', err); }
-}, 30 * 60_000);
+scheduleCron(redis, () => rankingUpdate(db), { name: 'ranking-update', intervalMs: 30 * 60_000 });
 console.log('[worker] Ranking update cron started (30min)');
 
-setInterval(async () => {
-  try { await eventCleanup(db); } catch (err) { console.error('[event-cleanup] Error:', err); }
-}, 24 * 60 * 60_000);
+scheduleCron(redis, () => eventCleanup(db), { name: 'event-cleanup', intervalMs: 24 * 60 * 60_000 });
 console.log('[worker] Event cleanup cron started (24h)');
 
-setInterval(async () => {
-  try {
-    await asteroidBeltService.regenerateDepletedDeposits();
-  } catch (err) { console.error('[deposit-regen] Error:', err); }
-}, 30 * 60_000);
+scheduleCron(redis, () => asteroidBeltService.regenerateDepletedDeposits(), {
+  name: 'deposit-regen',
+  intervalMs: 30 * 60_000,
+});
 console.log('[worker] Deposit regeneration cron started (30min)');
 
-// Hourly: purge alliance_logs older than 30 days.
-setInterval(async () => {
-  try {
+scheduleCron(
+  redis,
+  async () => {
     const res = await allianceLogPurge(db);
     if (res.deleted > 0) {
       console.log(`[alliance-log-purge] Deleted ${res.deleted} rows.`);
     }
-  } catch (err) {
-    console.error('[alliance-log-purge] Error:', err);
-  }
-}, 60 * 60_000);
+  },
+  { name: 'alliance-log-purge', intervalMs: 60 * 60_000 },
+);
 console.log('[worker] Alliance log purge cron started (1h)');
 
 process.on('SIGTERM', () => {
