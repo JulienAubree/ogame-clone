@@ -12,7 +12,17 @@ import {
   SpeedIcon, PropulsionIcon, FuelIcon, CargoIcon,
   StatCell, EffectiveStatCell, SectionHeader, CostPills,
 } from './stat-components';
+import { WeaponBatteryList } from './WeaponBatteryList';
 import { ROLE_LABELS, ARMOR_LABELS } from '@/config/ship-labels';
+
+const COMBAT_CATEGORY_LABELS: Record<string, string> = {
+  light: 'Léger',
+  medium: 'Moyen',
+  heavy: 'Lourd',
+  shield: 'Bouclier',
+  defense: 'Défense',
+  support: 'Support',
+};
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -130,22 +140,30 @@ export function ShipDetailContent({ shipId, researchLevels, buildingLevels, maxT
 
       {/* ── Attack ── */}
       <SectionHeader icon={<WeaponsIcon size={14} className="text-red-400" />} label="Attaque" color="text-red-400" />
-      <div className="grid grid-cols-2 gap-1.5">
-        <EffectiveStatCell
-          icon={<WeaponsIcon />}
-          label="Armement"
-          base={details.combat.weapons}
-          effective={effective.weapons}
-          multiplier={effective.weaponsMult}
-          variant="weapons"
+      {details.combat.weaponProfiles && details.combat.weaponProfiles.length > 0 ? (
+        <WeaponBatteryList
+          profiles={details.combat.weaponProfiles}
+          weaponsMultiplier={effective.weaponsMult}
+          categoryLabels={COMBAT_CATEGORY_LABELS}
         />
-        <StatCell
-          icon={<ShotsIcon />}
-          label="Tirs / round"
-          value={details.combat.shotCount}
-          variant="shots"
-        />
-      </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-1.5">
+          <EffectiveStatCell
+            icon={<WeaponsIcon />}
+            label="Armement"
+            base={details.combat.weapons}
+            effective={effective.weapons}
+            multiplier={effective.weaponsMult}
+            variant="weapons"
+          />
+          <StatCell
+            icon={<ShotsIcon />}
+            label="Tirs / round"
+            value={details.combat.shotCount}
+            variant="shots"
+          />
+        </div>
+      )}
 
       {/* Energy production (stationary ships only) */}
       {details.isStationary && (

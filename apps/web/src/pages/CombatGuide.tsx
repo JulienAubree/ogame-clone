@@ -79,15 +79,12 @@ function BeginnerTab() {
       <section className="glass-card p-4 space-y-2">
         <h3 className="text-sm font-semibold text-primary">Les stats d'un vaisseau</h3>
         <div className="text-xs text-muted-foreground space-y-2">
-          <p>Chaque vaisseau a 5 statistiques de combat :</p>
+          <p>Chaque vaisseau a des batteries d'armes et 3 stats défensives :</p>
           <ul className="space-y-1.5 list-none">
             <li>
-              <span className="text-foreground font-semibold">Armes</span> — les dégâts infligés par tir.
-              Un croiseur (45) frappe bien plus fort qu'un intercepteur (4).
-            </li>
-            <li>
-              <span className="text-foreground font-semibold">Nombre de tirs (ShotCount)</span> — combien de fois le vaisseau tire par round.
-              L'intercepteur tire <span className="text-foreground">3 fois</span> par round, le croiseur seulement <span className="text-foreground">1 fois</span>.
+              <span className="text-foreground font-semibold">Batteries d'armes</span> — un vaisseau peut avoir une ou deux batteries.
+              Chaque batterie a ses propres <span className="text-foreground">dégâts</span>, son <span className="text-foreground">nombre de tirs</span>, et sa <span className="text-foreground">catégorie cible</span> préférée (Léger, Moyen, Lourd).
+              Le croiseur, par exemple, a un canon principal qui vise les vaisseaux lourds et des tourelles secondaires pour les légers.
             </li>
             <li>
               <span className="text-foreground font-semibold">Bouclier</span> — absorbe les dégâts en premier.
@@ -102,6 +99,30 @@ function BeginnerTab() {
               Quand la coque tombe à 0, le vaisseau est <span className="text-red-400">détruit</span>. Pas de régénération.
             </li>
           </ul>
+        </div>
+      </section>
+
+      {/* Section 2bis: Traits de combat */}
+      <section className="glass-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-primary">Traits de combat</h3>
+        <div className="text-xs text-muted-foreground space-y-2">
+          <p>Certaines batteries ont des traits spéciaux qui modifient leur puissance :</p>
+          <ul className="space-y-1.5 list-none">
+            <li>
+              <span className="inline-block px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-semibold mr-1.5">Rafale N Catégorie</span>
+              Quand la cible appartient à la catégorie indiquée, la batterie tire <span className="text-foreground">N coups supplémentaires</span> (en plus de ses tirs de base).
+              Exemple : le croiseur a <span className="text-foreground">Rafale 6 Léger</span> sur sa batterie secondaire → elle tire 8 coups au lieu de 2 contre les intercepteurs.
+            </li>
+            <li>
+              <span className="inline-block px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-semibold mr-1.5">Enchaînement</span>
+              Quand un tir détruit sa cible, la batterie tire <span className="text-foreground">un coup bonus</span> sur une autre unité de la même catégorie.
+              Typique des unités légères (intercepteurs, lanceurs de missiles) qui excellent à nettoyer les essaims.
+            </li>
+          </ul>
+          <p className="mt-2">
+            <span className="text-foreground font-semibold">Qui bat qui ?</span> Les croiseurs dominent les intercepteurs (Rafale 6 Léger),
+            les cuirassés excellent contre les frégates (Rafale 4 Moyen), mais un essaim d'intercepteurs peut submerger un cuirassé (pas de rafale contre les légers).
+          </p>
         </div>
       </section>
 
@@ -127,12 +148,11 @@ function BeginnerTab() {
           <p>Chaque round se déroule en 3 phases :</p>
           <ol className="list-decimal list-inside space-y-1.5">
             <li>
-              <span className="text-foreground">Phase de tir attaquant</span> — chaque vaisseau attaquant tire
-              (nombre de tirs = son ShotCount) sur une cible aléatoire parmi les défenseurs.
+              <span className="text-foreground">Phase de tir attaquant</span> — chaque batterie de chaque attaquant sélectionne
+              une cible dans sa catégorie préférée et tire son nombre de coups (augmenté si Rafale, +1 si Enchaînement sur destruction).
             </li>
             <li>
-              <span className="text-foreground">Phase de tir défenseur</span> — chaque défenseur tire de la même façon
-              sur les attaquants.
+              <span className="text-foreground">Phase de tir défenseur</span> — même chose pour les défenseurs.
             </li>
             <li>
               <span className="text-foreground">Régénération des boucliers</span> — tous les survivants récupèrent

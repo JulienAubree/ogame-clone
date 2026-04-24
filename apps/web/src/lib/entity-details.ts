@@ -9,8 +9,8 @@ import { buildProductionConfig } from './production-config';
 interface GameConfigData {
   buildings: Record<string, { id: string; name: string; description: string; flavorText?: string | null; baseCost: { minerai: number; silicium: number; hydrogene: number }; costFactor: number; prerequisites: { buildingId: string; level: number }[] }>;
   research: Record<string, { id: string; name: string; description: string; flavorText?: string | null; effectDescription?: string | null; baseCost: { minerai: number; silicium: number; hydrogene: number }; costFactor: number; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
-  ships: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; baseSpeed: number; fuelConsumption: number; cargoCapacity: number; driveType: string; miningExtraction: number; weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; combatCategoryId: string | null; isStationary: boolean; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
-  defenses: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; combatCategoryId: string | null; maxPerPlanet: number | null; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
+  ships: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; baseSpeed: number; fuelConsumption: number; cargoCapacity: number; driveType: string; miningExtraction: number; weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; weaponProfiles?: WeaponProfile[]; combatCategoryId: string | null; isStationary: boolean; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
+  defenses: Record<string, { id: string; name: string; description: string; flavorText?: string | null; cost: { minerai: number; silicium: number; hydrogene: number }; weapons: number; shield: number; hull: number; baseArmor: number; shotCount: number; weaponProfiles?: WeaponProfile[]; combatCategoryId: string | null; maxPerPlanet: number | null; prerequisites: { buildings: { buildingId: string; level: number }[]; research: { researchId: string; level: number }[] } }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,12 +45,21 @@ export interface ResearchDetails {
   prerequisites: { buildings?: { buildingId: string; level: number }[]; research?: { researchId: string; level: number }[] };
 }
 
+export interface WeaponProfile {
+  damage: number;
+  shots: number;
+  targetCategory: string;
+  rafale?: { category: string; count: number };
+  hasChainKill?: boolean;
+}
+
 export interface CombatStats {
   shield: number;
   baseArmor: number;
   hull: number;
   weapons: number;
   shotCount: number;
+  weaponProfiles?: WeaponProfile[];
 }
 
 export interface ShipDetails {
@@ -181,7 +190,7 @@ export function getResearchDetails(id: string, config?: GameConfigData): Researc
 export function getShipDetails(id: string, config?: GameConfigData): ShipDetails {
   const cfgDef = config?.ships[id];
   const combat: CombatStats = cfgDef
-    ? { shield: cfgDef.shield, baseArmor: cfgDef.baseArmor, hull: cfgDef.hull, weapons: cfgDef.weapons, shotCount: cfgDef.shotCount }
+    ? { shield: cfgDef.shield, baseArmor: cfgDef.baseArmor, hull: cfgDef.hull, weapons: cfgDef.weapons, shotCount: cfgDef.shotCount, weaponProfiles: cfgDef.weaponProfiles }
     : { shield: 0, baseArmor: 0, hull: 0, weapons: 0, shotCount: 1 };
   const stats = cfgDef
     ? { baseSpeed: cfgDef.baseSpeed, fuelConsumption: cfgDef.fuelConsumption, cargoCapacity: cfgDef.cargoCapacity, driveType: cfgDef.driveType, miningExtraction: cfgDef.miningExtraction ?? 0 }
@@ -203,7 +212,7 @@ export function getShipDetails(id: string, config?: GameConfigData): ShipDetails
 export function getDefenseDetails(id: string, config?: GameConfigData): DefenseDetails {
   const cfgDef = config?.defenses[id];
   const combat: CombatStats = cfgDef
-    ? { shield: cfgDef.shield, baseArmor: cfgDef.baseArmor, hull: cfgDef.hull, weapons: cfgDef.weapons, shotCount: cfgDef.shotCount }
+    ? { shield: cfgDef.shield, baseArmor: cfgDef.baseArmor, hull: cfgDef.hull, weapons: cfgDef.weapons, shotCount: cfgDef.shotCount, weaponProfiles: cfgDef.weaponProfiles }
     : { shield: 0, baseArmor: 0, hull: 0, weapons: 0, shotCount: 1 };
   return {
     type: 'defense',
