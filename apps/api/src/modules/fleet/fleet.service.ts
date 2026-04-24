@@ -33,6 +33,8 @@ import { ColonizeReinforceHandler } from './handlers/colonize-reinforce.handler.
 import { ColonizationRaidHandler } from './handlers/colonization-raid.handler.js';
 import { AbandonReturnHandler } from './handlers/abandon-return.handler.js';
 import { buildShipStatsMap } from './fleet.types.js';
+import { createSendFleet } from './operations/send-fleet.js';
+import { createListInboundFleets } from './operations/list-inbound.js';
 import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
 import type { PhasedMissionHandler, MissionHandler, MissionHandlerContext, SendFleetInput, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
@@ -95,342 +97,51 @@ export function createFleetService(
     colonizationService,
   };
 
+  // Closure-scoped helpers (replace the previous `this.X` patterns). Kept
+  // here so extracted operations can reference them as plain deps.
+  async function getOwnedPlanet(userId: string, planetId: string) {
+    const [planet] = await db
+      .select()
+      .from(planets)
+      .where(and(eq(planets.id, planetId), eq(planets.userId, userId)))
+      .limit(1);
+    if (!planet) throw new TRPCError({ code: 'NOT_FOUND' });
+    return planet;
+  }
+
+  async function getResearchLevels(userId: string): Promise<Record<string, number>> {
+    const [research] = await db
+      .select()
+      .from(userResearch)
+      .where(eq(userResearch.userId, userId))
+      .limit(1);
+    if (!research) return {};
+    const levels: Record<string, number> = {};
+    for (const [key, value] of Object.entries(research)) {
+      if (key !== 'userId' && typeof value === 'number') levels[key] = value;
+    }
+    return levels;
+  }
+
+  async function getOrCreateShips(planetId: string) {
+    const [existing] = await db.select().from(planetShips).where(eq(planetShips.planetId, planetId)).limit(1);
+    if (existing) return existing;
+    const [created] = await db.insert(planetShips).values({ planetId }).returning();
+    return created;
+  }
+
+  const sendFleet = createSendFleet({
+    db, gameConfigService, resourceService, fleetQueue, redis,
+    pveService, flagshipService, talentService, dailyQuestService,
+    handlers, handlerCtx,
+    getOwnedPlanet, getResearchLevels, getOrCreateShips,
+  });
+
+  const listInboundFleets = createListInboundFleets({ db, gameConfigService });
+
   return {
-    async sendFleet(userId: string, input: SendFleetInput) {
-      const planet = await this.getOwnedPlanet(userId, input.originPlanetId);
-      const config = await gameConfigService.getFullConfig();
-      const shipStatsMap = buildShipStatsMap(config);
-
-      // Get research levels (used for fleet limit + speed calculation)
-      const researchLevels = await this.getResearchLevels(userId);
-
-      // Validate fleet slot limit (computerTech)
-      const maxFleets = Math.floor(resolveBonus('fleet_count', null, researchLevels, config.bonuses));
-      const [{ count: activeFleets }] = await db
-        .select({ count: dbCount() })
-        .from(fleetEvents)
-        .where(and(eq(fleetEvents.userId, userId), eq(fleetEvents.status, 'active')));
-      if (activeFleets >= maxFleets) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Nombre maximum de flottes atteint (${maxFleets}). Améliorez la Technologie Ordinateur pour envoyer plus de flottes.`,
-        });
-      }
-
-      // Block self-targeting for hostile missions
-      if (input.mission === 'spy' || input.mission === 'attack') {
-        // Check if target belongs to the same user
-        const [targetPl] = await db
-          .select({ userId: planets.userId })
-          .from(planets)
-          .where(
-            and(
-              eq(planets.galaxy, input.targetGalaxy),
-              eq(planets.system, input.targetSystem),
-              eq(planets.position, input.targetPosition),
-            ),
-          )
-          .limit(1);
-        if (targetPl?.userId === userId) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: input.mission === 'spy'
-              ? 'Impossible d\'espionner votre propre planète'
-              : 'Impossible d\'attaquer votre propre planète',
-          });
-        }
-      }
-
-      // Validate ships are available
-      const planetShipRow = await this.getOrCreateShips(input.originPlanetId);
-      for (const [shipId, count] of Object.entries(input.ships)) {
-        if (count <= 0) continue;
-        if (shipId === 'flagship') continue; // Validated separately below
-        const available = (planetShipRow[shipId as keyof typeof planetShipRow] ?? 0) as number;
-        if (available < count) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Pas assez de ${shipId} (disponible: ${available}, demandé: ${count})`,
-          });
-        }
-      }
-
-      // Validate flagship if included in fleet
-      let hasFlagship = false;
-      if (input.ships['flagship'] && input.ships['flagship'] > 0) {
-        hasFlagship = true;
-        if (!flagshipService) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Service flagship non disponible' });
-        }
-        const flagship = await flagshipService.get(userId);
-        if (!flagship) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vous n\'avez pas de vaisseau amiral' });
-        }
-        if (flagship.status !== 'active') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre vaisseau amiral n\'est pas disponible (statut: ' + flagship.status + ')' });
-        }
-        if (flagship.planetId !== input.originPlanetId) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre vaisseau amiral n\'est pas sur cette planete' });
-        }
-        // Hull-restricted missions: check abilities from config
-        const fullConfig = await gameConfigService.getFullConfig();
-        const flagshipHullConfig = flagship.hullId ? fullConfig.hulls[flagship.hullId] : null;
-        const hullAbilities = (flagshipHullConfig?.abilities ?? []) as Array<{ id: string; type: string; unlockedMissions?: string[]; miningExtractionEqualsCargo?: boolean }>;
-        const unlockedMissions = hullAbilities.filter(a => a.type === 'fleet_unlock').flatMap(a => a.unlockedMissions ?? []);
-        // A mission needs unlock if any hull in the game defines it as a fleet_unlock
-        const allUnlockableMissions = new Set(
-          Object.values(fullConfig.hulls).flatMap(h => (h.abilities ?? []).filter((a: any) => a.type === 'fleet_unlock').flatMap((a: any) => a.unlockedMissions ?? []))
-        );
-        const missionNeedsUnlock = allUnlockableMissions.has(input.mission);
-        if (missionNeedsUnlock && !unlockedMissions.includes(input.mission)) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `La coque de votre vaisseau amiral ne permet pas les missions de ${input.mission}`,
-          });
-        }
-        // Inject flagship stats into shipStatsMap for speed/fuel/cargo calculations
-        // Use effective stats (after talent + hull bonuses) when available
-        const efs = 'effectiveStats' in flagship ? flagship.effectiveStats : null;
-        const effectiveCargo = efs?.cargoCapacity ?? flagship.cargoCapacity;
-        const hasMiningExtraction = hullAbilities.some(a => a.miningExtractionEqualsCargo);
-        shipStatsMap['flagship'] = {
-          baseSpeed: efs?.baseSpeed ?? flagship.baseSpeed,
-          fuelConsumption: efs?.fuelConsumption ?? flagship.fuelConsumption,
-          cargoCapacity: effectiveCargo,
-          driveType: (efs?.driveType ?? flagship.driveType) as ShipStats['driveType'],
-          miningExtraction: hasMiningExtraction ? effectiveCargo : 0,
-        };
-      }
-
-      // Fetch talent context for fleet bonuses
-      const talentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
-
-      const baseSpeedMultipliers = buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
-      const talentSpeedFactor = 1 + (talentCtx['fleet_speed'] ?? 0);
-      const speedMultipliers: Record<string, number> = {};
-      for (const [k, v] of Object.entries(baseSpeedMultipliers)) {
-        speedMultipliers[k] = v * talentSpeedFactor;
-      }
-      const speed = fleetSpeed(input.ships, shipStatsMap, speedMultipliers);
-      if (speed === 0) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucun vaisseau sélectionné' });
-      }
-
-      const fleetConfig = buildFleetConfig(config);
-      const origin = { galaxy: planet.galaxy, system: planet.system, position: planet.position };
-      const target = { galaxy: input.targetGalaxy, system: input.targetSystem, position: input.targetPosition };
-      const blockedSelfTargetMissions = ['spy', 'attack'];
-      if (origin.galaxy === target.galaxy && origin.system === target.system && origin.position === target.position && blockedSelfTargetMissions.includes(input.mission)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'La destination doit être différente du point de départ' });
-      }
-      const dist = distance(origin, target, fleetConfig);
-      const universeSpeed = Number(config.universe.speed) || 1;
-      const duration = travelTime(origin, target, speed, universeSpeed, fleetConfig);
-      const fuel = fuelConsumption(input.ships, dist, duration, shipStatsMap, { speedFactor: fleetConfig.speedFactor }) / (1 + (talentCtx['fleet_fuel'] ?? 0));
-
-      // Validate cargo doesn't exceed capacity
-      const cargo = totalCargoCapacity(input.ships, shipStatsMap) * (1 + (talentCtx['fleet_cargo'] ?? 0));
-      const mineraiCargo = input.mineraiCargo ?? 0;
-      const siliciumCargo = input.siliciumCargo ?? 0;
-      const hydrogeneCargo = input.hydrogeneCargo ?? 0;
-      const totalCargo = mineraiCargo + siliciumCargo + hydrogeneCargo;
-      if (totalCargo > cargo) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Capacité de fret dépassée' });
-      }
-
-      // Handler-based validation (trade handler reserves the offer atomically)
-      const sendHandler = handlers[input.mission];
-      if (sendHandler) {
-        await sendHandler.validateFleet({ ...input, userId }, config, handlerCtx);
-      }
-
-      // Everything after this point must rollback the trade reservation on failure
-      try {
-      // Find target planet (may not exist for colonization or PvE missions)
-      let targetPlanet: typeof planets.$inferSelect | undefined;
-      if (input.mission !== 'mine' && input.mission !== 'pirate' && input.mission !== 'recycle') {
-        const [found] = await db
-          .select()
-          .from(planets)
-          .where(
-            and(
-              eq(planets.galaxy, input.targetGalaxy),
-              eq(planets.system, input.targetSystem),
-              eq(planets.position, input.targetPosition),
-            ),
-          )
-          .limit(1);
-        targetPlanet = found;
-      }
-
-      // Spend resources (cargo + fuel)
-      const totalHydrogeneCost = hydrogeneCargo + fuel;
-      await resourceService.spendResources(input.originPlanetId, userId, {
-        minerai: mineraiCargo,
-        silicium: siliciumCargo,
-        hydrogene: totalHydrogeneCost,
-      });
-
-      // Deduct ships from planet (skip flagship — managed via flagshipService)
-      // Atomic decrement — safe under concurrent fleet sends
-      const shipUpdates: Record<string, any> = {};
-      for (const [shipId, count] of Object.entries(input.ships)) {
-        if (count > 0 && shipId !== 'flagship') {
-          const col = planetShips[shipId as keyof typeof planetShips];
-          shipUpdates[shipId] = sql`GREATEST(${col} - ${count}, 0)`;
-        }
-      }
-      if (Object.keys(shipUpdates).length > 0) {
-        await db
-          .update(planetShips)
-          .set(shipUpdates)
-          .where(eq(planetShips.planetId, input.originPlanetId));
-      }
-
-      // Create fleet event
-      const now = new Date();
-      const arrivalTime = new Date(now.getTime() + duration * 1000);
-
-      const [event] = await db
-        .insert(fleetEvents)
-        .values({
-          userId,
-          originPlanetId: input.originPlanetId,
-          targetPlanetId: targetPlanet?.id ?? null,
-          targetGalaxy: input.targetGalaxy,
-          targetSystem: input.targetSystem,
-          targetPosition: input.targetPosition,
-          mission: input.mission as typeof fleetEvents.$inferInsert.mission,  // mine/pirate added to DB enum in Task 4
-          phase: 'outbound',
-          status: 'active',
-          departureTime: now,
-          arrivalTime,
-          mineraiCargo: String(mineraiCargo),
-          siliciumCargo: String(siliciumCargo),
-          hydrogeneCargo: String(hydrogeneCargo),
-          ships: input.ships,
-          targetPriority: input.targetPriority ?? null,
-          pveMissionId: input.pveMissionId ?? null,
-          tradeId: input.tradeId ?? null,
-        })
-        .returning();
-
-      // Validate PvE mission ownership and status
-      if (input.pveMissionId && pveService) {
-        const [pveMission] = await db.select().from(pveMissions)
-          .where(and(eq(pveMissions.id, input.pveMissionId), eq(pveMissions.userId, userId)))
-          .limit(1);
-        if (!pveMission) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Mission non trouvée ou non autorisée' });
-        }
-        if (pveMission.status !== 'available') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Mission déjà en cours ou terminée' });
-        }
-        // Mine missions stay available until deposit is empty — don't mark in_progress
-        if (pveMission.missionType !== 'mine') {
-          await pveService.startMission(input.pveMissionId);
-        }
-      }
-
-      // Link trade fleet to offer
-      if (input.tradeId) {
-        await db
-          .update(marketOffers)
-          .set({ fleetEventId: event.id })
-          .where(eq(marketOffers.id, input.tradeId));
-      }
-
-      // Schedule arrival job
-      await fleetQueue.add(
-        'arrive',
-        { fleetEventId: event.id },
-        { delay: duration * 1000, jobId: `fleet-arrive-${event.id}` },
-      );
-
-      // Set flagship in mission if included (scan: flagship stays home, only virtual probe travels)
-      if (hasFlagship && flagshipService && input.mission !== 'scan') {
-        await flagshipService.setInMission(userId);
-      }
-
-      // Hook: daily quest detection for fleet dispatch
-      if (dailyQuestService) {
-        await dailyQuestService.processEvent({
-          type: 'fleet:dispatched',
-          userId,
-          payload: { missionType: input.mission },
-        }).catch((e) => console.warn('[daily-quest] processEvent failed:', e));
-      }
-
-      // Notify target planet owner for non-dangerous missions
-      const missionDef = config.missions[input.mission];
-      if (missionDef && !missionDef.dangerous && targetPlanet && targetPlanet.userId !== userId) {
-        const [sender] = await db
-          .select({ username: users.username })
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
-
-        publishNotification(redis, targetPlanet.userId, {
-          type: 'fleet-inbound',
-          payload: {
-            mission: input.mission,
-            missionLabel: missionDef.label,
-            senderUsername: sender?.username ?? null,
-            originCoords: `${planet.galaxy}:${planet.system}:${planet.position}`,
-            targetCoords: `${input.targetGalaxy}:${input.targetSystem}:${input.targetPosition}`,
-            arrivalTime: arrivalTime.toISOString(),
-          },
-        });
-      }
-
-      // Schedule attack detection for dangerous missions targeting other players
-      if (missionDef?.dangerous && targetPlanet?.userId && targetPlanet.userId !== userId) {
-        const [defenderResearch] = await db
-          .select({ sensorNetwork: userResearch.sensorNetwork })
-          .from(userResearch)
-          .where(eq(userResearch.userId, targetPlanet.userId))
-          .limit(1);
-
-        const defSensor = defenderResearch?.sensorNetwork ?? 0;
-        const atkStealth = researchLevels.stealthTech ?? 0;
-
-        const scoreThresholds: number[] = JSON.parse(String(config.universe.attack_detection_score_thresholds ?? '[0,1,3,5,7]'));
-        const timingPercents: number[] = JSON.parse(String(config.universe.attack_detection_timing ?? '[20,40,60,80,100]'));
-
-        const detection = calculateAttackDetection(defSensor, atkStealth, scoreThresholds, timingPercents);
-
-        await db
-          .update(fleetEvents)
-          .set({ detectionScore: detection.score })
-          .where(eq(fleetEvents.id, event.id));
-
-        const travelDurationMs = duration * 1000;
-        const detDelay = detectionDelay(travelDurationMs, detection.detectionPercent);
-
-        await fleetQueue.add(
-          'fleet-detected',
-          { fleetEventId: event.id, defenderId: targetPlanet.userId },
-          { delay: detDelay, jobId: `fleet-detected-${event.id}` },
-        );
-      }
-
-      return {
-        event,
-        arrivalTime: arrivalTime.toISOString(),
-        travelTime: duration,
-        fuelConsumed: fuel,
-      };
-      } catch (err) {
-        // Rollback trade reservation if anything failed after validateFleet
-        if (input.tradeId) {
-          await db
-            .update(marketOffers)
-            .set({ status: 'active', reservedBy: null, reservedAt: null, fleetEventId: null })
-            .where(and(eq(marketOffers.id, input.tradeId), eq(marketOffers.status, 'reserved')));
-        }
-        throw err;
-      }
-    },
+    sendFleet,
+    listInboundFleets,
 
     async recallFleet(userId: string, fleetEventId: string) {
       const [event] = await db
@@ -519,7 +230,7 @@ export function createFleetService(
 
     async getFleetSlots(userId: string) {
       const config = await gameConfigService.getFullConfig();
-      const researchLevels = await this.getResearchLevels(userId);
+      const researchLevels = await getResearchLevels(userId);
       const max = Math.floor(resolveBonus('fleet_count', null, researchLevels, config.bonuses));
       const [{ count: current }] = await db
         .select({ count: dbCount() })
@@ -540,142 +251,6 @@ export function createFleetService(
         );
     },
 
-    async listInboundFleets(userId: string) {
-      const config = await gameConfigService.getFullConfig();
-
-      // Get user's planet IDs
-      const userPlanets = await db
-        .select({ id: planets.id })
-        .from(planets)
-        .where(eq(planets.userId, userId));
-
-      if (userPlanets.length === 0) return [];
-      const planetIds = userPlanets.map((p) => p.id);
-
-      const inboundSelect = {
-        id: fleetEvents.id,
-        userId: fleetEvents.userId,
-        originPlanetId: fleetEvents.originPlanetId,
-        targetPlanetId: fleetEvents.targetPlanetId,
-        targetGalaxy: fleetEvents.targetGalaxy,
-        targetSystem: fleetEvents.targetSystem,
-        targetPosition: fleetEvents.targetPosition,
-        mission: fleetEvents.mission,
-        phase: fleetEvents.phase,
-        departureTime: fleetEvents.departureTime,
-        arrivalTime: fleetEvents.arrivalTime,
-        mineraiCargo: fleetEvents.mineraiCargo,
-        siliciumCargo: fleetEvents.siliciumCargo,
-        hydrogeneCargo: fleetEvents.hydrogeneCargo,
-        ships: fleetEvents.ships,
-        detectionScore: fleetEvents.detectionScore,
-        senderUsername: users.username,
-        allianceTag: alliances.tag,
-        targetPlanetName: sql<string>`(SELECT name FROM planets WHERE id = ${fleetEvents.targetPlanetId})`.as('target_planet_name'),
-        originPlanetName: sql<string>`(SELECT name FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_planet_name'),
-        originGalaxy: sql<number>`(SELECT galaxy FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_galaxy'),
-        originSystem: sql<number>`(SELECT system FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_system'),
-        originPosition: sql<number>`(SELECT position FROM planets WHERE id = ${fleetEvents.originPlanetId})`.as('origin_position'),
-      };
-
-      const baseJoin = () =>
-        db
-          .select(inboundSelect)
-          .from(fleetEvents)
-          .innerJoin(users, eq(users.id, fleetEvents.userId))
-          .leftJoin(allianceMembers, eq(allianceMembers.userId, fleetEvents.userId))
-          .leftJoin(alliances, eq(alliances.id, allianceMembers.allianceId));
-
-      // Get non-dangerous mission types from config
-      const peacefulMissions = Object.entries(config.missions)
-        .filter(([, m]) => !m.dangerous)
-        .map(([id]) => id);
-
-      // Get dangerous mission types (exclude spy — espionage stays invisible in inbound list)
-      const dangerousMissions = Object.entries(config.missions)
-        .filter(([id, m]) => m.dangerous && id !== 'spy')
-        .map(([id]) => id);
-
-      // Query inbound peaceful fleets (outbound only — not returning)
-      const peacefulFleets = peacefulMissions.length > 0
-        ? await baseJoin().where(
-            and(
-              inArray(fleetEvents.targetPlanetId, planetIds),
-              eq(fleetEvents.status, 'active'),
-              eq(fleetEvents.phase, 'outbound'),
-              ne(fleetEvents.userId, userId),
-              sql`${fleetEvents.mission}::text IN (${sql.join(peacefulMissions.map((m) => sql`${m}`), sql`, `)})`,
-            ),
-          )
-        : [];
-
-      // Query detected hostile fleets (outbound only — not returning)
-      const hostileRaw = dangerousMissions.length > 0
-        ? await baseJoin().where(
-            and(
-              inArray(fleetEvents.targetPlanetId, planetIds),
-              eq(fleetEvents.status, 'active'),
-              eq(fleetEvents.phase, 'outbound'),
-              ne(fleetEvents.userId, userId),
-              sql`${fleetEvents.detectedAt} IS NOT NULL`,
-              sql`${fleetEvents.mission}::text IN (${sql.join(dangerousMissions.map((m) => sql`${m}`), sql`, `)})`,
-            ),
-          )
-        : [];
-
-      // Apply visibility masking on hostile fleets based on detection tier
-      const scoreThresholds: number[] = JSON.parse(String(config.universe.attack_detection_score_thresholds ?? '[0,1,3,5,7]'));
-
-      const hostileFleets = hostileRaw.map((f) => {
-        let tier = 0;
-        const score = f.detectionScore ?? 0;
-        for (let i = scoreThresholds.length - 1; i >= 0; i--) {
-          if (score >= scoreThresholds[i]) { tier = i; break; }
-        }
-
-        const ships = f.ships as Record<string, number>;
-        const totalShips = Object.values(ships).reduce((sum, n) => sum + n, 0);
-
-        return {
-          id: f.id,
-          userId: f.userId,
-          originPlanetId: f.originPlanetId,
-          targetPlanetId: f.targetPlanetId,
-          targetPlanetName: f.targetPlanetName,
-          targetGalaxy: f.targetGalaxy,
-          targetSystem: f.targetSystem,
-          targetPosition: f.targetPosition,
-          mission: f.mission,
-          phase: f.phase,
-          departureTime: f.departureTime,
-          arrivalTime: f.arrivalTime,
-          mineraiCargo: '0' as string,
-          siliciumCargo: '0' as string,
-          hydrogeneCargo: '0' as string,
-          ships: tier >= 3 ? f.ships : {},
-          detectionScore: f.detectionScore,
-          senderUsername: tier >= 4 ? f.senderUsername : null,
-          allianceTag: tier >= 4 ? f.allianceTag : null,
-          originPlanetName: tier >= 1 ? f.originPlanetName : null,
-          originGalaxy: tier >= 1 ? f.originGalaxy : 0,
-          originSystem: tier >= 1 ? f.originSystem : 0,
-          originPosition: tier >= 1 ? f.originPosition : 0,
-          hostile: true as const,
-          detectionTier: tier,
-          shipCount: tier >= 2 ? totalShips : null as number | null,
-        };
-      });
-
-      return [
-        ...peacefulFleets.map((f) => ({
-          ...f,
-          hostile: false as const,
-          detectionTier: null as number | null,
-          shipCount: null as number | null,
-        })),
-        ...hostileFleets,
-      ];
-    },
 
     async processDetection(fleetEventId: string, defenderId: string) {
       const [event] = await db
@@ -1052,7 +627,7 @@ export function createFleetService(
       // Skip ship restoration if origin planet was deleted (abandon_return after colony abandoned)
       const meta = event.metadata as { bonusShips?: Record<string, number>; reportId?: string } | null;
       if (event.originPlanetId) {
-        await this.getOrCreateShips(event.originPlanetId);
+        await getOrCreateShips(event.originPlanetId);
         // Compute total increment per ship type, then apply as atomic SQL
         const shipIncrements: Record<string, number> = {};
         for (const [shipId, count] of Object.entries(ships)) {
@@ -1199,7 +774,7 @@ export function createFleetService(
         }
       }
 
-      const researchLevels = event ? await this.getResearchLevels(event.userId) : {};
+      const researchLevels = event ? await getResearchLevels(event.userId) : {};
       const returnTalentCtx = (event && talentService) ? await talentService.computeTalentContext(event.userId) : {};
       const baseReturnSpeedMult = buildSpeedMultipliers(ships, shipStatsMap, researchLevels, config.bonuses);
       const returnTalentSpeedFactor = 1 + (returnTalentCtx['fleet_speed'] ?? 0);
@@ -1235,31 +810,13 @@ export function createFleetService(
       );
     },
 
-    async getResearchLevels(userId: string): Promise<Record<string, number>> {
-      const [research] = await db
-        .select()
-        .from(userResearch)
-        .where(eq(userResearch.userId, userId))
-        .limit(1);
-      if (!research) return {};
-      const levels: Record<string, number> = {};
-      for (const [key, value] of Object.entries(research)) {
-        if (key !== 'userId' && typeof value === 'number') {
-          levels[key] = value;
-        }
-      }
-      return levels;
-    },
-
-    async getOrCreateShips(planetId: string) {
-      const [existing] = await db.select().from(planetShips).where(eq(planetShips.planetId, planetId)).limit(1);
-      if (existing) return existing;
-      const [created] = await db.insert(planetShips).values({ planetId }).returning();
-      return created;
-    },
+    // Exposed for tests and older callers; internal code uses the closure
+    // functions directly.
+    getResearchLevels,
+    getOrCreateShips,
 
     async estimateFleet(userId: string, input: { originPlanetId: string; targetGalaxy: number; targetSystem: number; targetPosition: number; ships: Record<string, number> }) {
-      const planet = await this.getOwnedPlanet(userId, input.originPlanetId);
+      const planet = await getOwnedPlanet(userId, input.originPlanetId);
       const config = await gameConfigService.getFullConfig();
       const shipStatsMap = buildShipStatsMap(config);
 
@@ -1277,7 +834,7 @@ export function createFleetService(
         }
       }
 
-      const researchLevels = await this.getResearchLevels(userId);
+      const researchLevels = await getResearchLevels(userId);
       const estTalentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
       const baseEstSpeedMult = buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
       const estTalentSpeedFactor = 1 + (estTalentCtx['fleet_speed'] ?? 0);
@@ -1299,15 +856,6 @@ export function createFleetService(
       return { fuel, duration: dur };
     },
 
-    async getOwnedPlanet(userId: string, planetId: string) {
-      const [planet] = await db
-        .select()
-        .from(planets)
-        .where(and(eq(planets.id, planetId), eq(planets.userId, userId)))
-        .limit(1);
-
-      if (!planet) throw new TRPCError({ code: 'NOT_FOUND' });
-      return planet;
-    },
+    getOwnedPlanet,
   };
 }
