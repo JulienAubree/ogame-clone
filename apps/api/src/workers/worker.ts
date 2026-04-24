@@ -37,7 +37,7 @@ import { scheduleCron } from '../lib/cron-lock.js';
 // Shared instances
 const db = createDb(env.DATABASE_URL);
 const redis = new Redis(env.REDIS_URL);
-const gameConfigService = createGameConfigService(db);
+const gameConfigService = createGameConfigService(db, redis);
 const exiliumService = createExiliumService(db, gameConfigService);
 const dailyQuestService = createDailyQuestService(db, exiliumService, gameConfigService, redis);
 const resourceService = createResourceService(db, gameConfigService, dailyQuestService);
@@ -91,7 +91,7 @@ console.log('[worker] Event catchup cron started (30s)');
 scheduleCron(redis, () => resourceTick(db, gameConfigService), { name: 'resource-tick', intervalMs: 15 * 60_000 });
 console.log('[worker] Resource tick cron started (15min)');
 
-scheduleCron(redis, () => rankingUpdate(db), { name: 'ranking-update', intervalMs: 30 * 60_000 });
+scheduleCron(redis, () => rankingUpdate(db, gameConfigService), { name: 'ranking-update', intervalMs: 30 * 60_000 });
 console.log('[worker] Ranking update cron started (30min)');
 
 scheduleCron(redis, () => eventCleanup(db), { name: 'event-cleanup', intervalMs: 24 * 60 * 60_000 });

@@ -77,7 +77,7 @@ import type Redis from 'ioredis';
 export function buildAppRouter(db: Database, redis: Redis) {
   const adminProcedure = createAdminProcedure(db);
 
-  const gameConfigService = createGameConfigService(db);
+  const gameConfigService = createGameConfigService(db, redis);
   const exiliumService = createExiliumService(db, gameConfigService);
   const talentService = createTalentService(db, exiliumService, gameConfigService);
   const dailyQuestService = createDailyQuestService(db, exiliumService, gameConfigService, redis);

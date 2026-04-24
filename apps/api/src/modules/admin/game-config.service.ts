@@ -22,6 +22,7 @@ import {
   talentDefinitions,
 } from '@exilium/db';
 import type { Database } from '@exilium/db';
+import type Redis from 'ioredis';
 import { TRPCError } from '@trpc/server';
 import { buildConfigFromDb } from './game-config/build-config.js';
 import type { GameConfig } from './game-config.types.js';
@@ -30,17 +31,42 @@ import type { GameConfig } from './game-config.types.js';
 // keeps working across the codebase.
 export * from './game-config.types.js';
 
+const INVALIDATE_CHANNEL = 'game-config:invalidate';
+
 /**
  * In-memory snapshot of the full GameConfig. Cleared on any admin mutation
  * via `invalidateCache()`, rebuilt lazily on the next `getFullConfig()` call.
  * Kept at module scope so the cache is shared across all imports in the same
- * process (PM2 fork = one cache per process, which is fine at current scale).
+ * process. When PM2 runs multiple instances, each worker holds its own copy
+ * and the Redis pub/sub channel above broadcasts invalidations across them.
  */
 let cache: GameConfig | null = null;
 
-export function createGameConfigService(db: Database) {
+// Tracks whether this process has already subscribed to the invalidation
+// channel — the service factory may be called multiple times in tests or
+// split routers, and we only want one subscription per process.
+let subscribed = false;
+
+export function createGameConfigService(db: Database, redis?: Redis) {
+  if (redis && !subscribed) {
+    subscribed = true;
+    // Duplicate the connection — ioredis Subscriber mode disables normal
+    // commands on that client, so we can't reuse the main connection.
+    const sub = redis.duplicate();
+    sub.subscribe(INVALIDATE_CHANNEL).catch((err) => {
+      console.error('[game-config] subscribe failed:', err);
+    });
+    sub.on('message', (channel) => {
+      if (channel === INVALIDATE_CHANNEL) cache = null;
+    });
+  }
+
   function invalidateCache() {
     cache = null;
+    // Broadcast so sibling PM2 workers drop their cache too. Fire-and-forget —
+    // a slow Redis shouldn't block an admin mutation response, and the local
+    // cache is already cleared above.
+    redis?.publish(INVALIDATE_CHANNEL, '1').catch(() => { /* best-effort */ });
   }
 
   async function getFullConfig(): Promise<GameConfig> {
