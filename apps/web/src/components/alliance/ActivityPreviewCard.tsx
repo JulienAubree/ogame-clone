@@ -6,13 +6,11 @@ export function ActivityPreviewCard() {
   const { data: unread } = trpc.alliance.activityUnreadCount.useQuery();
   const unreadCount = unread?.count ?? 0;
 
+  // Push-driven: useNotifications invalidates alliance.activity on
+  // `alliance-log:new` SSE events.
   const query = trpc.alliance.activity.useInfiniteQuery(
     { limit: 5 },
-    {
-      getNextPageParam: () => undefined,
-      refetchInterval: 30_000,
-      refetchIntervalInBackground: false,
-    },
+    { getNextPageParam: () => undefined },
   );
 
   const items = (query.data?.pages[0]?.items ?? []).slice(0, 5);

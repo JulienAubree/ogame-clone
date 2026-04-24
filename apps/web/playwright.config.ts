@@ -13,6 +13,10 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  // Staging tests live under e2e/staging/ and have their own config
+  // (playwright.staging.config.ts) — they require auth + mutate data and
+  // must not run against prod.
+  testIgnore: /staging\//,
   timeout: 30_000,
   fullyParallel: true,
   reporter: [['list']],

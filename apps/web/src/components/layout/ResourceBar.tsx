@@ -12,9 +12,13 @@ interface ResourceBarProps {
 export function ResourceBar({ planetId }: ResourceBarProps) {
   const [detailOpen, setDetailOpen] = useState(false);
 
+  // Resources stay live via the client-side ticker + SSE invalidation on
+  // events that change the production rate (building-done, fleet-arrived,
+  // fleet-returned, market-offer-sold). Long-interval poll is a safety net
+  // for silent SSE disconnects.
   const { data } = trpc.resource.production.useQuery(
     { planetId: planetId! },
-    { enabled: !!planetId, refetchInterval: 60_000 },
+    { enabled: !!planetId, refetchInterval: 300_000 },
   );
 
   const resources = useResourceCounter(

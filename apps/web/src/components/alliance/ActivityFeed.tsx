@@ -21,13 +21,11 @@ export function ActivityFeed({ unreadCount, onOpened }: Props) {
     },
   });
 
+  // Push-driven: useNotifications invalidates alliance.activity on
+  // `alliance-log:new` SSE events.
   const query = trpc.alliance.activity.useInfiniteQuery(
     { categories: active ? [active] : undefined, limit: 30 },
-    {
-      getNextPageParam: (last) => last.nextCursor ?? undefined,
-      refetchInterval: 30_000,
-      refetchIntervalInBackground: false,
-    },
+    { getNextPageParam: (last) => last.nextCursor ?? undefined },
   );
 
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];

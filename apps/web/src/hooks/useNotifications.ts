@@ -334,6 +334,7 @@ export function useNotifications() {
       case 'new-alliance-message': {
         const allianceId = String(event.payload.allianceId);
         utils.message.allianceChat.invalidate({ allianceId });
+        utils.message.recentAllianceChat.invalidate();
         const chatStore = useChatStore.getState();
         const key = `alliance:${allianceId}`;
         const alreadyOpen = chatStore.windows.find((w) => w.userId === key);

@@ -2,8 +2,10 @@ import { Link } from 'react-router';
 import { trpc } from '@/trpc';
 
 export function ManageShortcutCard() {
+  // alliance.applications has no SSE event yet (only `alliance-activity`
+  // for invitations). 5 min poll as safety net.
   const { data: applications } = trpc.alliance.applications.useQuery(undefined, {
-    refetchInterval: 60_000,
+    refetchInterval: 300_000,
     refetchIntervalInBackground: false,
   });
   const count = applications?.length ?? 0;

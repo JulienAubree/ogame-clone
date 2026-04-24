@@ -3,9 +3,9 @@ import { ExiliumIcon } from '@/components/common/ExiliumIcon';
 import { useState } from 'react';
 
 export function DailyQuestWidget() {
-  const { data, isLoading } = trpc.dailyQuest.getQuests.useQuery(undefined, {
-    refetchInterval: 60_000,
-  });
+  // Push-driven: useNotifications invalidates dailyQuest.getQuests on
+  // `daily-quest-completed` SSE events, the poll was redundant.
+  const { data, isLoading } = trpc.dailyQuest.getQuests.useQuery();
   const [userToggled, setUserToggled] = useState<boolean | null>(null);
 
   if (isLoading || !data) return null;

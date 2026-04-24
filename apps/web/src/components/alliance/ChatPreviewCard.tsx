@@ -2,10 +2,9 @@ import { Link } from 'react-router';
 import { trpc } from '@/trpc';
 
 export function ChatPreviewCard() {
-  const { data: messages, isLoading } = trpc.message.recentAllianceChat.useQuery(
-    { limit: 3 },
-    { refetchInterval: 60_000, refetchIntervalInBackground: false },
-  );
+  // Push-driven: useNotifications invalidates recentAllianceChat on
+  // `new-alliance-message` SSE events.
+  const { data: messages, isLoading } = trpc.message.recentAllianceChat.useQuery({ limit: 3 });
 
   return (
     <section className="glass-card flex min-w-0 flex-col p-4">

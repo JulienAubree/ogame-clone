@@ -72,7 +72,8 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
   const { data: tutorialData } = trpc.tutorial.getCurrent.useQuery();
   const tutorialComplete = tutorialData?.isComplete ?? true; // default true = show exilium
   const [showNamingModal, setShowNamingModal] = useState(false);
-  const { data: dailyQuests } = trpc.dailyQuest.getQuests.useQuery(undefined, { refetchInterval: 60_000 });
+  // Push-driven via SSE (see DailyQuestWidget for the rationale).
+  const { data: dailyQuests } = trpc.dailyQuest.getQuests.useQuery();
   const { data: unreadCount } = trpc.message.unreadCount.useQuery();
   const { data: eventUnreadCount } = trpc.gameEvent.unreadCount.useQuery();
   const { data: reportUnreadCount } = trpc.report.unreadCount.useQuery();
@@ -84,9 +85,13 @@ export function TopBar({ planetId, planets }: { planetId: string | null; planets
     },
   });
 
+  // SSE invalidates resource.production on building-done / fleet-arrived /
+  // fleet-returned / market-offer-sold. Kept a long poll as safety net in
+  // case SSE disconnects silently — 5 min keeps the UI eventually-correct
+  // without flooding the API.
   const { data } = trpc.resource.production.useQuery(
     { planetId: planetId! },
-    { enabled: !!planetId, refetchInterval: 60_000 },
+    { enabled: !!planetId, refetchInterval: 300_000 },
   );
 
   const resources = useResourceCounter(
