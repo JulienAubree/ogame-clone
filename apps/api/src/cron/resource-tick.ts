@@ -1,10 +1,44 @@
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { planets, planetTypes, planetBuildings, planetShips, userResearch } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import { calculateResources, resolveBonus, calculateGovernancePenalty } from '@exilium/game-engine';
 import { findBuildingByRole, findPlanetTypeByRole } from '../lib/config-helpers.js';
 import { buildProductionConfig } from '../lib/production-config.js';
 import type { GameConfigService } from '../modules/admin/game-config.service.js';
+
+/**
+ * Apply a list of per-planet resource updates as a single SQL round-trip via
+ * `UPDATE ... FROM (VALUES ...)`. Previous implementation ran N×UPDATE in a
+ * for-await loop which at 50k planets was ~50k round-trips every 15 min.
+ *
+ * Batches of 2000 keep the bind-parameter count bounded (8k params per batch)
+ * and the WHERE in plan tree manageable on Postgres 17.
+ */
+async function batchUpdateResources(
+  db: Database,
+  rows: Array<{ id: string; minerai: string; silicium: string; hydrogene: string; updatedAt: string }>,
+): Promise<void> {
+  if (rows.length === 0) return;
+  const BATCH = 2000;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const slice = rows.slice(i, i + BATCH);
+    const values = sql.join(
+      slice.map(
+        (r) => sql`(${r.id}::uuid, ${r.minerai}::numeric, ${r.silicium}::numeric, ${r.hydrogene}::numeric, ${r.updatedAt}::timestamptz)`,
+      ),
+      sql`, `,
+    );
+    await db.execute(sql`
+      UPDATE ${planets} AS p
+      SET minerai = v.minerai,
+          silicium = v.silicium,
+          hydrogene = v.hydrogene,
+          resources_updated_at = v.t
+      FROM (VALUES ${values}) AS v(id, minerai, silicium, hydrogene, t)
+      WHERE p.id = v.id
+    `);
+  }
+}
 
 export async function resourceTick(db: Database, gameConfigService: GameConfigService) {
   const now = new Date();
@@ -69,7 +103,8 @@ export async function resourceTick(db: Database, gameConfigService: GameConfigSe
   const harvestPenalties = (config.universe.governance_penalty_harvest as number[]) ?? [0.15, 0.35, 0.60];
   const constructionPenalties = (config.universe.governance_penalty_construction as number[]) ?? [0.15, 0.35, 0.60];
 
-  let updated = 0;
+  const nowIso = now.toISOString();
+  const pendingUpdates: Array<{ id: string; minerai: string; silicium: string; hydrogene: string; updatedAt: string }> = [];
   for (const planet of allPlanets) {
     const bonus = planet.planetClassId ? ptMap.get(planet.planetClassId) : undefined;
     const buildingLevels = buildingLevelsMap.get(planet.id) ?? {};
@@ -126,18 +161,15 @@ export async function resourceTick(db: Database, gameConfigService: GameConfigSe
       talentBonuses,
     );
 
-    await db
-      .update(planets)
-      .set({
-        minerai: String(resources.minerai),
-        silicium: String(resources.silicium),
-        hydrogene: String(resources.hydrogene),
-        resourcesUpdatedAt: now,
-      })
-      .where(eq(planets.id, planet.id));
-
-    updated++;
+    pendingUpdates.push({
+      id: planet.id,
+      minerai: String(resources.minerai),
+      silicium: String(resources.silicium),
+      hydrogene: String(resources.hydrogene),
+      updatedAt: nowIso,
+    });
   }
 
-  console.log(`[resource-tick] Materialized resources for ${updated} planets`);
+  await batchUpdateResources(db, pendingUpdates);
+  console.log(`[resource-tick] Materialized resources for ${pendingUpdates.length} planets`);
 }

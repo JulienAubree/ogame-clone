@@ -101,18 +101,23 @@ export function createRankingService(db: Database, gameConfigService: GameConfig
         calculatedAt: now,
       }));
 
-      // Single round-trip upsert. excluded.* refers to the incoming row.
-      await db
-        .insert(rankings)
-        .values(rows)
-        .onConflictDoUpdate({
-          target: rankings.userId,
-          set: {
-            totalPoints: sql`excluded.total_points`,
-            rank: sql`excluded.rank`,
-            calculatedAt: sql`excluded.calculated_at`,
-          },
-        });
+      // Batched upsert. excluded.* refers to the incoming row. Caps the bind
+      // parameter count so that 10k+ users don't push a single 3MB query and
+      // blow past Postgres's `max_locks_per_transaction` / planner limits.
+      const BATCH = 2000;
+      for (let i = 0; i < rows.length; i += BATCH) {
+        await db
+          .insert(rankings)
+          .values(rows.slice(i, i + BATCH))
+          .onConflictDoUpdate({
+            target: rankings.userId,
+            set: {
+              totalPoints: sql`excluded.total_points`,
+              rank: sql`excluded.rank`,
+              calculatedAt: sql`excluded.calculated_at`,
+            },
+          });
+      }
 
       console.log(`[ranking] Recalculated rankings for ${pointsPerUser.length} users`);
     },

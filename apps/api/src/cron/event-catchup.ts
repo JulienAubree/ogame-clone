@@ -31,6 +31,22 @@ async function ensureJobQueued(queue: Queue, jobName: string, data: Record<strin
   return false;
 }
 
+/**
+ * Run a list of promise-producing tasks with bounded concurrency. Replaces
+ * the naive `for (…) await …` pattern which serialized all Redis round-trips
+ * — at 10k expired events that's 10k sequential RTTs per tick.
+ */
+async function runWithConcurrency<T>(items: readonly T[], concurrency: number, fn: (item: T) => Promise<void>): Promise<void> {
+  let i = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      await fn(items[idx]!);
+    }
+  });
+  await Promise.all(workers);
+}
+
 export async function eventCatchup(db: Database) {
   const now = new Date();
 
@@ -40,7 +56,7 @@ export async function eventCatchup(db: Database) {
     .from(buildQueue)
     .where(and(eq(buildQueue.status, 'active'), lte(buildQueue.endTime, now)));
 
-  for (const entry of expiredEntries) {
+  await runWithConcurrency(expiredEntries, 16, async (entry) => {
     let jobName: string;
     let jobId: string;
 
@@ -59,7 +75,7 @@ export async function eventCatchup(db: Database) {
     if (requeued) {
       console.log(`[event-catchup] Re-queuing expired ${entry.type} ${entry.id}`);
     }
-  }
+  });
 
   // Fleet events catchup
   const expiredFleets = await db
@@ -67,7 +83,7 @@ export async function eventCatchup(db: Database) {
     .from(fleetEvents)
     .where(and(eq(fleetEvents.status, 'active'), lte(fleetEvents.arrivalTime, now)));
 
-  for (const fleet of expiredFleets) {
+  await runWithConcurrency(expiredFleets, 16, async (fleet) => {
     const jobName = fleetPhaseToJobName[fleet.phase] ?? 'arrive';
     const jobId = `fleet-${jobName}-${fleet.id}`;
 
@@ -75,7 +91,7 @@ export async function eventCatchup(db: Database) {
     if (requeued) {
       console.log(`[event-catchup] Re-queuing expired fleet ${fleet.id} (${fleet.phase})`);
     }
-  }
+  });
 
   const totalExpired = expiredEntries.length + expiredFleets.length;
   if (totalExpired > 0) {
