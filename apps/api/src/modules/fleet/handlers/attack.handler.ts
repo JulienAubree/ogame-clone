@@ -246,13 +246,17 @@ export class AttackHandler implements MissionHandler {
       .limit(1);
     const shieldLevel = shieldBuilding?.level ?? 0;
     const shieldPercent = (targetPlanet as any).shieldPercent ?? 100;
-    const planetaryShieldCapacity = shieldLevel > 0
+    const baseShieldCapacity = shieldLevel > 0
       ? Math.floor(calculateShieldCapacity(shieldLevel) * (shieldPercent / 100))
       : 0;
 
     const { attackerMultipliers, defenderMultipliers, defenderTalentCtx } = await computeCombatMultipliers(
       ctx, config, fleetEvent.userId, targetPlanet.userId, targetPlanet.id,
     );
+
+    // Le bouclier planétaire bénéficie du multiplicateur Blindage du défenseur
+    // (recherche Shielding, talents, bonus défense), comme les boucliers de flotte/défenses.
+    const planetaryShieldCapacity = Math.floor(baseShieldCapacity * defenderMultipliers.shielding);
 
     const hasDefenders = Object.values(defenderFleet).some(v => v > 0) ||
                          Object.values(defenderDefenses).some(v => v > 0);

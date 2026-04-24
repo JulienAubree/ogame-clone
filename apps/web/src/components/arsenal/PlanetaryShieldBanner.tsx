@@ -8,6 +8,9 @@ import { cn } from '@/lib/utils';
 interface PlanetaryShieldBannerProps {
   currentLevel: number;
   levelBonus: number;
+  effectiveCapacity?: number;
+  shieldPercent?: number;
+  shieldingMultiplier?: number;
   nextLevelCost: { minerai: number; silicium: number; hydrogene: number };
   nextLevelTime: number;
   isUpgrading: boolean;
@@ -26,6 +29,9 @@ interface PlanetaryShieldBannerProps {
 export function PlanetaryShieldBanner({
   currentLevel,
   levelBonus,
+  effectiveCapacity,
+  shieldPercent,
+  shieldingMultiplier,
   nextLevelCost,
   nextLevelTime,
   isUpgrading,
@@ -41,6 +47,7 @@ export function PlanetaryShieldBanner({
   onTimerComplete,
 }: PlanetaryShieldBannerProps) {
   const effectiveLevel = currentLevel + (levelBonus > 0 ? levelBonus : 0);
+  const fmt = (n: number) => n.toLocaleString('fr-FR');
   const canAfford =
     resources.minerai >= nextLevelCost.minerai &&
     resources.silicium >= nextLevelCost.silicium &&
@@ -88,6 +95,18 @@ export function PlanetaryShieldBanner({
                 ? "Champ de force indestructible qui se régénère à chaque round. Tant qu'il tient, vos défenses sont intouchables."
                 : "Construisez le bouclier pour protéger vos défenses planétaires derrière un champ de force régénérant."}
             </p>
+            {currentLevel > 0 && effectiveCapacity !== undefined && effectiveCapacity > 0 && (
+              <div className="mt-1.5 flex items-baseline gap-1.5 text-[11px]">
+                <span className="text-muted-foreground">Capacité par round :</span>
+                <span className="font-mono font-semibold text-cyan-300">{fmt(effectiveCapacity)}</span>
+                {shieldingMultiplier !== undefined && shieldingMultiplier > 1 && (
+                  <span className="text-[9px] text-emerald-500">+{Math.round((shieldingMultiplier - 1) * 100)}% rech.</span>
+                )}
+                {shieldPercent !== undefined && shieldPercent < 100 && (
+                  <span className="text-[9px] text-muted-foreground">(à {shieldPercent}%)</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

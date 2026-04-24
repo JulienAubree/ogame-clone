@@ -22,6 +22,7 @@ import { ArsenalHelp } from '@/components/arsenal/ArsenalHelp';
 import { formatDuration } from '@/lib/format';
 import { getDefenseName } from '@/lib/entity-names';
 import { cn } from '@/lib/utils';
+import { calculateShieldCapacity, resolveBonus } from '@exilium/game-engine';
 
 export default function Defense() {
   const { planetId, planetClassId } = useOutletContext<{ planetId?: string; planetClassId?: string | null }>();
@@ -82,6 +83,7 @@ export default function Defense() {
   );
 
   const shieldLevelBonus = resourceData?.rates?.shieldLevelBonus ?? 0;
+  const shieldPercent = resourceData?.rates?.shieldPercent ?? 100;
 
   const { data: queue } = trpc.shipyard.queue.useQuery(
     { planetId: planetId!, facilityId: 'arsenal' },
@@ -96,6 +98,11 @@ export default function Defense() {
     researchList?.forEach((r) => { levels[r.id] = r.currentLevel; });
     return levels;
   }, [researchList]);
+
+  const shieldingMultiplier = useMemo(
+    () => resolveBonus('shielding', null, researchLevels, gameConfig?.bonuses ?? []),
+    [researchLevels, gameConfig?.bonuses],
+  );
 
   const buildingLevels = useMemo(() => {
     const levels: Record<string, number> = {};
@@ -301,6 +308,15 @@ export default function Defense() {
           <PlanetaryShieldBanner
             currentLevel={shieldBuilding.currentLevel}
             levelBonus={shieldLevelBonus}
+            effectiveCapacity={shieldBuilding.currentLevel > 0
+              ? Math.floor(
+                  calculateShieldCapacity(shieldBuilding.currentLevel + shieldLevelBonus)
+                  * (shieldPercent / 100)
+                  * shieldingMultiplier,
+                )
+              : 0}
+            shieldPercent={shieldPercent}
+            shieldingMultiplier={shieldingMultiplier}
             nextLevelCost={shieldBuilding.nextLevelCost}
             nextLevelTime={shieldBuilding.nextLevelTime}
             isUpgrading={!!shieldBuilding.isUpgrading}
