@@ -1,4 +1,4 @@
-import { eq, and, count as dbCount } from 'drizzle-orm';
+import { eq, and, count as dbCount, ne } from 'drizzle-orm';
 import { fleetEvents } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import {
@@ -50,7 +50,11 @@ export function createFleetQueries(deps: FleetQueriesDeps) {
     const [{ count: current }] = await db
       .select({ count: dbCount() })
       .from(fleetEvents)
-      .where(and(eq(fleetEvents.userId, userId), eq(fleetEvents.status, 'active')));
+      .where(and(
+        eq(fleetEvents.userId, userId),
+        eq(fleetEvents.status, 'active'),
+        ne(fleetEvents.mission, 'colonization_raid'),
+      ));
     return { current: Number(current), max };
   }
 
@@ -58,7 +62,11 @@ export function createFleetQueries(deps: FleetQueriesDeps) {
     return db
       .select()
       .from(fleetEvents)
-      .where(and(eq(fleetEvents.userId, userId), eq(fleetEvents.status, 'active')));
+      .where(and(
+        eq(fleetEvents.userId, userId),
+        eq(fleetEvents.status, 'active'),
+        ne(fleetEvents.mission, 'colonization_raid'),
+      ));
   }
 
   async function estimateFleet(userId: string, input: FleetEstimateInput) {

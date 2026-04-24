@@ -1,4 +1,4 @@
-import { eq, and, inArray, ne, sql } from 'drizzle-orm';
+import { eq, and, inArray, ne, or, sql } from 'drizzle-orm';
 import { planets, fleetEvents, users, allianceMembers, alliances } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { GameConfigService } from '../../admin/game-config.service.js';
@@ -83,15 +83,23 @@ export function createListInboundFleets(deps: ListInboundDeps) {
         )
       : [];
 
+    // Hostile inbound: standard attackers (other user + detected) OR pirate
+    // raids auto-generated against the colonizer (userId = victim by design,
+    // but the fleet is hostile — surface it regardless of ownership).
     const hostileRaw = dangerousMissions.length > 0
       ? await baseJoin().where(
           and(
             inArray(fleetEvents.targetPlanetId, planetIds),
             eq(fleetEvents.status, 'active'),
             eq(fleetEvents.phase, 'outbound'),
-            ne(fleetEvents.userId, userId),
-            sql`${fleetEvents.detectedAt} IS NOT NULL`,
             sql`${fleetEvents.mission}::text IN (${sql.join(dangerousMissions.map((m) => sql`${m}`), sql`, `)})`,
+            or(
+              and(
+                ne(fleetEvents.userId, userId),
+                sql`${fleetEvents.detectedAt} IS NOT NULL`,
+              ),
+              eq(fleetEvents.mission, 'colonization_raid'),
+            ),
           ),
         )
       : [];
@@ -110,10 +118,15 @@ export function createListInboundFleets(deps: ListInboundDeps) {
       const ships = f.ships as Record<string, number>;
       const totalShips = Object.values(ships).reduce((sum, n) => sum + n, 0);
 
+      // Pirate raids use the victim's userId for ownership but are system-
+      // generated. Force-mask sender/origin so the UI never surfaces the
+      // player's own identity as the attacker.
+      const isRaid = f.mission === 'colonization_raid';
+
       return {
         id: f.id,
         userId: f.userId,
-        originPlanetId: f.originPlanetId,
+        originPlanetId: isRaid ? null : f.originPlanetId,
         targetPlanetId: f.targetPlanetId,
         targetPlanetName: f.targetPlanetName,
         targetGalaxy: f.targetGalaxy,
@@ -128,12 +141,12 @@ export function createListInboundFleets(deps: ListInboundDeps) {
         hydrogeneCargo: '0' as string,
         ships: tier >= 3 ? f.ships : {},
         detectionScore: f.detectionScore,
-        senderUsername: tier >= 4 ? f.senderUsername : null,
-        allianceTag: tier >= 4 ? f.allianceTag : null,
-        originPlanetName: tier >= 1 ? f.originPlanetName : null,
-        originGalaxy: tier >= 1 ? f.originGalaxy : 0,
-        originSystem: tier >= 1 ? f.originSystem : 0,
-        originPosition: tier >= 1 ? f.originPosition : 0,
+        senderUsername: isRaid ? 'Pirates' : (tier >= 4 ? f.senderUsername : null),
+        allianceTag: isRaid ? null : (tier >= 4 ? f.allianceTag : null),
+        originPlanetName: isRaid ? null : (tier >= 1 ? f.originPlanetName : null),
+        originGalaxy: isRaid ? 0 : (tier >= 1 ? f.originGalaxy : 0),
+        originSystem: isRaid ? 0 : (tier >= 1 ? f.originSystem : 0),
+        originPosition: isRaid ? 0 : (tier >= 1 ? f.originPosition : 0),
         hostile: true as const,
         detectionTier: tier,
         shipCount: tier >= 2 ? totalShips : (null as number | null),

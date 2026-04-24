@@ -202,12 +202,16 @@ async function createRaidFleetEvent(
   const now = new Date();
   const arrivalTime = new Date(now.getTime() + raidInfo.travelTime * 1000);
 
-  // Create fleet event for the inbound pirate raid
+  // Create fleet event for the inbound pirate raid.
+  // userId references the colonizer (target), but the raid is hostile and
+  // must never appear in their active movements / be recallable — filtered
+  // out downstream by mission. detectedAt + high score surface it as an
+  // inbound hostile at max tier.
   const [raidEvent] = await db
     .insert(fleetEvents)
     .values({
       userId,
-      originPlanetId: raidInfo.planetId,
+      originPlanetId: null,
       targetPlanetId: raidInfo.planetId,
       targetGalaxy: raidInfo.coordinates.galaxy,
       targetSystem: raidInfo.coordinates.system,
@@ -219,6 +223,8 @@ async function createRaidFleetEvent(
       arrivalTime,
       ships: pirateFleet,
       metadata: { colonizationRaid: true, processId },
+      detectedAt: now,
+      detectionScore: 9999,
     })
     .returning();
 

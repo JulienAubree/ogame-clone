@@ -45,6 +45,10 @@ export function createRecallFleet(deps: RecallFleetDeps) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Les flottes de commerce ne peuvent pas être rappelées' });
     }
 
+    if (event.mission === 'colonization_raid') {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Un raid pirate ne peut pas être rappelé' });
+    }
+
     const now = new Date();
 
     // Cancel the pending job for the current phase + detection job
