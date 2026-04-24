@@ -16,9 +16,10 @@
 
 # Basic auth snippet loaded from an out-of-repo file so the bcrypt hash never
 # lands in git. The file is created during setup from /etc/caddy/caddy.env
-# and defines `(basic_gate)`. Applied to hosts that should not be publicly
-# reachable (admin panel, staging) — prevents crawler indexation and reduces
-# the attack surface for brute-force attempts against the app login form.
+# and defines `(basic_gate)`. Applied only to the static SPA handler — NOT to
+# /trpc/*: when the API returns its own 401 (e.g. app-level JWT missing), Caddy
+# basicauth attaches WWW-Authenticate: Basic to that response, which would
+# trick the browser into re-prompting for basic auth on every tRPC call.
 import /etc/caddy/basic-auth.conf
 
 exilium-game.com, www.exilium-game.com {
@@ -53,8 +54,10 @@ exilium-game.com, www.exilium-game.com {
 
 admin.exilium-game.com {
 	import security_headers
-	import basic_gate
 
+	# API routes are NOT behind basic auth: adminProcedure JWT check + the
+	# global rate-limit (300 req/min/IP) protect them. Attaching basicauth
+	# here would make the browser re-prompt on every 401 from the app layer.
 	handle /trpc/* {
 		reverse_proxy localhost:3000
 	}
@@ -69,7 +72,10 @@ admin.exilium-game.com {
 		file_server
 	}
 
+	# Static SPA is gated by basic auth so crawlers can't index the login page
+	# and randos can't probe the admin UI.
 	handle {
+		import basic_gate
 		root * /opt/exilium/apps/admin/dist
 		try_files {path} /index.html
 		file_server
@@ -77,17 +83,9 @@ admin.exilium-game.com {
 }
 
 # Staging mirrors the prod routing but points at the separate API (port 3001),
-# separate code checkout, and separate assets dir. Gated behind basic auth so
-# no crawler indexes it and no random user lands on it.
+# separate code checkout, and separate assets dir.
 staging.exilium-game.com {
 	import security_headers
-	import basic_gate
-
-	@game_assets path /assets/buildings/* /assets/buildings/*/* /assets/research/* /assets/ships/* /assets/defenses/* /assets/defenses/*/* /assets/planets/* /assets/planets/*/* /assets/flagships/* /assets/avatars/*
-	handle @game_assets {
-		root * /opt/exilium-staging/uploads
-		file_server
-	}
 
 	handle /trpc/* {
 		reverse_proxy localhost:3001
@@ -103,7 +101,14 @@ staging.exilium-game.com {
 		reverse_proxy localhost:3001
 	}
 
+	@game_assets path /assets/buildings/* /assets/buildings/*/* /assets/research/* /assets/ships/* /assets/defenses/* /assets/defenses/*/* /assets/planets/* /assets/planets/*/* /assets/flagships/* /assets/avatars/*
+	handle @game_assets {
+		root * /opt/exilium-staging/uploads
+		file_server
+	}
+
 	handle {
+		import basic_gate
 		root * /opt/exilium-staging/apps/web/dist
 		try_files {path} /index.html
 		file_server
@@ -112,7 +117,6 @@ staging.exilium-game.com {
 
 admin-staging.exilium-game.com {
 	import security_headers
-	import basic_gate
 
 	handle /trpc/* {
 		reverse_proxy localhost:3001
@@ -129,6 +133,7 @@ admin-staging.exilium-game.com {
 	}
 
 	handle {
+		import basic_gate
 		root * /opt/exilium-staging/apps/admin/dist
 		try_files {path} /index.html
 		file_server
