@@ -35,6 +35,9 @@ import { AbandonReturnHandler } from './handlers/abandon-return.handler.js';
 import { buildShipStatsMap } from './fleet.types.js';
 import { createSendFleet } from './operations/send-fleet.js';
 import { createListInboundFleets } from './operations/list-inbound.js';
+import { createRecallFleet } from './operations/recall-fleet.js';
+import { createScheduleReturn } from './operations/schedule-return.js';
+import { createFleetQueries } from './operations/fleet-queries.js';
 import type { FleetCompletionResult } from '../../workers/completion.types.js';
 import { env } from '../../config/env.js';
 import type { PhasedMissionHandler, MissionHandler, MissionHandlerContext, SendFleetInput, FleetEvent as HandlerFleetEvent } from './fleet.types.js';
@@ -138,118 +141,98 @@ export function createFleetService(
   });
 
   const listInboundFleets = createListInboundFleets({ db, gameConfigService });
+  const recallFleet = createRecallFleet({ db, fleetQueue, pveService });
+  const scheduleReturn = createScheduleReturn({
+    db, gameConfigService, fleetQueue, flagshipService, talentService, getResearchLevels,
+  });
+  const { getFleetSlots, listMovements, estimateFleet } = createFleetQueries({
+    db, gameConfigService, flagshipService, talentService, getOwnedPlanet, getResearchLevels,
+  });
+
+  // Dispatcher for "phased" missions (mine, explore, prospect). Kept as a
+  // closure so processProspectDone/MineDone/ExploreDone methods can call it.
+  async function processPhaseDispatch(
+    fleetEventId: string,
+    phaseName: string,
+    expectedPhase: typeof fleetPhaseEnum.enumValues[number],
+  ) {
+    const [event] = await db
+      .select()
+      .from(fleetEvents)
+      .where(and(eq(fleetEvents.id, fleetEventId), eq(fleetEvents.status, 'active'), eq(fleetEvents.phase, expectedPhase)))
+      .limit(1);
+
+    if (!event) return { skipped: true };
+
+    const handler = handlers[event.mission];
+    if (!handler || !('processPhase' in handler)) {
+      return { skipped: true, reason: 'no_phased_handler' };
+    }
+
+    const ships = event.ships as Record<string, number>;
+    const handlerEvent: HandlerFleetEvent = {
+      id: event.id,
+      userId: event.userId,
+      originPlanetId: event.originPlanetId,
+      targetPlanetId: event.targetPlanetId,
+      targetGalaxy: event.targetGalaxy,
+      targetSystem: event.targetSystem,
+      targetPosition: event.targetPosition,
+      mission: event.mission,
+      phase: event.phase,
+      status: event.status,
+      departureTime: event.departureTime,
+      arrivalTime: event.arrivalTime,
+      mineraiCargo: event.mineraiCargo,
+      siliciumCargo: event.siliciumCargo,
+      hydrogeneCargo: event.hydrogeneCargo,
+      ships,
+      metadata: event.metadata,
+      targetPriority: event.targetPriority,
+      pveMissionId: event.pveMissionId,
+      tradeId: event.tradeId,
+    };
+
+    const result = await (handler as PhasedMissionHandler).processPhase(phaseName, handlerEvent, handlerCtx);
+
+    if (result.scheduleNextPhase) {
+      await fleetQueue.add(
+        result.scheduleNextPhase.jobName,
+        { fleetEventId: event.id },
+        { delay: result.scheduleNextPhase.delayMs, jobId: `fleet-${result.scheduleNextPhase.jobName}-${event.id}` },
+      );
+    }
+
+    // Store reportId in metadata for retrieval during processReturn
+    if (result.reportId) {
+      const existingMeta = (event.metadata ?? {}) as Record<string, unknown>;
+      await db.update(fleetEvents).set({
+        metadata: { ...existingMeta, reportId: result.reportId },
+      }).where(eq(fleetEvents.id, event.id));
+    }
+
+    if (result.scheduleReturn && event.originPlanetId) {
+      const cargo = result.cargo ?? { minerai: 0, silicium: 0, hydrogene: 0 };
+      await scheduleReturn(
+        event.id, event.originPlanetId,
+        { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
+        ships, cargo.minerai, cargo.silicium, cargo.hydrogene,
+      );
+    }
+
+    return { fleetEventId, phase: phaseName };
+  }
 
   return {
     sendFleet,
     listInboundFleets,
+    recallFleet,
+    scheduleReturn,
+    getFleetSlots,
+    listMovements,
+    estimateFleet,
 
-    async recallFleet(userId: string, fleetEventId: string) {
-      const [event] = await db
-        .select()
-        .from(fleetEvents)
-        .where(
-          and(
-            eq(fleetEvents.id, fleetEventId),
-            eq(fleetEvents.userId, userId),
-            eq(fleetEvents.status, 'active'),
-            inArray(fleetEvents.phase, ['outbound', 'prospecting', 'mining']),
-          ),
-        )
-        .limit(1);
 
-      if (!event) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Flotte non trouvée ou non rappelable' });
-      }
-
-      if (event.mission === 'trade') {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Les flottes de commerce ne peuvent pas être rappelées' });
-      }
-
-      const now = new Date();
-
-      // Cancel the pending job for the current phase
-      const jobIdMap: Record<string, string> = {
-        outbound: `fleet-arrive-${event.id}`,
-        prospecting: `fleet-prospect-${event.id}`,
-        mining: `fleet-mine-${event.id}`,
-      };
-      const jobId = jobIdMap[event.phase];
-      if (jobId) await fleetQueue.remove(jobId);
-
-      // Also cancel pending detection job
-      await fleetQueue.remove(`fleet-detected-${event.id}`);
-
-      // Release PvE mission back to available if recalling
-      if (event.pveMissionId && pveService) {
-        await pveService.releaseMission(event.pveMissionId);
-      }
-
-      // PvE missions (mine, pirate) in outbound phase: instant cancellation
-      const instantCancel = (event.mission === 'mine' || event.mission === 'pirate') && event.phase === 'outbound';
-
-      if (instantCancel) {
-        // Trigger return immediately (delay 0)
-        await db
-          .update(fleetEvents)
-          .set({
-            phase: 'return',
-            departureTime: now,
-            arrivalTime: now,
-          })
-          .where(eq(fleetEvents.id, event.id));
-
-        await fleetQueue.add(
-          'return',
-          { fleetEventId: event.id },
-          { delay: 0, jobId: `fleet-return-${event.id}` },
-        );
-
-        return { recalled: true, returnTime: now.toISOString() };
-      }
-
-      const elapsed = now.getTime() - event.departureTime.getTime();
-      const returnTime = new Date(now.getTime() + elapsed);
-
-      await db
-        .update(fleetEvents)
-        .set({
-          phase: 'return',
-          departureTime: now,
-          arrivalTime: returnTime,
-        })
-        .where(eq(fleetEvents.id, event.id));
-
-      await fleetQueue.add(
-        'return',
-        { fleetEventId: event.id },
-        { delay: elapsed, jobId: `fleet-return-${event.id}` },
-      );
-
-      return { recalled: true, returnTime: returnTime.toISOString() };
-    },
-
-    async getFleetSlots(userId: string) {
-      const config = await gameConfigService.getFullConfig();
-      const researchLevels = await getResearchLevels(userId);
-      const max = Math.floor(resolveBonus('fleet_count', null, researchLevels, config.bonuses));
-      const [{ count: current }] = await db
-        .select({ count: dbCount() })
-        .from(fleetEvents)
-        .where(and(eq(fleetEvents.userId, userId), eq(fleetEvents.status, 'active')));
-      return { current: Number(current), max };
-    },
-
-    async listMovements(userId: string) {
-      return db
-        .select()
-        .from(fleetEvents)
-        .where(
-          and(
-            eq(fleetEvents.userId, userId),
-            eq(fleetEvents.status, 'active'),
-          ),
-        );
-    },
 
 
     async processDetection(fleetEventId: string, defenderId: string) {
@@ -380,7 +363,7 @@ export function createFleetService(
         if (result.scheduleReturn && event.originPlanetId) {
           const cargo = result.cargo ?? { minerai: mineraiCargo, silicium: siliciumCargo, hydrogene: hydrogeneCargo };
           const returnShips = result.shipsAfterArrival ?? ships;
-          await this.scheduleReturn(
+          await scheduleReturn(
             event.id, event.originPlanetId,
             { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
             returnShips, cargo.minerai, cargo.silicium, cargo.hydrogene,
@@ -416,7 +399,7 @@ export function createFleetService(
           if (insertedEvent && event.originPlanetId) {
             const returnShips = (returnData.ships ?? ships) as Record<string, number>;
             const returnCargo = result.cargo ?? { minerai: 0, silicium: 0, hydrogene: 0 };
-            await this.scheduleReturn(
+            await scheduleReturn(
               insertedEvent.id, event.originPlanetId,
               { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
               returnShips, returnCargo.minerai, returnCargo.silicium, returnCargo.hydrogene,
@@ -477,7 +460,7 @@ export function createFleetService(
 
       // Unknown mission — return fleet (only if origin still exists)
       if (event.originPlanetId) {
-        await this.scheduleReturn(
+        await scheduleReturn(
           event.id, event.originPlanetId,
           { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
           ships, mineraiCargo, siliciumCargo, hydrogeneCargo,
@@ -509,87 +492,20 @@ export function createFleetService(
     },
 
     async processProspectDone(fleetEventId: string): Promise<FleetCompletionResult> {
-      await this.processPhaseDispatch(fleetEventId, 'prospect-done', 'prospecting');
+      await processPhaseDispatch(fleetEventId, 'prospect-done', 'prospecting');
       return null;
     },
 
     async processMineDone(fleetEventId: string): Promise<FleetCompletionResult> {
-      await this.processPhaseDispatch(fleetEventId, 'mine-done', 'mining');
+      await processPhaseDispatch(fleetEventId, 'mine-done', 'mining');
       return null;
     },
 
     async processExploreDone(fleetEventId: string): Promise<FleetCompletionResult> {
-      await this.processPhaseDispatch(fleetEventId, 'explore-done', 'exploring');
+      await processPhaseDispatch(fleetEventId, 'explore-done', 'exploring');
       return null;
     },
 
-    async processPhaseDispatch(fleetEventId: string, phaseName: string, expectedPhase: typeof fleetPhaseEnum.enumValues[number]) {
-      const [event] = await db
-        .select()
-        .from(fleetEvents)
-        .where(and(eq(fleetEvents.id, fleetEventId), eq(fleetEvents.status, 'active'), eq(fleetEvents.phase, expectedPhase)))
-        .limit(1);
-
-      if (!event) return { skipped: true };
-
-      const handler = handlers[event.mission];
-      if (!handler || !('processPhase' in handler)) {
-        return { skipped: true, reason: 'no_phased_handler' };
-      }
-
-      const ships = event.ships as Record<string, number>;
-      const handlerEvent: HandlerFleetEvent = {
-        id: event.id,
-        userId: event.userId,
-        originPlanetId: event.originPlanetId,
-        targetPlanetId: event.targetPlanetId,
-        targetGalaxy: event.targetGalaxy,
-        targetSystem: event.targetSystem,
-        targetPosition: event.targetPosition,
-        mission: event.mission,
-        phase: event.phase,
-        status: event.status,
-        departureTime: event.departureTime,
-        arrivalTime: event.arrivalTime,
-        mineraiCargo: event.mineraiCargo,
-        siliciumCargo: event.siliciumCargo,
-        hydrogeneCargo: event.hydrogeneCargo,
-        ships,
-        metadata: event.metadata,
-        targetPriority: event.targetPriority,
-        pveMissionId: event.pveMissionId,
-        tradeId: event.tradeId,
-      };
-
-      const result = await (handler as PhasedMissionHandler).processPhase(phaseName, handlerEvent, handlerCtx);
-
-      if (result.scheduleNextPhase) {
-        await fleetQueue.add(
-          result.scheduleNextPhase.jobName,
-          { fleetEventId: event.id },
-          { delay: result.scheduleNextPhase.delayMs, jobId: `fleet-${result.scheduleNextPhase.jobName}-${event.id}` },
-        );
-      }
-
-      // Store reportId in metadata for retrieval during processReturn
-      if (result.reportId) {
-        const existingMeta = (event.metadata ?? {}) as Record<string, unknown>;
-        await db.update(fleetEvents).set({
-          metadata: { ...existingMeta, reportId: result.reportId },
-        }).where(eq(fleetEvents.id, event.id));
-      }
-
-      if (result.scheduleReturn && event.originPlanetId) {
-        const cargo = result.cargo ?? { minerai: 0, silicium: 0, hydrogene: 0 };
-        await this.scheduleReturn(
-          event.id, event.originPlanetId,
-          { galaxy: event.targetGalaxy, system: event.targetSystem, position: event.targetPosition },
-          ships, cargo.minerai, cargo.silicium, cargo.hydrogene,
-        );
-      }
-
-      return { fleetEventId, phase: phaseName };
-    },
 
     async processReturn(fleetEventId: string): Promise<FleetCompletionResult> {
       const [event] = await db
@@ -736,123 +652,12 @@ export function createFleetService(
       };
     },
 
-    async scheduleReturn(
-      fleetEventId: string,
-      originPlanetId: string,
-      targetCoords: { galaxy: number; system: number; position: number },
-      ships: Record<string, number>,
-      mineraiCargo: number,
-      siliciumCargo: number,
-      hydrogeneCargo: number,
-    ) {
-      const [originPlanet] = await db
-        .select()
-        .from(planets)
-        .where(eq(planets.id, originPlanetId))
-        .limit(1);
-
-      if (!originPlanet) return;
-
-      const config = await gameConfigService.getFullConfig();
-      const fleetConfig = buildFleetConfig(config);
-      const shipStatsMap = buildShipStatsMap(config);
-      const [event] = await db.select().from(fleetEvents).where(eq(fleetEvents.id, fleetEventId)).limit(1);
-
-      // Inject flagship stats if flagship is in returning fleet
-      if (ships['flagship'] && ships['flagship'] > 0 && flagshipService && event) {
-        const flagship = await flagshipService.get(event.userId);
-        if (flagship) {
-          shipStatsMap['flagship'] = {
-            baseSpeed: flagship.baseSpeed,
-            fuelConsumption: flagship.fuelConsumption,
-            cargoCapacity: flagship.cargoCapacity,
-            driveType: flagship.driveType as ShipStats['driveType'],
-            miningExtraction: 0,
-          };
-        }
-      }
-
-      const researchLevels = event ? await getResearchLevels(event.userId) : {};
-      const returnTalentCtx = (event && talentService) ? await talentService.computeTalentContext(event.userId) : {};
-      const baseReturnSpeedMult = buildSpeedMultipliers(ships, shipStatsMap, researchLevels, config.bonuses);
-      const returnTalentSpeedFactor = 1 + (returnTalentCtx['fleet_speed'] ?? 0);
-      const speedMultipliers: Record<string, number> = {};
-      for (const [k, v] of Object.entries(baseReturnSpeedMult)) {
-        speedMultipliers[k] = v * returnTalentSpeedFactor;
-      }
-      const speed = fleetSpeed(ships, shipStatsMap, speedMultipliers);
-      const universeSpeed = Number(config.universe.speed) || 1;
-      const origin = { galaxy: originPlanet.galaxy, system: originPlanet.system, position: originPlanet.position };
-      const duration = travelTime(targetCoords, origin, speed, universeSpeed, fleetConfig);
-
-      const now = new Date();
-      const returnTime = new Date(now.getTime() + duration * 1000);
-
-      await db
-        .update(fleetEvents)
-        .set({
-          phase: 'return',
-          departureTime: now,
-          arrivalTime: returnTime,
-          mineraiCargo: String(mineraiCargo),
-          siliciumCargo: String(siliciumCargo),
-          hydrogeneCargo: String(hydrogeneCargo),
-          ships,
-        })
-        .where(eq(fleetEvents.id, fleetEventId));
-
-      await fleetQueue.add(
-        'return',
-        { fleetEventId },
-        { delay: duration * 1000, jobId: `fleet-return-${fleetEventId}` },
-      );
-    },
 
     // Exposed for tests and older callers; internal code uses the closure
     // functions directly.
     getResearchLevels,
     getOrCreateShips,
 
-    async estimateFleet(userId: string, input: { originPlanetId: string; targetGalaxy: number; targetSystem: number; targetPosition: number; ships: Record<string, number> }) {
-      const planet = await getOwnedPlanet(userId, input.originPlanetId);
-      const config = await gameConfigService.getFullConfig();
-      const shipStatsMap = buildShipStatsMap(config);
-
-      // Inject flagship stats if present in estimate
-      if (input.ships['flagship'] && input.ships['flagship'] > 0 && flagshipService) {
-        const flagship = await flagshipService.get(userId);
-        if (flagship) {
-          shipStatsMap['flagship'] = {
-            baseSpeed: flagship.baseSpeed,
-            fuelConsumption: flagship.fuelConsumption,
-            cargoCapacity: flagship.cargoCapacity,
-            driveType: flagship.driveType as ShipStats['driveType'],
-            miningExtraction: 0,
-          };
-        }
-      }
-
-      const researchLevels = await getResearchLevels(userId);
-      const estTalentCtx = talentService ? await talentService.computeTalentContext(userId) : {};
-      const baseEstSpeedMult = buildSpeedMultipliers(input.ships, shipStatsMap, researchLevels, config.bonuses);
-      const estTalentSpeedFactor = 1 + (estTalentCtx['fleet_speed'] ?? 0);
-      const estSpeedMultipliers: Record<string, number> = {};
-      for (const [k, v] of Object.entries(baseEstSpeedMult)) {
-        estSpeedMultipliers[k] = v * estTalentSpeedFactor;
-      }
-      const speed = fleetSpeed(input.ships, shipStatsMap, estSpeedMultipliers);
-      if (speed === 0) return { fuel: 0, duration: 0 };
-
-      const fleetConfig = buildFleetConfig(config);
-      const universeSpeed = Number(config.universe.speed) || 1;
-      const origin = { galaxy: planet.galaxy, system: planet.system, position: planet.position };
-      const target = { galaxy: input.targetGalaxy, system: input.targetSystem, position: input.targetPosition };
-      const dist = distance(origin, target, fleetConfig);
-      const dur = travelTime(origin, target, speed, universeSpeed, fleetConfig);
-      const fuel = fuelConsumption(input.ships, dist, dur, shipStatsMap, { speedFactor: fleetConfig.speedFactor }) / (1 + (estTalentCtx['fleet_fuel'] ?? 0));
-
-      return { fuel, duration: dur };
-    },
 
     getOwnedPlanet,
   };
