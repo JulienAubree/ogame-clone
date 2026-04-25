@@ -5,6 +5,16 @@ export function formatDuration(seconds: number): string {
   return [h > 0 ? `${h}h` : '', m > 0 ? `${m}m` : '', `${s}s`].filter(Boolean).join(' ');
 }
 
+/**
+ * Formate un nombre d'heures (potentiellement décimal) en libellé lisible.
+ * `25.5h → "1j 1h"`, `2.5h → "2h 30min"`, `0.25h → "15min"`.
+ */
+export function formatHoursMinutes(hours: number): string {
+  if (hours >= 24) return `${Math.floor(hours / 24)}j ${Math.floor(hours % 24)}h`;
+  if (hours >= 1) return `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}min`;
+  return `${Math.round(hours * 60)}min`;
+}
+
 export function formatNumber(value: number): string {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(1)}M`;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
 import {
   Rocket as IconRocket,
@@ -11,8 +11,6 @@ import {
   Truck as IconTruck,
   Anchor as IconAnchor,
   Crosshair as IconCrosshair,
-  Info as IconInfo,
-  ChevronDown,
 } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
@@ -20,144 +18,18 @@ import { cn } from '@/lib/utils';
 import { getPlanetImageUrl } from '@/lib/assets';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { getShipName } from '@/lib/entity-names';
+import { formatHoursMinutes } from '@/lib/format';
+import {
+  ConvoyCountdown,
+  RaidCountdown,
+  BonusCountdown,
+  DeadlineCountdown,
+} from '@/components/colonization/Countdowns';
+import { ExpandableInfo } from '@/components/common/ExpandableInfo';
 
-// ── Countdown hook ──
-
-function useCountdown(target: Date): string {
-  const compute = useCallback(() => {
-    const diff = Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = diff % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }, [target]);
-  const [display, setDisplay] = useState(compute);
-  useEffect(() => {
-    const id = setInterval(() => setDisplay(compute()), 1000);
-    return () => clearInterval(id);
-  }, [compute]);
-  return display;
-}
-
-// IconChevron : wrapper local pour gérer la rotation selon prop `open`.
-function IconChevron({ open, className }: { open: boolean; className?: string }) {
-  return <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180', className)} />;
-}
-
-// ── Expandable explainer ──
-
-function ExpandableInfo({
-  label,
-  accent,
-  children,
-}: {
-  label: string;
-  accent: 'amber' | 'emerald' | 'blue' | 'red' | 'muted';
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  const colorMap = {
-    amber: 'text-amber-300 hover:text-amber-200 border-amber-500/30 bg-amber-500/5',
-    emerald: 'text-emerald-300 hover:text-emerald-200 border-emerald-500/30 bg-emerald-500/5',
-    blue: 'text-blue-300 hover:text-blue-200 border-blue-500/30 bg-blue-500/5',
-    red: 'text-red-300 hover:text-red-200 border-red-500/30 bg-red-500/5',
-    muted: 'text-muted-foreground hover:text-foreground border-border/30 bg-card/40',
-  };
-  const btnColor = {
-    amber: 'text-amber-400/70 hover:text-amber-300',
-    emerald: 'text-emerald-400/70 hover:text-emerald-300',
-    blue: 'text-blue-400/70 hover:text-blue-300',
-    red: 'text-red-400/70 hover:text-red-300',
-    muted: 'text-muted-foreground/70 hover:text-foreground',
-  };
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={cn(
-          'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-colors',
-          btnColor[accent],
-        )}
-      >
-        <IconInfo className="h-3 w-3" />
-        <span>{label}</span>
-        <IconChevron open={open} />
-      </button>
-      {open && (
-        <div className={cn('mt-2 rounded-lg border p-3 text-[11px] leading-relaxed space-y-2', colorMap[accent])}>
-          {children}
-        </div>
-      )}
-    </>
-  );
-}
-
-// ── Convoy countdown component ──
-
-function ConvoyCountdown({ arrivalTime }: { arrivalTime: string }) {
-  const display = useCountdown(new Date(arrivalTime));
-  const hoursLeft = (new Date(arrivalTime).getTime() - Date.now()) / (1000 * 60 * 60);
-  return (
-    <span className={cn(
-      'font-mono text-sm tabular-nums font-bold',
-      hoursLeft < 0.25 ? 'text-emerald-300' : 'text-emerald-400',
-    )}>
-      {display}
-    </span>
-  );
-}
-
-// ── Raid countdown component ──
-
-function RaidCountdown({ arrivalTime }: { arrivalTime: string }) {
-  const display = useCountdown(new Date(arrivalTime));
-  const hoursLeft = (new Date(arrivalTime).getTime() - Date.now()) / (1000 * 60 * 60);
-  return (
-    <span className={cn(
-      'font-mono text-sm tabular-nums font-bold',
-      hoursLeft < 0.5 ? 'text-red-400 animate-pulse' : hoursLeft < 1 ? 'text-red-400' : hoursLeft < 2 ? 'text-orange-400' : 'text-amber-400',
-    )}>
-      {display}
-    </span>
-  );
-}
-
-// ── Convoy bonus countdown (compact mm:ss or h:mm) ──
-
-function BonusCountdown({ target }: { target: Date }) {
-  const display = useCountdown(target);
-  return <span className="font-mono tabular-nums">{display}</span>;
-}
-
-// ── Deadline countdown (grace period / outpost timeout) ──
-
-function DeadlineCountdown({ target, tone }: { target: Date; tone: 'warn' | 'info' }) {
-  const display = useCountdown(target);
-  const hoursLeft = (target.getTime() - Date.now()) / (1000 * 60 * 60);
-  const urgent = hoursLeft < 4;
-  const colorClass = tone === 'warn'
-    ? urgent ? 'text-red-400' : hoursLeft < 12 ? 'text-orange-400' : 'text-amber-400'
-    : hoursLeft < 0.25 ? 'text-orange-400' : 'text-emerald-400';
-  return (
-    <span className={cn('font-mono text-sm tabular-nums font-bold', colorClass)}>
-      {display}
-    </span>
-  );
-}
-
-// ── Format helpers ──
-
-function formatHoursMinutes(hours: number): string {
-  if (hours >= 24) return `${Math.floor(hours / 24)}j ${Math.floor(hours % 24)}h`;
-  if (hours >= 1) return `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}min`;
-  return `${Math.round(hours * 60)}min`;
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString('fr-FR');
-}
+// Format local : ressources entières avec séparateur français (différent du
+// formatNumber global qui compacte en M/K).
+const formatNumber = (n: number) => n.toLocaleString('fr-FR');
 
 // ── Main component ──
 
