@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
+import { Lock, Home, HelpCircle, Sun, Frown, Clock, Info, ChevronDown, Boxes, ArrowRight, Plus } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
@@ -123,10 +124,7 @@ export default function Missions() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="relative flex flex-col items-center justify-center px-5 py-16 lg:py-24 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-muted-foreground/20 bg-card/50 mb-6">
-              <svg className="h-10 w-10 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+              <Lock className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
             </div>
             <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-2">Centre de missions</h1>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
@@ -137,10 +135,7 @@ export default function Missions() {
               to="/buildings"
               className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/30 px-5 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
+              <Home className="h-3.5 w-3.5" />
               Aller aux bâtiments
             </Link>
           </div>
@@ -181,11 +176,7 @@ export default function Missions() {
                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <path d="M12 17h.01" />
-                </svg>
+                <HelpCircle className="h-5 w-5 text-white" />
               </div>
             </button>
 
@@ -214,9 +205,7 @@ export default function Missions() {
             color="text-amber-400"
             onClick={() => setFilter('mine')}
             icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
-              </svg>
+              <Sun className="h-[18px] w-[18px]" />
             }
           />
           <KpiTile
@@ -225,11 +214,7 @@ export default function Missions() {
             color="text-rose-400"
             onClick={() => setFilter('pirate')}
             icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M8 15s1.5-2 4-2 4 2 4 2" />
-                <path d="M9 9l.01 0M15 9l.01 0" />
-              </svg>
+              <Frown className="h-[18px] w-[18px]" />
             }
           />
           <KpiTile
@@ -247,10 +232,7 @@ export default function Missions() {
             }
             color="text-cyan-400"
             icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              <Clock className="h-[18px] w-[18px]" />
             }
           />
         </div>
@@ -281,9 +263,7 @@ export default function Missions() {
             <div>
               {filter === 'all' && (
                 <div className="flex items-center gap-2 mb-4">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
-                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
-                  </svg>
+                  <Sun className="h-4 w-4 text-amber-400" />
                   <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
                     Gisements ({miningMissions.length}/3)
                   </h3>
@@ -297,19 +277,11 @@ export default function Missions() {
                   className="flex items-center gap-2 w-full text-left"
                   onClick={() => setMiningInfoOpen(!miningInfoOpen)}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 shrink-0">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 16v-4M12 8h.01" />
-                  </svg>
+                  <Info className="h-3.5 w-3.5 text-amber-400 shrink-0" />
                   <span className="text-xs text-muted-foreground">
                     La <span className="text-amber-300 font-semibold">capacité de soute</span> de votre flotte détermine combien de ressources vous ramenez.
                   </span>
-                  <svg
-                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className={cn('text-muted-foreground/60 ml-auto shrink-0 transition-transform', miningInfoOpen && 'rotate-180')}
-                  >
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
+                  <ChevronDown className={cn('h-3 w-3 text-muted-foreground/60 ml-auto shrink-0 transition-transform', miningInfoOpen && 'rotate-180')} />
                 </button>
                 {miningInfoOpen && (
                   <div className="space-y-2 pt-1 text-xs text-muted-foreground">
@@ -328,9 +300,7 @@ export default function Missions() {
 
               {miningMissions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                  <svg className="h-10 w-10 mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
+                  <Boxes className="h-10 w-10 mb-3 opacity-30" strokeWidth={1.5} />
                   <p className="text-sm">Aucun gisement découvert pour le moment.</p>
                 </div>
               ) : (
@@ -404,11 +374,7 @@ export default function Missions() {
             <div>
               {filter === 'all' && (
                 <div className="flex items-center gap-2 mb-4">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M8 15s1.5-2 4-2 4 2 4 2" />
-                    <path d="M9 9l.01 0M15 9l.01 0" />
-                  </svg>
+                  <Frown className="h-4 w-4 text-rose-400" />
                   <h3 className="text-xs font-semibold text-rose-400 uppercase tracking-wider">
                     Repaires pirates ({pirateMissions.length}/2)
                   </h3>
@@ -422,19 +388,11 @@ export default function Missions() {
                   className="flex items-center gap-2 w-full text-left"
                   onClick={() => setCombatInfoOpen(!combatInfoOpen)}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400 shrink-0">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 16v-4M12 8h.01" />
-                  </svg>
+                  <Info className="h-3.5 w-3.5 text-rose-400 shrink-0" />
                   <span className="text-xs text-muted-foreground">
                     Le <span className="text-rose-300 font-semibold">Facteur de Puissance (FP)</span> mesure la force d&apos;une flotte.
                   </span>
-                  <svg
-                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className={cn('text-muted-foreground/60 ml-auto shrink-0 transition-transform', combatInfoOpen && 'rotate-180')}
-                  >
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
+                  <ChevronDown className={cn('h-3 w-3 text-muted-foreground/60 ml-auto shrink-0 transition-transform', combatInfoOpen && 'rotate-180')} />
                 </button>
                 {combatInfoOpen && (
                   <div className="space-y-2 pt-1 text-xs text-muted-foreground">
@@ -449,9 +407,7 @@ export default function Missions() {
                       className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 font-medium"
                     >
                       Guide complet du combat spatial
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
+                      <ArrowRight className="h-3 w-3" />
                     </Link>
                   </div>
                 )}
@@ -459,11 +415,7 @@ export default function Missions() {
 
               {pirateMissions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                  <svg className="h-10 w-10 mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M8 15s1.5-2 4-2 4 2 4 2" />
-                    <path d="M9 9l.01 0M15 9l.01 0" />
-                  </svg>
+                  <Frown className="h-10 w-10 mb-3 opacity-30" strokeWidth={1.5} />
                   <p className="text-sm">Aucun repaire pirate detecte pour le moment.</p>
                 </div>
               ) : (
@@ -505,9 +457,7 @@ export default function Missions() {
                           </div>
                           {rewards.bonusShips?.length > 0 && (
                             <div className="text-[11px] text-emerald-400/80 flex items-center gap-1">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 2v20M2 12h20" />
-                              </svg>
+                              <Plus className="h-3 w-3" />
                               Vaisseaux bonus possibles
                             </div>
                           )}
@@ -578,10 +528,7 @@ export default function Missions() {
         {/* Decouverte */}
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <Clock className="h-3.5 w-3.5 text-primary" />
             Découverte automatique
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
@@ -592,9 +539,7 @@ export default function Missions() {
         {/* Gisements */}
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
-              <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
-            </svg>
+            <Sun className="h-3.5 w-3.5 text-amber-400" />
             Gisements miniers
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
@@ -611,11 +556,7 @@ export default function Missions() {
         {/* Pirates */}
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M8 15s1.5-2 4-2 4 2 4 2" />
-              <path d="M9 9l.01 0M15 9l.01 0" />
-            </svg>
+            <Frown className="h-3.5 w-3.5 text-rose-400" />
             Repaires pirates
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
