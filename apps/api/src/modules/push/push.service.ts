@@ -97,8 +97,9 @@ export function createPushService(db: Database) {
             },
             JSON.stringify(payload),
           );
-        } catch (err: any) {
-          if (err.statusCode === 404 || err.statusCode === 410) {
+        } catch (err: unknown) {
+          const statusCode = (err as { statusCode?: number }).statusCode;
+          if (statusCode === 404 || statusCode === 410) {
             await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
           }
         }

@@ -88,7 +88,7 @@ export class ExploreHandler implements PhasedMissionHandler {
       set: { selfExplored: true },
     });
 
-    const biomeCatalogue: BiomeDefinition[] = (config.biomes ?? []).map((b: any) => ({
+    const biomeCatalogue: BiomeDefinition[] = (config.biomes ?? []).map((b) => ({
       id: b.id,
       rarity: b.rarity,
       compatiblePlanetTypes: b.compatiblePlanetTypes as string[],
@@ -156,8 +156,8 @@ export class ExploreHandler implements PhasedMissionHandler {
     if (ctx.reportService) {
       const config = await ctx.gameConfigService.getFullConfig();
       const biomeDetails = discovered.map((b) => {
-        const full = (config.biomes ?? []).find((cb: any) => cb.id === b.id);
-        return { id: b.id, name: (full as any)?.name ?? b.id, rarity: b.rarity, effects: b.effects };
+        const full = (config.biomes ?? []).find((cb) => cb.id === b.id);
+        return { id: b.id, name: full?.name ?? b.id, rarity: b.rarity, effects: b.effects };
       });
 
       const [originPlanet] = fleetEvent.originPlanetId

@@ -251,7 +251,7 @@ export function createShipyardService(
       const queuedUnits = quantity - immediateUnits;
 
       const now = new Date();
-      let lastEntry: any = null;
+      let lastEntry: typeof buildQueue.$inferSelect | null = null;
 
       // Create active entries (one per slot, qty=1 each)
       for (let i = 0; i < immediateUnits; i++) {

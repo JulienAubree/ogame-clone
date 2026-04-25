@@ -454,7 +454,7 @@ export function createFlagshipService(
       // 1b. Check scan ability from hull config
       const config = await gameConfigService.getFullConfig();
       const hullConfig = flagship.hullId ? config.hulls[flagship.hullId] : null;
-      const scanAbility = (hullConfig?.abilities ?? []).find((a: any) => a.id === 'scan_mission' && a.type === 'active');
+      const scanAbility = (hullConfig?.abilities ?? []).find((a) => a.id === 'scan_mission' && a.type === 'active');
       if (!scanAbility) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre coque ne dispose pas de la capacite de scan' });
 
       // 2. Check cooldown

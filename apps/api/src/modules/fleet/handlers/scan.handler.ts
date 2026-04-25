@@ -24,7 +24,7 @@ export class ScanHandler implements MissionHandler {
 
     const fullConfig = await ctx.gameConfigService.getFullConfig();
     const hullConfig = flagship.hullId ? fullConfig.hulls[flagship.hullId] : null;
-    const scanAbility = (hullConfig?.abilities ?? []).find((a: any) => a.id === 'scan_mission' && a.type === 'active');
+    const scanAbility = (hullConfig?.abilities ?? []).find((a) => a.id === 'scan_mission' && a.type === 'active');
     if (!scanAbility) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Votre coque ne dispose pas de la capacite de scan' });
     }
@@ -41,7 +41,7 @@ export class ScanHandler implements MissionHandler {
     }
 
     // Start cooldown from ability config
-    const cooldownSeconds = (scanAbility as any).cooldownSeconds ?? 1800;
+    const cooldownSeconds = scanAbility.cooldownSeconds ?? 1800;
     const now = new Date();
     const cooldownEnds = new Date(now.getTime() + cooldownSeconds * 1000);
 
@@ -62,8 +62,8 @@ export class ScanHandler implements MissionHandler {
     const fullConfig = await ctx.gameConfigService.getFullConfig();
     const [flagship] = await ctx.db.select({ hullId: flagships.hullId }).from(flagships).where(eq(flagships.userId, fleetEvent.userId)).limit(1);
     const hullConfig = flagship?.hullId ? fullConfig.hulls[flagship.hullId] : null;
-    const scanAbility = (hullConfig?.abilities ?? []).find((a: any) => a.id === 'scan_mission');
-    const espionageBonus = Number((scanAbility as any)?.params?.espionageBonus ?? 5);
+    const scanAbility = (hullConfig?.abilities ?? []).find((a) => a.id === 'scan_mission');
+    const espionageBonus = Number(scanAbility?.params?.espionageBonus ?? 5);
 
     // Create a modified event with a virtual spy probe
     const modifiedEvent = {

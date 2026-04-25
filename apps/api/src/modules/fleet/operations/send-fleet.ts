@@ -140,7 +140,7 @@ export function createSendFleet(deps: SendFleetDeps) {
       const hullAbilities = (flagshipHullConfig?.abilities ?? []) as Array<{ id: string; type: string; unlockedMissions?: string[]; miningExtractionEqualsCargo?: boolean }>;
       const unlockedMissions = hullAbilities.filter((a) => a.type === 'fleet_unlock').flatMap((a) => a.unlockedMissions ?? []);
       const allUnlockableMissions = new Set(
-        Object.values(config.hulls).flatMap((h) => (h.abilities ?? []).filter((a: any) => a.type === 'fleet_unlock').flatMap((a: any) => a.unlockedMissions ?? [])),
+        Object.values(config.hulls).flatMap((h) => (h.abilities ?? []).filter((a) => a.type === 'fleet_unlock').flatMap((a) => a.unlockedMissions ?? [])),
       );
       const missionNeedsUnlock = allUnlockableMissions.has(input.mission);
       if (missionNeedsUnlock && !unlockedMissions.includes(input.mission)) {

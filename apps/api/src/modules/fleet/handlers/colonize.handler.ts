@@ -146,7 +146,7 @@ export class ColonizeHandler implements MissionHandler {
     await ctx.db.insert(planetDefenses).values({ planetId: newPlanet.id });
 
     // Generate and persist biomes for the new colony
-    const biomeCatalogue: BiomeDefinition[] = (config.biomes ?? []).map((b: any) => ({
+    const biomeCatalogue: BiomeDefinition[] = (config.biomes ?? []).map((b) => ({
       id: b.id,
       rarity: b.rarity,
       compatiblePlanetTypes: b.compatiblePlanetTypes as string[],
