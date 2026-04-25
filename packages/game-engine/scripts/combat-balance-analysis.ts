@@ -92,16 +92,18 @@ const SHIP_IDS = new Set(['interceptor', 'frigate', 'cruiser', 'battlecruiser'])
 const DEFENSE_IDS = new Set(['rocketLauncher', 'lightLaser', 'heavyLaser', 'electromagneticCannon', 'plasmaTurret']);
 
 // ── Costs (minerai + silicium + hydrogène, weighted equally for "value") ──
+// Approche C — coûts réduits de 25% sur ships militaires + défenses lourdes,
+// défenses légères inchangées (préservation du nerf cost-efficiency).
 const COSTS: Record<string, { minerai: number; silicium: number; hydrogene: number }> = {
-  interceptor:           { minerai: 3000,  silicium: 1000,  hydrogene: 0 },
-  frigate:               { minerai: 6000,  silicium: 4000,  hydrogene: 0 },
-  cruiser:               { minerai: 20000, silicium: 7000,  hydrogene: 2000 },
-  battlecruiser:         { minerai: 45000, silicium: 15000, hydrogene: 0 },
+  interceptor:           { minerai: 2250,  silicium: 750,   hydrogene: 0 },
+  frigate:               { minerai: 4500,  silicium: 3000,  hydrogene: 0 },
+  cruiser:               { minerai: 15000, silicium: 5250,  hydrogene: 1500 },
+  battlecruiser:         { minerai: 33750, silicium: 11250, hydrogene: 0 },
   rocketLauncher:        { minerai: 3000,  silicium: 0,     hydrogene: 0 },
   lightLaser:            { minerai: 2250,  silicium: 750,   hydrogene: 0 },
-  heavyLaser:            { minerai: 7500,  silicium: 2500,  hydrogene: 0 },
-  electromagneticCannon: { minerai: 22000, silicium: 16000, hydrogene: 2000 },
-  plasmaTurret:          { minerai: 50000, silicium: 50000, hydrogene: 30000 },
+  heavyLaser:            { minerai: 5625,  silicium: 1875,  hydrogene: 0 },
+  electromagneticCannon: { minerai: 16500, silicium: 12000, hydrogene: 1500 },
+  plasmaTurret:          { minerai: 37500, silicium: 37500, hydrogene: 22500 },
 };
 
 const SHIP_COSTS: Record<string, { minerai: number; silicium: number }> = {};
