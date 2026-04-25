@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalInt } from '../../lib/zod-schemas.js';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createMarketService } from './market.service.js';
 
@@ -47,8 +48,8 @@ export function createMarketRouter(marketService: ReturnType<typeof createMarket
 
     listReports: protectedProcedure
       .input(z.object({
-        galaxy: z.number().int().optional(),
-        system: z.number().int().optional(),
+        galaxy: optionalInt,
+        system: optionalInt,
         minRarity: z.enum(['common', 'uncommon', 'rare', 'epic', 'legendary']).optional(),
         cursor: z.string().optional(),
         limit: z.number().int().min(1).max(50).optional(),

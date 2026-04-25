@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { nonNegativeInt } from '../../lib/zod-schemas.js';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createPlanetService } from './planet.service.js';
 import type { createPlanetAbandonService } from './planet-abandon.service.js';
@@ -39,7 +40,7 @@ export function createPlanetRouter(
       .input(z.object({
         order: z.array(z.object({
           planetId: z.string().uuid(),
-          sortOrder: z.number().int().min(0),
+          sortOrder: nonNegativeInt,
         })),
       }))
       .mutation(async ({ ctx, input }) => {

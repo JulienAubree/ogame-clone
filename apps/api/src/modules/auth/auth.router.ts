@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { nonEmptyString } from '../../lib/zod-schemas.js';
 import { publicProcedure, protectedProcedure, router } from '../../trpc/router.js';
 import type { createAuthService, AuthContext } from './auth.service.js';
 import type { createPlanetService } from '../planet/planet.service.js';
@@ -69,7 +70,7 @@ export function createAuthRouter(
     resetPassword: publicProcedure
       .input(
         z.object({
-          token: z.string().min(1),
+          token: nonEmptyString,
           password: z.string().min(8).max(128),
         }),
       )
@@ -79,7 +80,7 @@ export function createAuthRouter(
       }),
 
     verifyEmail: publicProcedure
-      .input(z.object({ token: z.string().min(1) }))
+      .input(z.object({ token: nonEmptyString }))
       .mutation(async ({ input }) => {
         await authService.verifyEmail(input.token);
         return { ok: true };

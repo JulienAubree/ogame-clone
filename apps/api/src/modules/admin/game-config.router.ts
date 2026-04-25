@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../../trpc/router.js';
 import type { GameConfigService } from './game-config.service.js';
-
-const weaponProfileSchema = z.object({
-  damage: z.number(),
-  shots: z.number().int().min(0),
-  targetCategory: z.string().min(1),
-  rafale: z.object({ category: z.string().min(1), count: z.number().int().min(0) }).optional(),
-  hasChainKill: z.boolean().optional(),
-});
+import {
+  idSchema,
+  nonEmptyString,
+  optionalInt,
+  optionalNullableString,
+  optionalNullableInt,
+  weaponProfileSchema,
+} from '../../lib/zod-schemas.js';
 
 export function createGameConfigRouter(
   gameConfigService: GameConfigService,
@@ -17,9 +17,9 @@ export function createGameConfigRouter(
   const adminRouter = router({
     createCategory: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
+        id: nonEmptyString,
         entityType: z.enum(['building', 'research', 'ship', 'defense']),
-        name: z.string().min(1),
+        name: nonEmptyString,
         sortOrder: z.number().int().default(0),
       }))
       .mutation(async ({ input }) => {
@@ -32,7 +32,7 @@ export function createGameConfigRouter(
         id: z.string(),
         data: z.object({
           name: z.string().optional(),
-          sortOrder: z.number().int().optional(),
+          sortOrder: optionalInt,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -49,18 +49,18 @@ export function createGameConfigRouter(
 
     createBuilding: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
+        id: nonEmptyString,
+        name: nonEmptyString,
         description: z.string().optional(),
-        baseCostMinerai: z.number().int().optional(),
-        baseCostSilicium: z.number().int().optional(),
-        baseCostHydrogene: z.number().int().optional(),
+        baseCostMinerai: optionalInt,
+        baseCostSilicium: optionalInt,
+        baseCostHydrogene: optionalInt,
         costFactor: z.number().optional(),
-        baseTime: z.number().int().optional(),
-        flavorText: z.string().nullable().optional(),
-        categoryId: z.string().nullable().optional(),
-        sortOrder: z.number().int().optional(),
-        role: z.string().nullable().optional(),
+        baseTime: optionalInt,
+        flavorText: optionalNullableString,
+        categoryId: optionalNullableString,
+        sortOrder: optionalInt,
+        role: optionalNullableString,
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createBuilding(input);
@@ -80,15 +80,15 @@ export function createGameConfigRouter(
         data: z.object({
           name: z.string().optional(),
           description: z.string().optional(),
-          baseCostMinerai: z.number().int().optional(),
-          baseCostSilicium: z.number().int().optional(),
-          baseCostHydrogene: z.number().int().optional(),
+          baseCostMinerai: optionalInt,
+          baseCostSilicium: optionalInt,
+          baseCostHydrogene: optionalInt,
           costFactor: z.number().optional(),
-          baseTime: z.number().int().optional(),
-          flavorText: z.string().nullable().optional(),
-          categoryId: z.string().nullable().optional(),
-          sortOrder: z.number().int().optional(),
-          role: z.string().nullable().optional(),
+          baseTime: optionalInt,
+          flavorText: optionalNullableString,
+          categoryId: optionalNullableString,
+          sortOrder: optionalInt,
+          role: optionalNullableString,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -111,18 +111,18 @@ export function createGameConfigRouter(
 
     createResearch: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
+        id: nonEmptyString,
+        name: nonEmptyString,
         description: z.string().optional(),
-        baseCostMinerai: z.number().int().optional(),
-        baseCostSilicium: z.number().int().optional(),
-        baseCostHydrogene: z.number().int().optional(),
+        baseCostMinerai: optionalInt,
+        baseCostSilicium: optionalInt,
+        baseCostHydrogene: optionalInt,
         costFactor: z.number().optional(),
-        flavorText: z.string().nullable().optional(),
-        effectDescription: z.string().nullable().optional(),
-        levelColumn: z.string().min(1),
-        categoryId: z.string().nullable().optional(),
-        sortOrder: z.number().int().optional(),
+        flavorText: optionalNullableString,
+        effectDescription: optionalNullableString,
+        levelColumn: nonEmptyString,
+        categoryId: optionalNullableString,
+        sortOrder: optionalInt,
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createResearch(input);
@@ -142,14 +142,14 @@ export function createGameConfigRouter(
         data: z.object({
           name: z.string().optional(),
           description: z.string().optional(),
-          baseCostMinerai: z.number().int().optional(),
-          baseCostSilicium: z.number().int().optional(),
-          baseCostHydrogene: z.number().int().optional(),
+          baseCostMinerai: optionalInt,
+          baseCostSilicium: optionalInt,
+          baseCostHydrogene: optionalInt,
           costFactor: z.number().optional(),
-          flavorText: z.string().nullable().optional(),
-          effectDescription: z.string().nullable().optional(),
-          categoryId: z.string().nullable().optional(),
-          sortOrder: z.number().int().optional(),
+          flavorText: optionalNullableString,
+          effectDescription: optionalNullableString,
+          categoryId: optionalNullableString,
+          sortOrder: optionalInt,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -173,25 +173,25 @@ export function createGameConfigRouter(
 
     createShip: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
+        id: nonEmptyString,
+        name: nonEmptyString,
         description: z.string().optional(),
-        costMinerai: z.number().int().optional(),
-        costSilicium: z.number().int().optional(),
-        costHydrogene: z.number().int().optional(),
-        countColumn: z.string().min(1),
-        baseSpeed: z.number().int().optional(),
-        fuelConsumption: z.number().int().optional(),
-        cargoCapacity: z.number().int().optional(),
+        costMinerai: optionalInt,
+        costSilicium: optionalInt,
+        costHydrogene: optionalInt,
+        countColumn: nonEmptyString,
+        baseSpeed: optionalInt,
+        fuelConsumption: optionalInt,
+        cargoCapacity: optionalInt,
         driveType: z.string().optional(),
-        weapons: z.number().int().optional(),
-        shield: z.number().int().optional(),
-        hull: z.number().int().optional(),
+        weapons: optionalInt,
+        shield: optionalInt,
+        hull: optionalInt,
         weaponProfiles: z.array(weaponProfileSchema).optional(),
-        flavorText: z.string().nullable().optional(),
-        categoryId: z.string().nullable().optional(),
-        sortOrder: z.number().int().optional(),
-        role: z.string().nullable().optional(),
+        flavorText: optionalNullableString,
+        categoryId: optionalNullableString,
+        sortOrder: optionalInt,
+        role: optionalNullableString,
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createShip(input);
@@ -211,21 +211,21 @@ export function createGameConfigRouter(
         data: z.object({
           name: z.string().optional(),
           description: z.string().optional(),
-          costMinerai: z.number().int().optional(),
-          costSilicium: z.number().int().optional(),
-          costHydrogene: z.number().int().optional(),
-          baseSpeed: z.number().int().optional(),
-          fuelConsumption: z.number().int().optional(),
-          cargoCapacity: z.number().int().optional(),
+          costMinerai: optionalInt,
+          costSilicium: optionalInt,
+          costHydrogene: optionalInt,
+          baseSpeed: optionalInt,
+          fuelConsumption: optionalInt,
+          cargoCapacity: optionalInt,
           driveType: z.string().optional(),
-          weapons: z.number().int().optional(),
-          shield: z.number().int().optional(),
-          hull: z.number().int().optional(),
+          weapons: optionalInt,
+          shield: optionalInt,
+          hull: optionalInt,
           weaponProfiles: z.array(weaponProfileSchema).optional(),
-          flavorText: z.string().nullable().optional(),
-          categoryId: z.string().nullable().optional(),
-          sortOrder: z.number().int().optional(),
-          role: z.string().nullable().optional(),
+          flavorText: optionalNullableString,
+          categoryId: optionalNullableString,
+          sortOrder: optionalInt,
+          role: optionalNullableString,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -249,21 +249,21 @@ export function createGameConfigRouter(
 
     createDefense: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
+        id: nonEmptyString,
+        name: nonEmptyString,
         description: z.string().optional(),
-        costMinerai: z.number().int().optional(),
-        costSilicium: z.number().int().optional(),
-        costHydrogene: z.number().int().optional(),
-        countColumn: z.string().min(1),
-        weapons: z.number().int().optional(),
-        shield: z.number().int().optional(),
-        hull: z.number().int().optional(),
+        costMinerai: optionalInt,
+        costSilicium: optionalInt,
+        costHydrogene: optionalInt,
+        countColumn: nonEmptyString,
+        weapons: optionalInt,
+        shield: optionalInt,
+        hull: optionalInt,
         weaponProfiles: z.array(weaponProfileSchema).optional(),
-        maxPerPlanet: z.number().int().nullable().optional(),
-        flavorText: z.string().nullable().optional(),
-        categoryId: z.string().nullable().optional(),
-        sortOrder: z.number().int().optional(),
+        maxPerPlanet: optionalNullableInt,
+        flavorText: optionalNullableString,
+        categoryId: optionalNullableString,
+        sortOrder: optionalInt,
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createDefense(input);
@@ -283,17 +283,17 @@ export function createGameConfigRouter(
         data: z.object({
           name: z.string().optional(),
           description: z.string().optional(),
-          costMinerai: z.number().int().optional(),
-          costSilicium: z.number().int().optional(),
-          costHydrogene: z.number().int().optional(),
-          weapons: z.number().int().optional(),
-          shield: z.number().int().optional(),
-          hull: z.number().int().optional(),
+          costMinerai: optionalInt,
+          costSilicium: optionalInt,
+          costHydrogene: optionalInt,
+          weapons: optionalInt,
+          shield: optionalInt,
+          hull: optionalInt,
           weaponProfiles: z.array(weaponProfileSchema).optional(),
-          maxPerPlanet: z.number().int().nullable().optional(),
-          flavorText: z.string().nullable().optional(),
-          categoryId: z.string().nullable().optional(),
-          sortOrder: z.number().int().optional(),
+          maxPerPlanet: optionalNullableInt,
+          flavorText: optionalNullableString,
+          categoryId: optionalNullableString,
+          sortOrder: optionalInt,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -344,8 +344,8 @@ export function createGameConfigRouter(
 
     createPlanetType: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
+        id: nonEmptyString,
+        name: nonEmptyString,
         description: z.string().optional(),
         positions: z.array(z.number().int()),
         mineraiBonus: z.number().optional(),
@@ -353,8 +353,8 @@ export function createGameConfigRouter(
         hydrogeneBonus: z.number().optional(),
         diameterMin: z.number().int(),
         diameterMax: z.number().int(),
-        sortOrder: z.number().int().optional(),
-        role: z.string().nullable().optional(),
+        sortOrder: optionalInt,
+        role: optionalNullableString,
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createPlanetType(input);
@@ -371,10 +371,10 @@ export function createGameConfigRouter(
           mineraiBonus: z.number().optional(),
           siliciumBonus: z.number().optional(),
           hydrogeneBonus: z.number().optional(),
-          diameterMin: z.number().int().optional(),
-          diameterMax: z.number().int().optional(),
-          sortOrder: z.number().int().optional(),
-          role: z.string().nullable().optional(),
+          diameterMin: optionalInt,
+          diameterMax: optionalInt,
+          sortOrder: optionalInt,
+          role: optionalNullableString,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -393,8 +393,8 @@ export function createGameConfigRouter(
 
     createPirateTemplate: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
+        id: nonEmptyString,
+        name: nonEmptyString,
         tier: z.enum(['easy', 'medium', 'hard']),
         ships: z.record(z.string(), z.number().int()),
         rewards: z.object({
@@ -448,17 +448,17 @@ export function createGameConfigRouter(
 
     createTutorialQuest: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
+        id: nonEmptyString,
         order: z.number().int(),
-        title: z.string().min(1),
-        narrativeText: z.string().min(1),
+        title: nonEmptyString,
+        narrativeText: nonEmptyString,
         conditionType: z.enum(['building_level', 'ship_count', 'mission_complete', 'research_level', 'fleet_return']),
-        conditionTargetId: z.string().min(1),
+        conditionTargetId: nonEmptyString,
         conditionTargetValue: z.number().int(),
-        rewardMinerai: z.number().int().optional(),
-        rewardSilicium: z.number().int().optional(),
-        rewardHydrogene: z.number().int().optional(),
-        conditionLabel: z.string().nullable().optional(),
+        rewardMinerai: optionalInt,
+        rewardSilicium: optionalInt,
+        rewardHydrogene: optionalInt,
+        conditionLabel: optionalNullableString,
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createTutorialQuest(input);
@@ -469,16 +469,16 @@ export function createGameConfigRouter(
       .input(z.object({
         id: z.string(),
         data: z.object({
-          order: z.number().int().optional(),
+          order: optionalInt,
           title: z.string().optional(),
           narrativeText: z.string().optional(),
           conditionType: z.enum(['building_level', 'ship_count', 'mission_complete', 'research_level', 'fleet_return']).optional(),
           conditionTargetId: z.string().optional(),
-          conditionTargetValue: z.number().int().optional(),
-          rewardMinerai: z.number().int().optional(),
-          rewardSilicium: z.number().int().optional(),
-          rewardHydrogene: z.number().int().optional(),
-          conditionLabel: z.string().nullable().optional(),
+          conditionTargetValue: optionalInt,
+          rewardMinerai: optionalInt,
+          rewardSilicium: optionalInt,
+          rewardHydrogene: optionalInt,
+          conditionLabel: optionalNullableString,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -497,13 +497,13 @@ export function createGameConfigRouter(
 
     createBonus: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
+        id: nonEmptyString,
         sourceType: z.enum(['building', 'research']),
-        sourceId: z.string().min(1),
-        stat: z.string().min(1),
+        sourceId: nonEmptyString,
+        stat: nonEmptyString,
         percentPerLevel: z.number(),
-        category: z.string().nullable().optional(),
-        statLabel: z.string().nullable().optional(),
+        category: optionalNullableString,
+        statLabel: optionalNullableString,
       }))
       .mutation(async ({ input }) => {
         await gameConfigService.createBonus(input);
@@ -516,8 +516,8 @@ export function createGameConfigRouter(
         data: z.object({
           stat: z.string().optional(),
           percentPerLevel: z.number().optional(),
-          category: z.string().nullable().optional(),
-          statLabel: z.string().nullable().optional(),
+          category: optionalNullableString,
+          statLabel: optionalNullableString,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -536,12 +536,12 @@ export function createGameConfigRouter(
 
     createMission: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        label: z.string().min(1),
+        id: nonEmptyString,
+        label: nonEmptyString,
         hint: z.string().optional(),
         buttonLabel: z.string().optional(),
         color: z.string().optional(),
-        sortOrder: z.number().int().optional(),
+        sortOrder: optionalInt,
         dangerous: z.boolean().optional(),
         requiredShipRoles: z.array(z.string()).nullable().optional(),
         exclusive: z.boolean().optional(),
@@ -557,11 +557,11 @@ export function createGameConfigRouter(
       .input(z.object({
         id: z.string(),
         data: z.object({
-          label: z.string().min(1).optional(),
+          label: nonEmptyString.optional(),
           hint: z.string().optional(),
           buttonLabel: z.string().optional(),
           color: z.string().optional(),
-          sortOrder: z.number().int().optional(),
+          sortOrder: optionalInt,
           dangerous: z.boolean().optional(),
           requiredShipRoles: z.array(z.string()).nullable().optional(),
           exclusive: z.boolean().optional(),
@@ -585,10 +585,10 @@ export function createGameConfigRouter(
 
     createTalentBranch: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
+        id: nonEmptyString,
+        name: nonEmptyString,
         description: z.string().optional(),
-        color: z.string().min(1),
+        color: nonEmptyString,
         sortOrder: z.number().int().default(0),
       }))
       .mutation(async ({ input }) => {
@@ -603,7 +603,7 @@ export function createGameConfigRouter(
           name: z.string().optional(),
           description: z.string().optional(),
           color: z.string().optional(),
-          sortOrder: z.number().int().optional(),
+          sortOrder: optionalInt,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -622,15 +622,15 @@ export function createGameConfigRouter(
 
     createTalent: adminProcedure
       .input(z.object({
-        id: z.string().min(1),
-        branchId: z.string().min(1),
+        id: nonEmptyString,
+        branchId: nonEmptyString,
         tier: z.number().int().min(1),
-        position: z.string().min(1),
-        name: z.string().min(1),
+        position: nonEmptyString,
+        name: nonEmptyString,
         description: z.string().optional(),
         maxRanks: z.number().int().min(1).default(1),
-        prerequisiteId: z.string().nullable().optional(),
-        effectType: z.string().min(1),
+        prerequisiteId: optionalNullableString,
+        effectType: nonEmptyString,
         effectParams: z.record(z.unknown()),
         sortOrder: z.number().int().default(0),
       }))
@@ -644,15 +644,15 @@ export function createGameConfigRouter(
         id: z.string(),
         data: z.object({
           branchId: z.string().optional(),
-          tier: z.number().int().optional(),
+          tier: optionalInt,
           position: z.string().optional(),
           name: z.string().optional(),
           description: z.string().optional(),
-          maxRanks: z.number().int().optional(),
-          prerequisiteId: z.string().nullable().optional(),
+          maxRanks: optionalInt,
+          prerequisiteId: optionalNullableString,
           effectType: z.string().optional(),
           effectParams: z.unknown().optional(),
-          sortOrder: z.number().int().optional(),
+          sortOrder: optionalInt,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -670,14 +670,14 @@ export function createGameConfigRouter(
     // ── Labels ──
 
     createLabel: adminProcedure
-      .input(z.object({ key: z.string().min(1), label: z.string().min(1) }))
+      .input(z.object({ key: nonEmptyString, label: nonEmptyString }))
       .mutation(async ({ input }) => {
         await gameConfigService.createLabel(input);
         return { success: true };
       }),
 
     updateLabel: adminProcedure
-      .input(z.object({ key: z.string(), data: z.object({ label: z.string().min(1) }) }))
+      .input(z.object({ key: z.string(), data: z.object({ label: nonEmptyString }) }))
       .mutation(async ({ input }) => {
         await gameConfigService.updateLabel(input.key, input.data);
         return { success: true };

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { nonNegativeInt, optionalInt } from '../../lib/zod-schemas.js';
 import { router } from '../../trpc/router.js';
 import type { PlayerAdminService } from './player-admin.service.js';
 
@@ -9,7 +10,7 @@ export function createPlayerAdminRouter(
   return router({
     list: adminProcedure
       .input(z.object({
-        offset: z.number().int().min(0).default(0),
+        offset: nonNegativeInt.default(0),
         limit: z.number().int().min(1).max(100).default(20),
         search: z.string().optional(),
       }))
@@ -40,7 +41,7 @@ export function createPlayerAdminRouter(
       .input(z.object({
         planetId: z.string().uuid(),
         buildingId: z.string(),
-        level: z.number().int().min(0),
+        level: nonNegativeInt,
       }))
       .mutation(async ({ input }) => {
         await playerAdminService.updatePlayerBuildingLevel(input.planetId, input.buildingId, input.level);
@@ -51,7 +52,7 @@ export function createPlayerAdminRouter(
       .input(z.object({
         userId: z.string().uuid(),
         levelColumn: z.string(),
-        level: z.number().int().min(0),
+        level: nonNegativeInt,
       }))
       .mutation(async ({ input }) => {
         await playerAdminService.updatePlayerResearchLevel(input.userId, input.levelColumn, input.level);
@@ -83,20 +84,20 @@ export function createPlayerAdminRouter(
       .input(z.object({
         userId: z.string().uuid(),
         stats: z.object({
-          weapons: z.number().int().optional(),
-          shield: z.number().int().optional(),
-          hull: z.number().int().optional(),
-          baseArmor: z.number().int().optional(),
-          shotCount: z.number().int().optional(),
-          baseSpeed: z.number().int().optional(),
-          fuelConsumption: z.number().int().optional(),
-          cargoCapacity: z.number().int().optional(),
+          weapons: optionalInt,
+          shield: optionalInt,
+          hull: optionalInt,
+          baseArmor: optionalInt,
+          shotCount: optionalInt,
+          baseSpeed: optionalInt,
+          fuelConsumption: optionalInt,
+          cargoCapacity: optionalInt,
           driveType: z.string().optional(),
           combatCategoryId: z.string().optional(),
           status: z.string().optional(),
           name: z.string().optional(),
           description: z.string().optional(),
-          flagshipImageIndex: z.number().int().optional(),
+          flagshipImageIndex: optionalInt,
         }),
       }))
       .mutation(async ({ input }) => {
@@ -114,7 +115,7 @@ export function createPlayerAdminRouter(
     setExiliumBalance: adminProcedure
       .input(z.object({
         userId: z.string().uuid(),
-        balance: z.number().int().min(0),
+        balance: nonNegativeInt,
       }))
       .mutation(async ({ input }) => {
         await playerAdminService.setExiliumBalance(input.userId, input.balance);
@@ -153,7 +154,7 @@ export function createPlayerAdminRouter(
     updatePlanetShips: adminProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        ships: z.record(z.string(), z.number().int().min(0)),
+        ships: z.record(z.string(), nonNegativeInt),
       }))
       .mutation(async ({ input }) => {
         await playerAdminService.updatePlanetShips(input.planetId, input.ships);
@@ -163,7 +164,7 @@ export function createPlayerAdminRouter(
     updatePlanetDefenses: adminProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        defenses: z.record(z.string(), z.number().int().min(0)),
+        defenses: z.record(z.string(), nonNegativeInt),
       }))
       .mutation(async ({ input }) => {
         await playerAdminService.updatePlanetDefenses(input.planetId, input.defenses);

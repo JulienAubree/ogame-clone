@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { idSchema } from '../../lib/zod-schemas.js';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createShipyardService } from './shipyard.service.js';
 
@@ -31,7 +32,7 @@ export function createShipyardRouter(shipyardService: ReturnType<typeof createSh
     buildShip: protectedProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        shipId: z.string().min(1),
+        shipId: idSchema,
         quantity: z.number().int().min(1).max(9999),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -41,7 +42,7 @@ export function createShipyardRouter(shipyardService: ReturnType<typeof createSh
     buildDefense: protectedProcedure
       .input(z.object({
         planetId: z.string().uuid(),
-        defenseId: z.string().min(1),
+        defenseId: idSchema,
         quantity: z.number().int().min(1).max(9999),
       }))
       .mutation(async ({ ctx, input }) => {

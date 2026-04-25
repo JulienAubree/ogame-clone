@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { nonNegativeInt } from '../../lib/zod-schemas.js';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createFeedbackService } from './feedback.service.js';
 import type { createAdminProcedure } from '../../trpc/router.js';
@@ -12,7 +13,7 @@ export function createFeedbackRouter(
       .input(z.object({
         type: z.enum(['bug', 'idea', 'feedback']).optional(),
         status: z.enum(['new', 'in_progress', 'resolved', 'rejected']).optional(),
-        offset: z.number().int().min(0).default(0),
+        offset: nonNegativeInt.default(0),
         limit: z.number().int().min(1).max(100).default(30),
       }).optional())
       .query(async ({ input }) => {

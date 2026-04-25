@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { idSchema } from '../../lib/zod-schemas.js';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createBuildingService } from './building.service.js';
 
@@ -14,7 +15,7 @@ export function createBuildingRouter(buildingService: ReturnType<typeof createBu
       .input(
         z.object({
           planetId: z.string().uuid(),
-          buildingId: z.string().min(1),
+          buildingId: idSchema,
         }),
       )
       .mutation(async ({ ctx, input }) => {

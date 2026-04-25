@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { idSchema } from '../../lib/zod-schemas.js';
 import { protectedProcedure, router } from '../../trpc/router.js';
 import type { createResearchService } from './research.service.js';
 
@@ -11,7 +12,7 @@ export function createResearchRouter(researchService: ReturnType<typeof createRe
 
     start: protectedProcedure
       .input(z.object({
-        researchId: z.string().min(1),
+        researchId: idSchema,
       }))
       .mutation(async ({ ctx, input }) => {
         return researchService.startResearch(ctx.userId!, input.researchId);
