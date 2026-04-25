@@ -20,28 +20,32 @@ interface GovernanceData {
   constructionMalus: number;
 }
 
+interface OverviewHeroPlanet {
+  id: string;
+  name: string;
+  galaxy: number;
+  system: number;
+  position: number;
+  diameter: number;
+  minTemp: number;
+  maxTemp: number;
+  planetClassId: string | null;
+  planetImageIndex: number | null;
+  renamed: boolean;
+  biomes?: Array<{ id: string; name: string; rarity: string; effects?: Array<{ stat: string; modifier: number }> }>;
+}
+
+type OverviewHeroBiome = NonNullable<OverviewHeroPlanet['biomes']>[number];
+
 interface OverviewHeroProps {
-  planet: {
-    id: string;
-    name: string;
-    galaxy: number;
-    system: number;
-    position: number;
-    diameter: number;
-    minTemp: number;
-    maxTemp: number;
-    planetClassId: string | null;
-    planetImageIndex: number | null;
-    renamed: boolean;
-    biomes?: Array<{ id: string; name: string; rarity: string; effects?: any[] }>;
-  };
+  planet: OverviewHeroPlanet;
   flagshipOnPlanet: boolean;
   planetTypeName?: string;
   planetTypeBonus?: { mineraiBonus: number; siliciumBonus: number; hydrogeneBonus: number };
   governance?: GovernanceData | null;
   allPlanets: AbandonModalPlanet[];
-  renderBiomeBadge: (biome: any) => React.ReactNode;
-  renderPlanetDetail: (planet: any) => React.ReactNode;
+  renderBiomeBadge: (biome: OverviewHeroBiome) => React.ReactNode;
+  renderPlanetDetail: (planet: OverviewHeroPlanet) => React.ReactNode;
 }
 
 export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetTypeBonus, governance, allPlanets, renderBiomeBadge, renderPlanetDetail }: OverviewHeroProps) {

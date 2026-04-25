@@ -70,11 +70,11 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
 
   // Fetch research level for armored storage display (only for storage buildings)
   const { data: researchData } = trpc.research.list.useQuery();
-  const armoredResearch = researchData?.items?.find((r: any) => r.id === 'armoredStorage');
+  const armoredResearch = researchData?.items?.find((r) => r.id === 'armoredStorage');
   const armoredLevel = armoredResearch?.currentLevel ?? 0;
 
   // Resolve the bonus multiplier: research gives percentPerLevel (default 5) per level
-  const armoredBonusPerLevel = gameConfig?.bonuses?.find((b: any) => b.stat === 'armored_storage')?.percentPerLevel ?? 5;
+  const armoredBonusPerLevel = gameConfig?.bonuses?.find((b) => b.stat === 'armored_storage')?.percentPerLevel ?? 5;
   const armoredMultiplier = 1 + (armoredBonusPerLevel / 100) * armoredLevel;
   const effectiveRatio = protectedBaseRatio * armoredMultiplier;
   const currentStorageCap = storageCapacity(currentLevel, prodConfig?.storage);
@@ -126,7 +126,7 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
         // Find the exclusive research unlocked by this annex
         const annexType = configDef.allowedPlanetTypes[0];
         const exclusiveResearch = gameConfig ? Object.values(gameConfig.research).find(
-          (r: any) => r.requiredAnnexType === annexType,
+          (r) => r.requiredAnnexType === annexType,
         ) : null;
 
         const planetTypeNames: Record<string, string> = {
@@ -423,7 +423,7 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
 
       {/* 6. Prerequisites */}
       {prerequisites.length > 0 && (() => {
-        const prereqItems: PrerequisiteItem[] = prerequisites.map((p: any) => ({
+        const prereqItems: PrerequisiteItem[] = prerequisites.map((p: { buildingId: string; level: number; currentLevel?: number }) => ({
           id: p.buildingId,
           type: 'building' as const,
           requiredLevel: p.level,

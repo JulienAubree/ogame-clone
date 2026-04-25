@@ -94,11 +94,11 @@ export default function Market() {
 
   // KPI computations
   const totalOffers = offersData?.offers?.length ?? 0;
-  const myActiveResourceOffers = (myOffers ?? []).filter((o: any) => o.status === 'active').length;
-  const myListedReports = (reports ?? []).filter((r: any) => r.status === 'listed').length;
+  const myActiveResourceOffers = (myOffers ?? []).filter((o) => o.status === 'active').length;
+  const myListedReports = (reports ?? []).filter((r) => r.status === 'listed').length;
   const mySalesCount = myActiveResourceOffers + myListedReports;
-  const soldResourceOffers = (myOffers ?? []).filter((o: any) => o.status === 'sold').length;
-  const soldReports = (reports ?? []).filter((r: any) => r.status === 'sold').length;
+  const soldResourceOffers = (myOffers ?? []).filter((o) => o.status === 'sold').length;
+  const soldReports = (reports ?? []).filter((r) => r.status === 'sold').length;
   const totalTrades = soldResourceOffers + soldReports;
 
   // ── Locked state (building not constructed) ──────────────────────────

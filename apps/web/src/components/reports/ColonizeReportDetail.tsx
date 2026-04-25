@@ -6,10 +6,23 @@ import { PlanetVisual } from '@/components/galaxy/PlanetVisual';
 import { getShipName } from '@/lib/entity-names';
 import { usePlanetStore } from '@/stores/planet.store';
 
+/** Subset of gameConfig used by this component. */
+type GameConfigLike = {
+  ships?: Record<string, { name: string }>;
+  defenses?: Record<string, { name: string }>;
+  planetTypes?: Array<{
+    id: string;
+    name?: string;
+    mineraiBonus?: number;
+    siliciumBonus?: number;
+    hydrogeneBonus?: number;
+  }>;
+};
+
 interface Props {
-  result: Record<string, any>;
+  result: Record<string, unknown>;
   fleet: { ships: Record<string, number>; totalCargo: number };
-  gameConfig: any;
+  gameConfig: GameConfigLike | undefined;
   coordinates: { galaxy: number; system: number; position: number };
 }
 
@@ -37,7 +50,7 @@ function OccupiedIcon() {
   );
 }
 
-function ShipGrid({ ships, gameConfig }: { ships: Record<string, number>; gameConfig: any }) {
+function ShipGrid({ ships, gameConfig }: { ships: Record<string, number>; gameConfig: GameConfigLike | undefined }) {
   const entries = Object.entries(ships).filter(([, n]) => n > 0);
   if (entries.length === 0) return null;
   return (
@@ -57,7 +70,7 @@ export function ColonizeReportDetail({ result, fleet, gameConfig, coordinates }:
   if (result.success === true) {
     const planetId = result.planetId as string | undefined;
     const { data: planets } = trpc.planet.list.useQuery();
-    const newPlanet = planetId ? planets?.find((p: any) => p.id === planetId) : undefined;
+    const newPlanet = planetId ? planets?.find((p) => p.id === planetId) : undefined;
     const planetClassId = newPlanet?.planetClassId ?? undefined;
     const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
     const navigate = useNavigate();
@@ -78,7 +91,7 @@ export function ColonizeReportDetail({ result, fleet, gameConfig, coordinates }:
         : [];
 
     const planetType = planetClassId
-      ? gameConfig?.planetTypes?.find((t: any) => t.id === planetClassId)
+      ? gameConfig?.planetTypes?.find((t) => t.id === planetClassId)
       : undefined;
     const planetTypeName = planetType?.name;
     const resourceBonuses = planetType

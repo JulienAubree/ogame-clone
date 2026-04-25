@@ -38,6 +38,13 @@ const STAT_LABELS: Record<string, string> = {
   storage_hydrogene: 'Stockage hydrogène',
 };
 
+interface BiomeLike {
+  id: string;
+  name: string;
+  rarity: string;
+  effects?: Array<{ stat: string; modifier: number }>;
+}
+
 function BiomeToggle({ count, expanded, onToggle }: { count: number; expanded: boolean; onToggle: () => void }) {
   return (
     <button
@@ -51,10 +58,10 @@ function BiomeToggle({ count, expanded, onToggle }: { count: number; expanded: b
   );
 }
 
-function BiomeDetails({ biomes }: { biomes: any[] }) {
+function BiomeDetails({ biomes }: { biomes: BiomeLike[] }) {
   return (
     <div className="space-y-1 py-1">
-      {biomes.map((biome: any) => {
+      {biomes.map((biome) => {
         const color = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
         return (
           <div key={biome.id} className="flex items-center gap-1.5 text-xs">
@@ -62,7 +69,7 @@ function BiomeDetails({ biomes }: { biomes: any[] }) {
             <span style={{ color }} className="flex-shrink-0">{biome.name}</span>
             {biome.effects && biome.effects.length > 0 && (
               <span className="text-muted-foreground">
-                {biome.effects.map((e: any) =>
+                {biome.effects.map((e) =>
                   `${e.modifier > 0 ? '+' : ''}${Math.round(e.modifier * 100)}% ${STAT_LABELS[e.stat] ?? e.stat}`
                 ).join(', ')}
               </span>
@@ -75,7 +82,7 @@ function BiomeDetails({ biomes }: { biomes: any[] }) {
 }
 
 /** Mobile-only: inline toggle + detail */
-function BiomeSummary({ biomes }: { biomes: any[] }) {
+function BiomeSummary({ biomes }: { biomes: BiomeLike[] }) {
   const [expanded, setExpanded] = useState(false);
   if (!biomes || biomes.length === 0) return null;
   return (

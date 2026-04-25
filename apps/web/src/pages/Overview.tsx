@@ -54,7 +54,15 @@ const STAT_LABELS: Record<string, string> = {
   storage_hydrogene: 'Stockage hydrogène',
 };
 
-function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) {
+interface BiomeLike {
+  id?: string;
+  name: string;
+  rarity: string;
+  description?: string;
+  effects?: Array<{ stat: string; modifier: number }>;
+}
+
+function BiomeBadge({ biome, size = 'sm' }: { biome: BiomeLike; size?: 'sm' | 'xs' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
@@ -113,7 +121,7 @@ function BiomeBadge({ biome, size = 'sm' }: { biome: any; size?: 'sm' | 'xs' }) 
           )}
           {biome.effects && biome.effects.length > 0 && (
             <div className="space-y-1">
-              {biome.effects.map((e: any, i: number) => (
+              {biome.effects.map((e, i) => (
                 <div key={i} className="flex justify-between text-xs">
                   <span className="text-muted-foreground">{STAT_LABELS[e.stat] ?? e.stat}</span>
                   <span className={e.modifier > 0 ? 'text-emerald-400 font-medium' : 'text-red-400 font-medium'}>
@@ -136,7 +144,7 @@ function PlanetDetailContent({ planet, resourceData, gameConfig, governance }: {
   // Aggregate all biome bonuses
   const biomeBonuses: Record<string, number> = {};
   for (const biome of biomes) {
-    const configBiome = gameConfig?.biomes?.find((b: any) => b.id === biome.id);
+    const configBiome = gameConfig?.biomes?.find((b: { id: string }) => b.id === biome.id);
     const effects = (configBiome?.effects ?? biome.effects ?? []) as Array<{ stat: string; modifier: number }>;
     for (const e of effects) {
       if (typeof e.modifier === 'number') biomeBonuses[e.stat] = (biomeBonuses[e.stat] ?? 0) + e.modifier;
@@ -144,7 +152,7 @@ function PlanetDetailContent({ planet, resourceData, gameConfig, governance }: {
   }
 
   // Planet type bonuses — values are multipliers (0.8 = -20%, 1.2 = +20%)
-  const planetTypeName = gameConfig?.planetTypes?.find((t: any) => t.id === planet.planetClassId)?.name ?? planet.planetClassId;
+  const planetTypeName = gameConfig?.planetTypes?.find((t: { id: string; name?: string }) => t.id === planet.planetClassId)?.name ?? planet.planetClassId;
   const typeBonus = resourceData?.planetTypeBonus as { mineraiBonus: number; siliciumBonus: number; hydrogeneBonus: number } | undefined;
   const typeBonusEntries: Array<{ stat: string; pct: number }> = [];
   if (typeBonus) {
@@ -248,7 +256,7 @@ function PlanetDetailContent({ planet, resourceData, gameConfig, governance }: {
           <div className="space-y-2">
             {biomes.map((biome) => {
               const bColor = RARITY_COLORS[biome.rarity] ?? '#9ca3af';
-              const configBiome = gameConfig?.biomes?.find((b: any) => b.id === biome.id);
+              const configBiome = gameConfig?.biomes?.find((b: { id: string }) => b.id === biome.id);
               const effects = (configBiome?.effects ?? biome.effects ?? []) as Array<{ stat: string; modifier: number }>;
               return (
                 <div key={biome.id} className="rounded-md px-3 py-2" style={{ backgroundColor: `${bColor}10`, borderLeft: `3px solid ${bColor}` }}>

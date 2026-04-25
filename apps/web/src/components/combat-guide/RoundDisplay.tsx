@@ -7,6 +7,9 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { RoundShotDetail } from './RoundShotDetail';
 import { UnitTimeline } from './UnitTimeline';
 
+/** Subset of gameConfig used by sub-components (passed to getUnitName). */
+type GameConfigLike = Parameters<typeof getUnitName>[1];
+
 interface DetailedCombatLog {
   events: { round: number; shooterId: string; shooterType: string; targetId: string; targetType: string; damage: number; shieldAbsorbed: number; armorBlocked: number; hullDamage: number; targetDestroyed: boolean }[];
   snapshots: { unitId: string; unitType: string; side: 'attacker' | 'defender'; shield: number; hull: number; destroyed: boolean }[][];
@@ -302,7 +305,7 @@ function FleetColumn({
   types: string[];
   initial: Record<string, number>;
   current: Record<string, number>;
-  gameConfig: any;
+  gameConfig: GameConfigLike;
   color: string;
   hpByType?: Record<string, { shieldRemaining: number; shieldMax: number; hullRemaining: number; hullMax: number }>;
 }) {
@@ -346,7 +349,7 @@ function LossesSummary({
 }: {
   label: string;
   losses: Record<string, number>;
-  gameConfig: any;
+  gameConfig: GameConfigLike;
 }) {
   const entries = Object.entries(losses).filter(([, n]) => n > 0);
   if (entries.length === 0) return <div className="text-xs text-muted-foreground">{label} : aucune</div>;
@@ -370,7 +373,7 @@ function DamageRoundSummary({
 }: {
   title: string;
   damageByType?: Record<string, { shieldDamage: number; hullDamage: number; destroyed: number }>;
-  gameConfig: any;
+  gameConfig: GameConfigLike;
 }) {
   if (!damageByType) return null;
   const entries = Object.entries(damageByType).filter(([, d]) => d.shieldDamage > 0 || d.hullDamage > 0);

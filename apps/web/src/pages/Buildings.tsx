@@ -296,7 +296,7 @@ export default function Buildings() {
                       resources.silicium >= building.nextLevelCost.silicium &&
                       resources.hydrogene >= building.nextLevelCost.hydrogene;
 
-                    const prereqsMet = building.prerequisites.every((p: any) => {
+                    const prereqsMet = building.prerequisites.every((p) => {
                       const currentLvl = p.currentLevel ?? buildings.find((b) => b.id === p.buildingId)?.currentLevel ?? 0;
                       return currentLvl >= p.level;
                     });
@@ -405,7 +405,7 @@ export default function Buildings() {
                       resources.silicium >= building.nextLevelCost.silicium &&
                       resources.hydrogene >= building.nextLevelCost.hydrogene;
 
-                    const prereqsMet = building.prerequisites.every((p: any) => {
+                    const prereqsMet = building.prerequisites.every((p) => {
                       const currentLvl = p.currentLevel ?? buildings.find((b) => b.id === p.buildingId)?.currentLevel ?? 0;
                       return currentLvl >= p.level;
                     });
@@ -514,7 +514,7 @@ export default function Buildings() {
                                 {formatDuration(building.nextLevelTime)}
                               </div>
                               {!prereqsMet ? (
-                                <PrerequisiteList items={buildPrerequisiteItems({ buildings: building.prerequisites }, Object.fromEntries(building.prerequisites.map((p: any) => [p.buildingId, p.currentLevel ?? buildingLevels[p.buildingId] ?? 0])), {}, gameConfig)} missingOnly />
+                                <PrerequisiteList items={buildPrerequisiteItems({ buildings: building.prerequisites }, Object.fromEntries(building.prerequisites.map((p) => [p.buildingId, p.currentLevel ?? buildingLevels[p.buildingId] ?? 0])), {}, gameConfig)} missingOnly />
                               ) : (
                                 <Button
                                   variant="retro"

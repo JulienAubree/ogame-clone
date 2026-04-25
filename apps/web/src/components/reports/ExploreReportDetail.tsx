@@ -178,7 +178,7 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
       : [];
 
   const planetTypeName = planetClassId
-    ? (gameConfig?.planetTypes?.find((t: any) => t.id === planetClassId)?.name ?? 'Inconnue')
+    ? (gameConfig?.planetTypes?.find((t) => t.id === planetClassId)?.name ?? 'Inconnue')
     : 'Inconnue';
 
   const colonizerShipId = useMemo(() => {
@@ -198,10 +198,10 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
   }, [gameConfig?.ships]);
 
   const hasColonizer = !!(
-    colonizerShipId && ships?.find((s: any) => s.id === colonizerShipId && s.count > 0)
+    colonizerShipId && ships?.find((s) => s.id === colonizerShipId && s.count > 0)
   );
   const hasExplorer = !!(
-    explorerShipId && ships?.find((s: any) => s.id === explorerShipId && s.count > 0)
+    explorerShipId && ships?.find((s) => s.id === explorerShipId && s.count > 0)
   );
 
   // When the planet is fully mapped, show all known biomes (full state).

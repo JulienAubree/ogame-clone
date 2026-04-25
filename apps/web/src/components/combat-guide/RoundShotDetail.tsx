@@ -4,6 +4,9 @@ import { getUnitName } from '@/lib/entity-names';
 
 const fmt = (n: number) => Math.floor(n).toLocaleString('fr-FR');
 
+/** Subset of gameConfig used by this component (passed to getUnitName). */
+type GameConfigLike = Parameters<typeof getUnitName>[1];
+
 interface CombatEvent {
   round: number;
   shooterId: string;
@@ -22,7 +25,7 @@ interface RoundShotDetailProps {
   round: number;
   unitSideMap: Map<string, 'attacker' | 'defender'>;
   unitNumberMap: Map<string, number>;
-  gameConfig: any;
+  gameConfig: GameConfigLike;
   perspective?: 'attacker' | 'defender';
   onSelectUnit?: (unitId: string) => void;
 }
@@ -31,7 +34,7 @@ interface RoundShotDetailProps {
 function unitLabel(
   unitId: string,
   unitType: string,
-  gameConfig: any,
+  gameConfig: GameConfigLike,
   numberMap: Map<string, number>,
 ): string {
   const num = numberMap.get(unitId) ?? 0;
@@ -118,7 +121,7 @@ function groupBySide(
 
 // ── Sub-components ──
 
-function AggregatedRow({ group, gameConfig }: { group: ShotGroup; gameConfig: any }) {
+function AggregatedRow({ group, gameConfig }: { group: ShotGroup; gameConfig: GameConfigLike }) {
   const shooterName = getUnitName(group.shooterType, gameConfig);
   const targetName = getUnitName(group.targetType, gameConfig);
   const maxDmg = Math.max(group.shieldAbsorbed, group.hullDamage, 1);
@@ -155,7 +158,7 @@ function IndividualShotRow({
   onSelectUnit,
 }: {
   event: CombatEvent;
-  gameConfig: any;
+  gameConfig: GameConfigLike;
   numberMap: Map<string, number>;
   onSelectUnit?: (unitId: string) => void;
 }) {
@@ -194,7 +197,7 @@ function ShooterBlock({
   onSelectUnit,
 }: {
   group: ShooterGroup;
-  gameConfig: any;
+  gameConfig: GameConfigLike;
   numberMap: Map<string, number>;
   onSelectUnit?: (unitId: string) => void;
 }) {
