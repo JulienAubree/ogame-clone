@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback, type TouchEvent } from 'react';
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router';
+import { ChevronDown } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/common/Skeleton';
@@ -45,9 +46,7 @@ function BiomeToggle({ count, expanded, onToggle }: { count: number; expanded: b
       className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
     >
       <span>{count} biome{count > 1 ? 's' : ''}</span>
-      <svg width={10} height={10} viewBox="0 0 10 10" className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>
-        <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <ChevronDown className={`h-2.5 w-2.5 transition-transform ${expanded ? 'rotate-180' : ''}`} strokeWidth={1.5} />
     </button>
   );
 }

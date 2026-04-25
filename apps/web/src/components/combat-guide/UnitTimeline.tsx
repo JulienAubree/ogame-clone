@@ -1,3 +1,4 @@
+import { ArrowRight, X, XCircle } from 'lucide-react';
 import { getUnitName } from '@/lib/entity-names';
 
 const fmt = (n: number) => Math.floor(n).toLocaleString('fr-FR');
@@ -104,9 +105,7 @@ export function UnitTimeline({
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors p-1"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
@@ -177,9 +176,7 @@ export function UnitTimeline({
                       className="flex items-center gap-1 text-[10px] py-0.5 w-full text-left hover:bg-white/5 rounded px-1 -mx-1 transition-colors"
                       onClick={() => onSelectUnit(e.targetId)}
                     >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400/40 shrink-0">
-                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                      </svg>
+                      <ArrowRight className="h-2 w-2 text-emerald-400/40 shrink-0" />
                       <span className="text-foreground/80 truncate underline decoration-border/30 underline-offset-2">
                         {unitLabel(e.targetId, e.targetType, gameConfig, unitNumberMap)}
                       </span>
@@ -188,9 +185,7 @@ export function UnitTimeline({
                         {e.hullDamage > 0 && <span className="text-orange-400/70 font-mono">{fmt(e.hullDamage)}</span>}
                         {e.shieldAbsorbed === 0 && e.hullDamage === 0 && <span className="text-muted-foreground/30 font-mono">0</span>}
                         {e.targetDestroyed && (
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-                            <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
-                          </svg>
+                          <XCircle className="h-[9px] w-[9px] text-red-400" />
                         )}
                       </span>
                     </button>
@@ -211,9 +206,7 @@ export function UnitTimeline({
                       className="flex items-center gap-1 text-[10px] py-0.5 w-full text-left hover:bg-white/5 rounded px-1 -mx-1 transition-colors"
                       onClick={() => onSelectUnit(e.shooterId)}
                     >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400/40 shrink-0">
-                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                      </svg>
+                      <ArrowRight className="h-2 w-2 text-red-400/40 shrink-0" />
                       <span className="text-foreground/80 truncate underline decoration-border/30 underline-offset-2">
                         {unitLabel(e.shooterId, e.shooterType, gameConfig, unitNumberMap)}
                       </span>

@@ -1,41 +1,13 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router';
+import { Eye, Sword, User } from 'lucide-react';
 import type { AllianceLog, AllianceLogPayload } from '@exilium/shared';
 import { timeAgo } from '@/lib/format';
 
-function SwordIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
-      <path d="M13 19l6-6" />
-      <path d="M16 16l4 4" />
-      <path d="M19 21l2-2" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
 function iconFor(type: AllianceLogPayload['type']): JSX.Element {
-  if (type.startsWith('combat.')) return <SwordIcon />;
-  if (type.startsWith('espionage.')) return <EyeIcon />;
-  return <UserIcon />;
+  if (type.startsWith('combat.')) return <Sword className="h-4 w-4" aria-hidden="true" />;
+  if (type.startsWith('espionage.')) return <Eye className="h-4 w-4" aria-hidden="true" />;
+  return <User className="h-4 w-4" aria-hidden="true" />;
 }
 
 function outcomeLabel(o: 'victory' | 'defeat' | 'draw'): string {

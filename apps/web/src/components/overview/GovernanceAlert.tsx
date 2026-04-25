@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+import { AlertCircle } from 'lucide-react';
 import { trpc } from '@/trpc';
 
 interface GovernanceAlertProps {
@@ -28,11 +29,7 @@ export function GovernanceAlert({ planetClassId }: GovernanceAlertProps) {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <AlertCircle className="h-4 w-4 flex-shrink-0" stroke="#d97706" strokeWidth={2} />
           </div>
           <span className="text-amber-400 font-bold text-xs uppercase tracking-wider">Surextension impériale</span>
           <span className="text-amber-400/50 text-[10px] font-semibold ml-auto">

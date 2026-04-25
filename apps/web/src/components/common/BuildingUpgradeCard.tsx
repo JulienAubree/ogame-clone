@@ -1,3 +1,4 @@
+import { ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResourceCost } from '@/components/common/ResourceCost';
 import { Timer } from '@/components/common/Timer';
@@ -133,10 +134,7 @@ export function BuildingUpgradeCard({
           onClick={onUpgrade}
           disabled={!canAfford || isAnyUpgrading || upgradePending}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-            <path d="M12 19V5" />
-            <path d="M5 12l7-7 7 7" />
-          </svg>
+          <ArrowUp className="h-3 w-3 mr-1" />
           Améliorer
         </Button>
       )}

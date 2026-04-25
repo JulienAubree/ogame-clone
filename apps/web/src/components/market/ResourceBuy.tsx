@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Layers } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -77,9 +78,7 @@ export function ResourceBuy({ planetId }: ResourceBuyProps) {
       )}
       {!offersLoading && (!offersData?.offers || offersData.offers.length === 0) && (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <svg className="h-10 w-10 mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
+          <Layers className="h-10 w-10 mb-3 opacity-30" strokeWidth={1.5} />
           <p className="text-sm">Aucune offre disponible</p>
         </div>
       )}

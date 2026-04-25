@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
+import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Timer } from '@/components/common/Timer';
 import { GameImage } from '@/components/common/GameImage';
@@ -93,9 +94,7 @@ export function MiningPhaseStepper({ phase, progress, hex, gameConfig }: { phase
                   }}
                 >
                   {isDone && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" className="text-white">
-                      <polyline points="2,5.5 4,7.5 8,3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <Check className="h-2.5 w-2.5 text-white" strokeWidth={1.5} />
                   )}
                   {isActive && (
                     <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
@@ -308,12 +307,10 @@ export function MovementCard({
               endTime={new Date(event.arrivalTime)}
               onComplete={onTimerComplete}
             />
-            <svg
-              width="12" height="12" viewBox="0 0 12 12"
-              className={cn('text-muted-foreground/40 transition-transform duration-200', expanded && 'rotate-180')}
-            >
-              <polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <ChevronDown
+              className={cn('h-3 w-3 text-muted-foreground/40 transition-transform duration-200', expanded && 'rotate-180')}
+              strokeWidth={1.5}
+            />
           </div>
         </div>
 

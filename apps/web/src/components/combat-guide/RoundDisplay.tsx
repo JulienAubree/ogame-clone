@@ -1,5 +1,6 @@
 // apps/web/src/components/combat-guide/RoundDisplay.tsx
 import { useState, useEffect, useMemo } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { CombatResult } from '@exilium/game-engine';
 import { getUnitName } from '@/lib/entity-names';
 import { useGameConfig } from '@/hooks/useGameConfig';
@@ -204,19 +205,9 @@ export function RoundDisplay({
             onClick={() => setShotDetailOpen(!shotDetailOpen)}
           >
             <span>Detail des salves</span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`transition-transform ${shotDetailOpen ? 'rotate-180' : ''}`}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <ChevronDown
+              className={`h-3 w-3 transition-transform ${shotDetailOpen ? 'rotate-180' : ''}`}
+            />
           </button>
           {shotDetailOpen && (
             <div className="px-3 pb-3 pt-1 border-t border-border/20">

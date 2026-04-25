@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+import { AlertTriangle } from 'lucide-react';
 import { Timer } from '@/components/common/Timer';
 
 interface InboundFleet {
@@ -49,11 +50,7 @@ export function AttackAlert({ hostileFleets, onTimerComplete }: AttackAlertProps
               <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
               <div className="absolute inset-0 w-3 h-3 rounded-full bg-red-500 animate-ping opacity-40" />
             </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
+            <AlertTriangle className="h-[18px] w-[18px] flex-shrink-0" stroke="#ef4444" />
           </div>
           <span className="text-red-400 font-bold text-sm uppercase tracking-wider">Attaque imminente</span>
           <span className="text-red-400/60 text-[10px] font-semibold ml-auto">

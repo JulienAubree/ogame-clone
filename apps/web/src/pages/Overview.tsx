@@ -1,6 +1,7 @@
 import { useState, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useOutletContext } from 'react-router';
+import { Building2 } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { useGameConfig } from '@/hooks/useGameConfig';
@@ -226,7 +227,7 @@ function PlanetDetailContent({ planet, resourceData, gameConfig, governance }: {
           <div className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider mb-2">Gouvernance</div>
           <div className="rounded-md border border-amber-500/30 bg-amber-950/20 px-3 py-2.5 space-y-1.5">
             <div className="flex items-center gap-2 text-xs">
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
+              <Building2 className="h-3.5 w-3.5" stroke="#d97706" strokeWidth={2} />
               <span className="text-amber-400 font-semibold">Surextension impériale</span>
               <span className="text-amber-400/60 text-[10px] ml-auto">{governance.colonyCount}/{governance.capacity} colonies (+{governance.overextend})</span>
             </div>

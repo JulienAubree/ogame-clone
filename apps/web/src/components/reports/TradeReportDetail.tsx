@@ -1,4 +1,5 @@
 // apps/web/src/components/reports/TradeReportDetail.tsx
+import { ArrowLeftRight } from 'lucide-react';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { PlanetVisual } from '@/components/galaxy/PlanetVisual';
 import { CoordsLink } from '@/components/common/CoordsLink';
@@ -121,22 +122,7 @@ export function TradeReportDetail({ result }: TradeReportDetailProps) {
       {/* ── Transaction info block ── */}
       <div className="rounded-lg border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent p-4">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-purple-400/80 mb-2">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M16 3h5v5" />
-            <path d="M8 21H3v-5" />
-            <path d="M21 3l-9 9" />
-            <path d="M3 21l9-9" />
-          </svg>
+          <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
           <span>Transaction commerciale</span>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed italic">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router';
+import { MessageCircle, X } from 'lucide-react';
 import { useChatStore } from '@/stores/chat.store';
 import { trpc } from '@/trpc';
 import { UserAvatar } from './UserAvatar';
@@ -133,9 +134,7 @@ function ChatFab() {
         className="w-11 h-11 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg hover:scale-105 transition-transform relative"
         aria-label="Ouvrir le chat"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <MessageCircle className="h-5 w-5" aria-hidden="true" />
         {(unreadCount ?? 0) > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
             {unreadCount! > 9 ? '9+' : unreadCount}
@@ -214,7 +213,7 @@ export function ChatOverlay() {
             aria-label={`Fermer ${w.username}`}
             className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-foreground"
           >
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            <X className="h-2 w-2" strokeWidth={3} aria-hidden="true" />
           </button>
         </div>
       ))}

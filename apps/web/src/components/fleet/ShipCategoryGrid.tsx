@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check, Layers, Sun, Truck } from 'lucide-react';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
 import { cn } from '@/lib/utils';
@@ -25,33 +26,15 @@ interface ShipCategoryGridProps {
 const CATEGORY_STYLES: Record<string, { color: string; icon: React.ReactNode }> = {
   ship_combat: {
     color: 'text-red-400',
-    icon: (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
-      </svg>
-    ),
+    icon: <Layers className="h-4 w-4" />,
   },
   ship_transport: {
     color: 'text-blue-400',
-    icon: (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="1" y="3" width="15" height="13" rx="1" />
-        <path d="M16 8h4l3 3v5h-7V8z" />
-        <circle cx="5.5" cy="18.5" r="2.5" />
-        <circle cx="18.5" cy="18.5" r="2.5" />
-      </svg>
-    ),
+    icon: <Truck className="h-4 w-4" />,
   },
   ship_utilitaire: {
     color: 'text-emerald-400',
-    icon: (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-      </svg>
-    ),
+    icon: <Sun className="h-4 w-4" />,
   },
 };
 
@@ -126,9 +109,7 @@ export function ShipCategoryGrid({
                       </span>
                       {isSelected && (
                         <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-md">
-                          <svg className="h-3 w-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                         </div>
                       )}
                     </div>

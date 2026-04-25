@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { HelpCircle } from 'lucide-react';
 import { getAssetUrl, getPlanetImageUrl } from '@/lib/assets';
 
 interface FacilityHeroProps {
@@ -67,11 +68,7 @@ export function FacilityHero({
                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               />
               <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <path d="M12 17h.01" />
-                </svg>
+                <HelpCircle className="h-5 w-5 text-white" />
               </div>
             </button>
 

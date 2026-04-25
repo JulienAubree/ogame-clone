@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { ArrowRight, XCircle } from 'lucide-react';
 import { getUnitName } from '@/lib/entity-names';
 import type { CombatEvent, UnitSnapshot } from './types';
 
@@ -97,9 +98,7 @@ export function ShotLog({ events, initialUnits, unitType, side, round, gameConfi
                   </div>
                   {shots.map((e, i) => (
                     <div key={i} className="flex items-center gap-1 text-[10px] py-0.5 pl-2">
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400/40 shrink-0">
-                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                      </svg>
+                      <ArrowRight className="h-2 w-2 text-emerald-400/40 shrink-0" />
                       <span className="text-foreground/80 truncate">
                         {label(e.targetId, e.targetType, gameConfig, numberMap)}
                       </span>
@@ -108,9 +107,7 @@ export function ShotLog({ events, initialUnits, unitType, side, round, gameConfi
                         {e.hullDamage > 0 && <span className="text-orange-400/70 font-mono">{fmt(e.hullDamage)}</span>}
                         {e.shieldAbsorbed === 0 && e.hullDamage === 0 && <span className="text-muted-foreground/30 font-mono">0</span>}
                         {e.targetDestroyed && (
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-                            <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
-                          </svg>
+                          <XCircle className="h-[9px] w-[9px] text-red-400" />
                         )}
                       </span>
                     </div>
@@ -151,9 +148,7 @@ export function ShotLog({ events, initialUnits, unitType, side, round, gameConfi
                   </div>
                   {impacts.map((e, i) => (
                     <div key={i} className="flex items-center gap-1 text-[10px] py-0.5 pl-2">
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400/40 shrink-0">
-                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                      </svg>
+                      <ArrowRight className="h-2 w-2 text-red-400/40 shrink-0" />
                       <span className="text-foreground/80 truncate">
                         {label(e.shooterId, e.shooterType, gameConfig, numberMap)}
                       </span>

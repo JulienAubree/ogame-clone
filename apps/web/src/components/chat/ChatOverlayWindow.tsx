@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router';
+import { Minus, X } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
@@ -126,14 +127,14 @@ export function ChatOverlayWindow({ userId: otherUserId, username, avatarId, thr
           aria-label="Réduire"
           className="text-muted-foreground hover:text-foreground"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M5 12h14" /></svg>
+          <Minus className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); closeChat(windowKey); }}
           aria-label="Fermer"
           className="text-muted-foreground hover:text-foreground"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
 

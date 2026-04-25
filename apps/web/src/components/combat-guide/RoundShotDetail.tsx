@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowRight, XCircle } from 'lucide-react';
 import { getUnitName } from '@/lib/entity-names';
 
 const fmt = (n: number) => Math.floor(n).toLocaleString('fr-FR');
@@ -126,9 +127,7 @@ function AggregatedRow({ group, gameConfig }: { group: ShotGroup; gameConfig: an
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 text-xs">
         <span className="text-foreground font-medium truncate">{shooterName}</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0">
-          <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-        </svg>
+        <ArrowRight className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
         <span className="text-foreground font-medium truncate">{targetName}</span>
         <span className="text-muted-foreground ml-auto shrink-0">{group.shotCount} tir{group.shotCount > 1 ? 's' : ''}</span>
       </div>
@@ -164,9 +163,7 @@ function IndividualShotRow({
 
   return (
     <div className="flex items-center gap-1.5 text-[10px] py-0.5">
-      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 shrink-0">
-        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-      </svg>
+      <ArrowRight className="h-2 w-2 text-muted-foreground/40 shrink-0" />
       {onSelectUnit ? (
         <button
           type="button"
@@ -183,9 +180,7 @@ function IndividualShotRow({
         {event.hullDamage > 0 && <span className="text-orange-400 font-mono">{fmt(event.hullDamage)}</span>}
         {event.shieldAbsorbed === 0 && event.hullDamage === 0 && <span className="text-muted-foreground/40 font-mono">0</span>}
         {event.targetDestroyed && (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-            <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
-          </svg>
+          <XCircle className="h-2.5 w-2.5 text-red-400" />
         )}
       </span>
     </div>

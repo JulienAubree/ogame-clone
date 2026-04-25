@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useOutletContext, Link } from 'react-router';
+import { Diamond, Check } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Breadcrumb } from '@/components/common/Breadcrumb';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -150,19 +151,14 @@ export default function StationedFleet() {
                     loading="lazy"
                   />
                 ) : (
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="text-amber-400/60">
-                    <path d="M12 2L3 9l9 13 9-13-9-7z" fill="currentColor" opacity={0.3} />
-                    <path d="M12 2L3 9l9 13 9-13-9-7z" stroke="currentColor" strokeWidth={1.5} fill="none" />
-                  </svg>
+                  <Diamond className="h-12 w-12 text-amber-400/60" strokeWidth={1.5} />
                 )}
                 <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">
                   x1
                 </span>
                 {selectedIds.has('flagship') && (
                   <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-md">
-                    <svg className="h-3 w-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                   </div>
                 )}
               </div>

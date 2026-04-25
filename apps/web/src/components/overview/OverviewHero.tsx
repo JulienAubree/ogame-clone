@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FlagshipIcon } from '@/lib/icons';
@@ -258,7 +259,7 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
                   })()}
                   {governance && governance.harvestMalus > 0 && (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-400/10 rounded px-1.5 py-0.5">
-                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
+                      <Building2 className="h-[13px] w-[13px]" strokeWidth={2} />
                       -{Math.round(governance.harvestMalus * 100)}%
                     </span>
                   )}

@@ -1,6 +1,7 @@
 // apps/web/src/components/reports/ExploreReportDetail.tsx
 import { useMemo, type ReactNode } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
+import { FlaskConical } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { useToastStore } from '@/stores/toast.store';
@@ -267,21 +268,7 @@ export function ExploreReportDetail({ result, coordinates }: ExploreReportDetail
       {/* Scientific report flavor block */}
       <div className="mt-4 rounded-lg border border-cyan-500/20 bg-gradient-to-br from-cyan-500/5 to-transparent p-4">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-cyan-400/80 mb-2">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M9 3h6" />
-            <path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3" />
-            <path d="M7 14h10" />
-          </svg>
+          <FlaskConical className="h-3 w-3" aria-hidden="true" />
           <span>Rapport scientifique</span>
         </div>
         <h4 className="text-sm font-semibold text-foreground mb-1">{report.title}</h4>

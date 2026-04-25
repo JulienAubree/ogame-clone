@@ -6,6 +6,7 @@
  *   - Failed: shows "Transport echoue" with reason
  */
 
+import { XCircle, Check } from 'lucide-react';
 import { CoordsLink } from '@/components/common/CoordsLink';
 import { cn } from '@/lib/utils';
 
@@ -42,11 +43,7 @@ export function TransportReportDetail({ result, coordinates }: TransportReportDe
     return (
       <div className="glass-card border-red-500/20 bg-red-500/5 px-4 py-6 text-center space-y-3">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 mb-1">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-          </svg>
+          <XCircle className="h-6 w-6 text-red-400" />
         </div>
         <div className="text-red-400 text-sm font-semibold">Transport échoué</div>
         <div className="text-xs text-muted-foreground">
@@ -63,9 +60,7 @@ export function TransportReportDetail({ result, coordinates }: TransportReportDe
       <div className="glass-card border-emerald-500/20 bg-emerald-500/5 px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
+            <Check className="h-5 w-5 text-emerald-400" />
           </div>
           <div>
             <div className="text-sm font-semibold text-emerald-400">Livraison effectuee</div>

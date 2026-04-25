@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { AlertTriangle, Layers, ChevronDown, Box } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Timer } from '@/components/common/Timer';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -110,15 +111,9 @@ function InboundFleetCard({
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border', badgeBorder)}>
               {isHostile ? (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
+                <AlertTriangle className="h-2.5 w-2.5 flex-shrink-0" strokeWidth={2.5} />
               ) : (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
+                <Layers className="h-2.5 w-2.5 flex-shrink-0" strokeWidth={2.5} />
               )}
               {badgeLabel}
             </span>
@@ -135,12 +130,7 @@ function InboundFleetCard({
           </div>
           <div className="flex items-center gap-2">
             <Timer endTime={new Date(event.arrivalTime)} onComplete={onTimerComplete} />
-            <svg
-              width="12" height="12" viewBox="0 0 12 12"
-              className={cn('text-muted-foreground/40 transition-transform duration-200', expanded && 'rotate-180')}
-            >
-              <polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <ChevronDown className={cn('h-3 w-3 text-muted-foreground/40 transition-transform duration-200', expanded && 'rotate-180')} strokeWidth={1.5} />
           </div>
         </div>
 
@@ -379,9 +369,7 @@ export default function Movements() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                  </svg>
+                  <Box className="h-4 w-4 text-primary" />
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold">Emplacements de flotte</div>

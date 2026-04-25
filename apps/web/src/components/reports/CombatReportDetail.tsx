@@ -1,6 +1,7 @@
 // apps/web/src/components/reports/CombatReportDetail.tsx
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { Shield, RefreshCw, Plus, BarChart3, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUnitName, getDefenseName } from '@/lib/entity-names';
 import { RoundDisplay } from '@/components/combat-guide/RoundDisplay';
@@ -256,7 +257,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
             ) && (
               <div className="mt-3">
                 <h4 className="text-xs font-semibold text-green-500 mb-1.5 flex items-center gap-1">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <Shield className="h-3 w-3" strokeWidth={2} />
                   Ressources protégées
                 </h4>
                 <div className="flex gap-3">
@@ -283,11 +284,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
                   to={`/fleet/send?mission=recycle&galaxy=${coordinates.galaxy}&system=${coordinates.system}&position=${coordinates.position}`}
                   className="inline-flex items-center gap-1.5 rounded-md bg-cyan-500/20 px-3 py-1.5 text-xs font-semibold text-cyan-400 transition-colors hover:bg-cyan-500/30"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 4 23 10 17 10" />
-                    <polyline points="1 20 1 14 7 14" />
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                  </svg>
+                  <RefreshCw className="h-3.5 w-3.5" />
                   Envoyer des recycleurs
                 </Link>
               )}
@@ -314,7 +311,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
       {result.bonusShips && Object.keys(result.bonusShips).length > 0 && (
         <div className="glass-card border-emerald-500/20 bg-emerald-500/5 p-4">
           <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20" /></svg>
+            <Plus className="h-3.5 w-3.5" />
             Vaisseaux capturés
           </h4>
           <div className="flex flex-wrap gap-3">
@@ -407,10 +404,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
             to={`/reports/${reportId}/analysis`}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-500/20 px-4 py-2.5 text-sm font-semibold text-blue-400 transition-colors hover:bg-blue-500/30"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 21H4.6c-.56 0-.84 0-1.054-.109a1 1 0 0 1-.437-.437C3 20.24 3 19.96 3 19.4V3" />
-              <path d="m7 14 4-4 4 4 6-6" />
-            </svg>
+            <BarChart3 className="h-4 w-4" />
             Analyser le combat
           </Link>
         </div>
@@ -424,9 +418,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
             className="w-full p-4 flex items-center justify-center gap-2 text-sm font-medium text-blue-400 hover:bg-blue-500/5 transition-colors"
             onClick={() => setReplayOpen(!replayOpen)}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={replayOpen ? 'rotate-90 transition-transform' : 'transition-transform'}>
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
+            <Play className={cn('h-3.5 w-3.5', replayOpen ? 'rotate-90 transition-transform' : 'transition-transform')} />
             {replayOpen ? 'Masquer le replay' : `Voir le replay du combat (${roundCount} rounds)`}
           </button>
           {replayOpen && (

@@ -10,7 +10,7 @@ import {
   StatCell, EffectiveStatCell, SectionHeader, CostPills,
 } from './stat-components';
 import { WeaponBatteryList } from './WeaponBatteryList';
-import { ClockIcon } from '@/components/icons/utility-icons';
+import { CargoBoxIcon, ClockIcon } from '@/components/icons/utility-icons';
 import { ARMOR_LABELS } from '@/config/ship-labels';
 
 const COMBAT_CATEGORY_LABELS: Record<string, string> = {
@@ -153,7 +153,7 @@ export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels
       {/* ── Cost ── */}
       <div className="border-t border-[#334155] pt-3 mt-1">
         <SectionHeader
-          icon={<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-slate-500"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1={3} y1={6} x2={21} y2={6} /><path d="M16 10a4 4 0 0 1-8 0" /></svg>}
+          icon={<CargoBoxIcon className="h-3.5 w-3.5 text-slate-500" />}
           label="Coût unitaire"
           color="text-slate-500"
         />

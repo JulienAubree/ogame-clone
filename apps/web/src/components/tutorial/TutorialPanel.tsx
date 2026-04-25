@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
+import { ChevronDown } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
 import { FlagshipNamingModal } from '@/components/flagship/FlagshipNamingModal';
@@ -285,9 +286,5 @@ export function TutorialPanel() {
 }
 
 function ChevronDownIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M19 9l-7 7-7-7" />
-    </svg>
-  );
+  return <ChevronDown className="h-3.5 w-3.5" />;
 }

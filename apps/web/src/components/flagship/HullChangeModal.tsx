@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Wrench } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { cn } from '@/lib/utils';
+import { ClockIcon } from '@/components/icons/utility-icons';
 import { useGameConfig } from '../../hooks/useGameConfig';
 
 interface HullChangeModalProps {
@@ -179,16 +181,11 @@ export function HullChangeModal({ open, onClose, flagship }: HullChangeModalProp
             {/* Refit & cooldown info */}
             <div className="space-y-1 text-xs text-slate-400">
               <div className="flex items-center gap-1.5">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400/70 shrink-0">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
+                <ClockIcon className="h-3 w-3 text-amber-400/70 shrink-0" />
                 <span>Le vaisseau sera indisponible pendant <span className="text-amber-300 font-medium">{formatDuration(selectedHullConfig.unavailabilitySeconds)}</span></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
-                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                </svg>
+                <Wrench className="h-3 w-3 text-slate-500 shrink-0" />
                 <span>Prochain changement possible dans <span className="text-slate-300 font-medium">{formatDays(selectedHullConfig.cooldownSeconds)}</span></span>
               </div>
             </div>

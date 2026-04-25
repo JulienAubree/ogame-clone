@@ -1,3 +1,5 @@
+import { Clock, Globe, Rocket } from 'lucide-react';
+
 interface Pillar {
   title: string;
   body: string;
@@ -9,36 +11,19 @@ const PILLARS: Pillar[] = [
     title: 'Un empire à votre mesure',
     body:
       "Des mondes à coloniser, trois ressources à équilibrer, des dizaines de bâtiments à faire monter. Construisez une économie qui tient la route.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M3 12c3 2 15 2 18 0" />
-        <path d="M12 3c2.5 3 2.5 15 0 18" />
-      </svg>
-    ),
+    icon: <Globe className="h-7 w-7" strokeWidth={1.5} />,
   },
   {
     title: 'Flottes, combat, diplomatie',
     body:
       "Concevez vos flottes, lancez des attaques, défendez vos planètes. Rejoignez une alliance ou formez la vôtre. La galaxie est peuplée de vrais joueurs.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7">
-        <path d="M12 3 3 18h18L12 3Z" />
-        <path d="M12 11v4" />
-        <path d="M9 18l3-3 3 3" />
-      </svg>
-    ),
+    icon: <Rocket className="h-7 w-7" strokeWidth={1.5} />,
   },
   {
     title: 'Le jeu respecte votre temps',
     body:
       "Queues longues, production persistante, notifications précises. 5 minutes de bonnes décisions valent mieux que 4 heures de clics.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
-      </svg>
-    ),
+    icon: <Clock className="h-7 w-7" strokeWidth={1.5} />,
   },
 ];
 

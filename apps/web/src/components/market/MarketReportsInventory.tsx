@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Star, ChevronDown } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { PlanetDot } from '@/components/galaxy/PlanetDot';
@@ -65,15 +66,12 @@ function ValueStars({ count }: { count: number }) {
   return (
     <span className="inline-flex gap-px" title={`Valeur estimee : ${count}/5`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <svg
+        <Star
           key={i}
-          width={10}
-          height={10}
-          viewBox="0 0 20 20"
-          fill={i < count ? '#eab308' : '#374151'}
-        >
-          <polygon points="10,1 12.9,7 19.5,7.6 14.5,12 16.2,18.5 10,15 3.8,18.5 5.5,12 0.5,7.6 7.1,7" />
-        </svg>
+          className="h-2.5 w-2.5 fill-current"
+          style={{ color: i < count ? '#eab308' : '#374151' }}
+          stroke="none"
+        />
       ))}
     </span>
   );
@@ -211,18 +209,12 @@ export function MarketReportsInventory({ planetId, sections }: MarketReportsInve
             </span>
             {opts?.showStars && stars > 0 && <ValueStars count={stars} />}
             {opts?.clickable && (
-              <svg
-                width={12}
-                height={12}
-                viewBox="0 0 20 20"
-                fill="currentColor"
+              <ChevronDown
                 className={cn(
-                  'text-muted-foreground transition-transform ml-auto shrink-0',
+                  'h-3 w-3 text-muted-foreground transition-transform ml-auto shrink-0',
                   isExpanded && 'rotate-180',
                 )}
-              >
-                <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" />
-              </svg>
+              />
             )}
           </div>
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">

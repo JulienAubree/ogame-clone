@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Trash2, Boxes } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { getShipName } from '@/lib/entity-names';
 import { useToastStore } from '@/stores/toast.store';
 import { cn } from '@/lib/utils';
 import { BuildingsIcon, DefenseIcon, FleetIcon, FlagshipIcon, ShipyardIcon } from '@/lib/icons';
+import { ClockIcon as UtilClockIcon } from '@/components/icons/utility-icons';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
 import { GameImage } from '@/components/common/GameImage';
 
@@ -339,7 +341,7 @@ function FleetCard({
       title="Flotte de retour"
       subtitle={
         <div className="flex items-center gap-1.5">
-          <ClockIcon />
+          <UtilClockIcon className="h-3 w-3" />
           <span>
             {new Date(preview.arrivalTime).toLocaleString('fr-FR', {
               day: '2-digit',
@@ -423,7 +425,7 @@ function DebrisCard({ minerai, silicium }: { minerai: number; silicium: number }
   return (
     <Card
       accent="warning"
-      icon={<DebrisIcon />}
+      icon={<Boxes className="h-4 w-4" />}
       title="Champ de débris"
       subtitle="Récupérable par tout recycleur — y compris les vôtres."
     >
@@ -461,7 +463,7 @@ function LossCard({
   hydrogene: number;
 }) {
   return (
-    <Card accent="destructive" icon={<TrashIcon />} title="Perdu définitivement">
+    <Card accent="destructive" icon={<Trash2 className="h-4 w-4" />} title="Perdu définitivement">
       <ul className="space-y-1 text-sm text-muted-foreground">
         {buildings > 0 && (
           <li className="flex items-center gap-2">
@@ -498,32 +500,3 @@ function LossCard({
   );
 }
 
-function ClockIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function DebrisIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 7l4-4 4 4-4 4z" />
-      <path d="M14 14l6-3-2 7-6 2z" />
-      <circle cx="17" cy="6" r="2" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M10 11v6M14 11v6" />
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}

@@ -1,3 +1,4 @@
+import { XCircle } from 'lucide-react';
 import { getUnitName } from '@/lib/entity-names';
 import type { CombatEvent } from './types';
 
@@ -21,21 +22,7 @@ export function DeathsList({ events, unitType, round, gameConfig }: DeathsListPr
   return (
     <div className="glass-card p-3 border-red-500/10">
       <div className="flex items-center gap-2 mb-2">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-red-400"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <line x1="15" y1="9" x2="9" y2="15" />
-          <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
+        <XCircle className="h-3.5 w-3.5 text-red-400" />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-red-400">
           Unites detruites ({kills.length})
         </span>

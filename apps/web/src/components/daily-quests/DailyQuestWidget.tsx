@@ -1,4 +1,5 @@
 import { trpc } from '@/trpc';
+import { Check, ChevronDown, X } from 'lucide-react';
 import { ExiliumIcon } from '@/components/common/ExiliumIcon';
 import { useState } from 'react';
 
@@ -47,9 +48,7 @@ export function DailyQuestWidget() {
             onClick={() => setUserToggled(true)}
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -59,14 +58,9 @@ export function DailyQuestWidget() {
           <div key={quest.id} className="flex items-start gap-2">
             <div className="mt-0.5">
               {quest.status === 'completed' ? (
-                <svg className="h-4 w-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <Check className="h-4 w-4 text-emerald-400" />
               ) : quest.status === 'expired' ? (
-                <svg className="h-4 w-4 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <X className="h-4 w-4 text-muted-foreground/40" />
               ) : (
                 <div className="h-4 w-4 rounded border border-border" />
               )}

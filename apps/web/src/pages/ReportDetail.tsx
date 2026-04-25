@@ -1,6 +1,7 @@
 // apps/web/src/pages/ReportDetail.tsx
 import { useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { Search } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -146,9 +147,7 @@ export default function ReportDetail() {
         <div className="glass-card p-4 border border-cyan-500/20">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-              </svg>
+              <Search className="h-5 w-5 text-cyan-400" />
             </div>
             <div>
               <div className="text-sm font-semibold text-cyan-300">{result.scanner.name}</div>

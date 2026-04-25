@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { ChevronLeft, Download } from 'lucide-react';
 
 const fmt = (n: number) => Math.floor(n).toLocaleString('fr-FR');
 
@@ -52,18 +53,7 @@ export function CombatAnalysisHeader({
           to={`/reports/${reportId}`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
+          <ChevronLeft className="h-4 w-4" />
           Rapport
         </Link>
       </div>
@@ -88,20 +78,7 @@ export function CombatAnalysisHeader({
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground bg-white/5 hover:bg-white/10 hover:text-foreground transition-colors"
               title="Telecharger le rapport JSON"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <Download className="h-3.5 w-3.5" />
               JSON
             </button>
           )}

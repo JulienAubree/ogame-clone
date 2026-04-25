@@ -1,48 +1,11 @@
 import type { ReactNode } from 'react';
+import { Award, Gem, Globe, Flag } from 'lucide-react';
 
 interface ProfileStatsCardProps {
   rank: number | null;
   totalPoints: number;
   planetCount: number;
   allianceName: string | null;
-}
-
-function MedalIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-      <circle cx="12" cy="14" r="6" />
-      <path d="M8.5 8 L6 2 L10 2 L12 6 L14 2 L18 2 L15.5 8" />
-    </svg>
-  );
-}
-
-function CrystalIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-      <path d="M12 3 L19 10 L12 21 L5 10 Z" />
-      <path d="M5 10 H19" />
-      <path d="M12 3 L9 10 L12 21" />
-      <path d="M12 3 L15 10" />
-    </svg>
-  );
-}
-
-function PlanetIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="6" />
-      <ellipse cx="12" cy="12" rx="11" ry="3.5" transform="rotate(-20 12 12)" />
-    </svg>
-  );
-}
-
-function BannerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-      <path d="M6 3 H18 V18 L12 15 L6 18 Z" />
-      <path d="M10 8 H14" />
-    </svg>
-  );
 }
 
 interface StatCellProps {
@@ -68,25 +31,25 @@ export function ProfileStatsCard({ rank, totalPoints, planetCount, allianceName 
       <h3 className="text-sm font-semibold">Statistiques</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCell
-          icon={<MedalIcon />}
+          icon={<Award className="h-4 w-4" strokeWidth={1.8} />}
           iconColorClass="text-amber-400"
           value={rank != null ? `#${rank}` : '—'}
           label="Rang"
         />
         <StatCell
-          icon={<CrystalIcon />}
+          icon={<Gem className="h-4 w-4" strokeWidth={1.8} />}
           iconColorClass="text-cyan-400"
           value={totalPoints.toLocaleString('fr-FR')}
           label="Points"
         />
         <StatCell
-          icon={<PlanetIcon />}
+          icon={<Globe className="h-4 w-4" strokeWidth={1.8} />}
           iconColorClass="text-blue-400"
           value={planetCount.toLocaleString('fr-FR')}
           label="Planètes"
         />
         <StatCell
-          icon={<BannerIcon />}
+          icon={<Flag className="h-4 w-4" strokeWidth={1.8} />}
           iconColorClass="text-amber-400"
           value={allianceName ?? '—'}
           label="Alliance"

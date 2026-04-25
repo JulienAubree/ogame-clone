@@ -1,5 +1,6 @@
 // apps/web/src/components/reports/SpyReportDetail.tsx
 import { Link } from 'react-router';
+import { Search, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getShipName, getDefenseName, getBuildingName, getResearchName } from '@/lib/entity-names';
 
@@ -36,20 +37,14 @@ export function SpyReportDetail({ result, gameConfig, coordinates }: SpyReportDe
             to={`/fleet/send?mission=spy&galaxy=${coordinates.galaxy}&system=${coordinates.system}&position=${coordinates.position}`}
             className="inline-flex items-center gap-1.5 rounded-md bg-violet-500/20 px-3 py-1.5 text-xs font-semibold text-violet-400 transition-colors hover:bg-violet-500/30"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
+            <Search className="h-3.5 w-3.5" />
             Relancer l'espionnage
           </Link>
           <Link
             to={`/fleet/send?mission=attack&galaxy=${coordinates.galaxy}&system=${coordinates.system}&position=${coordinates.position}`}
             className="inline-flex items-center gap-1.5 rounded-md bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-500/30"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m5 12 7-7 7 7" />
-              <path d="M12 19V5" />
-            </svg>
+            <ArrowUp className="h-3.5 w-3.5" />
             Attaquer
           </Link>
         </div>

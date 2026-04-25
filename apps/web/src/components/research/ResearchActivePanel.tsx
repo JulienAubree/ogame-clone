@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ChevronDown, Zap } from 'lucide-react';
 import { Timer } from '@/components/common/Timer';
 import { cn } from '@/lib/utils';
 import { ResearchIcon, BuildingsIcon, GalaxyIcon, FlagshipIcon, EmpireIcon } from '@/lib/icons';
@@ -127,19 +128,7 @@ export function ResearchActivePanel({
           </div>
         </div>
 
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={cn('shrink-0 text-muted-foreground transition-transform', expanded && 'rotate-180')}
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        <ChevronDown className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', expanded && 'rotate-180')} />
       </button>
 
       {expanded && (
@@ -200,9 +189,7 @@ export function ResearchActivePanel({
             {/* Bonuses breakdown */}
             <div className="flex-1 space-y-2">
               <h3 className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400 flex items-center gap-1.5">
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-                </svg>
+                <Zap className="h-3.5 w-3.5" />
                 Bonus de vitesse
               </h3>
               <div className="space-y-0.5">

@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import { getUnitName, getDefenseName } from '@/lib/entity-names';
 import type { RoundResult } from './types';
 
@@ -86,15 +87,11 @@ function FleetSummaryColumn({
                   <span className="text-muted-foreground">{deployed}</span>
                   {lost > 0 && (
                     <>
-                      <svg width="10" height="10" viewBox="0 0 16 10" fill="none" className="text-muted-foreground/30">
-                        <path d="M0 5h13M10 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/30" strokeWidth={1.5} />
                       <span className="text-red-400">-{lost}</span>
                     </>
                   )}
-                  <svg width="10" height="10" viewBox="0 0 16 10" fill="none" className="text-muted-foreground/30">
-                    <path d="M0 5h13M10 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/30" strokeWidth={1.5} />
                   <span className={survived > 0 ? 'text-emerald-400 font-medium' : 'text-red-400'}>{survived}</span>
                 </div>
               </div>

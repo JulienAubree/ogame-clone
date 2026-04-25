@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowRight, LineChart, Users } from 'lucide-react';
 import { getUnitName } from '@/lib/entity-names';
 import { DamagePanel } from './DamagePanel';
 import { ShotLog } from './ShotLog';
@@ -36,20 +37,10 @@ export function UnitDetailPanel({
     return (
       <div className="glass-card flex items-center justify-center p-8 min-h-[300px]">
         <div className="text-center space-y-2">
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mx-auto text-muted-foreground/40"
-          >
-            <path d="M21 21H4.6c-.56 0-.84 0-1.054-.109a1 1 0 0 1-.437-.437C3 20.24 3 19.96 3 19.4V3" />
-            <path d="m7 14 4-4 4 4 6-6" />
-          </svg>
+          <LineChart
+            className="mx-auto h-8 w-8 text-muted-foreground/40"
+            strokeWidth={1.5}
+          />
           <p className="text-sm text-muted-foreground">
             Selectionnez un type d'unite pour voir le detail
           </p>
@@ -107,9 +98,7 @@ export function UnitDetailPanel({
       {selectedRound === 0 ? (
         <div className="flex items-center justify-center gap-2 py-2">
           <div className="flex items-center gap-1.5 rounded-md bg-white/5 border border-border/20 px-3 py-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground/60">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <Users className="h-3.5 w-3.5 text-foreground/60" />
             <span className="text-lg font-bold text-foreground">{initialCount}</span>
             <span className="text-[10px] text-muted-foreground">deployes</span>
           </div>
@@ -128,14 +117,10 @@ export function UnitDetailPanel({
           {previousLosses > 0 ? (
             <div className="flex flex-col items-center shrink-0">
               <div className="text-[9px] text-red-400/70">-{previousLosses}</div>
-              <svg width="16" height="10" viewBox="0 0 16 10" fill="none" className="text-muted-foreground/30">
-                <path d="M0 5h13M10 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <ArrowRight className="h-2.5 w-4 text-muted-foreground/30" strokeWidth={1.5} />
             </div>
           ) : (
-            <svg width="16" height="10" viewBox="0 0 16 10" fill="none" className="text-muted-foreground/30 shrink-0">
-              <path d="M0 5h13M10 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <ArrowRight className="h-2.5 w-4 text-muted-foreground/30 shrink-0" strokeWidth={1.5} />
           )}
 
           {/* Start of round */}
@@ -147,9 +132,7 @@ export function UnitDetailPanel({
           </div>
 
           {/* Arrow */}
-          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" className="text-muted-foreground/30 shrink-0">
-            <path d="M0 5h13M10 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <ArrowRight className="h-2.5 w-4 text-muted-foreground/30 shrink-0" strokeWidth={1.5} />
 
           {/* Losses this round */}
           <div className="text-center shrink-0">
@@ -162,9 +145,7 @@ export function UnitDetailPanel({
           </div>
 
           {/* Arrow */}
-          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" className="text-muted-foreground/30 shrink-0">
-            <path d="M0 5h13M10 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <ArrowRight className="h-2.5 w-4 text-muted-foreground/30 shrink-0" strokeWidth={1.5} />
 
           {/* Surviving */}
           <div className="text-center shrink-0">

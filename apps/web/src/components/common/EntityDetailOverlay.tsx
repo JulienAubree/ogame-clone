@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EntityDetailOverlayProps {
@@ -41,10 +42,7 @@ export function EntityDetailOverlay({ open, onClose, title, children }: EntityDe
             onClick={onClose}
             className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
         <div className="p-5 space-y-5">
@@ -65,11 +63,7 @@ export function InfoButton({ onClick }: { onClick: () => void }) {
       className="absolute top-2 right-2 rounded-full p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
       title="Plus d'informations"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 16v-4" />
-        <path d="M12 8h.01" />
-      </svg>
+      <Info className="h-4 w-4" />
     </button>
   );
 }

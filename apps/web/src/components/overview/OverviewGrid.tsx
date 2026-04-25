@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+import { Shield } from 'lucide-react';
 import { Timer } from '@/components/common/Timer';
 import { FleetIcon, DefenseIcon, FlagshipIcon, MovementsIcon } from '@/lib/icons';
 import { getFlagshipImageUrl } from '@/lib/assets';
@@ -151,9 +152,7 @@ export function OverviewGrid({
         <GridHeader icon={DefenseIcon} label="Défenses" color="text-emerald-400" count={totalDefenses} />
         {shieldLevel > 0 && (
           <div className="flex items-center gap-1.5 px-1.5 py-1 rounded bg-cyan-500/[0.06] border border-cyan-500/10 mb-1.5 text-[10px]">
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="text-cyan-400 flex-shrink-0">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
+            <Shield className="h-3 w-3 text-cyan-400 flex-shrink-0" />
             <span className="text-cyan-300 font-medium">Bouclier planétaire</span>
             <span className="text-cyan-400 font-bold ml-auto">Niv. {shieldLevel}</span>
           </div>

@@ -1,3 +1,4 @@
+import { Check, X } from 'lucide-react';
 import { categorizeShip, type Mission, type ShipCategory } from '@/config/mission-config';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
@@ -68,17 +69,12 @@ function ShipCard({ ship, value, onChange, onToggle, disabled }: {
         </span>
         {isSelected && (
           <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-md">
-            <svg className="h-3 w-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
           </div>
         )}
         {isConflict && (
           <div className="absolute top-2 left-2 h-5 w-5 rounded-full bg-destructive flex items-center justify-center shadow-md">
-            <svg className="h-3 w-3 text-destructive-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="h-3 w-3 text-destructive-foreground" strokeWidth={3} />
           </div>
         )}
       </div>

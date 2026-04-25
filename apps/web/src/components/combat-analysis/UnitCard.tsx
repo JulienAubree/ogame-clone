@@ -1,3 +1,4 @@
+import { XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUnitName } from '@/lib/entity-names';
 import type { CombatEvent, UnitSnapshot } from './types';
@@ -111,21 +112,7 @@ export function UnitCard({
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     <span className="text-emerald-400 font-mono">{fmt(e.damage)}</span>
                     {e.targetDestroyed && (
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-red-400"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="15" y1="9" x2="9" y2="15" />
-                        <line x1="9" y1="9" x2="15" y2="15" />
-                      </svg>
+                      <XCircle className="h-2.5 w-2.5 text-red-400" />
                     )}
                   </div>
                 </div>

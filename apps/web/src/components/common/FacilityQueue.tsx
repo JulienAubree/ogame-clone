@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Timer } from '@/components/common/Timer';
 import { ClockIcon } from '@/components/icons/utility-icons';
@@ -152,19 +153,9 @@ export function FacilityQueue({
           </div>
         </div>
 
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={cn('shrink-0 text-muted-foreground transition-transform', expanded && 'rotate-180')}
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        <ChevronDown
+          className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', expanded && 'rotate-180')}
+        />
       </button>
 
       {expanded && (

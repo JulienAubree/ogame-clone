@@ -1,5 +1,6 @@
 import { trpc } from '@/trpc';
 import { useCallback, useRef, useState } from 'react';
+import { MessageSquare, Smartphone, Bell, ChevronsUpDown, ChevronRight } from 'lucide-react';
 import {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CATEGORY_LABELS,
@@ -18,23 +19,17 @@ const CHANNEL_META: Record<Channel, { label: string; desc: string; icon: React.R
   toastDisabled: {
     label: 'Toast',
     desc: 'Bandeau temporaire en bas de l\'écran (5s)',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/></svg>
-    ),
+    icon: <MessageSquare className="h-4 w-4" />,
   },
   pushDisabled: {
     label: 'Push',
     desc: 'Notification navigateur / appareil',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-    ),
+    icon: <Smartphone className="h-4 w-4" />,
   },
   bellDisabled: {
     label: 'Cloche',
     desc: 'Historique dans le fil d\'activité',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-    ),
+    icon: <Bell className="h-4 w-4" />,
   },
 };
 
@@ -190,7 +185,7 @@ export function NotificationPreferences() {
           </div>
         ))}
         <div className="flex flex-col items-center gap-1">
-          <svg className="text-primary/60" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 18 12 13 17 18"/><polyline points="7 6 12 11 17 6"/></svg>
+          <ChevronsUpDown className="h-4 w-4 text-primary/60" />
           <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Tout</span>
         </div>
       </div>
@@ -211,15 +206,10 @@ export function NotificationPreferences() {
                   onClick={() => toggleExpand(cat)}
                   className="flex items-center gap-2 text-left group"
                 >
-                  <svg
+                  <ChevronRight
                     className={`h-3 w-3 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
+                    strokeWidth={2.5}
+                  />
                   <span className="text-[13px] font-medium group-hover:text-primary transition-colors">
                     {NOTIFICATION_CATEGORY_LABELS[cat]}
                   </span>

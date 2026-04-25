@@ -1,3 +1,4 @@
+import { ClipboardList } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { Button } from '@/components/ui/button';
 import { useToastStore } from '@/stores/toast.store';
@@ -41,9 +42,7 @@ export function ResourceMyOffers({ planetId: _planetId, statuses }: ResourceMyOf
     <div>
       {resourceOffers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <svg className="h-10 w-10 mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5h6" />
-          </svg>
+          <ClipboardList className="h-10 w-10 mb-3 opacity-30" strokeWidth={1.5} />
           <p className="text-sm">Aucune offre.</p>
         </div>
       ) : (

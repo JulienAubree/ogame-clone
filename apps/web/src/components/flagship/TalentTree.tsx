@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { cn } from '@/lib/utils';
@@ -146,12 +147,7 @@ export function TalentTree({ showResetButton = true, showGuide = false }: Talent
             className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <span className="font-medium">Comment fonctionnent les talents ?</span>
-            <svg
-              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              className={cn('transition-transform duration-200', guideOpen && 'rotate-180')}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', guideOpen && 'rotate-180')} />
           </button>
           {guideOpen && (
             <div className="px-4 pb-4 text-xs text-muted-foreground/80 space-y-2 border-t border-white/[0.04] pt-3">

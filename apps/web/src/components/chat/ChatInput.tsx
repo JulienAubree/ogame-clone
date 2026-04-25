@@ -1,4 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
+import { Send } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (body: string) => void;
@@ -43,9 +44,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Ecrire un message..
         aria-label="Envoyer"
         className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground disabled:opacity-40 transition-opacity flex-shrink-0"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-        </svg>
+        <Send className="h-3.5 w-3.5" aria-hidden="true" />
       </button>
     </div>
   );

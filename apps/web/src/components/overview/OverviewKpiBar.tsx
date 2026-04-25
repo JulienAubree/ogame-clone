@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { BarChart3, ChevronDown, Shield, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
 
@@ -121,7 +121,7 @@ function ResourcePanel({ mineLevel, mineLabel, production, storageLevel, capacit
       </div>
       {protectedAmount != null && protectedAmount > 0 && (
         <div className="text-[9px] text-green-500/70 flex items-center gap-1 mt-1">
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <Shield className="h-2 w-2" />
           {formatNumber(protectedAmount)} protégé
         </div>
       )}
@@ -164,7 +164,7 @@ export function OverviewKpiBar({ resources, liveResources, ships, levels }: Over
         />
         <div className="hidden h-5 w-px bg-border/40 lg:block" />
         <Kpi
-          iconNode={<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={energyPositive ? 'text-yellow-400' : 'text-red-400'}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>}
+          iconNode={<Zap className={cn('h-3.5 w-3.5', energyPositive ? 'text-yellow-400' : 'text-red-400')} />}
           color={energyPositive ? 'text-yellow-400' : 'text-red-400'}
           value={`${energyPositive ? '+' : ''}${Math.floor(energyBalance)}`}
           active={openPanel === 'energy'}
@@ -172,7 +172,7 @@ export function OverviewKpiBar({ resources, liveResources, ships, levels }: Over
         />
         <div className="hidden h-5 w-px bg-border/40 lg:block" />
         <Kpi
-          iconNode={<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400"><path d="M2 20h.01M7 20v-4M12 20V10M17 20V4M22 20h.01"/></svg>}
+          iconNode={<BarChart3 className="h-3.5 w-3.5 text-cyan-400" />}
           color="text-cyan-400"
           value={`${totalShips} vsx`}
           active={openPanel === 'fleet'}

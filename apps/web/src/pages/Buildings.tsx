@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router';
+import { ChevronDown } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Button } from '@/components/ui/button';
@@ -282,15 +283,7 @@ export default function Buildings() {
               className="flex w-full items-center justify-between py-2 border-b border-border mb-4 font-mono text-sm font-semibold text-muted-foreground uppercase tracking-widest"
             >
               <span>{category.name}</span>
-              <svg
-                className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
+              <ChevronDown className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
 
             {!isCollapsed && (
