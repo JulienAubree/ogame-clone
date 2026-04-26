@@ -17,13 +17,16 @@ interface FlagshipStatProps {
   value: number | string;
   base?: number;
   bonus?: number;
+  researchPct?: number;
   variant: string;
   wide?: boolean;
 }
 
-export function FlagshipStat({ icon, label, value, base, bonus, variant, wide }: FlagshipStatProps) {
+export function FlagshipStat({ icon, label, value, base, bonus, researchPct, variant, wide }: FlagshipStatProps) {
   const v = STAT_VARIANTS[variant] ?? STAT_VARIANTS.hull;
   const hasBonus = bonus != null && bonus !== 0 && typeof bonus === 'number';
+  const hasResearch = researchPct != null && researchPct !== 0;
+  const showBreakdown = hasBonus || hasResearch;
   return (
     <div className={cn(
       'flex items-center gap-2.5 bg-[#0f172a] rounded-lg p-2.5 border border-transparent hover:border-[#334155] transition-colors',
@@ -37,9 +40,11 @@ export function FlagshipStat({ icon, label, value, base, bonus, variant, wide }:
         <div className={cn('text-base font-bold font-mono leading-tight', v.valueColor)}>
           {typeof value === 'number' ? fmt(value) : value}
         </div>
-        {hasBonus && (
+        {showBreakdown && (
           <div className="text-[9px] text-emerald-500">
-            base {fmt(base!)} · {bonus > 0 ? '+' : ''}{fmt(bonus)}
+            base {fmt(base ?? 0)}
+            {hasBonus && ` · ${bonus! > 0 ? '+' : ''}${fmt(bonus!)}`}
+            {hasResearch && ` · +${researchPct}% rech.`}
           </div>
         )}
       </div>

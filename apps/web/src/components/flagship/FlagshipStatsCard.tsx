@@ -7,12 +7,19 @@ import {
 } from '@/components/entity-details/stat-components';
 import { FlagshipStat } from './FlagshipStat';
 import { getHullCardStyles } from './hullCardStyles';
+import { trpc } from '@/trpc';
+import { useGameConfig } from '@/hooks/useGameConfig';
+import { resolveBonus } from '@exilium/game-engine';
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
+
+const pct = (mult: number) => Math.round((mult - 1) * 100);
 
 const DRIVE_LABELS: Record<string, string> = {
   combustion: 'Combustion',
   impulse: 'Impulsion',
+  hyperspaceDrive: 'Hyperespace',
+  // Legacy values (pre-2026-04-26 fix) — keep until any cached effectiveStats are gone
   impulsion: 'Impulsion',
   hyperespace: 'Hyperespace',
 };
@@ -56,6 +63,31 @@ export function FlagshipStatsCard({
 }: FlagshipStatsCardProps) {
   const styles = getHullCardStyles(flagship.hullId);
 
+  // Research multipliers — applied on top of effective stats (talents + hull) to match combat resolution
+  const { data: researchData } = trpc.research.list.useQuery();
+  const { data: gameConfig } = useGameConfig();
+  const researchLevels: Record<string, number> = {};
+  for (const r of researchData?.items ?? []) {
+    researchLevels[r.id] = r.currentLevel;
+  }
+  const bonusDefs = gameConfig?.bonuses ?? [];
+  const weaponsMult = resolveBonus('weapons', null, researchLevels, bonusDefs);
+  const shieldingMult = resolveBonus('shielding', null, researchLevels, bonusDefs);
+  const armorMult = resolveBonus('armor', null, researchLevels, bonusDefs);
+  const speedMult = resolveBonus('ship_speed', driveType, researchLevels, bonusDefs);
+
+  const baseShield = effectiveStats?.shield ?? flagship.shield;
+  const baseHull = effectiveStats?.hull ?? flagship.hull;
+  const baseArmor = effectiveStats?.baseArmor ?? flagship.baseArmor;
+  const baseWeapons = effectiveStats?.weapons ?? flagship.weapons;
+  const baseSpeedVal = effectiveStats?.baseSpeed ?? flagship.baseSpeed;
+
+  const finalShield = Math.round(baseShield * shieldingMult);
+  const finalHull = Math.round(baseHull * armorMult);
+  const finalArmor = Math.round(baseArmor * armorMult);
+  const finalWeapons = Math.round(baseWeapons * weaponsMult);
+  const finalSpeed = Math.round(baseSpeedVal * speedMult);
+
   return (
     <div className={cn('glass-card p-4 lg:p-5 space-y-4 border', styles.border)}>
       {/* Defense */}
@@ -65,25 +97,28 @@ export function FlagshipStatsCard({
           <FlagshipStat
             icon={<ShieldIcon />}
             label="Bouclier"
-            value={effectiveStats?.shield ?? flagship.shield}
+            value={finalShield}
             base={flagship.shield}
             bonus={talentBonuses.shield}
+            researchPct={pct(shieldingMult)}
             variant="shield"
           />
           <FlagshipStat
             icon={<ArmorIcon />}
             label="Blindage"
-            value={effectiveStats?.baseArmor ?? flagship.baseArmor}
+            value={finalArmor}
             base={flagship.baseArmor}
             bonus={talentBonuses.baseArmor}
+            researchPct={pct(armorMult)}
             variant="armor"
           />
           <FlagshipStat
             icon={<HullIcon />}
             label="Coque"
-            value={effectiveStats?.hull ?? flagship.hull}
+            value={finalHull}
             base={flagship.hull}
             bonus={talentBonuses.hull}
+            researchPct={pct(armorMult)}
             variant="hull"
           />
         </div>
@@ -98,9 +133,10 @@ export function FlagshipStatsCard({
           <FlagshipStat
             icon={<WeaponsIcon />}
             label="Armement"
-            value={effectiveStats?.weapons ?? flagship.weapons}
+            value={finalWeapons}
             base={flagship.weapons}
             bonus={talentBonuses.weapons}
+            researchPct={pct(weaponsMult)}
             variant="weapons"
           />
           <FlagshipStat
@@ -129,10 +165,12 @@ export function FlagshipStatsCard({
             <div>
               <div className="text-[10px] text-slate-500 uppercase tracking-wide">Vitesse</div>
               <div className="text-xs text-slate-200 font-mono font-semibold">
-                {fmt(effectiveStats?.baseSpeed ?? flagship.baseSpeed)}
-                {talentBonuses.speedPercent ? (
+                {fmt(finalSpeed)}
+                {(talentBonuses.speedPercent || speedMult > 1) ? (
                   <span className="text-[9px] text-emerald-500 ml-1">
-                    base {fmt(flagship.baseSpeed)} · +{fmt(Math.round(flagship.baseSpeed * talentBonuses.speedPercent))}
+                    base {fmt(flagship.baseSpeed)}
+                    {talentBonuses.speedPercent ? ` · +${fmt(Math.round(flagship.baseSpeed * talentBonuses.speedPercent))}` : ''}
+                    {speedMult > 1 ? ` · +${pct(speedMult)}% rech.` : ''}
                   </span>
                 ) : null}
               </div>

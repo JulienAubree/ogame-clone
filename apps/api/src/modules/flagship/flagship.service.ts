@@ -108,9 +108,9 @@ export function createFlagshipService(
           if (!def || def.effectType !== 'unlock') continue;
           const params = def.effectParams as { key: string };
           if (params.key === 'drive_impulse') {
-            effectiveStats.driveType = 'impulsion';
+            effectiveStats.driveType = 'impulse';
           } else if (params.key === 'drive_hyperspace') {
-            effectiveStats.driveType = 'hyperespace';
+            effectiveStats.driveType = 'hyperspaceDrive';
           }
         }
 
