@@ -14,6 +14,7 @@ import { PveMissionBanner } from '@/components/fleet/PveMissionBanner';
 import { FleetComposition } from '@/components/fleet/FleetComposition';
 import { FleetSummaryBar } from '@/components/fleet/FleetSummaryBar';
 import { TargetContactsDropdown } from '@/components/fleet/TargetContactsDropdown';
+import { ColonizeConfirmDialog } from '@/components/fleet/ColonizeConfirmDialog';
 import { getCargoCapacity, type Mission } from '@/config/mission-config';
 import { getShipName } from '@/lib/entity-names';
 import { computeSlagRate, miningDuration, resolveBonus, computeFleetFP } from '@exilium/game-engine';
@@ -494,16 +495,25 @@ export default function Fleet() {
         }}
       />
 
-      {/* Confirm Dialog */}
-      <ConfirmDialog
-        open={confirmSend}
-        onConfirm={() => { setConfirmSend(false); handleSend(); }}
-        onCancel={() => setConfirmSend(false)}
-        title={`Confirmer la mission ${mission ? (gameConfig?.missions[mission]?.label ?? '') : ''} ?`}
-        description={`Vous êtes sur le point d'envoyer votre flotte en mission ${mission ? (gameConfig?.missions[mission]?.label ?? '').toLowerCase() : ''} vers [${target.galaxy}:${target.system}:${target.position}].`}
-        variant="destructive"
-        confirmLabel="Envoyer"
-      />
+      {/* Confirm Dialog — colonize uses a richer custom dialog */}
+      {mission === 'colonize' ? (
+        <ColonizeConfirmDialog
+          open={confirmSend}
+          onConfirm={() => { setConfirmSend(false); handleSend(); }}
+          onCancel={() => setConfirmSend(false)}
+          target={target}
+        />
+      ) : (
+        <ConfirmDialog
+          open={confirmSend}
+          onConfirm={() => { setConfirmSend(false); handleSend(); }}
+          onCancel={() => setConfirmSend(false)}
+          title={`Confirmer la mission ${mission ? (gameConfig?.missions[mission]?.label ?? '') : ''} ?`}
+          description={`Vous êtes sur le point d'envoyer votre flotte en mission ${mission ? (gameConfig?.missions[mission]?.label ?? '').toLowerCase() : ''} vers [${target.galaxy}:${target.system}:${target.position}].`}
+          variant="destructive"
+          confirmLabel="Envoyer"
+        />
+      )}
     </div>
   );
 }
