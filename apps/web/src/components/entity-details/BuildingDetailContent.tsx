@@ -73,12 +73,19 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
   const armoredResearch = researchData?.items?.find((r) => r.id === 'armoredStorage');
   const armoredLevel = armoredResearch?.currentLevel ?? 0;
 
+  // Governance malus: applied to production on non-homeworld colonies in overextend
+  const { data: governance } = trpc.colonization.governance.useQuery();
+  const harvestMalus = (planetClassId !== 'homeworld' && governance) ? governance.harvestMalus : 0;
+
   // Resolve the bonus multiplier: research gives percentPerLevel (default 5) per level
   const armoredBonusPerLevel = gameConfig?.bonuses?.find((b) => b.stat === 'armored_storage')?.percentPerLevel ?? 5;
   const armoredMultiplier = 1 + (armoredBonusPerLevel / 100) * armoredLevel;
   const effectiveRatio = protectedBaseRatio * armoredMultiplier;
   const currentStorageCap = storageCapacity(currentLevel, prodConfig?.storage);
   const currentProtected = Math.floor(currentStorageCap * effectiveRatio);
+
+  // Effective production factor includes energy ratio AND governance harvest malus.
+  const effectiveProductionFactor = (planetContext?.productionFactor ?? 1) * (1 - harvestMalus);
 
   // Contextual table
   const tableData = useMemo(
@@ -87,12 +94,12 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
         buildingId,
         currentLevel,
         planetContext?.maxTemp ?? 50,
-        planetContext?.productionFactor ?? 1,
+        effectiveProductionFactor,
         prodConfig,
         protectedBaseRatio,
         armoredMultiplier,
       ),
-    [buildingId, currentLevel, planetContext, prodConfig, protectedBaseRatio, armoredMultiplier],
+    [buildingId, currentLevel, planetContext?.maxTemp, effectiveProductionFactor, prodConfig, protectedBaseRatio, armoredMultiplier],
   );
 
   return (
@@ -418,6 +425,11 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
                 ))}
             </tbody>
           </table>
+          {tableData.type === 'mine' && harvestMalus > 0 && (
+            <p className="text-[11px] text-amber-400/80 mt-1.5">
+              Pénalité gouvernance appliquée : <span className="font-semibold">−{Math.round(harvestMalus * 100)}%</span> sur la production affichée.
+            </p>
+          )}
         </div>
       )}
 

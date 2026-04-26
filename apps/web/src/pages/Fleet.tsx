@@ -51,9 +51,28 @@ export default function Fleet() {
   );
   const { data: flagship } = trpc.flagship.get.useQuery();
   const { data: fleetSlots } = trpc.fleet.slots.useQuery();
+  const { data: governance } = trpc.colonization.governance.useQuery();
 
   const { data: planets } = trpc.planet.list.useQuery();
   const planet = planets?.find((p) => p.id === planetId);
+
+  // Projected governance impact when launching a colonize mission
+  const colonizeOverextendWarning = (() => {
+    if (mission !== 'colonize' || !governance || !gameConfig) return null;
+    const harvestPenalties = (gameConfig.universe?.['governance_penalty_harvest'] as number[] | undefined) ?? [0.15, 0.35, 0.60];
+    const futureColonyCount = governance.colonyCount + 1;
+    const futureOverextend = Math.max(0, futureColonyCount - governance.capacity);
+    if (futureOverextend === 0) return null;
+    const step = Math.min(futureOverextend, harvestPenalties.length) - 1;
+    const futureMalus = harvestPenalties[step] ?? harvestPenalties[harvestPenalties.length - 1] ?? 0;
+    return {
+      futureColonyCount,
+      capacity: governance.capacity,
+      futureOverextend,
+      futureMalus,
+      currentMalus: governance.harvestMalus,
+    };
+  })();
 
   // URL param handling — runs once on mount
   useEffect(() => {
@@ -435,6 +454,23 @@ export default function Fleet() {
       {sendMutation.error && (
         <div className="rounded-lg border border-red-800 bg-red-950/40 p-3 text-sm text-red-300">
           {sendMutation.error.message}
+        </div>
+      )}
+
+      {/* Governance overextend warning for colonize missions */}
+      {colonizeOverextendWarning && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-200 space-y-1">
+          <div className="flex items-center gap-2 font-semibold text-amber-400 uppercase tracking-wider text-[11px]">
+            Surextension impériale {colonizeOverextendWarning.currentMalus > 0 ? 'aggravée' : 'à venir'}
+          </div>
+          <p>
+            Cette colonisation portera votre empire à <span className="font-semibold">{colonizeOverextendWarning.futureColonyCount} colonies</span> pour une capacité de <span className="font-semibold">{colonizeOverextendWarning.capacity}</span> (dépassement +{colonizeOverextendWarning.futureOverextend}).
+          </p>
+          <p className="text-amber-300/90">
+            Toutes vos planètes secondaires subiront <span className="font-semibold">−{Math.round(colonizeOverextendWarning.futureMalus * 100)}% de production</span>
+            {colonizeOverextendWarning.currentMalus > 0 && ` (actuellement −${Math.round(colonizeOverextendWarning.currentMalus * 100)}%)`}.
+            Améliorez le Centre de Pouvoir Impérial pour augmenter votre capacité.
+          </p>
         </div>
       )}
 

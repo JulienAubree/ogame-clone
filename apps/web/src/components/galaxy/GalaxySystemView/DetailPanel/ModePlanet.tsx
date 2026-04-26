@@ -19,6 +19,7 @@ import { PlanetDot } from '../../PlanetDot';
 import { PlanetVisual } from '../../PlanetVisual';
 import { DebrisFieldIcon } from '../../DebrisFieldIcon';
 import { AllianceBlason } from '../../../alliance/AllianceBlason';
+import { trpc } from '@/trpc';
 
 type PlanetLikeView = Extract<
   SlotView,
@@ -378,6 +379,7 @@ function EmptyDiscoveredPanel({
   const totalBiomes = view.biomes.length + (view.undiscoveredCount ?? 0);
   const discoveredCount = view.biomes.length;
   const isComplete = (view.undiscoveredCount ?? 0) === 0;
+  const { data: governance } = trpc.colonization.governance.useQuery();
 
   return (
     <div>
@@ -418,6 +420,20 @@ function EmptyDiscoveredPanel({
         </div>
       )}
 
+
+      {governance && (() => {
+        const willOverextend = governance.colonyCount + 1 > governance.capacity;
+        const ratioColor = willOverextend ? 'text-amber-400' : 'text-emerald-400';
+        return (
+          <div className="mt-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-[11px] flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Capacité de gouvernance</span>
+            <span className={`font-semibold ${ratioColor}`}>
+              {governance.colonyCount}/{governance.capacity} colonies
+              {willOverextend && <span className="ml-1 text-amber-400/80">— surextension après</span>}
+            </span>
+          </div>
+        );
+      })()}
 
       <div className="mt-4 flex flex-col gap-2">
         <ActionButton
