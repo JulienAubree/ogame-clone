@@ -23,7 +23,8 @@ export function AllianceChatPage({ alliance }: AllianceChatPageProps) {
       />
       <div className="mt-4 flex-1 overflow-hidden">
         <ChatView
-          threadId={alliance.id}
+          threadId={null}
+          allianceId={alliance.id}
           otherUsername={`[${alliance.tag}] ${alliance.name}`}
           className="h-full"
         />

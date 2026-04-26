@@ -12,18 +12,26 @@ interface ChatViewProps {
   otherUsername: string | null;
   otherUserId?: string | null;
   otherAvatarId?: string | null;
+  allianceId?: string;
   onBack?: () => void;
   onThreadCreated?: (threadId: string) => void;
   className?: string;
 }
 
-export function ChatView({ threadId, otherUsername, otherUserId, otherAvatarId, onBack, onThreadCreated, className = '' }: ChatViewProps) {
+export function ChatView({ threadId, otherUsername, otherUserId, otherAvatarId, allianceId, onBack, onThreadCreated, className = '' }: ChatViewProps) {
   const userId = useAuthStore((s) => s.user?.id);
   const utils = trpc.useUtils();
 
+  const isAlliance = !!allianceId;
+
   const { data: thread } = trpc.message.thread.useQuery(
     { threadId: threadId! },
-    { enabled: !!threadId },
+    { enabled: !isAlliance && !!threadId },
+  );
+
+  const { data: allianceThread } = trpc.message.allianceChat.useQuery(
+    { allianceId: allianceId! },
+    { enabled: isAlliance && !!allianceId },
   );
 
   // Backend marks messages as read on fetch — invalidate unread counts
@@ -53,6 +61,12 @@ export function ChatView({ threadId, otherUsername, otherUserId, otherAvatarId, 
     },
   });
 
+  const allianceSendMutation = trpc.message.sendAllianceChat.useMutation({
+    onSuccess: () => {
+      utils.message.allianceChat.invalidate({ allianceId: allianceId! });
+    },
+  });
+
   if (!otherUsername) {
     return (
       <div className={`flex items-center justify-center ${className}`}>
@@ -62,12 +76,19 @@ export function ChatView({ threadId, otherUsername, otherUserId, otherAvatarId, 
   }
 
   const handleSend = (body: string) => {
-    if (thread && thread.length > 0) {
+    if (isAlliance) {
+      allianceSendMutation.mutate({ body });
+    } else if (thread && thread.length > 0) {
       replyMutation.mutate({ messageId: thread[thread.length - 1].id, body });
     } else {
       sendMutation.mutate({ recipientUsername: otherUsername, body });
     }
   };
+
+  const activeThread = isAlliance ? allianceThread : thread;
+  const isPending = isAlliance
+    ? allianceSendMutation.isPending
+    : (replyMutation.isPending || sendMutation.isPending);
 
   return (
     <div className={`flex flex-col min-h-0 h-full ${className}`}>
@@ -91,8 +112,8 @@ export function ChatView({ threadId, otherUsername, otherUserId, otherAvatarId, 
       </div>
 
       {/* Messages */}
-      {thread && userId ? (
-        <ChatMessageList messages={thread} currentUserId={userId} className="flex-1" />
+      {activeThread && userId ? (
+        <ChatMessageList messages={activeThread} currentUserId={userId} className="flex-1" showSenderName={isAlliance} />
       ) : (
         <div className="flex-1" />
       )}
@@ -100,7 +121,7 @@ export function ChatView({ threadId, otherUsername, otherUserId, otherAvatarId, 
       {/* Input */}
       <ChatInput
         onSend={handleSend}
-        disabled={replyMutation.isPending || sendMutation.isPending}
+        disabled={isPending}
       />
     </div>
   );
