@@ -19,6 +19,7 @@ export interface AbandonModalPlanet {
   system: number;
   position: number;
   planetClassId: string | null;
+  planetImageIndex?: number | null;
   status?: string;
 }
 

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Send, Clock, Fuel, Truck, Anchor } from 'lucide-react';
+import { Send, Clock, Fuel } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { Button } from '@/components/ui/button';
 import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
-import { getAssetUrl, getPlanetImageUrl } from '@/lib/assets';
-import { FlagshipIcon } from '@/lib/icons';
+import { MissionIcon } from '@/components/fleet/MissionIcon';
+import { getAssetUrl, getPlanetImageUrl, getFlagshipImageUrl } from '@/lib/assets';
 import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { PlanetFleetData } from './empire-types';
@@ -70,6 +70,7 @@ export function SendFleetOverlay({
     { planetId: originPlanetId },
     { enabled: open },
   );
+  const { data: flagshipData } = trpc.flagship.get.useQuery(undefined, { enabled: open });
 
   const targetPlanet = useMemo(
     () => availablePlanets.find((p) => p.id === targetPlanetId),
@@ -169,14 +170,14 @@ export function SendFleetOverlay({
           <MissionTab
             active={mission === 'transport'}
             onClick={() => setMission('transport')}
-            icon={<Truck className="h-4 w-4" />}
+            icon={<MissionIcon mission="transport" size={18} />}
             label="Transport"
             hint="Aller-retour avec ressources"
           />
           <MissionTab
             active={mission === 'station'}
             onClick={() => setMission('station')}
-            icon={<Anchor className="h-4 w-4" />}
+            icon={<MissionIcon mission="station" size={18} />}
             label="Stationner"
             hint="Flotte reste à destination"
           />
@@ -270,10 +271,13 @@ export function SendFleetOverlay({
                       : 'border-border/40',
                   )}
                 >
-                  {isFlagship ? (
-                    <div className="flex h-6 w-6 items-center justify-center rounded-sm border border-amber-500/40 bg-amber-500/10 shrink-0">
-                      <FlagshipIcon width={14} height={14} className="text-amber-400" />
-                    </div>
+                  {isFlagship && flagshipData?.hullId && flagshipData.flagshipImageIndex != null ? (
+                    <img
+                      src={getFlagshipImageUrl(flagshipData.hullId, flagshipData.flagshipImageIndex, 'thumb')}
+                      alt=""
+                      className="h-6 w-6 rounded-sm border border-amber-500/40 object-cover shrink-0"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
                   ) : (
                     <img
                       src={getAssetUrl('ships', ship.id, 'thumb')}

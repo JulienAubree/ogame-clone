@@ -11,8 +11,8 @@ import { getBuildingName, getResearchName, getShipName, getDefenseName } from '@
 import { AbandonColonyModal, type AbandonModalPlanet } from '@/components/empire/AbandonColonyModal';
 import { ShipChipPopover } from '@/components/empire/ShipChipPopover';
 import { SendFleetOverlay, type SendFleetMission } from '@/components/empire/SendFleetOverlay';
+import { MissionIcon } from '@/components/fleet/MissionIcon';
 import type { EmpireViewMode, PlanetFleetData } from '@/components/empire/empire-types';
-import { Truck, Anchor } from 'lucide-react';
 
 interface EmpirePlanet {
   id: string;
@@ -389,7 +389,7 @@ export function EmpirePlanetCard({ planet, isFirst, allPlanets, fleet, viewMode 
               )}
               title={canSendFleet ? 'Envoyer une flotte en transport' : 'Aucune flotte mobilisable ou aucune autre planète'}
             >
-              <Truck className="h-3.5 w-3.5" />
+              <MissionIcon mission="transport" size={14} />
               Transport
             </button>
             <button
@@ -403,7 +403,7 @@ export function EmpirePlanetCard({ planet, isFirst, allPlanets, fleet, viewMode 
               )}
               title={canSendFleet ? 'Stationner une flotte sur une autre planète' : 'Aucune flotte mobilisable ou aucune autre planète'}
             >
-              <Anchor className="h-3.5 w-3.5" />
+              <MissionIcon mission="station" size={14} />
               Stationner
             </button>
           </>
@@ -432,7 +432,7 @@ export function EmpirePlanetCard({ planet, isFirst, allPlanets, fleet, viewMode 
           system: p.system,
           position: p.position,
           planetClassId: p.planetClassId,
-          planetImageIndex: null,
+          planetImageIndex: p.planetImageIndex ?? null,
         }))}
         initialMission={sendMission}
       />
