@@ -1,3 +1,6 @@
+> **📦 Archivé** — Ce document est conservé pour son contexte historique.
+> Pour la doc à jour, voir [`docs/reference/`](../reference/) et [`docs/patchnotes/`](../patchnotes/).
+
 # Note d'equilibrage -- Audit de la proposition de reequilibrage
 
 Ce document est un auto-audit de `combat-rebalance-proposal.md`. Il identifie les desequilibres que la proposition introduirait et propose des corrections.

@@ -82,7 +82,7 @@ Deux façons de résoudre : un flag `metadata.abandon` lu par `TransportHandler`
 ### Nouveaux types / enums
 
 - Nouveau `missionType='abandon'` à ajouter à l'enum `missions` des rapports (`reports.mission_type`).
-- Nouvelle mission `abandon_return` à ajouter à l'enum `fleet_mission` des `fleetEvents` et au registre de missions dans `game-config` (mêmes points d'ajout qu'une mission classique — cf. `docs/adding-a-new-mission.md`).
+- Nouvelle mission `abandon_return` à ajouter à l'enum `fleet_mission` des `fleetEvents` et au registre de missions dans `game-config` (mêmes points d'ajout qu'une mission classique — cf. `docs/processes/adding-a-new-mission.md`).
 - Nouveau handler `AbandonReturnHandler` dans `apps/api/src/modules/fleet/handlers/abandon-return.handler.ts` :
   - `validateFleet` : no-op (la flotte n'est jamais envoyée par le joueur via l'UI classique, uniquement créée par `PlanetAbandonService`).
   - `processArrival` : cherche la planète destination (si disparue, comme `transport.handler`, fallback report `aborted`) ; dépose les ressources ; mergeant les ships sur `planetShips` de la destination ; re-stationne le flagship via `flagshipService.returnFromMission` si présent ; crée un rapport `abandon` avec le bilan complet (ships arrivés, cargo, loss origin) ; retourne `scheduleReturn: false`, `schedulePhase: undefined`, `createReturnEvent: undefined` ⇒ `fleet.service` marquera l'event `completed`.

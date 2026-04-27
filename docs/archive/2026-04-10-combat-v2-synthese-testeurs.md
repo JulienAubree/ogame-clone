@@ -1,3 +1,6 @@
+> **📦 Archivé** — Ce document est conservé pour son contexte historique.
+> Pour la doc à jour, voir [`docs/reference/`](../reference/) et [`docs/patchnotes/`](../patchnotes/).
+
 ### Refonte du systeme de combat -- Proposition V2
 
 *Document de synthese a destination des testeurs. Objectif : recueillir vos retours avant implementation.*

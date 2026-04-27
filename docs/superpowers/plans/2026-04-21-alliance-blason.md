@@ -1895,10 +1895,10 @@ git push
 
 ---
 
-## Task 15: Update `docs/alliance-improvements.md` — mark section 1 done
+## Task 15: Update `docs/proposals/2026-04-21-alliance-improvements.md` — mark section 1 done
 
 **Files:**
-- Modify: `docs/alliance-improvements.md`
+- Modify: `docs/proposals/2026-04-21-alliance-improvements.md`
 
 - [ ] **Step 1: Remove section 1 entries (blason + devise)**
 
@@ -1909,7 +1909,7 @@ Update the priorities table: remove the "Blason + devise" row.
 - [ ] **Step 2: Commit + push**
 
 ```bash
-git add docs/alliance-improvements.md
+git add docs/proposals/2026-04-21-alliance-improvements.md
 git commit -m "docs(alliance): mark blason + devise as shipped (section 1 done)
 
 Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"

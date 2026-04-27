@@ -1,3 +1,6 @@
+> **📦 Archivé** — Ce document est conservé pour son contexte historique.
+> Pour la doc à jour, voir [`docs/reference/`](../reference/) et [`docs/patchnotes/`](../patchnotes/).
+
 # Codex Exilium — Document de travail
 
 > Ce document consigne les réflexions autour du Codex. C'est une base de travail, pas une spec finalisée.

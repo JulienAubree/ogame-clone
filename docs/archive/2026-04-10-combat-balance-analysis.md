@@ -1,3 +1,6 @@
+> **📦 Archivé** — Ce document est conservé pour son contexte historique.
+> Pour la doc à jour, voir [`docs/reference/`](../reference/) et [`docs/patchnotes/`](../patchnotes/).
+
 # Analyse d'equilibrage -- Systeme de combat Exilium
 
 ## 1. Analyse des ratios cout/efficacite

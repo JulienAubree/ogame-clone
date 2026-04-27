@@ -1,3 +1,5 @@
+> **⚠️ Section combat partiellement obsolète** — la [refonte combat du 2026-04-25](../patchnotes/2026-04-25-refonte-combat.md) a remplacé le système (rapidfire, bounce rule, priorité de cible) par un système multi-batteries avec catégories (Léger/Moyen/Lourd) et traits (Rafale, Enchaînement). Le reste du document (production, recherche, fleet, pillage, etc.) reste à jour.
+
 # Exilium — Documentation du moteur de jeu
 
 Ce document explique toutes les mecaniques du jeu, les formules utilisees et comment les administrer via le panneau admin.

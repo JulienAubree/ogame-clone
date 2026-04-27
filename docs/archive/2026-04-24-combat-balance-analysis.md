@@ -1,3 +1,6 @@
+> **📦 Archivé** — Ce document est conservé pour son contexte historique.
+> Pour la doc à jour, voir [`docs/reference/`](../reference/) et [`docs/patchnotes/`](../patchnotes/).
+
 # Analyse d'équilibrage combat — Exilium
 
 _Série de 200 combats simulés par scénario (seeds variés, multiplicateurs neutres 1×1×1)._

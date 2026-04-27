@@ -1,6 +1,6 @@
 # Alliance — Blason et devise
 
-Spec v1 du système d'identité visuelle d'alliance. Issue de `docs/alliance-improvements.md` section 1.
+Spec v1 du système d'identité visuelle d'alliance. Issue de `docs/proposals/2026-04-21-alliance-improvements.md` section 1.
 
 ## Objectif
 

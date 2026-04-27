@@ -1,3 +1,6 @@
+> **📦 Archivé** — Ce document est conservé pour son contexte historique.
+> Pour la doc à jour, voir [`docs/reference/`](../reference/) et [`docs/patchnotes/`](../patchnotes/).
+
 # Analyse d'équilibrage combat + Propositions
 
 _Date : 2026-04-24 · Basé sur 200 simulations par scénario, 24 scénarios, multiplicateurs neutres (1×1×1)._

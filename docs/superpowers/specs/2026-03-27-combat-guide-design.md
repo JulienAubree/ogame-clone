@@ -4,7 +4,7 @@
 
 Le système FP est en place mais les joueurs n'ont aucune explication sur le fonctionnement du combat. Il faut un encart rapide sur la page Missions et une page guide dédiée avec deux niveaux de lecture (débutant et technique).
 
-Note : `docs/game-mechanics.md` est obsolète (décrit encore le rapidfire, la règle du bounce, la destruction à 30%). Cette spec se base sur le moteur réel (`packages/game-engine/src/formulas/combat.ts`).
+Note : `docs/reference/game-mechanics.md` est obsolète (décrit encore le rapidfire, la règle du bounce, la destruction à 30%). Cette spec se base sur le moteur réel (`packages/game-engine/src/formulas/combat.ts`).
 
 ## 1. Encart dépliable (page Missions)
 

@@ -1,3 +1,5 @@
+> **⚠️ Section combat partiellement obsolète** — la [refonte combat du 2026-04-25](../patchnotes/2026-04-25-refonte-combat.md) a remplacé le système (rapidfire, bounce rule, priorité de cible) par un système multi-batteries avec catégories (Léger/Moyen/Lourd) et traits (Rafale, Enchaînement). Le reste du document (production, recherche, fleet, pillage, etc.) reste à jour.
+
 # Mecaniques de jeu
 
 Ce document detaille toutes les mecaniques de jeu, en particulier celles dont le fonctionnement n'est pas evident a premiere vue.
