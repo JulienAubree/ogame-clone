@@ -1,7 +1,9 @@
 # Phase 1 — Exilium + Flagship + Quetes journalieres
 
+> 📦 **Archivé** (2026-04-26) — toutes les tâches T1-T12 sont implémentées en prod (tables `flagships`/`user_exilium`/`exilium_log`, modules `flagship`/`exilium`/`daily-quest`, page `FlagshipProfile.tsx`, talents, hulls). Archivé pour contexte historique.
+
 **Date :** 2026-03-27
-**Statut :** Plan d'implementation
+**Statut :** ~~Plan d'implementation~~ Implémenté
 **Prerequis :** Game designs valides dans exilium-economie, exilium-flotte, exilium-social, exilium-construction
 
 ---
