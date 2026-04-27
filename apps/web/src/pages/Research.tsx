@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { Home } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { usePlanetStore } from '@/stores/planet.store';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
@@ -26,6 +27,14 @@ import { ResearchRoleFilter, type ResearchFilter } from '@/components/research/R
 import { ResearchHelp } from '@/components/research/ResearchHelp';
 import { RESEARCH_CATEGORIES, RESEARCH_CATEGORY_MAP, type ResearchCategoryId } from '@/components/research/research-icons';
 
+const ANNEX_LAB_BY_PLANET_CLASS: Record<string, { id: string; name: string }> = {
+  volcanic: { id: 'labVolcanic', name: 'Forge Volcanique' },
+  arid: { id: 'labArid', name: 'Laboratoire Aride' },
+  temperate: { id: 'labTemperate', name: 'Bio-Laboratoire' },
+  glacial: { id: 'labGlacial', name: 'Cryo-Laboratoire' },
+  gaseous: { id: 'labGaseous', name: 'Nebula-Lab' },
+};
+
 export default function Research() {
   const planetId = usePlanetStore((s) => s.activePlanetId);
   const setActivePlanet = usePlanetStore((s) => s.setActivePlanet);
@@ -46,17 +55,16 @@ export default function Research() {
   // ── Home planet (researchLab lives there) ─────────────────────────────
   const { data: planets } = trpc.planet.list.useQuery();
   const homePlanet = planets?.find((p) => p.planetClassId === 'homeworld');
+  const currentPlanet = planets?.find((p) => p.id === planetId);
+  const isOnColony = !!homePlanet && !!planetId && planetId !== homePlanet.id;
 
-  // The researchLab only exists on the homeworld, so snap the active planet
-  // to home whenever this page is open.
-  useEffect(() => {
-    if (homePlanet?.id && planetId !== homePlanet.id) {
-      setActivePlanet(homePlanet.id);
-    }
-  }, [homePlanet?.id, planetId, setActivePlanet]);
   const { data: homeBuildings } = trpc.building.list.useQuery(
     { planetId: homePlanet?.id ?? '' },
     { enabled: !!homePlanet?.id },
+  );
+  const { data: colonyBuildings } = trpc.building.list.useQuery(
+    { planetId: planetId ?? '' },
+    { enabled: !!planetId && isOnColony },
   );
   const researchLabBuilding = homeBuildings?.find((b) => b.id === 'researchLab');
   const isAnyBuildingUpgrading = homeBuildings?.some((b) => b.isUpgrading) ?? false;
@@ -145,6 +153,63 @@ export default function Research() {
         <PageHeader title="Recherche" />
         <CardGridSkeleton count={6} />
       </div>
+    );
+  }
+
+  // ── Colony view: lab vit sur la home, montrer l'annexe locale ─────────
+  if (isOnColony && homePlanet && currentPlanet) {
+    const annex = ANNEX_LAB_BY_PLANET_CLASS[currentPlanet.planetClassId ?? ''];
+    const annexBuilding = annex ? colonyBuildings?.find((b) => b.id === annex.id) : undefined;
+    const isAnyColonyUpgrading = colonyBuildings?.some((b) => b.isUpgrading) ?? false;
+    const colonyBuildingLevels: Record<string, number> = {};
+    colonyBuildings?.forEach((b) => { colonyBuildingLevels[b.id] = b.currentLevel; });
+
+    return (
+      <FacilityLockedHero
+        buildingId={annex?.id ?? 'researchLab'}
+        title={annex ? annex.name : 'Recherche'}
+        description={
+          annex ? (
+            <>Le programme scientifique principal s'exécute depuis votre <span className="text-foreground font-semibold">planète-mère</span>. Cette colonie peut héberger une annexe spécialisée qui boostera l'ensemble de votre recherche.</>
+          ) : (
+            <>Le programme scientifique s'exécute depuis votre <span className="text-foreground font-semibold">planète-mère</span>.</>
+          )
+        }
+      >
+        <div className="flex flex-col items-center gap-3">
+          {annex && annexBuilding && (
+            <BuildingUpgradeCard
+              currentLevel={annexBuilding.currentLevel}
+              nextLevelCost={annexBuilding.nextLevelCost}
+              nextLevelTime={annexBuilding.nextLevelTime}
+              prerequisites={annexBuilding.prerequisites as any}
+              isUpgrading={!!annexBuilding.isUpgrading}
+              upgradeEndTime={annexBuilding.upgradeEndTime ?? null}
+              resources={{ minerai: resources.minerai, silicium: resources.silicium, hydrogene: resources.hydrogene }}
+              buildingLevels={colonyBuildingLevels}
+              isAnyUpgrading={isAnyColonyUpgrading}
+              upgradePending={upgradeMutation.isPending}
+              cancelPending={buildingCancelMutation.isPending}
+              gameConfig={gameConfig}
+              onUpgrade={() => upgradeMutation.mutate({ planetId: planetId!, buildingId: annex.id as any })}
+              onCancel={() => buildingCancelMutation.mutate({ planetId: planetId! })}
+              onTimerComplete={() => {
+                utils.building.list.invalidate({ planetId: planetId! });
+                utils.resource.production.invalidate({ planetId: planetId! });
+              }}
+            />
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setActivePlanet(homePlanet.id)}
+          >
+            <Home className="h-3.5 w-3.5" />
+            Voir le laboratoire principal
+          </Button>
+        </div>
+      </FacilityLockedHero>
     );
   }
 
