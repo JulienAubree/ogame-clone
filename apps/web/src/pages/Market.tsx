@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { useOutletContext, useSearchParams, Link } from 'react-router';
-import { Lock, Home, HelpCircle, ShoppingCart, DollarSign, Check, Layers, FileText } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router';
+import { HelpCircle, ShoppingCart, DollarSign, Check, Layers, FileText } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { ResourceBuy } from '@/components/market/ResourceBuy';
 import { ResourceSell } from '@/components/market/ResourceSell';
 import { ResourceMyOffers } from '@/components/market/ResourceMyOffers';
@@ -12,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { getAssetUrl } from '@/lib/assets';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { KpiTile } from '@/components/common/KpiTile';
+import { FacilityLockedHero } from '@/components/common/FacilityLockedHero';
+import { BuildingUpgradeCard } from '@/components/common/BuildingUpgradeCard';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -71,12 +74,59 @@ export default function Market() {
 
   const commissionPercent = Number(gameConfig?.universe?.market_commission_percent) || 5;
 
+  const utils = trpc.useUtils();
   const { data: buildings } = trpc.building.list.useQuery(
     { planetId: planetId! },
     { enabled: !!planetId },
   );
-  const marketLevel = buildings?.find((b) => b.id === 'galacticMarket')?.currentLevel ?? 0;
+  const marketBuilding = buildings?.find((b) => b.id === 'galacticMarket');
+  const marketLevel = marketBuilding?.currentLevel ?? 0;
   const marketReady = !!buildings && marketLevel >= 1;
+
+  const { data: resourceData } = trpc.resource.production.useQuery(
+    { planetId: planetId! },
+    { enabled: !!planetId },
+  );
+  const resources = useResourceCounter(
+    resourceData
+      ? {
+          minerai: resourceData.minerai,
+          silicium: resourceData.silicium,
+          hydrogene: resourceData.hydrogene,
+          resourcesUpdatedAt: resourceData.resourcesUpdatedAt,
+          mineraiPerHour: resourceData.rates.mineraiPerHour,
+          siliciumPerHour: resourceData.rates.siliciumPerHour,
+          hydrogenePerHour: resourceData.rates.hydrogenePerHour,
+          storageMineraiCapacity: resourceData.rates.storageMineraiCapacity,
+          storageSiliciumCapacity: resourceData.rates.storageSiliciumCapacity,
+          storageHydrogeneCapacity: resourceData.rates.storageHydrogeneCapacity,
+        }
+      : undefined,
+  );
+
+  const buildingLevels = useMemo(() => {
+    const levels: Record<string, number> = {};
+    buildings?.forEach((b) => { levels[b.id] = b.currentLevel; });
+    return levels;
+  }, [buildings]);
+
+  const isAnyBuildingUpgrading = buildings?.some((b) => b.isUpgrading) ?? false;
+
+  const upgradeMutation = trpc.building.upgrade.useMutation({
+    onSuccess: () => {
+      utils.building.list.invalidate({ planetId: planetId! });
+      utils.resource.production.invalidate({ planetId: planetId! });
+      utils.planet.empire.invalidate();
+    },
+  });
+
+  const buildingCancelMutation = trpc.building.cancel.useMutation({
+    onSuccess: () => {
+      utils.building.list.invalidate({ planetId: planetId! });
+      utils.resource.production.invalidate({ planetId: planetId! });
+      utils.planet.empire.invalidate();
+    },
+  });
 
   // KPI data — queries share React Query cache with child components
   const { data: offersData } = trpc.market.list.useQuery(
@@ -105,29 +155,34 @@ export default function Market() {
 
   if (buildings && marketLevel < 1) {
     return (
-      <div className="space-y-4">
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/80 via-slate-950 to-purple-950/60" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-          <div className="relative flex flex-col items-center justify-center px-5 py-16 lg:py-24 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-muted-foreground/20 bg-card/50 mb-6">
-              <Lock className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
-            </div>
-            <h1 className="text-xl lg:text-2xl font-bold text-foreground mb-2">Marche Galactique</h1>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              Construisez le <span className="text-foreground font-semibold">Marche Galactique</span> pour
-              echanger des ressources et des rapports d'exploration avec les autres joueurs.
-            </p>
-            <Link
-              to="/buildings"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/30 px-5 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-            >
-              <Home className="h-3.5 w-3.5" />
-              Aller aux bâtiments
-            </Link>
-          </div>
-        </div>
-      </div>
+      <FacilityLockedHero
+        buildingId="galacticMarket"
+        title="Marché Galactique"
+        description={<>Construisez le <span className="text-foreground font-semibold">Marché Galactique</span> sur cette planète pour échanger des ressources et des rapports d'exploration avec les autres joueurs.</>}
+      >
+        {marketBuilding && (
+          <BuildingUpgradeCard
+            currentLevel={marketBuilding.currentLevel}
+            nextLevelCost={marketBuilding.nextLevelCost}
+            nextLevelTime={marketBuilding.nextLevelTime}
+            prerequisites={marketBuilding.prerequisites as any}
+            isUpgrading={!!marketBuilding.isUpgrading}
+            upgradeEndTime={marketBuilding.upgradeEndTime ?? null}
+            resources={{ minerai: resources.minerai, silicium: resources.silicium, hydrogene: resources.hydrogene }}
+            buildingLevels={buildingLevels}
+            isAnyUpgrading={isAnyBuildingUpgrading}
+            upgradePending={upgradeMutation.isPending}
+            cancelPending={buildingCancelMutation.isPending}
+            gameConfig={gameConfig}
+            onUpgrade={() => upgradeMutation.mutate({ planetId: planetId!, buildingId: 'galacticMarket' as any })}
+            onCancel={() => buildingCancelMutation.mutate({ planetId: planetId! })}
+            onTimerComplete={() => {
+              utils.building.list.invalidate({ planetId: planetId! });
+              utils.resource.production.invalidate({ planetId: planetId! });
+            }}
+          />
+        )}
+      </FacilityLockedHero>
     );
   }
 
