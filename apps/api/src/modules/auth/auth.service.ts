@@ -253,6 +253,13 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
 
       await db.delete(refreshTokens).where(eq(refreshTokens.id, stored.id));
 
+      // Update lastLoginAt so admin "Actifs 1h/24h/7j" reflects ongoing activity,
+      // not just explicit logins. Refresh fires ~every JWT lifetime (15 min by default).
+      await db
+        .update(users)
+        .set({ lastLoginAt: sql`now()` })
+        .where(eq(users.id, stored.userId));
+
       const accessToken = await new SignJWT({ userId: stored.userId })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime(env.JWT_EXPIRES_IN)
