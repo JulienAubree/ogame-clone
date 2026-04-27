@@ -48,10 +48,23 @@ export function createProcessDetection(deps: ProcessDetectionDeps) {
       if (score >= scoreThresholds[i]) { tier = i; break; }
     }
 
+    const [targetPlanet] = await db
+      .select({ name: planets.name })
+      .from(planets)
+      .where(
+        and(
+          eq(planets.galaxy, event.targetGalaxy),
+          eq(planets.system, event.targetSystem),
+          eq(planets.position, event.targetPosition),
+        ),
+      )
+      .limit(1);
+
     const payload: Record<string, unknown> = {
       tier,
       arrivalTime: event.arrivalTime.toISOString(),
       targetCoords: `${event.targetGalaxy}:${event.targetSystem}:${event.targetPosition}`,
+      targetPlanetName: targetPlanet?.name,
       mission: event.mission,
       missionLabel: config.missions[event.mission]?.label ?? event.mission,
     };

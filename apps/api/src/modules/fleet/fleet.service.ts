@@ -343,7 +343,7 @@ export function createFleetService(
         const notifyUsers: Array<{ userId: string; type: string; payload: Record<string, unknown> }> = [];
         if (missionDef?.dangerous && event.targetPlanetId) {
           const [targetPlanet] = await db
-            .select({ userId: planets.userId })
+            .select({ userId: planets.userId, name: planets.name })
             .from(planets)
             .where(eq(planets.id, event.targetPlanetId))
             .limit(1);
@@ -353,6 +353,7 @@ export function createFleetService(
               type: 'fleet-attack-landed',
               payload: {
                 targetCoords: eventMeta.targetCoords,
+                targetPlanetName: targetPlanet.name,
                 reportId: result.defenderReportId ?? result.reportId,
                 attackerUsername: result.attackerUsername,
                 outcome: result.defenderOutcomeText,

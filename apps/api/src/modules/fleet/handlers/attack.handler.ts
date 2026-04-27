@@ -306,7 +306,7 @@ export class AttackHandler implements MissionHandler {
         if (ctx.redis) {
           publishNotification(ctx.redis, fleetEvent.userId, {
             type: 'flagship-incapacitated',
-            payload: { coords, mission: 'attack' },
+            payload: { coords, mission: 'attack', targetPlanetName },
           });
         }
         flagshipDestroyed = true;

@@ -76,7 +76,7 @@ export function NotificationsBell() {
                 >
                   <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${eventTypeColor(event.type)}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="truncate">{formatEventText(event, { missions: gameConfig?.missions })}</p>
+                    <p className="truncate">{formatEventText(event, { includePlanet: true, missions: gameConfig?.missions })}</p>
                     <span className="text-xs text-muted-foreground/60">{formatRelativeTime(event.createdAt)}</span>
                   </div>
                 </button>

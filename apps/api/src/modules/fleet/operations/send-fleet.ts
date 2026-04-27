@@ -342,6 +342,7 @@ export function createSendFleet(deps: SendFleetDeps) {
             senderUsername: sender?.username ?? null,
             originCoords: `${planet.galaxy}:${planet.system}:${planet.position}`,
             targetCoords: `${input.targetGalaxy}:${input.targetSystem}:${input.targetPosition}`,
+            targetPlanetName: targetPlanet.name,
             arrivalTime: arrivalTime.toISOString(),
           },
         });

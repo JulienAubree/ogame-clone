@@ -384,6 +384,7 @@ export function createShipyardService(
           eventType: 'shipyard-done',
           notificationPayload: {
             planetId: entry.planetId,
+            planetName: planet?.name ?? 'Planète',
             unitId: entry.itemId,
             name: unitName,
             count: newCompletedCount,

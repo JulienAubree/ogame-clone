@@ -460,6 +460,8 @@ export function createResearchService(
         planetId: entry.planetId,
         eventType: 'research-done',
         notificationPayload: {
+          planetId: entry.planetId,
+          planetName,
           techId: entry.itemId,
           name: techName,
           level: newLevel,

@@ -5,6 +5,7 @@ import { usePushSubscription } from './usePushSubscription';
 import { useToastStore } from '@/stores/toast.store';
 import { useChatStore } from '@/stores/chat.store';
 import { getEntityName } from '@/lib/entity-names';
+import { planetPrefix } from '@/lib/game-events';
 
 let pushSubscriptionActive: boolean | null = null;
 
@@ -44,6 +45,7 @@ interface ShipyardBufferEntry {
   count: number;
   timer: ReturnType<typeof setTimeout>;
   planetId?: string;
+  planetName?: string;
   buildType?: string;
 }
 
@@ -118,15 +120,17 @@ export function useNotifications() {
         utils.building.list.invalidate();
         utils.resource.production.invalidate();
         if (isToastEnabled(event.type)) {
-          addToast(`Construction terminée : ${event.payload.name ?? getEntityName(String(event.payload.buildingId))} niv. ${event.payload.level}`, 'info', '/buildings', event.payload.planetId as string | undefined);
-          showBrowserNotification('Construction terminée', `${event.payload.name ?? getEntityName(String(event.payload.buildingId))} niveau ${event.payload.level}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Construction terminée : ${event.payload.name ?? getEntityName(String(event.payload.buildingId))} niv. ${event.payload.level}`, 'info', '/buildings', event.payload.planetId as string | undefined);
+          showBrowserNotification(`${prefix}Construction terminée`, `${event.payload.name ?? getEntityName(String(event.payload.buildingId))} niveau ${event.payload.level}`);
         }
         break;
       case 'research-done':
         utils.research.list.invalidate();
         if (isToastEnabled(event.type)) {
-          addToast(`Recherche terminée : ${event.payload.name ?? getEntityName(String(event.payload.techId))} niv. ${event.payload.level}`, 'info', '/research', event.payload.planetId as string | undefined);
-          showBrowserNotification('Recherche terminée', `${event.payload.name ?? getEntityName(String(event.payload.techId))} niveau ${event.payload.level}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Recherche terminée : ${event.payload.name ?? getEntityName(String(event.payload.techId))} niv. ${event.payload.level}`, 'info', '/research', event.payload.planetId as string | undefined);
+          showBrowserNotification(`${prefix}Recherche terminée`, `${event.payload.name ?? getEntityName(String(event.payload.techId))} niveau ${event.payload.level}`);
         }
         break;
       case 'shipyard-done': {
@@ -139,6 +143,7 @@ export function useNotifications() {
         const name = String(event.payload.name ?? getEntityName(String(event.payload.unitId)));
         const count = Number(event.payload.count) || 1;
         const shipPlanetId = event.payload.planetId as string | undefined;
+        const shipPlanetName = event.payload.planetName as string | undefined;
         const buildType = event.payload.buildType as string | undefined;
 
         const existing = shipyardBuffer.current.get(unitId);
@@ -148,14 +153,15 @@ export function useNotifications() {
           existing.name = name;
         }
 
-        const entry = existing ?? { name, count, timer: undefined as any, planetId: shipPlanetId, buildType };
+        const entry = existing ?? { name, count, timer: undefined as any, planetId: shipPlanetId, planetName: shipPlanetName, buildType };
 
         entry.timer = setTimeout(() => {
           shipyardBuffer.current.delete(unitId);
           if (isToastEnabled('shipyard-done')) {
             const link = entry.buildType === 'defense' ? '/defense' : '/fleet';
-            addToast(`Chantier terminé : ${entry.count}x ${entry.name}`, 'info', link, entry.planetId);
-            showBrowserNotification('Production terminée', `${entry.count}x ${entry.name}`);
+            const prefix = entry.planetName ? `[${entry.planetName}] ` : '';
+            addToast(`${prefix}Chantier terminé : ${entry.count}x ${entry.name}`, 'info', link, entry.planetId);
+            showBrowserNotification(`${prefix}Production terminée`, `${entry.count}x ${entry.name}`);
           }
         }, SHIPYARD_DEBOUNCE_MS);
 
@@ -171,8 +177,9 @@ export function useNotifications() {
         utils.report.unreadCount.invalidate();
         if (isToastEnabled(event.type)) {
           const arrivedLink = event.payload.reportId ? `/reports/${event.payload.reportId}` : undefined;
-          addToast(`Flotte arrivée : mission ${event.payload.mission} en ${event.payload.targetCoords}`, 'info', arrivedLink);
-          showBrowserNotification('Flotte arrivée', `Mission ${event.payload.mission} en ${event.payload.targetCoords}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Flotte arrivée : mission ${event.payload.mission} en ${event.payload.targetCoords}`, 'info', arrivedLink);
+          showBrowserNotification(`${prefix}Flotte arrivée`, `Mission ${event.payload.mission} en ${event.payload.targetCoords}`);
         }
         break;
       }
@@ -185,8 +192,9 @@ export function useNotifications() {
         utils.report.unreadCount.invalidate();
         if (isToastEnabled(event.type)) {
           const returnedLink = event.payload.reportId ? `/reports/${event.payload.reportId}` : undefined;
-          addToast(`Flotte de retour sur ${event.payload.originName}`, 'info', returnedLink);
-          showBrowserNotification('Flotte de retour', `Flotte rentrée sur ${event.payload.originName}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Flotte de retour sur ${event.payload.originName}`, 'info', returnedLink);
+          showBrowserNotification(`${prefix}Flotte de retour`, `Flotte rentrée sur ${event.payload.originName}`);
         }
         break;
       }
@@ -195,8 +203,9 @@ export function useNotifications() {
         utils.report.unreadCount.invalidate();
         if (isToastEnabled(event.type)) {
           const pveLink = event.payload.reportId ? `/reports/${event.payload.reportId}` : '/missions';
-          addToast(`Mission ${event.payload.missionType} terminée en ${event.payload.targetCoords}`, 'success', pveLink);
-          showBrowserNotification('Mission terminée', `${event.payload.missionType} en ${event.payload.targetCoords}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Mission ${event.payload.missionType} terminée en ${event.payload.targetCoords}`, 'success', pveLink);
+          showBrowserNotification(`${prefix}Mission terminée`, `${event.payload.missionType} en ${event.payload.targetCoords}`);
         }
         break;
       }
@@ -251,15 +260,17 @@ export function useNotifications() {
       case 'fleet-inbound':
         utils.fleet.inbound.invalidate();
         if (isToastEnabled(event.type)) {
-          addToast(`Flotte en approche : ${event.payload.missionLabel} de ${event.payload.senderUsername} [${event.payload.originCoords}]`);
-          showBrowserNotification('Flotte en approche', `${event.payload.senderUsername} envoie une mission ${event.payload.missionLabel}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Flotte en approche : ${event.payload.missionLabel} de ${event.payload.senderUsername} [${event.payload.originCoords}]`);
+          showBrowserNotification(`${prefix}Flotte en approche`, `${event.payload.senderUsername} envoie une mission ${event.payload.missionLabel}`);
         }
         break;
       case 'fleet-hostile-inbound':
         utils.fleet.inbound.invalidate();
         if (isToastEnabled(event.type)) {
-          addToast(`Attaque détectée vers ${event.payload.targetCoords} !`);
-          showBrowserNotification('Attaque détectée !', `Flotte hostile en approche vers ${event.payload.targetCoords}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Attaque détectée vers ${event.payload.targetCoords} !`);
+          showBrowserNotification(`${prefix}Attaque détectée !`, `Flotte hostile en approche vers ${event.payload.targetCoords}`);
         }
         break;
       case 'fleet-attack-landed': {
@@ -271,8 +282,9 @@ export function useNotifications() {
         utils.report.unreadCount.invalidate();
         if (isToastEnabled(event.type)) {
           const attackLink = event.payload.reportId ? `/reports/${event.payload.reportId}` : undefined;
-          addToast(`Attaque de ${event.payload.attackerUsername} sur ${event.payload.targetCoords} — ${event.payload.outcome}`, 'error', attackLink);
-          showBrowserNotification('Planète attaquée !', `Attaque de ${event.payload.attackerUsername} sur ${event.payload.targetCoords} — ${event.payload.outcome}`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Attaque de ${event.payload.attackerUsername} sur ${event.payload.targetCoords} — ${event.payload.outcome}`, 'error', attackLink);
+          showBrowserNotification(`${prefix}Planète attaquée !`, `Attaque de ${event.payload.attackerUsername} sur ${event.payload.targetCoords} — ${event.payload.outcome}`);
         }
         break;
       }
@@ -327,8 +339,9 @@ export function useNotifications() {
       case 'flagship-incapacitated':
         utils.flagship.get.invalidate();
         if (isToastEnabled(event.type)) {
-          addToast('Votre vaisseau amiral a été mis hors service !', 'error', '/flagship');
-          showBrowserNotification('Vaisseau amiral détruit !', `Combat en ${event.payload.coords} — réparation en cours`);
+          const prefix = planetPrefix(event.payload);
+          addToast(`${prefix}Votre vaisseau amiral a été mis hors service !`, 'error', '/flagship');
+          showBrowserNotification(`${prefix}Vaisseau amiral détruit !`, `Combat en ${event.payload.coords} — réparation en cours`);
         }
         break;
       case 'new-alliance-message': {

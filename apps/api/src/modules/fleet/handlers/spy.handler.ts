@@ -491,7 +491,7 @@ export class SpyHandler implements MissionHandler {
       if (ctx.redis) {
         publishNotification(ctx.redis, targetPlanet.userId, {
           type: 'fleet-attack-landed',
-          payload: { coords, mission: 'spy' },
+          payload: { coords, mission: 'spy', targetPlanetName: targetPlanet.name },
         });
       }
 

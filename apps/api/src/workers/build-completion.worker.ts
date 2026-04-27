@@ -65,8 +65,10 @@ export function startBuildCompletionWorker(db: Database, redis: Redis, services:
         const name = String(result.notificationPayload.name ?? result.notificationPayload.buildingId ?? result.notificationPayload.techId ?? result.notificationPayload.unitId);
         const level = result.notificationPayload.level ? ` niv. ${result.notificationPayload.level}` : '';
         const labels: Record<string, string> = { building: 'Construction terminée', research: 'Recherche terminée', shipyard: 'Production terminée' };
+        const planetName = result.notificationPayload.planetName as string | undefined;
+        const titlePrefix = planetName ? `[${planetName}] ` : '';
         await services.pushService.sendToUser(result.userId, pushCategory, {
-          title: labels[pushCategory],
+          title: `${titlePrefix}${labels[pushCategory]}`,
           body: `${name}${level}`,
           url: pushCategory === 'building' ? '/buildings' : pushCategory === 'research' ? '/research' : '/shipyard',
         }, result.eventType);

@@ -65,8 +65,10 @@ export function startFleetWorker(db: Database, redis: Redis, services: Services)
         // Push notification
         const fleetCombatTypes = ['fleet-attack-landed', 'fleet-hostile-inbound'];
         const pushCategory = fleetCombatTypes.includes(result.eventType) ? 'combat' as const : 'fleet' as const;
+        const planetForOwner = (result.notificationPayload.originName ?? result.notificationPayload.targetPlanetName) as string | undefined;
+        const ownerPrefix = planetForOwner ? `[${planetForOwner}] ` : '';
         await services.pushService.sendToUser(result.userId, pushCategory, {
-          title: result.eventType.includes('arrive') ? 'Flotte arrivée' : result.eventType.includes('return') ? 'Flotte de retour' : 'Événement de flotte',
+          title: `${ownerPrefix}${result.eventType.includes('arrive') ? 'Flotte arrivée' : result.eventType.includes('return') ? 'Flotte de retour' : 'Événement de flotte'}`,
           body: String(result.notificationPayload.targetCoords ?? result.notificationPayload.originName ?? ''),
           url: '/fleet',
         }, result.eventType);
@@ -87,8 +89,10 @@ export function startFleetWorker(db: Database, redis: Redis, services: Services)
             });
 
             const cat = notify.type.includes('attack') || notify.type.includes('hostile') ? 'combat' as const : 'fleet' as const;
+            const notifyPlanetName = notify.payload.targetPlanetName as string | undefined;
+            const notifyPrefix = notifyPlanetName ? `[${notifyPlanetName}] ` : '';
             await services.pushService.sendToUser(notify.userId, cat, {
-              title: notify.type.includes('attack') ? 'Planète attaquée !' : 'Flotte en approche',
+              title: `${notifyPrefix}${notify.type.includes('attack') ? 'Planète attaquée !' : 'Flotte en approche'}`,
               body: String(notify.payload.targetCoords ?? ''),
               url: notify.type.includes('attack') ? '/reports' : '/fleet',
             }, notify.type);

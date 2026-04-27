@@ -339,6 +339,7 @@ export function createBuildingService(
         eventType: 'building-done',
         notificationPayload: {
           planetId: entry.planetId,
+          planetName,
           buildingId: entry.itemId,
           name: buildingName,
           level: newLevel,

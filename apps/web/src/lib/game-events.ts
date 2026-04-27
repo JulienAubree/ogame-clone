@@ -1,3 +1,18 @@
+/**
+ * Renvoie un préfixe `[Nom] ` à coller devant le titre/message d'une notification
+ * lorsqu'on connaît la planète concernée. Lit dans cet ordre :
+ *   payload.planetName (building/research/shipyard, market)
+ *   payload.originName (fleet-arrived/returned, pve-mission-done)
+ *   payload.targetPlanetName (fleet-inbound/hostile, attack-landed, flagship)
+ * Retourne '' s'il n'y a pas de planète associée (friend, message, etc.).
+ */
+export function planetPrefix(payload?: unknown): string {
+  if (!payload || typeof payload !== 'object') return '';
+  const p = payload as Record<string, unknown>;
+  const name = p.planetName ?? p.originName ?? p.targetPlanetName;
+  return typeof name === 'string' && name.length > 0 ? `[${name}] ` : '';
+}
+
 export function eventTypeColor(type: string) {
   switch (type) {
     case 'building-done': return 'bg-primary';
@@ -29,13 +44,13 @@ export function formatEventText(
   options?: { includePlanet?: boolean; missions?: Record<string, { label: string }> },
 ) {
   const p = event.payload as any;
-  const planet = options?.includePlanet && p.planetName ? ` sur ${p.planetName}` : '';
+  const prefix = options?.includePlanet ? planetPrefix(event.payload) : '';
   switch (event.type) {
-    case 'building-done': return `${p.name ?? getEntityName(p.buildingId)} niveau ${p.level}${planet}`;
-    case 'research-done': return `${p.name ?? getEntityName(p.techId)} niveau ${p.level}${planet}`;
-    case 'shipyard-done': return `${p.count}x ${p.name ?? getEntityName(p.unitId)}${planet}`;
-    case 'fleet-arrived': return `Mission ${options?.missions?.[p.mission]?.label ?? p.mission} arrivée en ${p.targetCoords}`;
-    case 'fleet-returned': return `Flotte rentrée sur ${p.originName}`;
+    case 'building-done': return `${prefix}${p.name ?? getEntityName(p.buildingId)} niveau ${p.level}`;
+    case 'research-done': return `${prefix}${p.name ?? getEntityName(p.techId)} niveau ${p.level}`;
+    case 'shipyard-done': return `${prefix}${p.count}x ${p.name ?? getEntityName(p.unitId)}`;
+    case 'fleet-arrived': return `${prefix}Mission ${options?.missions?.[p.mission]?.label ?? p.mission} arrivée en ${p.targetCoords}`;
+    case 'fleet-returned': return `${prefix}Flotte rentrée sur ${p.originName}`;
     case 'pve-mission-done': {
       const mLabel = options?.missions?.[p.missionType]?.label ?? p.missionType;
       const loot = [
@@ -43,7 +58,7 @@ export function formatEventText(
         p.cargo?.silicium ? `${p.cargo.silicium.toLocaleString('fr-FR')} silicium` : '',
         p.cargo?.hydrogene ? `${p.cargo.hydrogene.toLocaleString('fr-FR')} hydrogène` : '',
       ].filter(Boolean).join(', ');
-      return `${mLabel} en ${p.targetCoords}${loot ? ` — ${loot}` : ''}`;
+      return `${prefix}${mLabel} en ${p.targetCoords}${loot ? ` — ${loot}` : ''}`;
     }
     case 'tutorial-quest-done': return `Quête "${p.questTitle}" terminée`;
     case 'friend-request': return `Demande d'ami de ${p.fromUsername}`;
