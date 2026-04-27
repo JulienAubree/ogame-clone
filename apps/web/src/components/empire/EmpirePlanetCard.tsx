@@ -10,9 +10,9 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { getBuildingName, getResearchName, getShipName, getDefenseName } from '@/lib/entity-names';
 import { AbandonColonyModal, type AbandonModalPlanet } from '@/components/empire/AbandonColonyModal';
 import { ShipChipPopover } from '@/components/empire/ShipChipPopover';
-import { SendFleetOverlay } from '@/components/empire/SendFleetOverlay';
+import { SendFleetOverlay, type SendFleetMission } from '@/components/empire/SendFleetOverlay';
 import type { EmpireViewMode, PlanetFleetData } from '@/components/empire/empire-types';
-import { Send } from 'lucide-react';
+import { Truck, Anchor } from 'lucide-react';
 
 interface EmpirePlanet {
   id: string;
@@ -60,6 +60,15 @@ export function EmpirePlanetCard({ planet, isFirst, allPlanets, fleet, viewMode 
   const [menuOpen, setMenuOpen] = useState(false);
   const [abandonOpen, setAbandonOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [sendMission, setSendMission] = useState<SendFleetMission>('transport');
+
+  const otherActivePlanets = allPlanets.filter((p) => p.id !== planet.id && p.status === 'active');
+  const canSendFleet = otherActivePlanets.length > 0 && !!fleet && fleet.totalShips > 0;
+
+  const openSend = (mission: SendFleetMission) => {
+    setSendMission(mission);
+    setSendOpen(true);
+  };
   const menuRef = useRef<HTMLDivElement>(null);
   const canAbandon = planet.planetClassId !== 'homeworld' && planet.status === 'active';
 
@@ -250,17 +259,6 @@ export function EmpirePlanetCard({ planet, isFirst, allPlanets, fleet, viewMode 
               <span className="flex items-center gap-2 text-muted-foreground">
                 <span><strong className="font-mono text-foreground">{fleet.totalShips.toLocaleString('fr-FR')}</strong> vsx</span>
                 <span>FP <strong className="font-mono text-amber-400">{formatRate(fleet.totalFP)}</strong></span>
-                {allPlanets.filter((p) => p.id !== planet.id && p.status === 'active').length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setSendOpen(true)}
-                    className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors"
-                    title="Envoyer une flotte vers une autre planète"
-                  >
-                    <Send className="h-3 w-3" />
-                    Envoyer
-                  </button>
-                )}
               </span>
             ) : (
               <span className="text-muted-foreground/60 italic">vide</span>
@@ -357,26 +355,59 @@ export function EmpirePlanetCard({ planet, isFirst, allPlanets, fleet, viewMode 
         )}
       </div>
 
-      {/* Nav shortcuts */}
+      {/* Footer shortcuts — swap based on viewMode */}
       <div className="mt-auto flex border-t border-border/30">
-        {[
-          { label: 'Bâtiments', icon: Building2, path: '/buildings' },
-          { label: 'Chantier', icon: Wrench, path: '/shipyard' },
-          { label: 'Flottes', icon: Layers, path: '/fleet' },
-          { label: 'Défenses', icon: Shield, path: '/defense' },
-        ].map((item, i, arr) => (
-          <button
-            key={item.path}
-            onClick={() => goTo(item.path)}
-            className={cn(
-              'flex flex-1 items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary',
-              i < arr.length - 1 && 'border-r border-border/30',
-            )}
-          >
-            <item.icon className="h-3.5 w-3.5" />
-            {item.label}
-          </button>
-        ))}
+        {viewMode === 'resources' ? (
+          [
+            { label: 'Bâtiments', icon: Building2, path: '/buildings' },
+            { label: 'Chantier', icon: Wrench, path: '/shipyard' },
+            { label: 'Flottes', icon: Layers, path: '/fleet' },
+            { label: 'Défenses', icon: Shield, path: '/defense' },
+          ].map((item, i, arr) => (
+            <button
+              key={item.path}
+              onClick={() => goTo(item.path)}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary',
+                i < arr.length - 1 && 'border-r border-border/30',
+              )}
+            >
+              <item.icon className="h-3.5 w-3.5" />
+              {item.label}
+            </button>
+          ))
+        ) : (
+          <>
+            <button
+              onClick={() => openSend('transport')}
+              disabled={!canSendFleet}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 border-r border-border/30 py-2 text-[11px] transition-colors',
+                canSendFleet
+                  ? 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
+                  : 'text-muted-foreground/40 cursor-not-allowed',
+              )}
+              title={canSendFleet ? 'Envoyer une flotte en transport' : 'Aucune flotte mobilisable ou aucune autre planète'}
+            >
+              <Truck className="h-3.5 w-3.5" />
+              Transport
+            </button>
+            <button
+              onClick={() => openSend('station')}
+              disabled={!canSendFleet}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 py-2 text-[11px] transition-colors',
+                canSendFleet
+                  ? 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
+                  : 'text-muted-foreground/40 cursor-not-allowed',
+              )}
+              title={canSendFleet ? 'Stationner une flotte sur une autre planète' : 'Aucune flotte mobilisable ou aucune autre planète'}
+            >
+              <Anchor className="h-3.5 w-3.5" />
+              Stationner
+            </button>
+          </>
+        )}
       </div>
     </div>
     {canAbandon && (
@@ -394,17 +425,16 @@ export function EmpirePlanetCard({ planet, isFirst, allPlanets, fleet, viewMode 
         originPlanetId={planet.id}
         originName={planet.name}
         availableShips={fleet.ships}
-        availablePlanets={allPlanets
-          .filter((p) => p.id !== planet.id && p.status === 'active')
-          .map((p) => ({
-            id: p.id,
-            name: p.name,
-            galaxy: p.galaxy,
-            system: p.system,
-            position: p.position,
-            planetClassId: p.planetClassId,
-            planetImageIndex: null,
-          }))}
+        availablePlanets={otherActivePlanets.map((p) => ({
+          id: p.id,
+          name: p.name,
+          galaxy: p.galaxy,
+          system: p.system,
+          position: p.position,
+          planetClassId: p.planetClassId,
+          planetImageIndex: null,
+        }))}
+        initialMission={sendMission}
       />
     )}
     </>

@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react';
-import { Send, Clock, Fuel } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Send, Clock, Fuel, Truck, Anchor } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
 import { Button } from '@/components/ui/button';
 import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/ResourceIcons';
 import { getAssetUrl, getPlanetImageUrl } from '@/lib/assets';
+import { FlagshipIcon } from '@/lib/icons';
 import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { PlanetFleetData } from './empire-types';
+
+export type SendFleetMission = 'transport' | 'station';
 
 interface AvailablePlanet {
   id: string;
@@ -27,6 +30,7 @@ interface Props {
   originName: string;
   availableShips: PlanetFleetData['ships'];
   availablePlanets: AvailablePlanet[];
+  initialMission?: SendFleetMission;
 }
 
 function formatCompact(value: number): string {
@@ -42,13 +46,25 @@ export function SendFleetOverlay({
   originName,
   availableShips,
   availablePlanets,
+  initialMission = 'transport',
 }: Props) {
   const utils = trpc.useUtils();
+  const [mission, setMission] = useState<SendFleetMission>(initialMission);
   const [targetPlanetId, setTargetPlanetId] = useState<string | null>(
     availablePlanets[0]?.id ?? null,
   );
   const [selectedShips, setSelectedShips] = useState<Record<string, number>>({});
   const [cargo, setCargo] = useState({ minerai: 0, silicium: 0, hydrogene: 0 });
+
+  useEffect(() => {
+    if (open) setMission(initialMission);
+  }, [open, initialMission]);
+
+  // Stationary ships (e.g. solar satellites) cannot be sent in any mission.
+  const sendableShips = useMemo(
+    () => availableShips.filter((s) => !s.isStationary),
+    [availableShips],
+  );
 
   const { data: resourceData } = trpc.resource.production.useQuery(
     { planetId: originPlanetId },
@@ -67,12 +83,12 @@ export function SendFleetOverlay({
 
   const totalCargoCapacity = useMemo(() => {
     let total = 0;
-    for (const ship of availableShips) {
+    for (const ship of sendableShips) {
       const count = selectedShips[ship.id] ?? 0;
       total += count * ship.cargoCapacity;
     }
     return total;
-  }, [selectedShips, availableShips]);
+  }, [selectedShips, sendableShips]);
 
   const cargoUsed = cargo.minerai + cargo.silicium + cargo.hydrogene;
   const cargoOverflow = cargoUsed > totalCargoCapacity;
@@ -130,7 +146,7 @@ export function SendFleetOverlay({
       targetGalaxy: targetPlanet.galaxy,
       targetSystem: targetPlanet.system,
       targetPosition: targetPlanet.position,
-      mission: 'transport',
+      mission,
       ships: selectedShips,
       mineraiCargo: cargo.minerai,
       siliciumCargo: cargo.silicium,
@@ -148,6 +164,24 @@ export function SendFleetOverlay({
   return (
     <EntityDetailOverlay open={open} onClose={onClose} title={`Envoyer une flotte — ${originName}`}>
       <div className="p-4 space-y-4">
+        {/* Mission picker */}
+        <section className="grid grid-cols-2 gap-2">
+          <MissionTab
+            active={mission === 'transport'}
+            onClick={() => setMission('transport')}
+            icon={<Truck className="h-4 w-4" />}
+            label="Transport"
+            hint="Aller-retour avec ressources"
+          />
+          <MissionTab
+            active={mission === 'station'}
+            onClick={() => setMission('station')}
+            icon={<Anchor className="h-4 w-4" />}
+            label="Stationner"
+            hint="Flotte reste à destination"
+          />
+        </section>
+
         {/* Target picker */}
         <section className="space-y-1.5">
           <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Destination</label>
@@ -198,7 +232,7 @@ export function SendFleetOverlay({
                 type="button"
                 onClick={() => {
                   const next: Record<string, number> = {};
-                  for (const ship of availableShips) next[ship.id] = ship.count;
+                  for (const ship of sendableShips) next[ship.id] = ship.count;
                   setSelectedShips(next);
                 }}
                 className="text-[10px] text-primary hover:underline"
@@ -215,23 +249,39 @@ export function SendFleetOverlay({
               </button>
             </div>
           </div>
+          {sendableShips.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border/40 py-3 text-center text-xs text-muted-foreground/70">
+              Aucun vaisseau mobilisable depuis cette planète.
+            </div>
+          ) : (
           <div className="space-y-1">
-            {availableShips.map((ship) => {
+            {sendableShips.map((ship) => {
               const value = selectedShips[ship.id] ?? 0;
+              const isFlagship = ship.id === 'flagship';
               return (
                 <div
                   key={ship.id}
                   className={cn(
                     'flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors',
-                    value > 0 ? 'border-primary/30 bg-primary/5' : 'border-border/40',
+                    value > 0
+                      ? isFlagship
+                        ? 'border-amber-500/40 bg-amber-500/5'
+                        : 'border-primary/30 bg-primary/5'
+                      : 'border-border/40',
                   )}
                 >
-                  <img
-                    src={getAssetUrl('ships', ship.id, 'thumb')}
-                    alt=""
-                    className="h-6 w-6 rounded-sm object-cover shrink-0"
-                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                  />
+                  {isFlagship ? (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-sm border border-amber-500/40 bg-amber-500/10 shrink-0">
+                      <FlagshipIcon width={14} height={14} className="text-amber-400" />
+                    </div>
+                  ) : (
+                    <img
+                      src={getAssetUrl('ships', ship.id, 'thumb')}
+                      alt=""
+                      className="h-6 w-6 rounded-sm object-cover shrink-0"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-medium text-foreground truncate">{ship.name}</div>
                     <div className="text-[10px] text-muted-foreground">
@@ -249,6 +299,7 @@ export function SendFleetOverlay({
               );
             })}
           </div>
+          )}
         </section>
 
         {/* Cargo */}
@@ -324,6 +375,39 @@ export function SendFleetOverlay({
         </section>
       </div>
     </EntityDetailOverlay>
+  );
+}
+
+function MissionTab({
+  active,
+  onClick,
+  icon,
+  label,
+  hint,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex flex-col items-start gap-0.5 rounded-md border px-3 py-2 text-left transition-colors',
+        active
+          ? 'border-primary/50 bg-primary/10 text-primary'
+          : 'border-border/60 text-muted-foreground hover:bg-accent/30 hover:text-foreground',
+      )}
+    >
+      <span className="flex items-center gap-1.5 text-sm font-semibold">
+        {icon}
+        {label}
+      </span>
+      <span className={cn('text-[10px]', active ? 'text-primary/80' : 'text-muted-foreground/70')}>{hint}</span>
+    </button>
   );
 }
 

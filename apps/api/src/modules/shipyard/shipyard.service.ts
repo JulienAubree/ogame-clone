@@ -135,6 +135,17 @@ export function createShipyardService(
           weaponProfiles: ship.weaponProfiles,
         };
       }
+      // Inject flagship combat stats (uses base stats — talents/research bonuses
+      // are not factored in here since this view is informational, not a combat
+      // simulation).
+      if (flagshipRow) {
+        unitCombatStats['flagship'] = {
+          weapons: flagshipRow.weapons,
+          shotCount: flagshipRow.shotCount ?? 1,
+          shield: flagshipRow.shield,
+          hull: flagshipRow.hull,
+        };
+      }
       const fpConfig: FPConfig = {
         shotcountExponent: Number(config.universe.fp_shotcount_exponent) || 1.5,
         divisor: Number(config.universe.fp_divisor) || 100,
@@ -163,7 +174,7 @@ export function createShipyardService(
 
       const planetsResult = userPlanets.map((p) => {
         const shipsRow = shipsByPlanet.get(p.id);
-        const shipsList: { id: string; name: string; count: number; role: string | null; cargoCapacity: number }[] = [];
+        const shipsList: { id: string; name: string; count: number; role: string | null; cargoCapacity: number; isStationary: boolean }[] = [];
         const fleet: Record<string, number> = {};
         let totalShips = 0;
         let totalCargo = 0;
@@ -171,16 +182,42 @@ export function createShipyardService(
         for (const def of sortedShipDefs) {
           const count = shipsRow ? Number((shipsRow as Record<string, unknown>)[def.countColumn] ?? 0) : 0;
           if (count <= 0) continue;
-          shipsList.push({ id: def.id, name: def.name, count, role: def.role ?? null, cargoCapacity: def.cargoCapacity ?? 0 });
+          shipsList.push({
+            id: def.id,
+            name: def.name,
+            count,
+            role: def.role ?? null,
+            cargoCapacity: def.cargoCapacity ?? 0,
+            isStationary: def.isStationary ?? false,
+          });
           fleet[def.id] = count;
           totalShips += count;
           totalCargo += count * (def.cargoCapacity ?? 0);
           empireShipCounts[def.id] = (empireShipCounts[def.id] ?? 0) + count;
         }
 
-        const totalFP = computeFleetFP(fleet, unitCombatStats, fpConfig);
         const hasFlagship =
           !!flagshipRow && flagshipRow.status === 'active' && flagshipRow.planetId === p.id;
+
+        // Inject flagship as a regular ship row if it's stationed here. We
+        // expose its base cargoCapacity (effectiveStats with talents/research
+        // bonuses are computed at send-time by the fleet service).
+        if (hasFlagship && flagshipRow) {
+          shipsList.unshift({
+            id: 'flagship',
+            name: flagshipRow.name,
+            count: 1,
+            role: 'flagship',
+            cargoCapacity: flagshipRow.cargoCapacity,
+            isStationary: false,
+          });
+          fleet['flagship'] = 1;
+          totalShips += 1;
+          totalCargo += flagshipRow.cargoCapacity;
+          empireShipCounts['flagship'] = (empireShipCounts['flagship'] ?? 0) + 1;
+        }
+
+        const totalFP = computeFleetFP(fleet, unitCombatStats, fpConfig);
 
         return {
           id: p.id,
@@ -206,6 +243,14 @@ export function createShipyardService(
           count: empireShipCounts[def.id] ?? 0,
           role: def.role ?? null,
         }));
+      if (flagshipRow && flagshipRow.status === 'active' && empireShipCounts['flagship']) {
+        shipsByType.unshift({
+          id: 'flagship',
+          name: flagshipRow.name,
+          count: empireShipCounts['flagship'],
+          role: 'flagship',
+        });
+      }
 
       const totalEmpireShips = Object.values(empireShipCounts).reduce((s, c) => s + c, 0);
       const totalEmpireFP = computeFleetFP(empireShipCounts, unitCombatStats, fpConfig);
