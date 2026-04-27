@@ -66,74 +66,74 @@ export default function FleetOverview() {
   };
 
   return (
-    <div className="space-y-4 p-4 lg:space-y-6 lg:p-6">
-      <PageHeader title="Vue de la flotte" description={`${empireTotals.totalShips.toLocaleString('fr-FR')} vaisseaux répartis sur ${counts.all} planète${counts.all > 1 ? 's' : ''}`} />
+    <div className="space-y-3 p-3 lg:p-4">
+      <PageHeader title="Vue de la flotte" />
 
       {/* ── Bandeau de totaux empire ───────────────────────────────────── */}
-      <section>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 lg:gap-3">
-          {flagship && flagship.status === 'active' && (
-            <TotalCard
-              icon={<FlagshipBadge />}
-              value="1"
-              label={flagship.planetName ? `Amiral · ${flagship.planetName}` : 'Vaisseau amiral'}
-              accent="amber"
-            />
-          )}
-          {empireTotals.shipsByType.map((s) => (
-            <TotalCard
-              key={s.id}
-              icon={
-                <img
-                  src={getAssetUrl('ships', s.id, 'thumb')}
-                  alt=""
-                  className="h-10 w-10 rounded-md object-cover"
-                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                />
-              }
-              value={s.count.toLocaleString('fr-FR')}
-              label={s.name}
-            />
-          ))}
-          {empireTotals.shipsByType.length === 0 && (
-            <div className="col-span-full rounded-xl border border-dashed border-border/50 p-6 text-center text-sm text-muted-foreground">
-              Aucun vaisseau dans votre flotte. Construisez-en au Chantier spatial ou au Centre de commandement.
-            </div>
-          )}
-        </div>
-        {empireTotals.shipsByType.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
-            <span>Total <strong className="font-mono text-foreground">{empireTotals.totalShips.toLocaleString('fr-FR')}</strong></span>
-            <span>Force <strong className="font-mono text-amber-400">{formatCompact(empireTotals.totalFP)}</strong></span>
-            <span>Cargo <strong className="font-mono text-foreground">{formatCompact(empireTotals.totalCargo)}</strong></span>
+      <section className="space-y-2">
+        {empireTotals.shipsByType.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border/50 p-4 text-center text-sm text-muted-foreground">
+            Aucun vaisseau dans votre flotte. Construisez-en au Chantier spatial ou au Centre de commandement.
           </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-1.5">
+              {flagship && flagship.status === 'active' && (
+                <TotalChip
+                  icon={<Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
+                  value="1"
+                  label={flagship.planetName ? `Amiral · ${flagship.planetName}` : 'Amiral'}
+                  accent="amber"
+                />
+              )}
+              {empireTotals.shipsByType.map((s) => (
+                <TotalChip
+                  key={s.id}
+                  icon={
+                    <img
+                      src={getAssetUrl('ships', s.id, 'thumb')}
+                      alt=""
+                      className="h-5 w-5 rounded-sm object-cover"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  }
+                  value={s.count.toLocaleString('fr-FR')}
+                  label={s.name}
+                />
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span><strong className="font-mono text-foreground">{empireTotals.totalShips.toLocaleString('fr-FR')}</strong> vaisseaux · {counts.all} planète{counts.all > 1 ? 's' : ''}</span>
+              <span>FP <strong className="font-mono text-amber-400">{formatCompact(empireTotals.totalFP)}</strong></span>
+              <span>Cargo <strong className="font-mono text-foreground">{formatCompact(empireTotals.totalCargo)}</strong></span>
+            </div>
+          </>
         )}
       </section>
 
       {/* ── Filtres + tri ───────────────────────────────────────────────── */}
-      <section className="flex flex-wrap items-center gap-2">
-        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>Toutes ({counts.all})</FilterChip>
-        <FilterChip active={filter === 'with-ships'} onClick={() => setFilter('with-ships')}>Avec vaisseaux ({counts.withShips})</FilterChip>
-        <FilterChip active={filter === 'empty'} onClick={() => setFilter('empty')}>Vides ({counts.empty})</FilterChip>
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Trier :</span>
+      <section className="flex flex-wrap items-center gap-1.5">
+        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>Toutes · {counts.all}</FilterChip>
+        <FilterChip active={filter === 'with-ships'} onClick={() => setFilter('with-ships')}>Avec vsx · {counts.withShips}</FilterChip>
+        <FilterChip active={filter === 'empty'} onClick={() => setFilter('empty')}>Vides · {counts.empty}</FilterChip>
+        <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortMode)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+            className="rounded-md border border-border bg-background px-1.5 py-0.5 text-[11px] text-foreground"
           >
-            <option value="fp">Force</option>
-            <option value="ships">Vaisseaux</option>
+            <option value="fp">FP</option>
+            <option value="ships">Vsx</option>
             <option value="cargo">Cargo</option>
             <option value="name">Nom</option>
           </select>
           <button
             type="button"
             onClick={() => setSortAsc((v) => !v)}
-            className="rounded-md border border-border bg-background p-1 text-foreground hover:bg-accent"
+            className="rounded-md border border-border bg-background p-0.5 text-foreground hover:bg-accent"
             title={sortAsc ? 'Croissant' : 'Décroissant'}
           >
-            {sortAsc ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+            {sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
           </button>
         </div>
       </section>
@@ -141,11 +141,11 @@ export default function FleetOverview() {
       {/* ── Grid de planètes ────────────────────────────────────────────── */}
       <section>
         {filteredPlanets.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/50 p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border/50 p-6 text-center text-sm text-muted-foreground">
             Aucune planète ne correspond aux filtres.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {filteredPlanets.map((p) => (
               <PlanetFleetCard
                 key={p.id}
@@ -168,29 +168,20 @@ export default function FleetOverview() {
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────
 
-function TotalCard({ icon, value, label, accent }: { icon: React.ReactNode; value: string; label: string; accent?: 'amber' }) {
+function TotalChip({ icon, value, label, accent }: { icon: React.ReactNode; value: string; label: string; accent?: 'amber' }) {
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-1 rounded-xl border bg-card/60 px-3 py-3 text-center',
+        'flex items-center gap-1.5 rounded-md border bg-card/60 px-2 py-1',
         accent === 'amber' ? 'border-amber-500/40 bg-amber-500/5' : 'border-border/60',
       )}
+      title={label}
     >
-      <div className="flex h-10 w-10 items-center justify-center">{icon}</div>
-      <div className={cn('font-mono text-lg font-bold', accent === 'amber' ? 'text-amber-400' : 'text-primary')}>
+      <div className="flex h-5 w-5 items-center justify-center shrink-0">{icon}</div>
+      <span className={cn('font-mono text-sm font-bold leading-none', accent === 'amber' ? 'text-amber-400' : 'text-foreground')}>
         {value}
-      </div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground line-clamp-1" title={label}>
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function FlagshipBadge() {
-  return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-500/10 border border-amber-500/40">
-      <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+      </span>
+      <span className="text-[10px] text-muted-foreground line-clamp-1 max-w-[120px]">{label}</span>
     </div>
   );
 }
@@ -201,7 +192,7 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+        'rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors',
         active
           ? 'border-primary/40 bg-primary/15 text-primary'
           : 'border-border/60 text-muted-foreground hover:bg-accent',
@@ -253,62 +244,63 @@ function PlanetFleetCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 to-slate-950/80 p-4 text-left transition-colors hover:border-primary/40"
+      className="group relative overflow-hidden rounded-lg border border-border/60 bg-gradient-to-br from-slate-900/80 to-slate-950/80 p-2.5 text-left transition-colors hover:border-primary/40"
     >
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-2 mb-2">
         {hasImage ? (
           <img
             src={getPlanetImageUrl(planet.planetClassId!, planet.planetImageIndex!, 'thumb')}
             alt=""
-            className="h-11 w-11 rounded-full border-2 border-primary/30 object-cover"
+            className="h-8 w-8 rounded-full border border-primary/30 object-cover shrink-0"
             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
           />
         ) : (
-          <div className="h-11 w-11 rounded-full border-2 border-border/60 bg-slate-800" />
+          <div className="h-8 w-8 rounded-full border border-border/60 bg-slate-800 shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate font-semibold text-foreground">{planet.name}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-semibold text-foreground">{planet.name}</span>
             {planet.hasFlagship && (
-              <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400">
-                <Star className="h-2.5 w-2.5 fill-amber-400" /> Amiral
-              </span>
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" aria-label="Amiral présent" />
             )}
           </div>
-          <div className="font-mono text-[11px] text-muted-foreground">
+          <div className="font-mono text-[10px] text-muted-foreground leading-tight">
             [{planet.galaxy}:{planet.system}:{planet.position}]{planetClassName ? ` · ${planetClassName}` : ''}
           </div>
+        </div>
+        <div className="flex flex-col items-end shrink-0 text-[10px] leading-tight">
+          <span className="font-mono text-amber-400 font-semibold">{formatCompact(planet.totalFP)}</span>
+          <span className="text-muted-foreground/70">FP</span>
         </div>
       </div>
 
       {planet.ships.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border/40 py-4 text-center text-xs text-muted-foreground/70">
+        <div className="rounded-md border border-dashed border-border/40 py-2 text-center text-[11px] text-muted-foreground/70">
           Aucun vaisseau stationné
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
           {planet.ships.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-2 rounded-md border border-border/30 bg-background/40 px-2 py-1.5"
+              className="flex items-center gap-1.5 rounded bg-background/40 px-1.5 py-1"
+              title={`${s.count.toLocaleString('fr-FR')} ${s.name}`}
             >
               <img
                 src={getAssetUrl('ships', s.id, 'thumb')}
                 alt=""
-                className="h-6 w-6 rounded object-cover flex-shrink-0"
+                className="h-4 w-4 rounded-sm object-cover shrink-0"
                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               />
-              <span className="flex-1 min-w-0 truncate text-[11px] text-muted-foreground" title={s.name}>{s.name}</span>
-              <span className="font-mono text-xs font-semibold text-foreground">{s.count.toLocaleString('fr-FR')}</span>
+              <span className="font-mono text-[11px] font-semibold text-foreground">{s.count.toLocaleString('fr-FR')}</span>
             </div>
           ))}
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-between border-t border-border/30 pt-2 text-[11px]">
-        <span className="text-muted-foreground"><strong className="font-mono text-foreground">{planet.totalShips.toLocaleString('fr-FR')}</strong> vsx</span>
-        <span className="text-muted-foreground">FP <strong className="font-mono text-amber-400">{formatCompact(planet.totalFP)}</strong></span>
-        <span className="text-muted-foreground">Cargo <strong className="font-mono text-foreground">{formatCompact(planet.totalCargo)}</strong></span>
+      <div className="mt-2 flex items-center gap-3 border-t border-border/30 pt-1.5 text-[10px] text-muted-foreground">
+        <span><strong className="font-mono text-foreground">{planet.totalShips.toLocaleString('fr-FR')}</strong> vsx</span>
+        <span>Cargo <strong className="font-mono text-foreground">{formatCompact(planet.totalCargo)}</strong></span>
       </div>
     </button>
   );
