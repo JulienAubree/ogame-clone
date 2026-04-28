@@ -6,6 +6,7 @@ import { MineraiIcon, SiliciumIcon, HydrogeneIcon } from '@/components/common/Re
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { usePlanetStore } from '@/stores/planet.store';
+import { useProgress } from '@/components/fleet/MovementCard';
 
 /** Live countdown that ticks every second. */
 function useCountdown(targetDate: Date): string {
@@ -307,9 +308,11 @@ function FleetRow({ movement, gameConfig }: { movement: any; gameConfig: any }) 
   const navigate = useNavigate();
   const missionLabel = gameConfig?.missions?.[movement.mission]?.label ?? movement.mission;
   const missionColor = MISSION_COLORS[movement.mission] ?? 'text-foreground';
+  const missionHex = gameConfig?.missions?.[movement.mission]?.color ?? '#888';
   const phaseLabel = PHASE_LABELS[movement.phase] ?? movement.phase;
   const arrival = new Date(movement.arrivalTime);
   const countdown = useCountdown(arrival);
+  const progress = useProgress(movement.departureTime, movement.arrivalTime);
   const coords = `[${movement.targetGalaxy}:${movement.targetSystem}:${movement.targetPosition}]`;
   const shipCount = Object.values(movement.ships as Record<string, number>).reduce((s: number, c: number) => s + c, 0);
 
@@ -317,7 +320,7 @@ function FleetRow({ movement, gameConfig }: { movement: any; gameConfig: any }) 
     <button
       type="button"
       onClick={() => navigate('/fleet/movements')}
-      className="flex w-full items-center gap-3 rounded-lg border border-border/30 bg-card/50 px-3 py-2 text-xs text-left transition-colors hover:border-primary/30"
+      className="relative flex w-full items-center gap-3 overflow-hidden rounded-lg border border-border/30 bg-card/50 px-3 py-2 text-xs text-left transition-colors hover:border-primary/30"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -334,6 +337,29 @@ function FleetRow({ movement, gameConfig }: { movement: any; gameConfig: any }) 
         <div className="text-[10px] text-muted-foreground">
           {arrival.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
         </div>
+      </div>
+
+      {/* Progress bar — same visual idiom as MovementCard, but rendered as
+          an absolute-positioned bottom strip so the row height stays
+          identical. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]">
+        <div
+          className="absolute inset-y-0 left-0 transition-[width] duration-1000 ease-linear"
+          style={{
+            width: `${progress}%`,
+            background: `linear-gradient(90deg, ${missionHex}30, ${missionHex})`,
+          }}
+        />
+        {progress > 0 && progress < 100 && (
+          <div
+            className="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full transition-[left] duration-1000 ease-linear"
+            style={{
+              left: `calc(${progress}% - 3px)`,
+              background: missionHex,
+              boxShadow: `0 0 6px ${missionHex}90, 0 0 2px ${missionHex}`,
+            }}
+          />
+        )}
       </div>
     </button>
   );
