@@ -42,8 +42,8 @@ const SHEET_ITEMS = {
   planete: [
     { label: "Vue d'ensemble", path: '/', icon: OverviewIcon },
     { label: 'Ressources', path: '/resources', icon: ResourcesIcon },
-    { label: 'Infrastructures', path: '/infrastructures', icon: BuildingsIcon },
     { label: 'Énergie', path: '/energy', icon: Zap as any },
+    { label: 'Infrastructures', path: '/infrastructures', icon: BuildingsIcon },
     { label: 'Chantier spatial', path: '/shipyard', icon: ShipyardIcon },
     { label: 'Centre de commandement', path: '/command-center', icon: CommandCenterIcon },
     { label: 'Défense', path: '/defense', icon: DefenseIcon },

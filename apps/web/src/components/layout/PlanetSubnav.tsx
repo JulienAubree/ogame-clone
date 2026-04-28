@@ -28,8 +28,8 @@ interface PlanetNavItem {
 const PLANET_NAV_ITEMS: PlanetNavItem[] = [
   { label: "Vue d'ensemble", path: '/', icon: OverviewIcon, end: true },
   { label: 'Ressources', path: '/resources', icon: ResourcesIcon },
-  { label: 'Infrastructures', path: '/infrastructures', icon: BuildingsIcon },
   { label: 'Énergie', path: '/energy', icon: Zap as React.ComponentType<React.SVGProps<SVGSVGElement>> },
+  { label: 'Infrastructures', path: '/infrastructures', icon: BuildingsIcon },
   { label: 'Chantier spatial', path: '/shipyard', icon: ShipyardIcon },
   { label: 'Centre de commandement', path: '/command-center', icon: CommandCenterIcon },
   { label: 'Défense', path: '/defense', icon: DefenseIcon },
