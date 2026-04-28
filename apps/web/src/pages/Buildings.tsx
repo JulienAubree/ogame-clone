@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router';
 import { ChevronDown } from 'lucide-react';
 import { trpc } from '@/trpc';
+import { estimateRefund } from '@/lib/refund';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Button } from '@/components/ui/button';
 import { ResourceCost } from '@/components/common/ResourceCost';
@@ -127,22 +128,6 @@ function getResourceGlowClass(buildingId: string): string {
   }
 }
 
-function estimateRefund(
-  cost: { minerai: number; silicium: number; hydrogene: number },
-  endTime: string,
-  totalDurationSec: number,
-  maxRatio = 0.7,
-) {
-  const totalMs = totalDurationSec * 1000;
-  const timeLeft = Math.max(0, new Date(endTime).getTime() - Date.now());
-  const ratio = Math.min(maxRatio, totalMs > 0 ? timeLeft / totalMs : 0);
-  return {
-    minerai: Math.floor(cost.minerai * ratio),
-    silicium: Math.floor(cost.silicium * ratio),
-    hydrogene: Math.floor(cost.hydrogene * ratio),
-    ratio: Math.round(ratio * 100),
-  };
-}
 
 interface BuildingsListProps {
   /** Page header title — ignored when hideHeader is true. */

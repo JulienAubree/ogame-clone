@@ -5,6 +5,7 @@ import {
   discoveryCooldown, depositSize,
   maxMarketOffers,
   calculateShieldCapacity, calculateShieldEnergy,
+  getMissionRelayBonusPerLevel,
 } from '@exilium/game-engine';
 import { buildProductionConfig } from '@/lib/production-config';
 
@@ -122,16 +123,7 @@ export function getContextualTable(
       };
     case 'missionRelay': {
       const biome = (planetClassId ?? null) as MissionRelayBiome;
-      const perLevel = (() => {
-        switch (biome) {
-          case 'volcanic':  return { minerai: 0.02, silicium: 0,    hydrogene: 0,    pirate: 0 };
-          case 'arid':      return { minerai: 0,    silicium: 0.02, hydrogene: 0,    pirate: 0 };
-          case 'gaseous':   return { minerai: 0,    silicium: 0,    hydrogene: 0.02, pirate: 0 };
-          case 'temperate': return { minerai: 0.01, silicium: 0.01, hydrogene: 0.01, pirate: 0 };
-          case 'glacial':   return { minerai: 0,    silicium: 0,    hydrogene: 0,    pirate: 0.02 };
-          default:          return { minerai: 0,    silicium: 0,    hydrogene: 0,    pirate: 0 };
-        }
-      })();
+      const perLevel = getMissionRelayBonusPerLevel(biome);
       return {
         type: 'missionRelay',
         title: 'Bonus de récompenses PvE',

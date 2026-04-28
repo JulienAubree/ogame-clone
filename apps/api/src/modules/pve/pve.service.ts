@@ -2,7 +2,16 @@ import { eq, and, sql, asc } from 'drizzle-orm';
 import { pveMissions, planets, missionCenterState, fleetEvents, planetShips, asteroidDeposits } from '@exilium/db';
 import { TRPCError } from '@trpc/server';
 import type { Database } from '@exilium/db';
-import { discoveryCooldown, depositSize, depositComposition, computeFleetFP, type UnitCombatStats, type FPConfig } from '@exilium/game-engine';
+import {
+  discoveryCooldown,
+  depositSize,
+  depositComposition,
+  computeFleetFP,
+  getMissionRelayBonusPerLevel,
+  MISSION_RELAY_DIVERSITY_BONUS_PER_BIOME,
+  type UnitCombatStats,
+  type FPConfig,
+} from '@exilium/game-engine';
 import type { createAsteroidBeltService } from './asteroid-belt.service.js';
 import type { createPirateService } from './pirate.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -100,20 +109,15 @@ export function createPveService(
       for (const row of rows) {
         const lvl = Number(row.level) || 0;
         if (lvl <= 0 || !row.biome) continue;
-        switch (row.biome) {
-          case 'volcanic':  bonuses.minerai   += 0.02 * lvl; distinctBiomes.add('volcanic');  break;
-          case 'arid':      bonuses.silicium  += 0.02 * lvl; distinctBiomes.add('arid');      break;
-          case 'gaseous':   bonuses.hydrogene += 0.02 * lvl; distinctBiomes.add('gaseous');   break;
-          case 'temperate':
-            bonuses.minerai   += 0.01 * lvl;
-            bonuses.silicium  += 0.01 * lvl;
-            bonuses.hydrogene += 0.01 * lvl;
-            distinctBiomes.add('temperate');
-            break;
-          case 'glacial':   bonuses.pirate    += 0.02 * lvl; distinctBiomes.add('glacial');   break;
-        }
+        const perLevel = getMissionRelayBonusPerLevel(row.biome);
+        if (perLevel.minerai === 0 && perLevel.silicium === 0 && perLevel.hydrogene === 0 && perLevel.pirate === 0) continue;
+        bonuses.minerai   += perLevel.minerai   * lvl;
+        bonuses.silicium  += perLevel.silicium  * lvl;
+        bonuses.hydrogene += perLevel.hydrogene * lvl;
+        bonuses.pirate    += perLevel.pirate    * lvl;
+        distinctBiomes.add(row.biome);
       }
-      const diversityMult = 1 + 0.05 * distinctBiomes.size;
+      const diversityMult = 1 + MISSION_RELAY_DIVERSITY_BONUS_PER_BIOME * distinctBiomes.size;
       return {
         minerai:   bonuses.minerai   * diversityMult,
         silicium:  bonuses.silicium  * diversityMult,

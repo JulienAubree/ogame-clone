@@ -160,3 +160,30 @@ export function computeMiningExtraction(params: {
     depositLoss,
   };
 }
+
+/**
+ * Single source of truth for missionRelay biome bonuses, shared between
+ * the backend reward calculation and the frontend progression table.
+ */
+export type MissionRelayBiome = 'volcanic' | 'arid' | 'temperate' | 'glacial' | 'gaseous';
+
+export interface MissionRelayBonusPerLevel {
+  minerai: number;
+  silicium: number;
+  hydrogene: number;
+  pirate: number;
+}
+
+/** Diversity multiplier applied per distinct biome hosting at least one relay. */
+export const MISSION_RELAY_DIVERSITY_BONUS_PER_BIOME = 0.05;
+
+export function getMissionRelayBonusPerLevel(biome: string | null | undefined): MissionRelayBonusPerLevel {
+  switch (biome) {
+    case 'volcanic':  return { minerai: 0.02, silicium: 0,    hydrogene: 0,    pirate: 0    };
+    case 'arid':      return { minerai: 0,    silicium: 0.02, hydrogene: 0,    pirate: 0    };
+    case 'gaseous':   return { minerai: 0,    silicium: 0,    hydrogene: 0.02, pirate: 0    };
+    case 'temperate': return { minerai: 0.01, silicium: 0.01, hydrogene: 0.01, pirate: 0    };
+    case 'glacial':   return { minerai: 0,    silicium: 0,    hydrogene: 0,    pirate: 0.02 };
+    default:          return { minerai: 0,    silicium: 0,    hydrogene: 0,    pirate: 0    };
+  }
+}
