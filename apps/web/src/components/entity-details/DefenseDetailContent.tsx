@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { GameImage } from '@/components/common/GameImage';
+import { getEntityVariantProps } from '@/lib/assets';
 import { PrerequisiteList, type PrerequisiteItem } from '@/components/common/PrerequisiteList';
 import { getDefenseDetails, resolveBuildingName, resolveResearchName } from '@/lib/entity-details';
 import { formatDuration } from '@/lib/format';
@@ -33,8 +34,7 @@ interface Props {
 export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels, timePerUnit, planetClassId }: Props) {
   const { data: gameConfig } = useGameConfig();
   const details = getDefenseDetails(defenseId, gameConfig ?? undefined);
-  const variantPlanetTypes = gameConfig?.defenses[defenseId]?.variantPlanetTypes ?? [];
-  const hasVariant = !!planetClassId && variantPlanetTypes.includes(planetClassId);
+  const { planetType, hasVariant } = getEntityVariantProps(gameConfig, 'defenses', defenseId, planetClassId);
 
   const effective = useMemo(() => {
     const defs = gameConfig?.bonuses ?? [];
@@ -69,7 +69,7 @@ export function DefenseDetailContent({ defenseId, researchLevels, buildingLevels
           size="full"
           alt={details.name}
           className="w-full h-full object-cover"
-          planetType={planetClassId ?? undefined}
+          planetType={planetType}
           hasVariant={hasVariant}
         />
       </div>

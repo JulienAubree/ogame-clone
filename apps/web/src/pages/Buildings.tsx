@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router';
 import { ChevronDown } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { estimateRefund } from '@/lib/refund';
+import { getEntityVariantProps } from '@/lib/assets';
 import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { Button } from '@/components/ui/button';
 import { ResourceCost } from '@/components/common/ResourceCost';
@@ -227,12 +228,8 @@ export function BuildingsList({ title, categoryIds, excludeBuildingIds, hideHead
     .sort((a, b) => a.sortOrder - b.sortOrder);
   const excludedSet = new Set(excludeBuildingIds ?? []);
 
-  const getBuildingVariantProps = (buildingId: string) => {
-    const def = gameConfig?.buildings?.[buildingId];
-    const variants = def?.variantPlanetTypes ?? [];
-    const hasVariant = !!planetClassId && variants.includes(planetClassId);
-    return { planetType: planetClassId ?? undefined, hasVariant };
-  };
+  const getBuildingVariantProps = (buildingId: string) =>
+    getEntityVariantProps(gameConfig, 'buildings', buildingId, planetClassId);
 
   return (
     <div className={containerClassName ?? 'space-y-4 p-4 lg:space-y-6 lg:p-6'}>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ResourceCost } from '@/components/common/ResourceCost';
 import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { GameImage } from '@/components/common/GameImage';
+import { getEntityVariantProps } from '@/lib/assets';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CardGridSkeleton } from '@/components/common/PageSkeleton';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -39,12 +40,8 @@ export default function Defense() {
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  const getDefenseVariantProps = (defenseId: string) => {
-    const def = gameConfig?.defenses?.[defenseId];
-    const variants = def?.variantPlanetTypes ?? [];
-    const hasVariant = !!planetClassId && variants.includes(planetClassId);
-    return { planetType: planetClassId ?? undefined, hasVariant };
-  };
+  const getDefenseVariantProps = (defenseId: string) =>
+    getEntityVariantProps(gameConfig, 'defenses', defenseId, planetClassId);
 
   const { data: buildings } = trpc.building.list.useQuery(
     { planetId: planetId! },
@@ -54,8 +51,8 @@ export default function Defense() {
   const arsenalLevel = arsenalBuilding?.currentLevel ?? 0;
   const shieldBuilding = buildings?.find((b) => b.id === 'planetaryShield');
 
-  const shieldVariants = gameConfig?.buildings?.planetaryShield?.variantPlanetTypes ?? [];
-  const shieldHasVariant = !!planetClassId && shieldVariants.includes(planetClassId);
+  const shieldVariantProps = getEntityVariantProps(gameConfig, 'buildings', 'planetaryShield', planetClassId);
+  const shieldHasVariant = shieldVariantProps.hasVariant;
 
   const { data: defenses, isLoading } = trpc.shipyard.defenses.useQuery(
     { planetId: planetId! },

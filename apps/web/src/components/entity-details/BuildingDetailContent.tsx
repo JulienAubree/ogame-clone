@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { trpc } from '@/trpc';
 import { GameImage } from '@/components/common/GameImage';
+import { getEntityVariantProps } from '@/lib/assets';
 import { PrerequisiteList, type PrerequisiteItem } from '@/components/common/PrerequisiteList';
 import { type PlanetContext } from '@/lib/entity-details';
 import { getBuildingName } from '@/lib/entity-names';
@@ -42,8 +43,7 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
   const configDef = gameConfig?.buildings[buildingId];
   const name = getBuildingName(buildingId, gameConfig);
   const flavorText = configDef?.flavorText ?? '';
-  const variantPlanetTypes = configDef?.variantPlanetTypes ?? [];
-  const hasVariant = !!planetClassId && variantPlanetTypes.includes(planetClassId);
+  const { planetType, hasVariant } = getEntityVariantProps(gameConfig, 'buildings', buildingId, planetClassId);
   const prerequisites = building?.prerequisites ?? configDef?.prerequisites ?? [];
 
   // Bonus provided BY this building
@@ -113,7 +113,7 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
           size="full"
           alt={name}
           className="w-full h-full object-cover"
-          planetType={planetClassId ?? undefined}
+          planetType={planetType}
           hasVariant={hasVariant}
         />
         <span className="absolute bottom-3 right-3 bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-full">

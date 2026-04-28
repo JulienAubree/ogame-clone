@@ -44,30 +44,68 @@ export function getFlagshipImageUrl(
 }
 
 /** Minimal shape we need from gameConfig to detect biome variants. */
-type BuildingVariantConfig = {
+type EntityVariantConfig = {
   buildings?: Record<string, { variantPlanetTypes?: readonly string[] | string[] }>;
+  defenses?: Record<string, { variantPlanetTypes?: readonly string[] | string[] }>;
 };
 
+/** Categories of game assets that can have biome-specific variants. */
+type VariantCategory = 'buildings' | 'defenses';
+
 /**
- * Returns the building illustration URL with a biome-specific variant when
- * available, falling back to the generic asset otherwise. Uses the
- * `variantPlanetTypes` array declared in gameConfig for the building.
+ * Resolve the biome variant props for a given entity. The 'homeworld' planet
+ * class is mapped to 'temperate' — the home planet is conceptually a lush
+ * temperate world even if its planetClassId is 'homeworld'.
  *
- * The 'homeworld' planet class has no biome of its own, so we map it to
- * 'temperate' for illustration purposes — the home planet is conceptually
- * a lush temperate world.
+ * Use this to feed `<GameImage planetType={...} hasVariant={...} />` or any
+ * other consumer of the underlying VariantOptions.
  */
+export function getEntityVariantProps(
+  gameConfig: EntityVariantConfig | null | undefined,
+  category: VariantCategory,
+  id: string,
+  planetClassId: string | null | undefined,
+): { planetType?: string; hasVariant: boolean } {
+  const effectiveClass = planetClassId === 'homeworld' ? 'temperate' : planetClassId;
+  const variants = gameConfig?.[category]?.[id]?.variantPlanetTypes ?? [];
+  const hasVariant = !!effectiveClass && variants.includes(effectiveClass);
+  return {
+    planetType: effectiveClass ?? undefined,
+    hasVariant,
+  };
+}
+
+/**
+ * Returns the entity illustration URL with a biome-specific variant when
+ * available, falling back to the generic asset otherwise.
+ */
+export function getEntityIllustrationUrl(
+  gameConfig: EntityVariantConfig | null | undefined,
+  category: VariantCategory,
+  id: string,
+  planetClassId: string | null | undefined,
+  size: AssetSize = 'full',
+): string {
+  const variantProps = getEntityVariantProps(gameConfig, category, id, planetClassId);
+  return getAssetUrl(category, id, size, variantProps);
+}
+
+/** Building-specific shortcut around getEntityIllustrationUrl. */
 export function getBuildingIllustrationUrl(
-  gameConfig: BuildingVariantConfig | null | undefined,
+  gameConfig: EntityVariantConfig | null | undefined,
   buildingId: string,
   planetClassId: string | null | undefined,
   size: AssetSize = 'full',
 ): string {
-  const effectiveClass = planetClassId === 'homeworld' ? 'temperate' : planetClassId;
-  const variants = gameConfig?.buildings?.[buildingId]?.variantPlanetTypes ?? [];
-  const hasVariant = !!effectiveClass && variants.includes(effectiveClass);
-  return getAssetUrl('buildings', buildingId, size, {
-    planetType: effectiveClass ?? undefined,
-    hasVariant,
-  });
+  return getEntityIllustrationUrl(gameConfig, 'buildings', buildingId, planetClassId, size);
+}
+
+/** Defense-specific shortcut around getEntityIllustrationUrl. */
+export function getDefenseIllustrationUrl(
+  gameConfig: EntityVariantConfig | null | undefined,
+  defenseId: string,
+  planetClassId: string | null | undefined,
+  size: AssetSize = 'full',
+): string {
+  return getEntityIllustrationUrl(gameConfig, 'defenses', defenseId, planetClassId, size);
 }
