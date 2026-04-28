@@ -137,7 +137,8 @@ export function ImportResourcesButton({ targetPlanetId, size = 'md' }: Props) {
     });
   }
 
-  const triggerSize = size === 'sm' ? 'h-7 px-2 text-xs' : 'h-8 px-2.5 text-sm';
+  const triggerSize = size === 'sm' ? 'h-6 w-6' : 'h-7 w-7';
+  const iconSize = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
   const showButton = (summaries?.length ?? 0) >= 2 || !summaries; // affichage spéculatif tant que pas chargé
 
   if (!showButton) return null;
@@ -147,13 +148,15 @@ export function ImportResourcesButton({ targetPlanetId, size = 'md' }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        title="Importer des ressources depuis une autre planète"
+        aria-label="Importer des ressources"
         className={cn(
-          'inline-flex items-center gap-1 rounded-md border border-border bg-card/80 font-medium text-foreground/80 hover:bg-accent transition-colors',
+          'inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors',
           triggerSize,
+          open && 'bg-accent/60 text-foreground',
         )}
       >
-        <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" />
-        <span>Importer</span>
+        <ArrowDownToLine className={iconSize} aria-hidden="true" />
       </button>
 
       {open && (
