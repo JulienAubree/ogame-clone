@@ -52,6 +52,10 @@ type BuildingVariantConfig = {
  * Returns the building illustration URL with a biome-specific variant when
  * available, falling back to the generic asset otherwise. Uses the
  * `variantPlanetTypes` array declared in gameConfig for the building.
+ *
+ * The 'homeworld' planet class has no biome of its own, so we map it to
+ * 'temperate' for illustration purposes — the home planet is conceptually
+ * a lush temperate world.
  */
 export function getBuildingIllustrationUrl(
   gameConfig: BuildingVariantConfig | null | undefined,
@@ -59,10 +63,11 @@ export function getBuildingIllustrationUrl(
   planetClassId: string | null | undefined,
   size: AssetSize = 'full',
 ): string {
+  const effectiveClass = planetClassId === 'homeworld' ? 'temperate' : planetClassId;
   const variants = gameConfig?.buildings?.[buildingId]?.variantPlanetTypes ?? [];
-  const hasVariant = !!planetClassId && variants.includes(planetClassId);
+  const hasVariant = !!effectiveClass && variants.includes(effectiveClass);
   return getAssetUrl('buildings', buildingId, size, {
-    planetType: planetClassId ?? undefined,
+    planetType: effectiveClass ?? undefined,
     hasVariant,
   });
 }
