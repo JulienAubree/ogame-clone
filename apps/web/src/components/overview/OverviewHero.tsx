@@ -175,7 +175,7 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
           </div>
         )}
 
-        <div className="relative px-5 pt-8 pb-6 lg:px-8 lg:pt-12 lg:pb-8">
+        <div className="relative px-5 pt-8 pb-6 lg:px-8 lg:pt-10 lg:pb-8">
           <div className="flex items-start gap-5">
             {/* Thumbnail — clickable for detail overlay */}
             <button type="button" onClick={() => setShowDetail(true)} className="shrink-0 cursor-pointer group">
