@@ -138,7 +138,7 @@ export function ResourceCard({
     : false;
 
   return (
-    <article className="relative glass-card overflow-hidden flex flex-col">
+    <article className="relative glass-card overflow-hidden flex flex-col h-full">
       {/* Hero illustration — top banner, clickable to open detail */}
       <button
         type="button"

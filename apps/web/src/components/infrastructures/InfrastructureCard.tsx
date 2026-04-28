@@ -79,7 +79,7 @@ export function InfrastructureCard({
   return (
     <article
       className={cn(
-        'relative glass-card overflow-hidden flex flex-col',
+        'relative glass-card overflow-hidden flex flex-col h-full',
         locked && 'opacity-70',
       )}
     >
