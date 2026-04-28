@@ -85,21 +85,27 @@ export function EnergyCard({
 
   return (
     <article className="relative glass-card overflow-hidden">
-      {/* Background illustration */}
-      <div className="absolute inset-0 pointer-events-none">
-        <img
-          src={getAssetUrl('buildings', buildingId)}
-          alt=""
-          className="h-full w-full object-cover opacity-20 blur-[2px] scale-105"
-          decoding="async"
-          fetchPriority="low"
-          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-card/70 via-card/85 to-card/95" />
-      </div>
+      <div className="flex flex-col sm:flex-row">
+        {/* Hero illustration — left side on desktop, top on mobile */}
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="relative h-32 sm:h-auto sm:w-40 lg:w-48 overflow-hidden group shrink-0"
+          title="Voir le détail de la centrale solaire"
+        >
+          <img
+            src={getAssetUrl('buildings', buildingId)}
+            alt="Centrale solaire"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            decoding="async"
+            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+          />
+          {/* Mobile : fade to bottom — Desktop : fade to right */}
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent sm:bg-gradient-to-r sm:from-transparent sm:via-transparent sm:to-card" />
+        </button>
 
-      <div className="relative p-3 lg:p-4 space-y-3">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] gap-3 lg:gap-6 lg:items-center">
+        <div className="flex-1 p-3 lg:p-4 space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] gap-3 lg:gap-6 lg:items-center">
         {/* Headline + breakdown */}
         <div className="flex items-center gap-3">
           <span className="shrink-0">{icon}</span>
@@ -218,6 +224,7 @@ export function EnergyCard({
           </div>
         )}
       </div>
+        </div>
       </div>
     </article>
   );

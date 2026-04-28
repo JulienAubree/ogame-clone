@@ -139,45 +139,46 @@ export function ResourceCard({
 
   return (
     <article className="relative glass-card overflow-hidden flex flex-col">
-      {/* Background illustration */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Hero illustration — top banner, clickable to open detail */}
+      <button
+        type="button"
+        onClick={onOpenDetail}
+        className="relative h-32 lg:h-36 overflow-hidden group"
+        title={`Voir le détail de ${buildingLabel}`}
+      >
         <img
           src={getAssetUrl('buildings', buildingId)}
-          alt=""
-          className="h-full w-full object-cover opacity-20 blur-[2px] scale-105"
+          alt={buildingLabel}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           decoding="async"
-          fetchPriority="low"
           onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-card/70 via-card/85 to-card/95" />
-      </div>
+        {/* Bottom fade towards card body */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-card via-card/80 to-transparent" />
 
-      <div className="relative p-3 lg:p-4 space-y-3 flex flex-col flex-1">
-      {/* Header — icon + label + multiplier */}
-      <header className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={onOpenDetail}
-          className="flex items-center gap-2 min-w-0 group"
-          title={`Voir le détail de ${buildingLabel}`}
-        >
-          <span className="shrink-0">{icon}</span>
-          <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{label}</span>
-        </button>
-        <span
-          className={cn(
-            'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold',
-            factorTrend === 'up' && 'bg-emerald-500/10 text-emerald-400',
-            factorTrend === 'down' && 'bg-destructive/10 text-destructive',
-            factorTrend === 'flat' && 'bg-muted/40 text-muted-foreground',
-          )}
-          title="Multiplicateur cumulé (type de planète, biomes, recherches)"
-        >
-          {factorTrend === 'up' && <ArrowUp className="h-3 w-3" />}
-          {factorTrend === 'down' && <ArrowDown className="h-3 w-3" />}
-          {factorPercent > 0 ? '+' : ''}{factorPercent}%
-        </span>
-      </header>
+        {/* Title + multiplier overlay */}
+        <div className="absolute inset-x-0 bottom-0 px-3 lg:px-4 pb-2 flex items-end justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0">{icon}</span>
+            <span className="text-base lg:text-lg font-bold text-foreground drop-shadow-md">{label}</span>
+          </div>
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold backdrop-blur-sm',
+              factorTrend === 'up' && 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+              factorTrend === 'down' && 'bg-destructive/20 text-destructive border border-destructive/30',
+              factorTrend === 'flat' && 'bg-muted/40 text-muted-foreground border border-border/30',
+            )}
+            title="Multiplicateur cumulé (type de planète, biomes, recherches)"
+          >
+            {factorTrend === 'up' && <ArrowUp className="h-3 w-3" />}
+            {factorTrend === 'down' && <ArrowDown className="h-3 w-3" />}
+            {factorPercent > 0 ? '+' : ''}{factorPercent}%
+          </span>
+        </div>
+      </button>
+
+      <div className="relative p-3 lg:p-4 pt-0 space-y-3 flex flex-col flex-1">
 
       {/* Production headline */}
       <div className="flex items-baseline gap-1">
