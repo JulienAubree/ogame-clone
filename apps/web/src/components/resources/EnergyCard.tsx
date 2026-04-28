@@ -8,12 +8,15 @@ import { ClockIcon } from '@/components/icons/utility-icons';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
 import { formatDuration } from '@/lib/format';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { getAssetUrl } from '@/lib/assets';
 import type { BuildingForCard } from './ResourceCard';
 
 type GameConfigData = ReturnType<typeof useGameConfig>['data'];
 
 interface EnergyCardProps {
   icon: ReactNode;
+  /** Building id used to pull the background illustration (typically 'solarPlant') */
+  buildingId: string;
   produced: number;
   consumed: number;
   productionAtCurrentLevel?: number;
@@ -39,6 +42,7 @@ function formatCompact(value: number): string {
 
 export function EnergyCard({
   icon,
+  buildingId,
   produced,
   consumed,
   productionAtCurrentLevel,
@@ -80,7 +84,21 @@ export function EnergyCard({
     : false;
 
   return (
-    <article className="glass-card p-3 lg:p-4 space-y-3">
+    <article className="relative glass-card overflow-hidden">
+      {/* Background illustration */}
+      <div className="absolute inset-0 pointer-events-none">
+        <img
+          src={getAssetUrl('buildings', buildingId)}
+          alt=""
+          className="h-full w-full object-cover opacity-20 blur-[2px] scale-105"
+          decoding="async"
+          fetchPriority="low"
+          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-card/70 via-card/85 to-card/95" />
+      </div>
+
+      <div className="relative p-3 lg:p-4 space-y-3">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] gap-3 lg:gap-6 lg:items-center">
         {/* Headline + breakdown */}
         <div className="flex items-center gap-3">
@@ -199,6 +217,7 @@ export function EnergyCard({
             )}
           </div>
         )}
+      </div>
       </div>
     </article>
   );

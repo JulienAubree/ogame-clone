@@ -8,6 +8,7 @@ import { ClockIcon } from '@/components/icons/utility-icons';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
 import { formatDuration } from '@/lib/format';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { getAssetUrl } from '@/lib/assets';
 
 type GameConfigData = ReturnType<typeof useGameConfig>['data'];
 type BuildingPrereq = { buildingId: string; level: number; currentLevel?: number };
@@ -27,6 +28,8 @@ interface ResourceCardProps {
   icon: ReactNode;
   label: string;
   buildingLabel: string;
+  /** Building id used to pull the background illustration */
+  buildingId: string;
   /** Tailwind class for the accent color (text-minerai, text-silicium, etc.) */
   accentColor: string;
   /** Tailwind class for the progress bar fill (bg-minerai, etc.) */
@@ -83,6 +86,7 @@ export function ResourceCard({
   icon,
   label,
   buildingLabel,
+  buildingId,
   accentColor,
   fillColor,
   perHour,
@@ -134,7 +138,21 @@ export function ResourceCard({
     : false;
 
   return (
-    <article className="glass-card p-3 lg:p-4 space-y-3 flex flex-col">
+    <article className="relative glass-card overflow-hidden flex flex-col">
+      {/* Background illustration */}
+      <div className="absolute inset-0 pointer-events-none">
+        <img
+          src={getAssetUrl('buildings', buildingId)}
+          alt=""
+          className="h-full w-full object-cover opacity-20 blur-[2px] scale-105"
+          decoding="async"
+          fetchPriority="low"
+          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-card/70 via-card/85 to-card/95" />
+      </div>
+
+      <div className="relative p-3 lg:p-4 space-y-3 flex flex-col flex-1">
       {/* Header — icon + label + multiplier */}
       <header className="flex items-center justify-between gap-2">
         <button
@@ -286,6 +304,7 @@ export function ResourceCard({
           )}
         </div>
       )}
+      </div>
     </article>
   );
 }
