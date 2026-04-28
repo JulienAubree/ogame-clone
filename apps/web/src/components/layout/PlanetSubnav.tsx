@@ -8,6 +8,7 @@ import { useResourceCounter } from '@/hooks/useResourceCounter';
 import { cn } from '@/lib/utils';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
 import { PlanetSelectorDropdown } from './topbar/PlanetSelectorDropdown';
+import { TopBarActions } from './topbar/TopBarActions';
 import {
   OverviewIcon,
   ResourcesIcon,
@@ -123,49 +124,53 @@ export function PlanetSubnav() {
   return (
     <section
       aria-label="Bloc planète"
-      className="sticky top-14 z-30 hidden lg:block border-b border-primary/20 bg-gradient-to-b from-primary/[0.05] to-card/80 backdrop-blur-md"
+      className="sticky top-0 z-40 hidden lg:block border-b border-primary/20 bg-gradient-to-b from-primary/[0.05] to-card/80 backdrop-blur-md"
     >
-      {/* Row 1 : planet selector + resources */}
+      {/* Row 1 : planet selector + resources + global actions */}
       <div className="flex items-center justify-between gap-4 px-4 py-1.5 border-b border-white/5">
-        <PlanetSelectorDropdown
-          planetId={activePlanetId}
-          planets={planets ?? []}
-          onSelect={setActivePlanet}
-        />
+        <div className="flex items-center gap-6 min-w-0">
+          <PlanetSelectorDropdown
+            planetId={activePlanetId}
+            planets={planets ?? []}
+            onSelect={setActivePlanet}
+          />
 
-        <div className="flex items-center gap-5">
-          <ResourceBadge
-            label="Minerai"
-            value={resources.minerai}
-            glowClass="glow-minerai"
-            colorClass="text-minerai"
-            icon={<MineraiIcon size={14} />}
-            capacity={resourceData?.rates.storageMineraiCapacity}
-          />
-          <ResourceBadge
-            label="Silicium"
-            value={resources.silicium}
-            glowClass="glow-silicium"
-            colorClass="text-silicium"
-            icon={<SiliciumIcon size={14} />}
-            capacity={resourceData?.rates.storageSiliciumCapacity}
-          />
-          <ResourceBadge
-            label="Hydrogène"
-            value={resources.hydrogene}
-            glowClass="glow-hydrogene"
-            colorClass="text-hydrogene"
-            icon={<HydrogeneIcon size={14} />}
-            capacity={resourceData?.rates.storageHydrogeneCapacity}
-          />
-          <ResourceBadge
-            label="Énergie"
-            value={energyBalance}
-            glowClass={energyBalance >= 0 ? 'glow-energy' : ''}
-            colorClass={energyBalance >= 0 ? 'text-energy' : 'text-destructive'}
-            icon={<EnergieIcon size={14} />}
-          />
+          <div className="flex items-center gap-5">
+            <ResourceBadge
+              label="Minerai"
+              value={resources.minerai}
+              glowClass="glow-minerai"
+              colorClass="text-minerai"
+              icon={<MineraiIcon size={14} />}
+              capacity={resourceData?.rates.storageMineraiCapacity}
+            />
+            <ResourceBadge
+              label="Silicium"
+              value={resources.silicium}
+              glowClass="glow-silicium"
+              colorClass="text-silicium"
+              icon={<SiliciumIcon size={14} />}
+              capacity={resourceData?.rates.storageSiliciumCapacity}
+            />
+            <ResourceBadge
+              label="Hydrogène"
+              value={resources.hydrogene}
+              glowClass="glow-hydrogene"
+              colorClass="text-hydrogene"
+              icon={<HydrogeneIcon size={14} />}
+              capacity={resourceData?.rates.storageHydrogeneCapacity}
+            />
+            <ResourceBadge
+              label="Énergie"
+              value={energyBalance}
+              glowClass={energyBalance >= 0 ? 'glow-energy' : ''}
+              colorClass={energyBalance >= 0 ? 'text-energy' : 'text-destructive'}
+              icon={<EnergieIcon size={14} />}
+            />
+          </div>
         </div>
+
+        <TopBarActions />
       </div>
 
       {/* Row 2 : navigation tabs */}
