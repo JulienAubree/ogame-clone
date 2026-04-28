@@ -23,7 +23,7 @@ import {
   defenderOutcome,
 } from '../combat.helpers.js';
 
-async function emitEspionageAllianceLogs(
+export async function emitEspionageAllianceLogs(
   ctx: MissionHandlerContext,
   args: {
     spyUserId: string;
@@ -33,6 +33,10 @@ async function emitEspionageAllianceLogs(
     targetPlanetName: string;
     coords: string;
     reportId: string;
+    // Outgoing is always emitted (it's the spy's own activity, like combat.attack).
+    // Incoming is only emitted when detected — gameplay preserves the surprise of
+    // a discreet espionnage for the target.
+    detected: boolean;
   },
 ): Promise<void> {
   if (!ctx.allianceLogService) return;
@@ -69,7 +73,7 @@ async function emitEspionageAllianceLogs(
     });
   }
 
-  if (targetAlliance) {
+  if (args.detected && targetAlliance) {
     await ctx.allianceLogService.add({
       allianceId: targetAlliance.allianceId,
       visibility: 'all',
@@ -332,7 +336,7 @@ export class SpyHandler implements MissionHandler {
       reportId = report.id;
     }
 
-    if (detected && reportId && ctx.allianceLogService) {
+    if (reportId && ctx.allianceLogService) {
       fetchUsernames(ctx.db, fleetEvent.userId, targetPlanet.userId).then(({ attackerUsername: spyUsername, defenderUsername }) =>
         emitEspionageAllianceLogs(ctx, {
           spyUserId: fleetEvent.userId,
@@ -342,6 +346,7 @@ export class SpyHandler implements MissionHandler {
           targetPlanetName: targetPlanet.name,
           coords: `${fleetEvent.targetGalaxy}:${fleetEvent.targetSystem}:${fleetEvent.targetPosition}`,
           reportId,
+          detected,
         })
       ).catch((err) => console.error('[alliance-log] espionage emit failed:', err));
     }
