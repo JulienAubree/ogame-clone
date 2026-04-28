@@ -153,11 +153,13 @@ interface BuildingsListProps {
   excludeBuildingIds?: string[];
   /** Hide the default PageHeader so the parent can render a richer hero/KPI block. */
   hideHeader?: boolean;
+  /** Hide the "En cours de construction" section — useful when the parent renders its own queue card. */
+  hideUpgradeQueue?: boolean;
   /** When provided, wrap the rendered content in this className instead of the default page padding. */
   containerClassName?: string;
 }
 
-export function BuildingsList({ title, categoryIds, excludeBuildingIds, hideHeader, containerClassName }: BuildingsListProps) {
+export function BuildingsList({ title, categoryIds, excludeBuildingIds, hideHeader, hideUpgradeQueue, containerClassName }: BuildingsListProps) {
   const { planetId, planetClassId } = useOutletContext<{ planetId?: string; planetClassId?: string | null }>();
   const utils = trpc.useUtils();
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -251,7 +253,7 @@ export function BuildingsList({ title, categoryIds, excludeBuildingIds, hideHead
     <div className={containerClassName ?? 'space-y-4 p-4 lg:space-y-6 lg:p-6'}>
       {!hideHeader && <PageHeader title={title} />}
 
-      {upgradingBuilding && (
+      {!hideUpgradeQueue && upgradingBuilding && (
         <section className="glass-card p-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-foreground">En cours de construction</h2>
