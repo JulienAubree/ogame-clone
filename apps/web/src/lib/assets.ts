@@ -42,3 +42,27 @@ export function getFlagshipImageUrl(
 ): string {
   return `/assets/flagships/${hullId}/${imageIndex}${SUFFIX[size]}.webp`;
 }
+
+/** Minimal shape we need from gameConfig to detect biome variants. */
+type BuildingVariantConfig = {
+  buildings?: Record<string, { variantPlanetTypes?: readonly string[] | string[] }>;
+};
+
+/**
+ * Returns the building illustration URL with a biome-specific variant when
+ * available, falling back to the generic asset otherwise. Uses the
+ * `variantPlanetTypes` array declared in gameConfig for the building.
+ */
+export function getBuildingIllustrationUrl(
+  gameConfig: BuildingVariantConfig | null | undefined,
+  buildingId: string,
+  planetClassId: string | null | undefined,
+  size: AssetSize = 'full',
+): string {
+  const variants = gameConfig?.buildings?.[buildingId]?.variantPlanetTypes ?? [];
+  const hasVariant = !!planetClassId && variants.includes(planetClassId);
+  return getAssetUrl('buildings', buildingId, size, {
+    planetType: planetClassId ?? undefined,
+    hasVariant,
+  });
+}

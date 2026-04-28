@@ -209,6 +209,7 @@ export default function Resources() {
             label="Minerai"
             buildingLabel="Mine de minerai"
             buildingId={BUILDING_IDS.minerai}
+            planetClassId={planetClassId}
             icon={<MineraiIcon size={22} className="text-minerai" />}
             accentColor="text-minerai"
             fillColor="bg-minerai"
@@ -244,6 +245,7 @@ export default function Resources() {
             label="Silicium"
             buildingLabel="Mine de silicium"
             buildingId={BUILDING_IDS.silicium}
+            planetClassId={planetClassId}
             icon={<SiliciumIcon size={22} className="text-silicium" />}
             accentColor="text-silicium"
             fillColor="bg-silicium"
@@ -279,6 +281,7 @@ export default function Resources() {
             label="Hydrogène"
             buildingLabel="Synthétiseur d'hydrogène"
             buildingId={BUILDING_IDS.hydrogene}
+            planetClassId={planetClassId}
             icon={<HydrogeneIcon size={22} className="text-hydrogene" />}
             accentColor="text-hydrogene"
             fillColor="bg-hydrogene"
@@ -314,6 +317,7 @@ export default function Resources() {
         <EnergyCard
           icon={<EnergieIcon size={22} className="text-energy" />}
           buildingId={BUILDING_IDS.energy}
+          planetClassId={planetClassId}
           produced={resourceData?.rates.energyProduced ?? 0}
           consumed={resourceData?.rates.energyConsumed ?? 0}
           productionAtCurrentLevel={

@@ -8,7 +8,7 @@ import { ClockIcon } from '@/components/icons/utility-icons';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
 import { formatDuration } from '@/lib/format';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { getAssetUrl } from '@/lib/assets';
+import { getBuildingIllustrationUrl } from '@/lib/assets';
 
 type GameConfigData = ReturnType<typeof useGameConfig>['data'];
 type BuildingPrereq = { buildingId: string; level: number; currentLevel?: number };
@@ -30,6 +30,8 @@ interface ResourceCardProps {
   buildingLabel: string;
   /** Building id used to pull the background illustration */
   buildingId: string;
+  /** Active planet class — used to pick the biome variant of the illustration */
+  planetClassId?: string | null;
   /** Tailwind class for the accent color (text-minerai, text-silicium, etc.) */
   accentColor: string;
   /** Tailwind class for the progress bar fill (bg-minerai, etc.) */
@@ -87,6 +89,7 @@ export function ResourceCard({
   label,
   buildingLabel,
   buildingId,
+  planetClassId,
   accentColor,
   fillColor,
   perHour,
@@ -147,7 +150,7 @@ export function ResourceCard({
         title={`Voir le détail de ${buildingLabel}`}
       >
         <img
-          src={getAssetUrl('buildings', buildingId)}
+          src={getBuildingIllustrationUrl(gameConfig, buildingId, planetClassId)}
           alt={buildingLabel}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           decoding="async"

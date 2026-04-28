@@ -8,7 +8,7 @@ import { ClockIcon } from '@/components/icons/utility-icons';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
 import { formatDuration } from '@/lib/format';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { getAssetUrl } from '@/lib/assets';
+import { getBuildingIllustrationUrl } from '@/lib/assets';
 import type { BuildingForCard } from '@/components/resources/ResourceCard';
 
 type GameConfigData = ReturnType<typeof useGameConfig>['data'];
@@ -16,6 +16,8 @@ type GameConfigData = ReturnType<typeof useGameConfig>['data'];
 interface InfrastructureCardProps {
   buildingId: string;
   buildingLabel: string;
+  /** Active planet class — used to pick the biome variant of the illustration */
+  planetClassId?: string | null;
   /** Short description of what the building does */
   description: string;
   /** Optional dynamic effect line (e.g. "240k bouclier", "4 offres simultanées") */
@@ -42,6 +44,7 @@ interface InfrastructureCardProps {
 export function InfrastructureCard({
   buildingId,
   buildingLabel,
+  planetClassId,
   description,
   effectLine,
   building,
@@ -91,7 +94,7 @@ export function InfrastructureCard({
         title={`Voir le détail de ${buildingLabel}`}
       >
         <img
-          src={getAssetUrl('buildings', buildingId)}
+          src={getBuildingIllustrationUrl(gameConfig, buildingId, planetClassId)}
           alt={buildingLabel}
           className={cn(
             'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105',

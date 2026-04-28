@@ -8,7 +8,7 @@ import { ClockIcon } from '@/components/icons/utility-icons';
 import { PrerequisiteList, buildPrerequisiteItems } from '@/components/common/PrerequisiteList';
 import { formatDuration } from '@/lib/format';
 import { useGameConfig } from '@/hooks/useGameConfig';
-import { getAssetUrl } from '@/lib/assets';
+import { getBuildingIllustrationUrl } from '@/lib/assets';
 import type { BuildingForCard } from './ResourceCard';
 
 type GameConfigData = ReturnType<typeof useGameConfig>['data'];
@@ -17,6 +17,7 @@ interface EnergyCardProps {
   icon: ReactNode;
   /** Building id used to pull the background illustration (typically 'solarPlant') */
   buildingId: string;
+  planetClassId?: string | null;
   produced: number;
   consumed: number;
   productionAtCurrentLevel?: number;
@@ -43,6 +44,7 @@ function formatCompact(value: number): string {
 export function EnergyCard({
   icon,
   buildingId,
+  planetClassId,
   produced,
   consumed,
   productionAtCurrentLevel,
@@ -94,7 +96,7 @@ export function EnergyCard({
           title="Voir le détail de la centrale solaire"
         >
           <img
-            src={getAssetUrl('buildings', buildingId)}
+            src={getBuildingIllustrationUrl(gameConfig, buildingId, planetClassId)}
             alt="Centrale solaire"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             decoding="async"

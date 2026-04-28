@@ -296,6 +296,7 @@ export default function Infrastructures() {
               key={slot.id + (slot.locked ? '-locked' : '')}
               buildingId={slot.id}
               buildingLabel={slot.label}
+              planetClassId={planetClassId}
               description={slot.description}
               effectLine={slot.effectLine}
               building={buildings?.find((b) => b.id === slot.id)}
