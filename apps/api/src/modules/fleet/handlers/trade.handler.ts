@@ -323,7 +323,7 @@ export class TradeHandler implements MissionHandler {
             userId: fleetEvent.userId,
             fleetEventId: fleetEvent.id,
             missionType: 'trade',
-            title: `Rapport acquis [${report.galaxy}:${report.system}:${report.position}]`,
+            title: `Rapport acquis [${report.galaxy}:${report.system}:${report.position}] · ${seller?.username ?? 'Joueur'}`,
             coordinates: {
               galaxy: report.galaxy,
               system: report.system,

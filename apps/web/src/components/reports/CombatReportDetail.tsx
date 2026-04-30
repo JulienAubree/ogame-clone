@@ -37,6 +37,7 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
   const perspective = result.perspective as 'attacker' | 'defender' | undefined;
   const attackerUsername = result.attackerUsername as string | undefined;
   const defenderUsername = result.defenderUsername as string | undefined;
+  const targetPlanetName = result.targetPlanetName as string | undefined;
 
   const attackerFP = result.attackerFP as number | undefined;
   const defenderFP = result.defenderFP as number | undefined;
@@ -74,12 +75,27 @@ export function CombatReportDetail({ result, missionType, gameConfig, coordinate
       {/* Perspective banner */}
       {perspective === 'attacker' && defenderUsername && (
         <div className="glass-card border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-300">
-          Vous avez attaqué la planète de <span className="font-bold text-blue-200">{defenderUsername}</span>
+          Vous avez attaqué{' '}
+          {targetPlanetName ? (
+            <>
+              <span className="font-bold text-blue-200">{targetPlanetName}</span>
+              {' de '}
+            </>
+          ) : (
+            <>la planète de </>
+          )}
+          <span className="font-bold text-blue-200">{defenderUsername}</span>
         </div>
       )}
       {perspective === 'defender' && attackerUsername && (
         <div className="glass-card border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-300">
           Vous avez été attaqué par <span className="font-bold text-rose-200">{attackerUsername}</span>
+          {targetPlanetName && (
+            <>
+              {' sur '}
+              <span className="font-bold text-rose-200">{targetPlanetName}</span>
+            </>
+          )}
         </div>
       )}
 

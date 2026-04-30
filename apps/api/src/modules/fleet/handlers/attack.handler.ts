@@ -483,7 +483,7 @@ export class AttackHandler implements MissionHandler {
         userId: fleetEvent.userId,
         fleetEventId: fleetEvent.id,
         missionType: 'attack',
-        title: `Rapport de combat ${coords} — ${outcomeText(outcome)}`,
+        title: `Combat — ${targetPlanetName} ${coords} · ${defenderUsername} — ${outcomeText(outcome)}`,
         coordinates: {
           galaxy: fleetEvent.targetGalaxy,
           system: fleetEvent.targetSystem,
@@ -509,7 +509,7 @@ export class AttackHandler implements MissionHandler {
       const defenderReport = await ctx.reportService.create({
         userId: targetPlanet.userId,
         missionType: 'attack',
-        title: `Rapport de combat ${coords} — ${defenderOutcome(outcome)}`,
+        title: `Combat — ${targetPlanetName} ${coords} · ${attackerUsername} — ${defenderOutcome(outcome)}`,
         coordinates: {
           galaxy: fleetEvent.targetGalaxy,
           system: fleetEvent.targetSystem,
