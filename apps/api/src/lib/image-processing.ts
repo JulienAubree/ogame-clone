@@ -4,7 +4,7 @@ import fs from 'fs';
 
 import { toKebab, type AssetCategory } from '@exilium/shared';
 
-const VALID_CATEGORIES: AssetCategory[] = ['buildings', 'research', 'ships', 'defenses', 'planets', 'flagships', 'avatars'];
+const VALID_CATEGORIES: AssetCategory[] = ['buildings', 'research', 'ships', 'defenses', 'planets', 'flagships', 'avatars', 'landing', 'anomaly'];
 
 const SIZES: readonly { suffix: string; width: number; height?: number; quality: number; label: string }[] = [
   { suffix: '', width: 1200, quality: 85, label: 'hero' },
@@ -153,6 +153,83 @@ export async function processBuildingVariant(
       pipeline = pipeline.resize({ width: size.width });
     }
     await pipeline.webp({ quality: size.quality }).toFile(outPath);
+    files.push(filename);
+  }
+  return files;
+}
+
+/**
+ * Landing-page assets are full-bleed background and gallery images, so they
+ * need a much wider hero size than the in-game entity icons. Two outputs:
+ * a 1920px hero for desktop (with a generous quality budget) and a 960px
+ * thumb for mobile / lazy-loaded fallbacks.
+ *
+ * The slot is a free-form kebab-case key chosen by the admin (e.g. "hero",
+ * "immersive-1"). Files are written under `assets/landing/<slot>{,-thumb}.webp`.
+ */
+const LANDING_SIZES: readonly { suffix: string; width: number; quality: number }[] = [
+  { suffix: '', width: 1920, quality: 82 },
+  { suffix: '-thumb', width: 960, quality: 78 },
+];
+
+export async function processLandingImage(
+  buffer: Buffer,
+  slot: string,
+  assetsDir: string,
+): Promise<string[]> {
+  if (!/^[a-z0-9_-]+$/i.test(slot)) {
+    throw new Error(`Invalid landing slot "${slot}"`);
+  }
+
+  const outputDir = path.join(assetsDir, 'landing');
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  const files: string[] = [];
+  for (const size of LANDING_SIZES) {
+    const filename = `${slot}${size.suffix}.webp`;
+    const outPath = path.join(outputDir, filename);
+    await sharp(buffer)
+      .resize({ width: size.width, withoutEnlargement: true })
+      .webp({ quality: size.quality })
+      .toFile(outPath);
+    files.push(filename);
+  }
+  return files;
+}
+
+/**
+ * Anomaly content images — depth illustrations and (later) random-event
+ * cards. Cinematic format, narrower than landing because they sit inside
+ * an in-game card. Two outputs: 1280px hero + 640px thumb.
+ *
+ * Slot is a free-form key (e.g. "depth-1", "depth-2", "event-<id>").
+ * Files written under `assets/anomaly/<slot>{,-thumb}.webp`.
+ */
+const ANOMALY_SIZES: readonly { suffix: string; width: number; quality: number }[] = [
+  { suffix: '', width: 1280, quality: 82 },
+  { suffix: '-thumb', width: 640, quality: 78 },
+];
+
+export async function processAnomalyImage(
+  buffer: Buffer,
+  slot: string,
+  assetsDir: string,
+): Promise<string[]> {
+  if (!/^[a-z0-9_-]+$/i.test(slot)) {
+    throw new Error(`Invalid anomaly slot "${slot}"`);
+  }
+
+  const outputDir = path.join(assetsDir, 'anomaly');
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  const files: string[] = [];
+  for (const size of ANOMALY_SIZES) {
+    const filename = `${slot}${size.suffix}.webp`;
+    const outPath = path.join(outputDir, filename);
+    await sharp(buffer)
+      .resize({ width: size.width, withoutEnlargement: true })
+      .webp({ quality: size.quality })
+      .toFile(outPath);
     files.push(filename);
   }
   return files;

@@ -207,6 +207,9 @@ function RunView({ anomaly, onAdvance, onRetreat, advancePending, retreatPending
   const lootShips = (anomaly.lootShips ?? {}) as Record<string, number>;
   const reportIds = (anomaly.reportIds ?? []) as string[];
   const { data: gameConfig } = useGameConfig();
+  const { data: content } = trpc.anomalyContent.get.useQuery();
+  const nextDepth = anomaly.currentDepth + 1;
+  const nextDepthContent = content?.depths.find((d) => d.depth === nextDepth);
   const minerai = Math.floor(Number(anomaly.lootMinerai));
   const silicium = Math.floor(Number(anomaly.lootSilicium));
   const hydrogene = Math.floor(Number(anomaly.lootHydrogene));
@@ -315,7 +318,28 @@ function RunView({ anomaly, onAdvance, onRetreat, advancePending, retreatPending
 
         {/* Next node — enemy preview */}
         <div className="border-t border-border/30 pt-3 space-y-2">
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Prochain combat (profondeur {anomaly.currentDepth + 1})</h3>
+          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Prochain combat (profondeur {nextDepth})</h3>
+
+          {nextDepthContent?.image && (
+            <div className="relative overflow-hidden rounded-md border border-violet-500/20">
+              <img
+                src={nextDepthContent.image}
+                alt={nextDepthContent.title || `Profondeur ${nextDepth}`}
+                className="block w-full h-40 object-cover"
+                loading="lazy"
+              />
+              {(nextDepthContent.title || nextDepthContent.description) && (
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/85 to-transparent px-3 pt-8 pb-2">
+                  {nextDepthContent.title && (
+                    <div className="text-sm font-bold text-violet-100">{nextDepthContent.title}</div>
+                  )}
+                  {nextDepthContent.description && (
+                    <div className="text-[11px] text-muted-foreground line-clamp-2">{nextDepthContent.description}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {anomaly.nextEnemyFleet && Object.keys(anomaly.nextEnemyFleet as Record<string, number>).length > 0 ? (
             <div className="rounded-md border border-rose-500/20 bg-rose-500/5 p-3 space-y-1.5">

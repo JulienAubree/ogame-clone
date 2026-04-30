@@ -3,7 +3,7 @@ import '@fastify/multipart';
 import { jwtVerify } from 'jose';
 import { eq, sql } from 'drizzle-orm';
 import { users, planetTypes, type Database } from '@exilium/db';
-import { processImage, processPlanetImage, processFlagshipImage, processAvatarImage, processBuildingVariant, isValidCategory } from '../../lib/image-processing.js';
+import { processImage, processPlanetImage, processFlagshipImage, processAvatarImage, processBuildingVariant, processLandingImage, processAnomalyImage, isValidCategory } from '../../lib/image-processing.js';
 import { getNextPlanetImageIndex, listPlanetImageIndexes } from '../../lib/planet-image.util.js';
 import { getNextFlagshipImageIndex, listFlagshipImageIndexes } from '../../lib/flagship-image.util.js';
 import { getNextAvatarIndex, listAvatarIndexes } from '../../lib/avatar-image.util.js';
@@ -52,10 +52,10 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
     const planetType = (data.fields.planetType as { value: string } | undefined)?.value;
 
     if (!category || !isValidCategory(category)) {
-      return reply.status(400).send({ error: 'Invalid category. Must be: buildings, research, ships, defenses, planets, flagships, avatars' });
+      return reply.status(400).send({ error: 'Invalid category. Must be: buildings, research, ships, defenses, planets, flagships, avatars, landing, anomaly' });
     }
     if (!entityId && category !== 'avatars') {
-      return reply.status(400).send({ error: 'entityId is required (hullId for flagships)' });
+      return reply.status(400).send({ error: 'entityId is required (hullId for flagships, slot for landing/anomaly)' });
     }
     if (!ALLOWED_MIMES.includes(data.mimetype)) {
       return reply.status(400).send({ error: 'Invalid file type. Must be PNG, JPEG, or WebP' });
@@ -81,6 +81,19 @@ export function registerAssetUploadRoute(server: FastifyInstance, db: Database) 
         const hullId = entityId!;
         const nextIndex = getNextFlagshipImageIndex(hullId, env.ASSETS_DIR);
         files = await processFlagshipImage(buffer, hullId, nextIndex, env.ASSETS_DIR);
+      } else if (category === 'landing') {
+        // Landing images use a free-form slot key instead of a DB-backed entity.
+        // Slot must be safe for filenames (alphanum + dash/underscore).
+        if (!/^[a-z0-9_-]+$/i.test(entityId!)) {
+          return reply.status(400).send({ error: 'Invalid landing slot' });
+        }
+        files = await processLandingImage(buffer, entityId!, env.ASSETS_DIR);
+      } else if (category === 'anomaly') {
+        // Anomaly content images use a free-form slot key (e.g. "depth-1").
+        if (!/^[a-z0-9_-]+$/i.test(entityId!)) {
+          return reply.status(400).send({ error: 'Invalid anomaly slot' });
+        }
+        files = await processAnomalyImage(buffer, entityId!, env.ASSETS_DIR);
       } else if (planetType) {
         if (category !== 'buildings' && category !== 'defenses') {
           return reply.status(400).send({ error: 'planetType only supported for buildings|defenses' });

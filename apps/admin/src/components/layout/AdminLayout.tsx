@@ -5,7 +5,7 @@ import {
   Building2, FlaskConical, Rocket, Shield, Zap,
   Factory, Globe, Users, LogOut, LayoutGrid, Orbit,
   Skull, GraduationCap, Compass, Tag, Sparkles, MessageSquare, FileText, Bolt, Key,
-  Menu, X, CircleUserRound, Megaphone, LayoutDashboard,
+  Menu, X, CircleUserRound, Megaphone, LayoutDashboard, Home, Atom,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -34,6 +34,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/missions', label: 'Missions', icon: Compass },
       { to: '/pve-missions', label: 'Missions PvE', icon: Skull },
+      { to: '/anomalies', label: 'Anomalies', icon: Atom },
       { to: '/talents', label: 'Talents Flagship', icon: Sparkles },
       { to: '/hull-abilities', label: 'Capacites Flagship', icon: Bolt },
       { to: '/gameplay-keys', label: 'Cles de gameplay', icon: Key },
@@ -48,6 +49,12 @@ const NAV_SECTIONS = [
       { to: '/feedbacks', label: 'Feedback', icon: MessageSquare },
       { to: '/changelogs', label: 'Changelogs', icon: FileText },
       { to: '/announcements', label: 'Annonces', icon: Megaphone },
+    ],
+  },
+  {
+    title: 'Site',
+    items: [
+      { to: '/homepage', label: "Page d'accueil", icon: Home },
     ],
   },
 ];

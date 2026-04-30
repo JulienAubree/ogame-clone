@@ -73,6 +73,8 @@ import { createColonizationService } from '../modules/colonization/colonization.
 import { createColonizationRouter } from '../modules/colonization/colonization.router.js';
 import { createHomepageService } from '../modules/homepage/homepage.service.js';
 import { createHomepageRouter } from '../modules/homepage/homepage.router.js';
+import { createAnomalyContentService } from '../modules/anomaly-content/anomaly-content.service.js';
+import { createAnomalyContentRouter } from '../modules/anomaly-content/anomaly-content.router.js';
 import { createMailerService } from '../modules/mailer/mailer.service.js';
 import { env } from '../config/env.js';
 import type { Database } from '@exilium/db';
@@ -125,6 +127,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const notificationPreferencesService = createNotificationPreferencesService(db);
   const explorationReportService = createExplorationReportService(db, resourceService, gameConfigService);
   const homepageService = createHomepageService(db);
+  const anomalyContentService = createAnomalyContentService(db);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService, planetAbandonService);
@@ -159,6 +162,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const explorationReportRouter = createExplorationReportRouter(explorationReportService);
   const colonizationRouter = createColonizationRouter(colonizationService);
   const homepageRouter = createHomepageRouter(homepageService, adminProcedure);
+  const anomalyContentRouter = createAnomalyContentRouter(anomalyContentService, adminProcedure);
   const anomalyService = createAnomalyService(db, gameConfigService, exiliumService, flagshipService, reportService);
   const anomalyRouter = createAnomalyRouter(anomalyService);
 
@@ -201,6 +205,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     colonization: colonizationRouter,
     homepage: homepageRouter,
     anomaly: anomalyRouter,
+    anomalyContent: anomalyContentRouter,
   });
 
   return { router: appRouter, authService };

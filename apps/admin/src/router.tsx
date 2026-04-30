@@ -45,6 +45,8 @@ export const router = createBrowserRouter([
       { path: 'feedbacks', lazy: () => import('./pages/Feedbacks').then((m) => ({ Component: m.default })) },
       { path: 'changelogs', lazy: () => import('./pages/Changelogs').then((m) => ({ Component: m.default })) },
       { path: 'announcements', lazy: () => import('./pages/Announcements').then((m) => ({ Component: m.default })) },
+      { path: 'homepage', lazy: () => import('./pages/Homepage').then((m) => ({ Component: m.default })) },
+      { path: 'anomalies', lazy: () => import('./pages/Anomalies').then((m) => ({ Component: m.default })) },
     ],
   },
 ]);
