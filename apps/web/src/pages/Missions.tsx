@@ -586,7 +586,7 @@ export default function Missions() {
                           <Button
                             size="sm"
                             className="flex-1"
-                            onClick={() => navigate(`/galaxy?galaxy=${params.galaxy}&system=${params.system}`)}
+                            onClick={() => navigate(`/galaxy?g=${params.galaxy}&s=${params.system}`)}
                           >
                             Voir le système
                           </Button>
