@@ -6,10 +6,12 @@ export const COMBAT_CATEGORIES: ShipCategory[] = [
   { id: 'heavy', name: 'Lourd', targetable: true, targetOrder: 3 },
   { id: 'shield', name: 'Bouclier', targetable: true, targetOrder: 4 },
   { id: 'defense', name: 'Défense', targetable: true, targetOrder: 5 },
-  { id: 'support', name: 'Support', targetable: false, targetOrder: 6 },
-  // Capital ship = vaisseau amiral. Non-targetable, ciblé en dernier ressort
-  // une fois que toute l'escorte (y compris le support) est tombée.
-  { id: 'capital', name: 'Vaisseau amiral', targetable: false, targetOrder: 99 },
+  // Capital ship = vaisseau amiral. Non-targetable mais ciblé AVANT le support :
+  // les ennemis cherchent à abattre le capitaine avant de viser cargos/sondes
+  // une fois l'escorte de combat tombée. Cohérent avec une formation où les
+  // supports sont à l'arrière de la ligne.
+  { id: 'capital', name: 'Vaisseau amiral', targetable: false, targetOrder: 6 },
+  { id: 'support', name: 'Support', targetable: false, targetOrder: 7 },
 ];
 
 export function buildCombatConfig(
