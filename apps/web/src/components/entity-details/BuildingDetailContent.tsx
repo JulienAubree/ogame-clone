@@ -182,11 +182,11 @@ export function BuildingDetailContent({ buildingId, buildings, planetContext, pl
             <div className="rounded bg-[#0d1628] px-2.5 py-2 space-y-1.5">
               <div className="text-[10px] uppercase text-emerald-400 font-semibold tracking-wider">Bonus par biome (par niveau)</div>
               <ul className="space-y-1 text-slate-300">
-                <li><span className="text-amber-400 font-medium">Volcanique</span> : +2% minerai sur le butin minier</li>
-                <li><span className="text-cyan-400 font-medium">Aride</span> : +2% silicium sur le butin minier</li>
-                <li><span className="text-fuchsia-400 font-medium">Gazeuse</span> : +2% hydrogène sur le butin minier</li>
-                <li><span className="text-emerald-400 font-medium">Tempérée</span> : +1% sur chaque ressource minière</li>
-                <li><span className="text-rose-400 font-medium">Glaciale</span> : +2% sur le butin pirate (toutes ressources)</li>
+                <li><span className="text-amber-400 font-medium">Volcanique</span> : +2%/niv. minerai sur le butin minier</li>
+                <li><span className="text-cyan-400 font-medium">Aride</span> : +2%/niv. silicium sur le butin minier</li>
+                <li><span className="text-fuchsia-400 font-medium">Gazeuse</span> : +2%/niv. hydrogène sur le butin minier</li>
+                <li><span className="text-emerald-400 font-medium">Tempérée</span> : +1%/niv. sur chaque ressource minière</li>
+                <li><span className="text-rose-400 font-medium">Glaciale</span> : +2%/niv. sur le butin pirate (toutes ressources)</li>
               </ul>
             </div>
 

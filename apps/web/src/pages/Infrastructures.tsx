@@ -82,7 +82,8 @@ function getRelayEffectLine(level: number, planetClassId: string | null): string
   if (bonus.silicium > 0)  parts.push(`+${Math.round(bonus.silicium * level * 100)}% silicium`);
   if (bonus.hydrogene > 0) parts.push(`+${Math.round(bonus.hydrogene * level * 100)}% hydrogène`);
   if (bonus.pirate > 0)    parts.push(`+${Math.round(bonus.pirate * level * 100)}% butin pirates`);
-  return parts.length > 0 ? parts.join(' · ') : null;
+  if (parts.length === 0) return null;
+  return `${parts.join(' · ')} (cumulé niv. ${level})`;
 }
 
 interface InfraSlot {
