@@ -1,5 +1,5 @@
-import { eq, and, sql, asc } from 'drizzle-orm';
-import { pveMissions, planets, missionCenterState, fleetEvents, planetShips, asteroidDeposits } from '@exilium/db';
+import { eq, and, sql, asc, gt } from 'drizzle-orm';
+import { pveMissions, planets, missionCenterState, fleetEvents, planetShips, asteroidDeposits, discoveredPositions, userResearch } from '@exilium/db';
 import { TRPCError } from '@trpc/server';
 import type { Database } from '@exilium/db';
 import {
@@ -9,11 +9,14 @@ import {
   computeFleetFP,
   getMissionRelayBonusPerLevel,
   MISSION_RELAY_DIVERSITY_BONUS_PER_BIOME,
+  explorationQuota,
+  explorationRewards,
   type UnitCombatStats,
   type FPConfig,
 } from '@exilium/game-engine';
 import type { createAsteroidBeltService } from './asteroid-belt.service.js';
 import type { createPirateService } from './pirate.service.js';
+import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import { findBuildingByRole } from '../../lib/config-helpers.js';
 
@@ -23,6 +26,7 @@ export function createPveService(
   pirateService: ReturnType<typeof createPirateService>,
   gameConfigService: GameConfigService,
   talentService?: { computeTalentContext(userId: string, planetId?: string): Promise<Record<string, number>> },
+  exiliumService?: ReturnType<typeof createExiliumService>,
 ) {
   return {
     async getMissions(userId: string) {
@@ -161,6 +165,8 @@ export function createPveService(
       const cooldownMs = discoveryCooldown(centerLevel, { base: cooldownBase, minimum: 1 }) * 3600 * 1000;
       // Pirate timer offset: 50% of cooldown so they never spawn at the same time as mining
       const pirateOffsetMs = Math.floor(cooldownMs / 2);
+      // Exploration timer offset: 25% of cooldown — out of phase with mining and pirate
+      const explorationOffsetMs = Math.floor(cooldownMs / 4);
 
       // Get or create state
       let [state] = await db.select().from(missionCenterState)
@@ -210,6 +216,7 @@ export function createPveService(
 
       const MINING_CAP = Number(config.universe.pve_max_concurrent_missions) || 3;
       const PIRATE_CAP = Number(config.universe.pve_max_pirate_missions) || 2;
+      const EXPLORATION_CAP = Number(config.universe.pve_max_exploration_missions) || 2;
 
       // Get player's home planet for coordinates
       const [homePlanet] = await db.select({
@@ -248,6 +255,23 @@ export function createPveService(
       } else if (!state.nextPirateDiscoveryAt) {
         // Persist the backfill value
         updates.nextPirateDiscoveryAt = pirateNextAt;
+      }
+
+      // ── Exploration timer ──
+      // Backfill nullable column for existing players (offset 25% from now)
+      const explorationNextAt = state.nextExplorationDiscoveryAt ?? new Date(now.getTime() + explorationOffsetMs);
+      if (explorationNextAt <= now) {
+        const elapsed = now.getTime() - explorationNextAt.getTime();
+        const n = Math.floor(elapsed / cooldownMs) + 1;
+        const explorationToCreate = Math.min(n, EXPLORATION_CAP - (countByType['exploration'] ?? 0));
+        if (homePlanet) {
+          for (let i = 0; i < explorationToCreate; i++) {
+            await this.generateExplorationMission(userId, homePlanet.galaxy, homePlanet.system, centerLevel);
+          }
+        }
+        updates.nextExplorationDiscoveryAt = new Date(explorationNextAt.getTime() + n * cooldownMs);
+      } else if (!state.nextExplorationDiscoveryAt) {
+        updates.nextExplorationDiscoveryAt = explorationNextAt;
       }
 
       await db.update(missionCenterState).set(updates)
@@ -473,6 +497,178 @@ export function createPveService(
         WHERE status = 'available'
           AND created_at < NOW() - INTERVAL '1 day' * ${expiryDays}
       `);
+      // Exploration missions use their own shorter window (default 48h, tracked in expiresAt).
+      await db.execute(sql`
+        UPDATE pve_missions
+        SET status = 'expired'
+        WHERE status = 'available'
+          AND mission_type = 'exploration'
+          AND expires_at IS NOT NULL
+          AND expires_at < NOW()
+      `);
+    },
+
+    /**
+     * Generate a recon exploration contract: pick a system far enough from the
+     * homeworld, in the same galaxy, where the player has fewer than `quota`
+     * positions already discovered. Skip silently if planetaryExploration is 0.
+     */
+    async generateExplorationMission(userId: string, homeworldGalaxy: number, homeworldSystem: number, centerLevel: number) {
+      const config = await gameConfigService.getFullConfig();
+
+      // Gate: require planetary exploration tech
+      const [research] = await db
+        .select({ planetaryExploration: userResearch.planetaryExploration })
+        .from(userResearch)
+        .where(eq(userResearch.userId, userId))
+        .limit(1);
+      if (!research || (research.planetaryExploration ?? 0) < 1) return;
+
+      const minDistance = Number(config.universe.pve_exploration_min_distance) || 3;
+      const maxSystems = Number(config.universe.systems) || 499;
+      const expirationHours = Number(config.universe.pve_exploration_expiration_hours) || 48;
+      const quota = explorationQuota(centerLevel);
+      if (quota <= 0) return;
+
+      // Build candidate systems: same galaxy, distance ≥ minDistance from homeworld, within universe bounds
+      const candidates: number[] = [];
+      for (let s = 2; s < maxSystems; s++) {
+        if (Math.abs(s - homeworldSystem) >= minDistance) candidates.push(s);
+      }
+      if (candidates.length === 0) return;
+
+      // Exclude systems already targeted by an active exploration mission
+      const existing = await db
+        .select({ parameters: pveMissions.parameters })
+        .from(pveMissions)
+        .where(and(
+          eq(pveMissions.userId, userId),
+          eq(pveMissions.missionType, 'exploration'),
+          eq(pveMissions.status, 'available'),
+        ));
+      const usedSystems = new Set(
+        existing.map((m) => {
+          const p = m.parameters as { galaxy?: number; system?: number };
+          return `${p.galaxy}:${p.system}`;
+        }),
+      );
+
+      // Try up to 5 random picks; skip if all attempts hit a saturated system
+      const galaxy = homeworldGalaxy;
+      let pickedSystem: number | null = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+        if (usedSystems.has(`${galaxy}:${candidate}`)) continue;
+
+        // Saturation check: how many positions already self-explored in that system?
+        const [{ count: alreadyDiscovered }] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(discoveredPositions)
+          .where(and(
+            eq(discoveredPositions.userId, userId),
+            eq(discoveredPositions.galaxy, galaxy),
+            eq(discoveredPositions.system, candidate),
+            eq(discoveredPositions.selfExplored, true),
+          ));
+        // Allow if at least `quota` positions remain undiscovered (assume 14 explorable positions)
+        const remaining = 14 - Number(alreadyDiscovered);
+        if (remaining >= quota) {
+          pickedSystem = candidate;
+          break;
+        }
+      }
+      if (pickedSystem === null) return;
+
+      const rewards = explorationRewards(centerLevel, quota);
+      const expiresAt = new Date(Date.now() + expirationHours * 60 * 60 * 1000);
+
+      await db.insert(pveMissions).values({
+        userId,
+        missionType: 'exploration',
+        parameters: { subtype: 'recon', galaxy, system: pickedSystem, quota, progress: 0 },
+        rewards,
+        status: 'available',
+        expiresAt,
+      });
+    },
+
+    /**
+     * Called from explore.handler after a position is self-explored. Updates
+     * progress on any matching active recon contract; completes it if quota
+     * is reached. Idempotent — safe to call multiple times.
+     */
+    async checkExplorationCompletion(userId: string, galaxy: number, system: number) {
+      const activeMissions = await db
+        .select()
+        .from(pveMissions)
+        .where(and(
+          eq(pveMissions.userId, userId),
+          eq(pveMissions.missionType, 'exploration'),
+          eq(pveMissions.status, 'available'),
+        ));
+
+      for (const mission of activeMissions) {
+        const params = mission.parameters as { subtype?: string; galaxy: number; system: number; quota: number; progress?: number };
+        if (params.galaxy !== galaxy || params.system !== system) continue;
+
+        const [{ count }] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(discoveredPositions)
+          .where(and(
+            eq(discoveredPositions.userId, userId),
+            eq(discoveredPositions.galaxy, params.galaxy),
+            eq(discoveredPositions.system, params.system),
+            eq(discoveredPositions.selfExplored, true),
+            gt(discoveredPositions.createdAt, mission.createdAt),
+          ));
+
+        const progress = Math.min(Number(count), params.quota);
+        if (progress >= params.quota) {
+          await this.completeExplorationMission(mission.id, userId);
+        } else if (progress !== (params.progress ?? 0)) {
+          await db.update(pveMissions).set({
+            parameters: { ...params, progress },
+          }).where(eq(pveMissions.id, mission.id));
+        }
+      }
+    },
+
+    /**
+     * Mark an exploration mission completed and credit the rewards on the
+     * player's homeworld. Exilium drop is best-effort — never blocks completion.
+     */
+    async completeExplorationMission(missionId: string, userId: string) {
+      const [mission] = await db
+        .select()
+        .from(pveMissions)
+        .where(and(eq(pveMissions.id, missionId), eq(pveMissions.userId, userId)))
+        .limit(1);
+      if (!mission || mission.status !== 'available') return;
+
+      const rewards = mission.rewards as { minerai: number; silicium: number; hydrogene: number; exilium: number };
+
+      await db.update(pveMissions).set({ status: 'completed' })
+        .where(eq(pveMissions.id, missionId));
+
+      const [homeworld] = await db
+        .select({ id: planets.id })
+        .from(planets)
+        .where(and(eq(planets.userId, userId), eq(planets.planetClassId, 'homeworld')))
+        .limit(1);
+
+      if (homeworld) {
+        await db.update(planets).set({
+          minerai: sql`${planets.minerai} + ${rewards.minerai}`,
+          silicium: sql`${planets.silicium} + ${rewards.silicium}`,
+          hydrogene: sql`${planets.hydrogene} + ${rewards.hydrogene}`,
+        }).where(eq(planets.id, homeworld.id));
+      }
+
+      if (rewards.exilium > 0 && exiliumService) {
+        await exiliumService.earn(userId, rewards.exilium, 'pve', { source: 'exploration', missionId }).catch((err) => {
+          console.warn('[exploration-mission] exilium credit failed:', err);
+        });
+      }
     },
   };
 }

@@ -29,6 +29,7 @@ export function createPveRouter(
         missions: enrichedMissions,
         centerLevel,
         nextDiscoveryAt: discoveryState?.nextDiscoveryAt?.toISOString() ?? null,
+        nextExplorationDiscoveryAt: discoveryState?.nextExplorationDiscoveryAt?.toISOString() ?? null,
       };
     }),
 

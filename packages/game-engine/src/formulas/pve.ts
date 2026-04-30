@@ -187,3 +187,34 @@ export function getMissionRelayBonusPerLevel(biome: string | null | undefined): 
     default:          return { minerai: 0,    silicium: 0,    hydrogene: 0,    pirate: 0    };
   }
 }
+
+// ── Exploration PvE — P1 Reconnaissance ──
+
+/** Number of new positions a recon contract requires, based on mission center level. */
+export function explorationQuota(centerLevel: number): number {
+  if (centerLevel <= 0) return 0;
+  return Math.max(2, Math.min(5, Math.ceil(centerLevel / 3)));
+}
+
+export interface ExplorationRewards {
+  minerai: number;
+  silicium: number;
+  hydrogene: number;
+  exilium: number;
+}
+
+/**
+ * Resource bundle credited on contract completion. Linear in centerLevel × quota
+ * to keep the curve readable: a level-10 player tackling a quota-4 contract gets
+ * roughly 10× what a level-1 player gets on a quota-2 contract.
+ */
+export function explorationRewards(centerLevel: number, quota: number): ExplorationRewards {
+  const safeLevel = Math.max(1, centerLevel);
+  const safeQuota = Math.max(1, quota);
+  return {
+    minerai:   safeLevel * safeQuota * 200,
+    silicium:  safeLevel * safeQuota * 150,
+    hydrogene: safeLevel * safeQuota * 100,
+    exilium:   1,
+  };
+}

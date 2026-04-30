@@ -88,6 +88,18 @@ export class ExploreHandler implements PhasedMissionHandler {
       set: { selfExplored: true },
     });
 
+    // Hook: progress / complete any active exploration recon contract that targets
+    // this system. Best-effort — never blocks the explore phase.
+    if (ctx.pveService) {
+      await ctx.pveService.checkExplorationCompletion(
+        fleetEvent.userId,
+        fleetEvent.targetGalaxy,
+        fleetEvent.targetSystem,
+      ).catch((err) => {
+        console.warn('[exploration-mission] checkCompletion failed:', err);
+      });
+    }
+
     const biomeCatalogue: BiomeDefinition[] = (config.biomes ?? []).map((b) => ({
       id: b.id,
       rarity: b.rarity,

@@ -69,6 +69,8 @@ import { createExplorationReportService } from '../modules/exploration-report/ex
 import { createExplorationReportRouter } from '../modules/exploration-report/exploration-report.router.js';
 import { createColonizationService } from '../modules/colonization/colonization.service.js';
 import { createColonizationRouter } from '../modules/colonization/colonization.router.js';
+import { createHomepageService } from '../modules/homepage/homepage.service.js';
+import { createHomepageRouter } from '../modules/homepage/homepage.router.js';
 import { createMailerService } from '../modules/mailer/mailer.service.js';
 import { env } from '../config/env.js';
 import type { Database } from '@exilium/db';
@@ -95,7 +97,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const rankingService = createRankingService(db, gameConfigService);
   const asteroidBeltService = createAsteroidBeltService(db);
   const pirateService = createPirateService(db, gameConfigService);
-  const pveService = createPveService(db, asteroidBeltService, pirateService, gameConfigService, talentService);
+  const pveService = createPveService(db, asteroidBeltService, pirateService, gameConfigService, talentService, exiliumService);
   const userService = createUserService(db, env.ASSETS_DIR);
   const gameEventService = createGameEventService(db);
   const friendService = createFriendService(db, redis, gameEventService);
@@ -120,6 +122,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const announcementService = createAnnouncementService(db);
   const notificationPreferencesService = createNotificationPreferencesService(db);
   const explorationReportService = createExplorationReportService(db, resourceService, gameConfigService);
+  const homepageService = createHomepageService(db);
 
   const authRouter = createAuthRouter(authService, planetService);
   const planetRouter = createPlanetRouter(planetService, planetAbandonService);
@@ -153,6 +156,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const notificationPreferencesRouter = createNotificationPreferencesRouter(notificationPreferencesService);
   const explorationReportRouter = createExplorationReportRouter(explorationReportService);
   const colonizationRouter = createColonizationRouter(colonizationService);
+  const homepageRouter = createHomepageRouter(homepageService, adminProcedure);
 
   const appRouter = router({
     health: publicProcedure.query(() => ({
@@ -191,6 +195,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     notificationPreferences: notificationPreferencesRouter,
     explorationReport: explorationReportRouter,
     colonization: colonizationRouter,
+    homepage: homepageRouter,
   });
 
   return { router: appRouter, authService };

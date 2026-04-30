@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, jsonb, uuid, primaryKey, pgEnum, smallint, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, text, jsonb, uuid, primaryKey, pgEnum, smallint, boolean, timestamp } from 'drizzle-orm/pg-core';
 import { planets } from './planets.js';
 import { users } from './users.js';
 
@@ -37,6 +37,7 @@ export const discoveredPositions = pgTable('discovered_positions', {
   system: smallint('system').notNull(),
   position: smallint('position').notNull(),
   selfExplored: boolean('self_explored').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.galaxy, t.system, t.position] }),
 ]);
