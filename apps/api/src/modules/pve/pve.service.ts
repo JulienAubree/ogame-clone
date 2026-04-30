@@ -294,10 +294,15 @@ export function createPveService(
         }
       }
 
-      // Exclude coordinates already used by available missions
-      const existingMissions = await db.select({ parameters: pveMissions.parameters })
+      // Re-check cap right before insert — guards against concurrent
+      // materializeDiscoveries calls in PM2 cluster.
+      const existingMissions = await db.select({ missionType: pveMissions.missionType, parameters: pveMissions.parameters })
         .from(pveMissions)
         .where(and(eq(pveMissions.userId, userId), eq(pveMissions.status, 'available')));
+      const miningCap = Number(config.universe.pve_max_concurrent_missions) || 3;
+      const miningCount = existingMissions.filter((m) => m.missionType === 'mine').length;
+      if (miningCount >= miningCap) return;
+
       const usedCoords = new Set(existingMissions.map(m => {
         const p = m.parameters as { system?: number; position?: number };
         return `${p.system}:${p.position}`;
@@ -417,6 +422,20 @@ export function createPveService(
 
     async generatePirateMission(userId: string, galaxy: number, system: number, centerLevel: number) {
       const config = await gameConfigService.getFullConfig();
+
+      // Re-check cap right before insert — guards against concurrent
+      // materializeDiscoveries calls in PM2 cluster.
+      const pirateCap = Number(config.universe.pve_max_pirate_missions) || 2;
+      const [{ count: pirateCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(pveMissions)
+        .where(and(
+          eq(pveMissions.userId, userId),
+          eq(pveMissions.missionType, 'pirate'),
+          eq(pveMissions.status, 'available'),
+        ));
+      if (Number(pirateCount) >= pirateCap) return;
+
       const tierMediumUnlock = Number(config.universe.pve_tier_medium_unlock) || 4;
       const tierHardUnlock = Number(config.universe.pve_tier_hard_unlock) || 6;
       const availableTiers: ('easy' | 'medium' | 'hard')[] = ['easy'];
@@ -538,7 +557,9 @@ export function createPveService(
       }
       if (candidates.length === 0) return;
 
-      // Exclude systems already targeted by an active exploration mission
+      // Re-check cap right before insert (defends against concurrent
+      // materializeDiscoveries calls under PM2 cluster: caller-side count is
+      // racy across workers; only this fresh read narrows the window).
       const existing = await db
         .select({ parameters: pveMissions.parameters })
         .from(pveMissions)
@@ -547,6 +568,9 @@ export function createPveService(
           eq(pveMissions.missionType, 'exploration'),
           eq(pveMissions.status, 'available'),
         ));
+      const explorationCap = Number(config.universe.pve_max_exploration_missions) || 2;
+      if (existing.length >= explorationCap) return;
+
       const usedSystems = new Set(
         existing.map((m) => {
           const p = m.parameters as { galaxy?: number; system?: number };
