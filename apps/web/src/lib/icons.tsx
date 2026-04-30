@@ -196,6 +196,18 @@ export function MissionsIcon(props: IconProps) {
   );
 }
 
+// Spirale gravitationnelle — 3 ellipses concentriques tournées + un point central
+export function AnomalyIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <ellipse cx="12" cy="12" rx="9" ry="3" transform="rotate(20 12 12)" opacity={0.35} />
+      <ellipse cx="12" cy="12" rx="7" ry="2.5" transform="rotate(-30 12 12)" opacity={0.55} />
+      <ellipse cx="12" cy="12" rx="4.5" ry="1.5" transform="rotate(75 12 12)" opacity={0.75} />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
 // --- Navigation ---
 
 export function HistoryIcon(props: IconProps) {

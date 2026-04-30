@@ -542,6 +542,14 @@ const UNIVERSE_CONFIG = [
   { key: 'pve_exploration_min_distance', value: 3 },
   { key: 'pve_exploration_expiration_hours', value: 48 },
 
+  // Anomalie gravitationnelle (rogue-lite V1)
+  { key: 'anomaly_entry_cost_exilium', value: 5 },
+  { key: 'anomaly_difficulty_growth', value: 1.3 },
+  { key: 'anomaly_loot_base', value: 5000 },
+  { key: 'anomaly_loot_growth', value: 1.4 },
+  { key: 'anomaly_enemy_recovery_ratio', value: 0.15 },
+  { key: 'anomaly_node_travel_seconds', value: 600 },
+
   // ── FP (Facteur de Puissance) ──
   { key: 'fp_shotcount_exponent', value: 1.5 },
   { key: 'fp_divisor', value: 100 },

@@ -1,7 +1,10 @@
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter, Navigate, useLocation } from 'react-router';
+import { lazy, Suspense } from 'react';
 import { Layout } from './components/layout/Layout';
 import { useAuthStore } from './stores/auth.store';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+
+const Landing = lazy(() => import('./pages/Landing'));
 
 /** Wrap a lazy import to auto-reload on stale chunk errors (post-deployment) */
 function lazyLoad(importFn: () => Promise<{ default: React.ComponentType }>) {
@@ -18,10 +21,30 @@ function lazyLoad(importFn: () => Promise<{ default: React.ComponentType }>) {
       });
 }
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
+/**
+ * Root-path switch:
+ * - Unauthenticated users see the public landing at `/`.
+ * - Authenticated users see the in-game Layout (which renders Overview at the
+ *   index, plus the rest of the game via React Router children).
+ * - Unauthenticated users hitting a sub-path (e.g. `/empire`) are redirected
+ *   to `/login` so deep-links still work.
+ */
+function RootSwitch() {
   const token = useAuthStore((s) => s.accessToken);
-  if (!token) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  const location = useLocation();
+
+  if (!token) {
+    if (location.pathname === '/') {
+      return (
+        <Suspense fallback={null}>
+          <Landing />
+        </Suspense>
+      );
+    }
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Layout />;
 }
 
 function RouteErrorFallback() {
@@ -68,11 +91,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: (
-      <AuthGuard>
-        <Layout />
-      </AuthGuard>
-    ),
+    element: <RootSwitch />,
     errorElement: <RouteErrorFallback />,
     children: [
       {
@@ -166,6 +185,11 @@ export const router = createBrowserRouter([
       {
         path: 'missions',
         lazy: lazyLoad(() => import('./pages/Missions')),
+        errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
+      },
+      {
+        path: 'anomalies',
+        lazy: lazyLoad(() => import('./pages/Anomaly')),
         errorElement: <ErrorBoundary><RouteErrorFallback /></ErrorBoundary>,
       },
       {

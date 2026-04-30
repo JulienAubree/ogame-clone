@@ -30,6 +30,7 @@ export const SIDEBAR_VISIBILITY_RULES = {
   '/galaxy': atChapter(3),
   '/fleet': atChapter(3),
   '/missions': atChapter(3),
+  '/anomalies': atChapter(4),
   '/market': afterTutorial,
   '/messages': always,
   '/alliance': afterTutorial,

@@ -37,3 +37,5 @@ export * from './notification-preferences.js';
 export * from './biomes.js';
 export * from './exploration-reports.js';
 export * from './colonization.js';
+export * from './homepage-content.js';
+export * from './anomalies.js';

@@ -63,8 +63,8 @@ describe('getVisibleSidebarPaths', () => {
     expect(visible.has('/empire')).toBe(false);
   });
 
-  it('fully unlocked state: all 20 items visible', () => {
+  it('fully unlocked state: all 21 items visible', () => {
     const visible = getVisibleSidebarPaths({ chapterOrder: 4, isComplete: true, colonyCount: 2 });
-    expect(visible.size).toBe(20);
+    expect(visible.size).toBe(21);
   });
 });

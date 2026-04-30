@@ -36,6 +36,8 @@ import { createGameEventRouter } from '../modules/game-event/game-event.router.j
 import { createAsteroidBeltService } from '../modules/pve/asteroid-belt.service.js';
 import { createPirateService } from '../modules/pve/pirate.service.js';
 import { createPveService } from '../modules/pve/pve.service.js';
+import { createAnomalyService } from '../modules/anomaly/anomaly.service.js';
+import { createAnomalyRouter } from '../modules/anomaly/anomaly.router.js';
 import { createPveRouter } from '../modules/pve/pve.router.js';
 import { createTutorialService } from '../modules/tutorial/tutorial.service.js';
 import { createTutorialRouter } from '../modules/tutorial/tutorial.router.js';
@@ -157,6 +159,8 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const explorationReportRouter = createExplorationReportRouter(explorationReportService);
   const colonizationRouter = createColonizationRouter(colonizationService);
   const homepageRouter = createHomepageRouter(homepageService, adminProcedure);
+  const anomalyService = createAnomalyService(db, gameConfigService, exiliumService, flagshipService);
+  const anomalyRouter = createAnomalyRouter(anomalyService);
 
   const appRouter = router({
     health: publicProcedure.query(() => ({
@@ -196,6 +200,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
     explorationReport: explorationReportRouter,
     colonization: colonizationRouter,
     homepage: homepageRouter,
+    anomaly: anomalyRouter,
   });
 
   return { router: appRouter, authService };
