@@ -23,6 +23,7 @@ export const anomalies = pgTable('anomalies', {
   lootShips: jsonb('loot_ships').notNull().default(sql`'{}'::jsonb`),
   exiliumPaid: integer('exilium_paid').notNull(),
   nextNodeAt: timestamp('next_node_at', { withTimezone: true }),
+  reportIds: jsonb('report_ids').notNull().default(sql`'[]'::jsonb`),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 });

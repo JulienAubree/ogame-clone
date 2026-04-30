@@ -36,6 +36,22 @@ export interface AnomalyCombatResult {
   combatRounds: number;
   /** Estimated FP of the enemy fleet (for UI preview). */
   enemyFP: number;
+  /** Player FP at the start of this combat (for the report). */
+  playerFP: number;
+  /** Initial player ships (count) — what was committed to the fight. */
+  playerInitialFleet: Record<string, number>;
+  /** Initial enemy fleet generated for this node. */
+  enemyInitialFleet: Record<string, number>;
+  /** Player losses (ships destroyed during this combat). */
+  attackerLosses: Record<string, number>;
+  /** Defender losses (ships destroyed = enemyDestroyed, kept here for symmetry). */
+  defenderLosses: Record<string, number>;
+  /** Detailed rounds, debris, stats — passed straight to buildCombatReportData. */
+  rounds: import('@exilium/game-engine').CombatResult['rounds'];
+  attackerStats: import('@exilium/game-engine').CombatResult['attackerStats'];
+  defenderStats: import('@exilium/game-engine').CombatResult['defenderStats'];
+  debris: import('@exilium/game-engine').CombatResult['debris'];
+  shotsPerRound: { attacker: number; defender: number }[];
 }
 
 /**
@@ -152,11 +168,36 @@ export async function runAnomalyNode(
     if (killed > 0) enemyDestroyed[shipId] = killed;
   }
 
+  // 10. Compute attacker losses + shots per round (for the report)
+  const attackerLosses: Record<string, number> = {};
+  for (const [shipId, initial] of Object.entries(playerShipCounts)) {
+    const survived = lastRound?.attackerShips[shipId] ?? 0;
+    const lost = initial - survived;
+    if (lost > 0) attackerLosses[shipId] = lost;
+  }
+  const shotsPerRound = result.rounds.map((round, i) => {
+    const attFleet = i === 0 ? playerShipCounts : result.rounds[i - 1].attackerShips;
+    const defFleet = i === 0 ? enemyFleet : result.rounds[i - 1].defenderShips;
+    const attShots = Object.entries(attFleet).reduce((sum, [id, count]) => sum + count * (config.ships[id]?.shotCount ?? 1), 0);
+    const defShots = Object.entries(defFleet).reduce((sum, [id, count]) => sum + count * (config.ships[id]?.shotCount ?? 1), 0);
+    return { attacker: attShots, defender: defShots };
+  });
+
   return {
     outcome: result.outcome,
     attackerSurvivors,
     enemyDestroyed,
     combatRounds: result.rounds.length,
     enemyFP,
+    playerFP,
+    playerInitialFleet: playerShipCounts,
+    enemyInitialFleet: enemyFleet,
+    attackerLosses,
+    defenderLosses: enemyDestroyed,
+    rounds: result.rounds,
+    attackerStats: result.attackerStats,
+    defenderStats: result.defenderStats,
+    debris: result.debris,
+    shotsPerRound,
   };
 }

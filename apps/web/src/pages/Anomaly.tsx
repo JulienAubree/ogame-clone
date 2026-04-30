@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Zap, ChevronRight, Trophy, Skull, X, Swords } from 'lucide-react';
+import { Link } from 'react-router';
+import { Zap, ChevronRight, Trophy, Skull, X, Swords, FileText } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { Button } from '@/components/ui/button';
@@ -178,6 +179,8 @@ interface AnomalyRow {
   lootShips?: unknown;
   exiliumPaid: number;
   nextNodeAt: string | Date | null;
+  reportIds?: unknown;
+  completedAt?: string | Date | null;
 }
 
 function RunView({ anomaly, onAdvance, onRetreat, advancePending, retreatPending, cost }: {
@@ -190,6 +193,7 @@ function RunView({ anomaly, onAdvance, onRetreat, advancePending, retreatPending
 }) {
   const fleet = (anomaly.fleet ?? {}) as Record<string, FleetEntry>;
   const lootShips = (anomaly.lootShips ?? {}) as Record<string, number>;
+  const reportIds = (anomaly.reportIds ?? []) as string[];
   const { data: gameConfig } = useGameConfig();
   const minerai = Math.floor(Number(anomaly.lootMinerai));
   const silicium = Math.floor(Number(anomaly.lootSilicium));
@@ -267,6 +271,25 @@ function RunView({ anomaly, onAdvance, onRetreat, advancePending, retreatPending
           </div>
         )}
 
+        {/* Rapports de combat (1 par profondeur) */}
+        {reportIds.length > 0 && (
+          <div>
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">Rapports</h3>
+            <div className="flex flex-wrap gap-2">
+              {reportIds.map((reportId, i) => (
+                <Link
+                  key={reportId}
+                  to={`/reports/${reportId}`}
+                  className="inline-flex items-center gap-1 rounded-md bg-violet-500/10 border border-violet-500/30 px-2 py-1 text-xs text-violet-300 hover:bg-violet-500/20 transition-colors"
+                >
+                  <FileText className="h-3 w-3" />
+                  Profondeur {i + 1}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Next node */}
         <div className="border-t border-border/30 pt-3">
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">Prochain combat</h3>
@@ -310,7 +333,7 @@ function HistoryList({ history }: { history: AnomalyRow[] }) {
   return (
     <div className="glass-card p-4">
       <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Historique</h3>
-      <ul className="space-y-1 text-sm">
+      <ul className="divide-y divide-border/20 text-sm">
         {history.map((h) => {
           const minerai = Math.floor(Number(h.lootMinerai));
           const silicium = Math.floor(Number(h.lootSilicium));
@@ -318,6 +341,7 @@ function HistoryList({ history }: { history: AnomalyRow[] }) {
           const totalLoot = minerai + silicium + hydrogene;
           const lootShips = (h.lootShips ?? {}) as Record<string, number>;
           const totalShips = Object.values(lootShips).reduce((s, n) => s + n, 0);
+          const reportIds = (h.reportIds ?? []) as string[];
 
           let icon: React.ReactNode;
           let label: string;
@@ -333,14 +357,30 @@ function HistoryList({ history }: { history: AnomalyRow[] }) {
           }
 
           return (
-            <li key={h.id} className="flex items-center gap-3 py-1.5 border-b border-border/20 last:border-0">
-              {icon}
-              <span className="text-foreground/80 shrink-0">{label}</span>
-              <span className="text-xs text-muted-foreground shrink-0">prof. {h.currentDepth}</span>
-              <span className="flex-1 text-xs text-muted-foreground/70 truncate">
-                {totalLoot > 0 ? `+${formatNumber(totalLoot)} ressources` : ''}
-                {totalShips > 0 ? ` · +${totalShips} ships` : ''}
-              </span>
+            <li key={h.id} className="py-2.5">
+              <div className="flex items-center gap-3">
+                {icon}
+                <span className="text-foreground/80 shrink-0">{label}</span>
+                <span className="text-xs text-muted-foreground shrink-0">prof. {h.currentDepth}</span>
+                <span className="flex-1 text-xs text-muted-foreground/70 truncate">
+                  {totalLoot > 0 ? `+${formatNumber(totalLoot)} ressources` : ''}
+                  {totalShips > 0 ? ` · +${totalShips} ships` : ''}
+                </span>
+              </div>
+              {reportIds.length > 0 && (
+                <div className="mt-1.5 ml-7 flex flex-wrap gap-1.5">
+                  {reportIds.map((reportId, i) => (
+                    <Link
+                      key={reportId}
+                      to={`/reports/${reportId}`}
+                      className="inline-flex items-center gap-1 rounded bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 text-[10px] text-violet-300 hover:bg-violet-500/20 transition-colors"
+                    >
+                      <FileText className="h-2.5 w-2.5" />
+                      P{i + 1}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </li>
           );
         })}

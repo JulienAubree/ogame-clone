@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { anomalies, planets, planetShips } from '@exilium/db';
+import { anomalies, planets, planetShips, users } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import {
   anomalyLoot,
@@ -9,6 +9,8 @@ import {
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { createFlagshipService } from '../flagship/flagship.service.js';
+import type { createReportService } from '../report/report.service.js';
+import { buildCombatReportData } from '../fleet/combat.helpers.js';
 import { runAnomalyNode, type FleetEntry } from './anomaly.combat.js';
 
 type AnomalyRow = typeof anomalies.$inferSelect;
@@ -20,6 +22,7 @@ export function createAnomalyService(
   gameConfigService: GameConfigService,
   exiliumService: ReturnType<typeof createExiliumService>,
   flagshipService: ReturnType<typeof createFlagshipService>,
+  reportService: ReturnType<typeof createReportService>,
 ) {
   async function loadActive(userId: string): Promise<AnomalyRow | null> {
     const [row] = await db.select().from(anomalies)
@@ -175,10 +178,54 @@ export function createAnomalyService(
       const anySurvivor = Object.keys(result.attackerSurvivors).length > 0;
       const wiped = !flagshipSurvived || !anySurvivor || result.outcome !== 'attacker';
 
+      // ── Build a combat report so the player can review what happened ──
+      const [user] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
+      const attackerUsername = user?.username ?? 'Joueur';
+      const reportResult = buildCombatReportData({
+        outcome: result.outcome,
+        attackerUsername,
+        defenderUsername: 'Drones xenotechs',
+        targetPlanetName: 'Anomalie gravitationnelle',
+        attackerFleet: result.playerInitialFleet,
+        defenderFleet: result.enemyInitialFleet,
+        defenderDefenses: {},
+        attackerLosses: result.attackerLosses,
+        defenderLosses: result.defenderLosses,
+        attackerSurvivors: Object.fromEntries(
+          Object.entries(result.attackerSurvivors).map(([id, e]) => [id, e.count]),
+        ),
+        repairedDefenses: {},
+        debris: result.debris,
+        rounds: result.rounds,
+        attackerStats: result.attackerStats,
+        defenderStats: result.defenderStats,
+        attackerFP: result.playerFP,
+        defenderFP: result.enemyFP,
+        shotsPerRound: result.shotsPerRound,
+        extra: { anomalyDepth: newDepth, anomalyId: row.id },
+      });
+      const outcomeLabel = wiped ? 'Défaite' : 'Victoire';
+      const report = await reportService.create({
+        userId,
+        missionType: 'anomaly',
+        title: `Anomalie — Profondeur ${newDepth} — ${outcomeLabel}`,
+        coordinates: { galaxy: 0, system: 0, position: 0 },
+        fleet: {
+          ships: result.playerInitialFleet,
+          totalCargo: 0,
+        },
+        departureTime: new Date(),
+        completionTime: new Date(),
+        result: reportResult,
+      });
+      const existingReportIds = (row.reportIds ?? []) as string[];
+      const updatedReportIds = [...existingReportIds, report.id];
+
       if (wiped) {
         await db.update(anomalies).set({
           status: 'wiped',
           fleet: result.attackerSurvivors,
+          reportIds: updatedReportIds,
           completedAt: new Date(),
           nextNodeAt: null,
         }).where(eq(anomalies.id, row.id));
@@ -197,6 +244,7 @@ export function createAnomalyService(
           fleet: result.attackerSurvivors,
           enemyFP: result.enemyFP,
           combatRounds: result.combatRounds,
+          reportId: report.id,
         };
       }
 
@@ -222,6 +270,7 @@ export function createAnomalyService(
         lootSilicium: sql`${anomalies.lootSilicium} + ${loot.silicium}`,
         lootHydrogene: sql`${anomalies.lootHydrogene} + ${loot.hydrogene}`,
         lootShips: mergedLootShips,
+        reportIds: updatedReportIds,
         nextNodeAt,
       }).where(eq(anomalies.id, row.id));
 
@@ -234,8 +283,10 @@ export function createAnomalyService(
         recoveredShips: recovered,
         depth: newDepth,
         nextNodeAt: nextNodeAt.toISOString(),
+        reportId: report.id,
       };
     },
+
 
     /**
      * Voluntarily abandon the run: refund Exilium, return ships + loot to homeworld.

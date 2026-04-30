@@ -180,10 +180,10 @@ export default function ReportDetail() {
 
       {/* Type-specific detail */}
       <Suspense fallback={<ReportSkel />}>
-        {(report.missionType === 'attack' || report.missionType === 'pirate') && (
+        {(report.missionType === 'attack' || report.missionType === 'pirate' || report.missionType === 'anomaly') && (
           <CombatReportDetail
             result={result}
-            missionType={report.missionType as 'attack' | 'pirate'}
+            missionType={report.missionType === 'anomaly' ? 'pirate' : report.missionType as 'attack' | 'pirate'}
             gameConfig={gameConfig}
             coordinates={coords}
             reportId={report.id}
