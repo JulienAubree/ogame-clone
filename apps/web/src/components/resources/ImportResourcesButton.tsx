@@ -54,6 +54,29 @@ export function ImportResourcesButton({ targetPlanetId, size = 'md' }: Props) {
     return packCargos(totalCargo, source.ships, shipStats);
   }, [source, totalCargo, shipStats]);
 
+  // "Worst-case" fleet: ships needed if we filled the whole cargo capacity.
+  // Used as a conservative upper bound for fuel estimation so the Max button
+  // on Hydrogène doesn't change as we refine the cargo (no yoyo).
+  const maxPack = useMemo(() => {
+    if (!source) return { picked: {} as Record<string, number>, coveredCargo: 0 };
+    return packCargos(source.cargoCapacity, source.ships, shipStats);
+  }, [source, shipStats]);
+
+  // Estimate the fuel cost of the round-trip transport so we can deduce it
+  // from the Hydrogène available for cargo. Uses the worst-case pack to keep
+  // the Max value stable across edits.
+  const { data: fuelEstimate } = trpc.fleet.estimate.useQuery(
+    {
+      originPlanetId: source?.id ?? '',
+      targetGalaxy: target?.galaxy ?? 1,
+      targetSystem: target?.system ?? 1,
+      targetPosition: target?.position ?? 1,
+      ships: maxPack.picked,
+    },
+    { enabled: !!source && !!target && Object.keys(maxPack.picked).length > 0 },
+  );
+  const fuelNeeded = fuelEstimate?.fuel ?? 0;
+
   const cargoOverflow = totalCargo > (source?.cargoCapacity ?? 0);
 
   const sendMutation = trpc.fleet.send.useMutation({
@@ -89,15 +112,21 @@ export function ImportResourcesButton({ targetPlanetId, size = 'md' }: Props) {
     const next = sources.find((s) => s.id === id);
     if (!next) return;
     setSelectedSourceId(id);
-    // Pré-remplit chaque ressource au max possible (cap par cargo total)
+    // Pré-remplit chaque ressource au max possible (cap par cargo total).
+    // L'hydrogène disponible pour le cargo est réduit du fuel du trajet —
+    // sans ça, l'envoi planterait pour cause d'hydrogène insuffisant.
+    // (fuelNeeded vaut 0 ici parce que la query `useQuery` n'a pas encore
+    // renvoyé de réponse pour le tout 1er render — la pré-remplissage est
+    // ajustée à chaque setResource après.)
+    const hydrogeneAvailable = Math.max(0, next.hydrogene - fuelNeeded);
     const remaining = next.cargoCapacity;
-    const total = next.minerai + next.silicium + next.hydrogene;
+    const total = next.minerai + next.silicium + hydrogeneAvailable;
     if (total === 0 || remaining === 0) {
       setCargo({ minerai: 0, silicium: 0, hydrogene: 0 });
       return;
     }
     if (total <= remaining) {
-      setCargo({ minerai: next.minerai, silicium: next.silicium, hydrogene: next.hydrogene });
+      setCargo({ minerai: next.minerai, silicium: next.silicium, hydrogene: hydrogeneAvailable });
       return;
     }
     // Cargo limité : on répartit proportionnellement
@@ -105,13 +134,17 @@ export function ImportResourcesButton({ targetPlanetId, size = 'md' }: Props) {
     setCargo({
       minerai: Math.floor(next.minerai * ratio),
       silicium: Math.floor(next.silicium * ratio),
-      hydrogene: Math.floor(next.hydrogene * ratio),
+      hydrogene: Math.floor(hydrogeneAvailable * ratio),
     });
   }
 
   function setResource(key: keyof Resources, value: number) {
     if (!source) return;
-    const stock = source[key];
+    // Pour l'hydrogène, on retire le fuel du stock disponible : le cargo
+    // ne peut pas empiéter sur le carburant nécessaire au trajet.
+    const stock = key === 'hydrogene'
+      ? Math.max(0, source.hydrogene - fuelNeeded)
+      : source[key];
     const otherTotal = totalCargo - cargo[key];
     const remainingCargo = Math.max(0, source.cargoCapacity - otherTotal);
     const clamped = Math.max(0, Math.min(value, stock, remainingCargo));
@@ -176,6 +209,7 @@ export function ImportResourcesButton({ targetPlanetId, size = 'md' }: Props) {
               setResource={setResource}
               pack={pack}
               cargoOverflow={cargoOverflow}
+              fuelNeeded={fuelNeeded}
               onBack={() => setSelectedSourceId(null)}
               onSubmit={handleSubmit}
               isPending={sendMutation.isPending}
@@ -266,14 +300,16 @@ interface SourceDetailProps {
   setResource: (k: keyof Resources, v: number) => void;
   pack: { picked: Record<string, number>; coveredCargo: number };
   cargoOverflow: boolean;
+  fuelNeeded: number;
   onBack: () => void;
   onSubmit: () => void;
   isPending: boolean;
 }
 
-function SourceDetail({ source, targetName, cargo, setResource, pack, cargoOverflow, onBack, onSubmit, isPending }: SourceDetailProps) {
+function SourceDetail({ source, targetName, cargo, setResource, pack, cargoOverflow, fuelNeeded, onBack, onSubmit, isPending }: SourceDetailProps) {
   const totalCargo = cargo.minerai + cargo.silicium + cargo.hydrogene;
   const canSubmit = !isPending && totalCargo > 0 && pack.coveredCargo > 0;
+  const hydrogeneAvailable = Math.max(0, source.hydrogene - fuelNeeded);
 
   return (
     <>
@@ -300,24 +336,30 @@ function SourceDetail({ source, targetName, cargo, setResource, pack, cargoOverf
         />
         <ResourceLine
           label="Hydrogène" icon={<HydrogeneIcon size={12} className="text-hydrogene" />}
-          stock={source.hydrogene} value={cargo.hydrogene}
+          stock={hydrogeneAvailable} value={cargo.hydrogene}
           onChange={(v) => setResource('hydrogene', v)}
         />
 
-        <div className="border-t border-border/30 pt-2 text-[11px] text-muted-foreground">
+        <div className="border-t border-border/30 pt-2 text-[11px] text-muted-foreground space-y-1">
           <div className="flex items-center justify-between">
             <span>Cargo :</span>
             <span className={cn('tabular-nums', cargoOverflow ? 'text-amber-400' : 'text-foreground')}>
               {formatNumber(totalCargo)} / {formatNumber(source.cargoCapacity)}
             </span>
           </div>
+          {fuelNeeded > 0 && (
+            <div className="flex items-center justify-between">
+              <span>Carburant trajet :</span>
+              <span className="tabular-nums text-hydrogene">{formatNumber(fuelNeeded)} H</span>
+            </div>
+          )}
           {Object.keys(pack.picked).length > 0 && (
-            <div className="mt-1 text-[10px] text-muted-foreground/80">
+            <div className="text-[10px] text-muted-foreground/80">
               → {Object.entries(pack.picked).map(([id, n]) => `${n} ${id}`).join(' + ')}
             </div>
           )}
           {cargoOverflow && (
-            <div className="mt-1 text-[10px] text-amber-400">
+            <div className="text-[10px] text-amber-400">
               Cargo limité : les montants seront capés à l'envoi.
             </div>
           )}
