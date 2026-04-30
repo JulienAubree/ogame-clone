@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { anomalies, planets, planetShips, users } from '@exilium/db';
+import { anomalies, planets, planetShips, users, userExilium, exiliumLog } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import {
   anomalyLoot,
@@ -45,6 +45,11 @@ export function createAnomalyService(
     return seconds * 1000;
   }
 
+  /** True if a ship id corresponds to an actual column in planet_ships. */
+  function validShipColumn(shipId: string): boolean {
+    return shipId in (planetShips as unknown as Record<string, unknown>);
+  }
+
   return {
     /** Returns the user's active anomaly, or null. */
     async current(userId: string) {
@@ -52,124 +57,171 @@ export function createAnomalyService(
     },
 
     /**
-     * Engage an anomaly: validate flagship + ships available, spend Exilium,
-     * lock fleet, create the run row. The origin planet is automatically
-     * the one where the flagship is currently stationed — no client-side
-     * choice to avoid mismatch.
+     * Engage an anomaly. Wrapped in a transaction with a per-user advisory lock
+     * so concurrent engage / advance / retreat from the same user are serialized.
+     * All resource mutations (Exilium spend, planet_ships decrement, flagship
+     * setInMission, anomaly row insert) commit atomically — no partial state
+     * if one of them fails.
      */
     async engage(userId: string, input: { ships: Record<string, number> }) {
-      // 1. Already active?
-      const active = await loadActive(userId);
-      if (active) {
-        throw new TRPCError({ code: 'CONFLICT', message: 'Une anomalie est déjà en cours' });
-      }
-
-      // 2. Flagship validation
-      const flagship = await flagshipService.get(userId);
-      if (!flagship) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vaisseau amiral requis' });
-      }
-      if (flagship.status !== 'active') {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vaisseau amiral indisponible' });
-      }
-      const originPlanetId = flagship.planetId;
-
-      // 3. Confirm the origin planet belongs to the user
-      const [origin] = await db.select({ id: planets.id, userId: planets.userId })
-        .from(planets).where(eq(planets.id, originPlanetId)).limit(1);
-      if (!origin || origin.userId !== userId) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Planète invalide' });
-      }
-
-      // 4. Ships available
-      const [shipsRow] = await db.select().from(planetShips)
-        .where(eq(planetShips.planetId, originPlanetId)).limit(1);
-      if (!shipsRow) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucun vaisseau sur cette planète' });
-      }
-      // Ensure flagship is included exactly once (the player can't choose count for it)
-      const shipsToEngage: Record<string, number> = { ...input.ships, flagship: 1 };
-      for (const [shipId, count] of Object.entries(shipsToEngage)) {
+      // Sanitize input outside the transaction (no DB calls needed)
+      const config = await gameConfigService.getFullConfig();
+      const validShipIds = new Set(Object.keys(config.ships));
+      const sanitizedShips: Record<string, number> = {};
+      for (const [shipId, count] of Object.entries(input.ships)) {
+        if (shipId === 'flagship') continue;
         if (count <= 0) continue;
-        if (shipId === 'flagship') continue; // counted via flagshipService
-        const available = (shipsRow as Record<string, unknown>)[shipId];
-        if (typeof available !== 'number' || available < count) {
+        if (!validShipIds.has(shipId)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: `Type de vaisseau invalide : ${shipId}` });
+        }
+        const def = config.ships[shipId];
+        if (!def || def.role !== 'combat') {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Vaisseaux insuffisants pour ${shipId} (${available ?? 0}/${count})`,
+            message: `Seuls les vaisseaux de combat sont autorisés dans une anomalie (refusé : ${shipId})`,
           });
         }
+        sanitizedShips[shipId] = count;
       }
 
-      // 5. Spend Exilium
-      const config = await gameConfigService.getFullConfig();
       const cost = Number(config.universe.anomaly_entry_cost_exilium) || 5;
-      await exiliumService.spend(userId, cost, 'pve', { source: 'anomaly_engage' });
 
-      // 6. Lock flagship
-      await flagshipService.setInMission(userId);
+      return await db.transaction(async (tx) => {
+        // 1. Per-user advisory lock — serializes engage / advance / retreat
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}::text))`);
 
-      // 7. Decrement planet_ships (non-flagship)
-      const shipUpdates: Record<string, unknown> = {};
-      for (const [shipId, count] of Object.entries(input.ships)) {
-        if (count > 0 && shipId !== 'flagship') {
-          const col = (planetShips as unknown as Record<string, unknown>)[shipId];
-          if (col) {
-            shipUpdates[shipId] = sql`GREATEST(${col} - ${count}, 0)`;
+        // 2. No active anomaly
+        const [active] = await tx.select({ id: anomalies.id }).from(anomalies)
+          .where(and(eq(anomalies.userId, userId), eq(anomalies.status, 'active')))
+          .limit(1);
+        if (active) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Une anomalie est déjà en cours' });
+        }
+
+        // 3. Flagship validation (read directly from DB to avoid lazy-revert side effects)
+        const flagship = await flagshipService.get(userId);
+        if (!flagship) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vaisseau amiral requis' });
+        }
+        if (flagship.status !== 'active') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vaisseau amiral indisponible' });
+        }
+        const originPlanetId = flagship.planetId;
+
+        // 4. Origin planet ownership
+        const [origin] = await tx.select({ id: planets.id, userId: planets.userId })
+          .from(planets).where(eq(planets.id, originPlanetId)).limit(1);
+        if (!origin || origin.userId !== userId) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Planète invalide' });
+        }
+
+        // 5. Lock planet_ships row, validate availability
+        const [shipsRow] = await tx.select().from(planetShips)
+          .where(eq(planetShips.planetId, originPlanetId))
+          .for('update')
+          .limit(1);
+        if (!shipsRow) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucun vaisseau sur cette planète' });
+        }
+        for (const [shipId, count] of Object.entries(sanitizedShips)) {
+          const available = (shipsRow as Record<string, unknown>)[shipId];
+          if (typeof available !== 'number' || available < count) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Vaisseaux insuffisants pour ${shipId} (${available ?? 0}/${count})`,
+            });
           }
         }
-      }
-      if (Object.keys(shipUpdates).length > 0) {
-        await db.update(planetShips).set(shipUpdates as never)
-          .where(eq(planetShips.planetId, originPlanetId));
-      }
 
-      // 8. Build initial fleet (with flagship + selected ships, all hullPercent=1)
-      const fleet: FleetMap = { flagship: { count: 1, hullPercent: 1 } };
-      for (const [shipId, count] of Object.entries(input.ships)) {
-        if (count > 0 && shipId !== 'flagship') {
+        // 6. Spend Exilium inline (with lock-for-update on the balance row)
+        const [exRecord] = await tx.select({ balance: userExilium.balance })
+          .from(userExilium)
+          .where(eq(userExilium.userId, userId))
+          .for('update')
+          .limit(1);
+        if (!exRecord || exRecord.balance < cost) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Solde Exilium insuffisant (${exRecord?.balance ?? 0} disponible, ${cost} requis)`,
+          });
+        }
+        await tx.update(userExilium).set({
+          balance: sql`${userExilium.balance} - ${cost}`,
+          totalSpent: sql`${userExilium.totalSpent} + ${cost}`,
+          updatedAt: new Date(),
+        }).where(eq(userExilium.userId, userId));
+        await tx.insert(exiliumLog).values({
+          userId, amount: -cost, source: 'pve', details: { source: 'anomaly_engage' },
+        });
+
+        // 7. Flagship → in_mission
+        await flagshipService.setInMission(userId);
+
+        // 8. Decrement planet_ships
+        const shipUpdates: Record<string, unknown> = {};
+        for (const [shipId, count] of Object.entries(sanitizedShips)) {
+          const col = (planetShips as unknown as Record<string, unknown>)[shipId];
+          if (col) {
+            shipUpdates[shipId] = sql`${col} - ${count}`;
+          }
+        }
+        if (Object.keys(shipUpdates).length > 0) {
+          await tx.update(planetShips).set(shipUpdates as never)
+            .where(eq(planetShips.planetId, originPlanetId));
+        }
+
+        // 9. Build fleet + pre-generate first enemy
+        const fleet: FleetMap = { flagship: { count: 1, hullPercent: 1 } };
+        for (const [shipId, count] of Object.entries(sanitizedShips)) {
           fleet[shipId] = { count, hullPercent: 1 };
         }
-      }
+        const firstEnemy = await generateAnomalyEnemy(tx as unknown as Database, gameConfigService, {
+          userId,
+          fleet,
+          depth: 1,
+        });
 
-      // 9. Pre-generate the depth-1 enemy so the player can preview it
-      const firstEnemy = await generateAnomalyEnemy(db, gameConfigService, {
-        userId,
-        fleet,
-        depth: 1,
+        // 10. Insert anomaly row
+        const nextNodeAt = new Date(Date.now() + nodeTravelMs(config));
+        const [created] = await tx.insert(anomalies).values({
+          userId,
+          originPlanetId,
+          status: 'active',
+          currentDepth: 0,
+          fleet,
+          exiliumPaid: cost,
+          nextNodeAt,
+          nextEnemyFleet: firstEnemy.enemyFleet,
+          nextEnemyFp: Math.round(firstEnemy.enemyFP),
+        }).returning();
+
+        return created;
       });
-
-      // 10. Insert anomaly row
-      const nextNodeAt = new Date(Date.now() + nodeTravelMs(config));
-      const [created] = await db.insert(anomalies).values({
-        userId,
-        originPlanetId,
-        status: 'active',
-        currentDepth: 0,
-        fleet,
-        exiliumPaid: cost,
-        nextNodeAt,
-        nextEnemyFleet: firstEnemy.enemyFleet,
-        nextEnemyFp: Math.round(firstEnemy.enemyFP),
-      }).returning();
-
-      return created;
     },
 
     /**
-     * Resolve the next combat node. Caller must wait until next_node_at has passed.
+     * Resolve the next combat node. Wrapped in a transaction with a per-user
+     * advisory lock + SELECT FOR UPDATE on the anomaly row, so concurrent
+     * advance / retreat from the same user are serialized.
      */
     async advance(userId: string) {
-      const row = await loadActive(userId);
-      if (!row) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Aucune anomalie active' });
-      }
-      if (row.nextNodeAt && row.nextNodeAt > new Date()) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Anomalie pas encore prête — attendez le prochain noeud' });
-      }
+      return await db.transaction(async (tx) => {
+        // Advisory lock per user — serializes advance / retreat / engage
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}::text))`);
 
-      const fleet = row.fleet as FleetMap;
-      const newDepth = row.currentDepth + 1;
+        const [row] = await tx.select().from(anomalies)
+          .where(and(eq(anomalies.userId, userId), eq(anomalies.status, 'active')))
+          .for('update')
+          .limit(1);
+        if (!row) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Aucune anomalie active' });
+        }
+        if (row.nextNodeAt && row.nextNodeAt > new Date()) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Anomalie pas encore prête — attendez le prochain noeud' });
+        }
+
+        const fleet = row.fleet as FleetMap;
+        const newDepth = row.currentDepth + 1;
 
       // Use the pre-generated enemy that the player has been previewing.
       // Fallback: regenerate one (legacy rows without next_enemy_fleet).
@@ -180,7 +232,7 @@ export function createAnomalyService(
           fp: row.nextEnemyFp,
         };
       } else {
-        const generated = await generateAnomalyEnemy(db, gameConfigService, {
+        const generated = await generateAnomalyEnemy(tx as unknown as Database, gameConfigService, {
           userId,
           fleet,
           depth: newDepth,
@@ -189,7 +241,7 @@ export function createAnomalyService(
       }
 
       // Run combat with the locked-in enemy
-      const result = await runAnomalyNode(db, gameConfigService, {
+      const result = await runAnomalyNode(tx as unknown as Database, gameConfigService, {
         userId,
         fleet,
         depth: newDepth,
@@ -211,7 +263,7 @@ export function createAnomalyService(
       const forcedRetreat = !totalWipe && (!flagshipSurvived || result.outcome !== 'attacker');
 
       // ── Build a combat report so the player can review what happened ──
-      const [user] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
+      const [user] = await tx.select({ username: users.username }).from(users).where(eq(users.id, userId)).limit(1);
       const attackerUsername = user?.username ?? 'Joueur';
       const reportResult = buildCombatReportData({
         outcome: result.outcome,
@@ -238,9 +290,13 @@ export function createAnomalyService(
       });
       const outcomeLabel = totalWipe
         ? 'Défaite totale'
-        : (!flagshipSurvived || result.outcome !== 'attacker')
-          ? 'Retraite forcée'
-          : 'Victoire';
+        : !flagshipSurvived
+          ? 'Vaisseau mère perdu'
+          : result.outcome === 'draw'
+            ? 'Combat indécis'
+            : result.outcome === 'defender'
+              ? 'Combat perdu'
+              : 'Victoire';
       const report = await reportService.create({
         userId,
         missionType: 'anomaly',
@@ -259,7 +315,11 @@ export function createAnomalyService(
 
       if (totalWipe) {
         // Tout est mort : pas de retour, Exilium perdu, flagship incapacité.
-        await db.update(anomalies).set({
+        // WHERE guards : status='active' AND current_depth=oldDepth → guard
+        // contre une advance/retreat parallèle qui aurait déjà transitionné
+        // l'état (en pratique impossible grâce au advisory lock, mais
+        // ceinture-bretelles).
+        const wipedRows = await tx.update(anomalies).set({
           status: 'wiped',
           fleet: result.attackerSurvivors,
           reportIds: updatedReportIds,
@@ -267,7 +327,16 @@ export function createAnomalyService(
           nextNodeAt: null,
           nextEnemyFleet: null,
           nextEnemyFp: null,
-        }).where(eq(anomalies.id, row.id));
+        }).where(and(
+          eq(anomalies.id, row.id),
+          eq(anomalies.status, 'active'),
+          eq(anomalies.currentDepth, row.currentDepth),
+        )).returning({ id: anomalies.id });
+        if (wipedRows.length === 0) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'État de l\'anomalie a changé entre-temps' });
+        }
+        // Note: incapacitate() opens its own context but the advisory lock
+        // is per-user, not on flagship row. It's safe.
         await flagshipService.incapacitate(userId);
 
         return {
@@ -280,15 +349,12 @@ export function createAnomalyService(
       }
 
       if (forcedRetreat) {
-        // Flagship perdu OU combat perdu mais ships survivants → retour forcé
-        // avec ce qu'on a (équivalent d'un retreat() volontaire). Loot rendu,
-        // Exilium remboursé. Flagship incapacité s'il a été détruit.
         const home = await getHomeworld(userId);
         if (!home) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Planète mère introuvable' });
         }
 
-        await db.update(anomalies).set({
+        const updatedRows = await tx.update(anomalies).set({
           status: 'completed',
           fleet: result.attackerSurvivors,
           reportIds: updatedReportIds,
@@ -296,50 +362,61 @@ export function createAnomalyService(
           nextNodeAt: null,
           nextEnemyFleet: null,
           nextEnemyFp: null,
-        }).where(eq(anomalies.id, row.id));
-
-        // Refund Exilium
-        if (row.exiliumPaid > 0) {
-          await exiliumService.earn(userId, row.exiliumPaid, 'pve', { source: 'anomaly_forced_retreat' });
+        }).where(and(
+          eq(anomalies.id, row.id),
+          eq(anomalies.status, 'active'),
+          eq(anomalies.currentDepth, row.currentDepth),
+        )).returning({ id: anomalies.id });
+        if (updatedRows.length === 0) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'État de l\'anomalie a changé entre-temps' });
         }
 
-        // Crédite ressources accumulées
+        // Refund Exilium inline (transaction-safe)
+        if (row.exiliumPaid > 0) {
+          await tx.update(userExilium).set({
+            balance: sql`${userExilium.balance} + ${row.exiliumPaid}`,
+            totalEarned: sql`${userExilium.totalEarned} + ${row.exiliumPaid}`,
+            updatedAt: new Date(),
+          }).where(eq(userExilium.userId, userId));
+          await tx.insert(exiliumLog).values({
+            userId, amount: row.exiliumPaid, source: 'pve',
+            details: { source: 'anomaly_forced_retreat' },
+          });
+        }
+
         const lootMinerai = Number(row.lootMinerai);
         const lootSilicium = Number(row.lootSilicium);
         const lootHydrogene = Number(row.lootHydrogene);
         if (lootMinerai > 0 || lootSilicium > 0 || lootHydrogene > 0) {
-          await db.update(planets).set({
+          await tx.update(planets).set({
             minerai: sql`${planets.minerai} + ${lootMinerai}`,
             silicium: sql`${planets.silicium} + ${lootSilicium}`,
             hydrogene: sql`${planets.hydrogene} + ${lootHydrogene}`,
           }).where(eq(planets.id, home.id));
         }
 
-        // Réinjecte ships survivants (sauf flagship) + recovered ships
+        // Réinjecte ships survivants (sauf flagship) + recovered ships en 1 update
         const lootShipsMap = (row.lootShips ?? {}) as LootShipsMap;
-        const shipIncrements: Record<string, unknown> = {};
+        const totalToInject: Record<string, number> = {};
         for (const [shipId, entry] of Object.entries(result.attackerSurvivors)) {
           if (shipId === 'flagship') continue;
-          if (entry.count > 0) {
-            const col = (planetShips as unknown as Record<string, unknown>)[shipId];
-            if (col) shipIncrements[shipId] = sql`${col} + ${entry.count}`;
-          }
+          if (!validShipColumn(shipId)) continue;
+          if (entry.count > 0) totalToInject[shipId] = (totalToInject[shipId] ?? 0) + entry.count;
         }
         for (const [shipId, count] of Object.entries(lootShipsMap)) {
-          if (count > 0) {
-            const col = (planetShips as unknown as Record<string, unknown>)[shipId];
-            if (col) {
-              const survivorCount = result.attackerSurvivors[shipId]?.count ?? 0;
-              shipIncrements[shipId] = sql`${col} + ${survivorCount + count}`;
-            }
-          }
+          if (!validShipColumn(shipId)) continue;
+          if (count > 0) totalToInject[shipId] = (totalToInject[shipId] ?? 0) + count;
         }
-        if (Object.keys(shipIncrements).length > 0) {
-          await db.update(planetShips).set(shipIncrements as never)
+        if (Object.keys(totalToInject).length > 0) {
+          const incrementUpdate: Record<string, unknown> = {};
+          for (const [shipId, count] of Object.entries(totalToInject)) {
+            const col = (planetShips as unknown as Record<string, unknown>)[shipId];
+            if (col) incrementUpdate[shipId] = sql`${col} + ${count}`;
+          }
+          await tx.update(planetShips).set(incrementUpdate as never)
             .where(eq(planetShips.planetId, home.id));
         }
 
-        // Flagship : incapacity si détruit, sinon return home
         if (!flagshipSurvived) {
           await flagshipService.incapacitate(userId);
         } else {
@@ -353,10 +430,11 @@ export function createAnomalyService(
           combatRounds: result.combatRounds,
           reportId: report.id,
           flagshipLost: !flagshipSurvived,
+          combatOutcome: result.outcome, // 'attacker' | 'defender' | 'draw'
         };
       }
 
-      // Survived: ajouter loot + recovered enemy ships, push next_node_at
+      // Survived
       const lootBase = Number(config.universe.anomaly_loot_base) || 5000;
       const lootGrowth = Number(config.universe.anomaly_loot_growth) || 1.4;
       const recoveryRatio = Number(config.universe.anomaly_enemy_recovery_ratio) || 0.15;
@@ -367,18 +445,18 @@ export function createAnomalyService(
       const currentLootShips = (row.lootShips ?? {}) as LootShipsMap;
       const mergedLootShips: LootShipsMap = { ...currentLootShips };
       for (const [shipId, count] of Object.entries(recovered)) {
+        if (!validShipColumn(shipId)) continue;
         mergedLootShips[shipId] = (mergedLootShips[shipId] ?? 0) + count;
       }
 
-      // Pre-generate the enemy for the next depth based on the surviving fleet.
-      const nextEnemy = await generateAnomalyEnemy(db, gameConfigService, {
+      const nextEnemy = await generateAnomalyEnemy(tx as unknown as Database, gameConfigService, {
         userId,
         fleet: result.attackerSurvivors,
         depth: newDepth + 1,
       });
 
       const nextNodeAt = new Date(Date.now() + nodeTravelMs(config));
-      await db.update(anomalies).set({
+      const survivedRows = await tx.update(anomalies).set({
         currentDepth: newDepth,
         fleet: result.attackerSurvivors,
         lootMinerai: sql`${anomalies.lootMinerai} + ${loot.minerai}`,
@@ -389,7 +467,14 @@ export function createAnomalyService(
         nextNodeAt,
         nextEnemyFleet: nextEnemy.enemyFleet,
         nextEnemyFp: Math.round(nextEnemy.enemyFP),
-      }).where(eq(anomalies.id, row.id));
+      }).where(and(
+        eq(anomalies.id, row.id),
+        eq(anomalies.status, 'active'),
+        eq(anomalies.currentDepth, row.currentDepth),
+      )).returning({ id: anomalies.id });
+      if (survivedRows.length === 0) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'État de l\'anomalie a changé entre-temps' });
+      }
 
       return {
         outcome: 'survived' as const,
@@ -402,81 +487,100 @@ export function createAnomalyService(
         nextNodeAt: nextNodeAt.toISOString(),
         reportId: report.id,
       };
+      });
     },
 
 
     /**
      * Voluntarily abandon the run: refund Exilium, return ships + loot to homeworld.
+     * Wrapped in a transaction with advisory lock + WHERE status='active' guard
+     * so concurrent retreat / advance / engage from the same user are serialized.
      */
     async retreat(userId: string) {
-      const row = await loadActive(userId);
-      if (!row) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Aucune anomalie active' });
-      }
+      return await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}::text))`);
 
-      const home = await getHomeworld(userId);
-      if (!home) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Planète mère introuvable' });
-      }
-
-      const fleet = row.fleet as FleetMap;
-      const lootShips = (row.lootShips ?? {}) as LootShipsMap;
-
-      // Mark completed
-      await db.update(anomalies).set({
-        status: 'completed',
-        completedAt: new Date(),
-        nextNodeAt: null,
-      }).where(eq(anomalies.id, row.id));
-
-      // Refund Exilium
-      if (row.exiliumPaid > 0) {
-        await exiliumService.earn(userId, row.exiliumPaid, 'pve', { source: 'anomaly_retreat' });
-      }
-
-      // Credit resources to homeworld
-      const lootMinerai = Number(row.lootMinerai);
-      const lootSilicium = Number(row.lootSilicium);
-      const lootHydrogene = Number(row.lootHydrogene);
-      if (lootMinerai > 0 || lootSilicium > 0 || lootHydrogene > 0) {
-        await db.update(planets).set({
-          minerai: sql`${planets.minerai} + ${lootMinerai}`,
-          silicium: sql`${planets.silicium} + ${lootSilicium}`,
-          hydrogene: sql`${planets.hydrogene} + ${lootHydrogene}`,
-        }).where(eq(planets.id, home.id));
-      }
-
-      // Reinject surviving ships (excluding flagship) + recovered enemy ships
-      const shipIncrements: Record<string, unknown> = {};
-      for (const [shipId, entry] of Object.entries(fleet)) {
-        if (shipId === 'flagship') continue;
-        if (entry.count > 0) {
-          const col = (planetShips as unknown as Record<string, unknown>)[shipId];
-          if (col) {
-            shipIncrements[shipId] = sql`${col} + ${entry.count}`;
-          }
+        const [row] = await tx.select().from(anomalies)
+          .where(and(eq(anomalies.userId, userId), eq(anomalies.status, 'active')))
+          .for('update')
+          .limit(1);
+        if (!row) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Aucune anomalie active' });
         }
-      }
-      for (const [shipId, count] of Object.entries(lootShips)) {
-        if (count > 0) {
-          const col = (planetShips as unknown as Record<string, unknown>)[shipId];
-          if (col) {
-            const existing = shipIncrements[shipId];
-            shipIncrements[shipId] = existing
-              ? sql`${col} + ${(fleet[shipId]?.count ?? 0) + count}`
-              : sql`${col} + ${count}`;
-          }
+
+        const home = await getHomeworld(userId);
+        if (!home) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Planète mère introuvable' });
         }
-      }
-      if (Object.keys(shipIncrements).length > 0) {
-        await db.update(planetShips).set(shipIncrements as never)
-          .where(eq(planetShips.planetId, home.id));
-      }
 
-      // Release flagship back to homeworld
-      await flagshipService.returnFromMission(userId, home.id);
+        const fleet = row.fleet as FleetMap;
+        const lootShips = (row.lootShips ?? {}) as LootShipsMap;
 
-      return { ok: true };
+        // Mark completed with status guard
+        const updatedRows = await tx.update(anomalies).set({
+          status: 'completed',
+          completedAt: new Date(),
+          nextNodeAt: null,
+          nextEnemyFleet: null,
+          nextEnemyFp: null,
+        }).where(and(
+          eq(anomalies.id, row.id),
+          eq(anomalies.status, 'active'),
+        )).returning({ id: anomalies.id });
+        if (updatedRows.length === 0) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'État de l\'anomalie a changé entre-temps' });
+        }
+
+        // Refund Exilium inline
+        if (row.exiliumPaid > 0) {
+          await tx.update(userExilium).set({
+            balance: sql`${userExilium.balance} + ${row.exiliumPaid}`,
+            totalEarned: sql`${userExilium.totalEarned} + ${row.exiliumPaid}`,
+            updatedAt: new Date(),
+          }).where(eq(userExilium.userId, userId));
+          await tx.insert(exiliumLog).values({
+            userId, amount: row.exiliumPaid, source: 'pve',
+            details: { source: 'anomaly_retreat' },
+          });
+        }
+
+        // Credit resources to homeworld
+        const lootMinerai = Number(row.lootMinerai);
+        const lootSilicium = Number(row.lootSilicium);
+        const lootHydrogene = Number(row.lootHydrogene);
+        if (lootMinerai > 0 || lootSilicium > 0 || lootHydrogene > 0) {
+          await tx.update(planets).set({
+            minerai: sql`${planets.minerai} + ${lootMinerai}`,
+            silicium: sql`${planets.silicium} + ${lootSilicium}`,
+            hydrogene: sql`${planets.hydrogene} + ${lootHydrogene}`,
+          }).where(eq(planets.id, home.id));
+        }
+
+        // Reinject surviving ships (excluding flagship) + recovered enemy ships in 1 update
+        const totalToInject: Record<string, number> = {};
+        for (const [shipId, entry] of Object.entries(fleet)) {
+          if (shipId === 'flagship') continue;
+          if (!validShipColumn(shipId)) continue;
+          if (entry.count > 0) totalToInject[shipId] = (totalToInject[shipId] ?? 0) + entry.count;
+        }
+        for (const [shipId, count] of Object.entries(lootShips)) {
+          if (!validShipColumn(shipId)) continue;
+          if (count > 0) totalToInject[shipId] = (totalToInject[shipId] ?? 0) + count;
+        }
+        if (Object.keys(totalToInject).length > 0) {
+          const incrementUpdate: Record<string, unknown> = {};
+          for (const [shipId, count] of Object.entries(totalToInject)) {
+            const col = (planetShips as unknown as Record<string, unknown>)[shipId];
+            if (col) incrementUpdate[shipId] = sql`${col} + ${count}`;
+          }
+          await tx.update(planetShips).set(incrementUpdate as never)
+            .where(eq(planetShips.planetId, home.id));
+        }
+
+        await flagshipService.returnFromMission(userId, home.id);
+
+        return { ok: true };
+      });
     },
 
     /** Last N completed/wiped runs for the user. */

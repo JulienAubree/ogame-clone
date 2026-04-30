@@ -1,6 +1,6 @@
 import { eq, asc, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { flagships, planets, users, flagshipCooldowns, userResearch, planetShips, planetDefenses, planetBuildings, fleetEvents } from '@exilium/db';
+import { flagships, planets, users, flagshipCooldowns, userResearch, planetShips, planetDefenses, planetBuildings, fleetEvents, anomalies } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { createExiliumService } from '../exilium/exilium.service.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
@@ -83,10 +83,12 @@ export function createFlagshipService(
         Object.assign(flagship, { status: 'active', refitEndsAt: null });
       }
 
-      // Lazy recovery: in_mission with no matching active fleet event means the
-      // mission ended without resetting the flagship (server crash, lost queue
-      // job, or unhandled exception). Snap back to active so the player isn't
-      // permanently locked out.
+      // Lazy recovery: in_mission with no matching active fleet event AND no
+      // active anomaly means the mission ended without resetting the flagship
+      // (server crash, lost queue job, or unhandled exception). Snap back to
+      // active so the player isn't permanently locked out.
+      // The anomaly check is critical: anomalies don't create fleet events,
+      // so without it the flagship would be silently freed mid-run.
       if (flagship.status === 'in_mission') {
         const [activeFleet] = await db
           .select({ id: fleetEvents.id })
@@ -97,7 +99,15 @@ export function createFlagshipService(
             sql`COALESCE((${fleetEvents.ships}->>'flagship')::int, 0) > 0`,
           ))
           .limit(1);
-        if (!activeFleet) {
+        const [activeAnomaly] = await db
+          .select({ id: anomalies.id })
+          .from(anomalies)
+          .where(and(
+            eq(anomalies.userId, userId),
+            eq(anomalies.status, 'active'),
+          ))
+          .limit(1);
+        if (!activeFleet && !activeAnomaly) {
           await db
             .update(flagships)
             .set({ status: 'active', updatedAt: new Date() })

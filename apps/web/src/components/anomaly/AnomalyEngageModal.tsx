@@ -69,8 +69,9 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
         : null;
 
   const shipDefs = gameConfig?.ships ?? {};
+  // Only combat ships are allowed in an anomaly (matches server-side whitelist)
   const cargoShipIds = Object.entries(shipDefs)
-    .filter(([id]) => id !== 'flagship' && id !== 'espionageProbe' && id !== 'colonyShip' && id !== 'recuperateur')
+    .filter(([_id, def]) => (def as { role?: string })?.role === 'combat')
     .map(([id]) => id);
 
   const totalShipsSelected = Object.values(selected).reduce((s, c) => s + c, 0);

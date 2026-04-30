@@ -39,12 +39,12 @@ export default function Anomaly() {
       if (data.outcome === 'wiped') {
         addToast('💀 Votre flotte a été anéantie. Tout est perdu.', 'error');
       } else if (data.outcome === 'forced_retreat') {
-        addToast(
-          data.flagshipLost
-            ? '⚠️ Vaisseau mère perdu — retour forcé avec votre flotte. Loot et Exilium récupérés.'
-            : '⚠️ Combat perdu — retour forcé. Loot et Exilium récupérés.',
-          'warning',
-        );
+        const message = data.flagshipLost
+          ? '⚠️ Vaisseau mère perdu — retour forcé. Loot et Exilium récupérés.'
+          : data.combatOutcome === 'draw'
+            ? '⚠️ Combat indécis — retour avec votre flotte. Loot et Exilium récupérés.'
+            : '⚠️ Combat perdu — retour forcé. Loot et Exilium récupérés.';
+        addToast(message, 'warning');
       } else {
         addToast(`⚔️ Combat remporté — profondeur ${data.depth}`, 'success');
       }
