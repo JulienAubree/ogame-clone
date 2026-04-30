@@ -548,7 +548,7 @@ const UNIVERSE_CONFIG = [
   { key: 'anomaly_loot_base', value: 5000 },
   { key: 'anomaly_loot_growth', value: 1.4 },
   { key: 'anomaly_enemy_recovery_ratio', value: 0.15 },
-  { key: 'anomaly_node_travel_seconds', value: 600 },
+  { key: 'anomaly_node_travel_seconds', value: 120 },
 
   // ── FP (Facteur de Puissance) ──
   { key: 'fp_shotcount_exponent', value: 1.5 },

@@ -83,10 +83,7 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
 
   function handleEngage() {
     if (!flagshipPlanet || !!blockingMessage) return;
-    engageMutation.mutate({
-      originPlanetId: flagshipPlanet.id,
-      ships: selected,
-    });
+    engageMutation.mutate({ ships: selected });
   }
 
   return (

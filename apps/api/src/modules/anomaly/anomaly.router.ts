@@ -10,7 +10,6 @@ export function createAnomalyRouter(anomalyService: ReturnType<typeof createAnom
 
     engage: protectedProcedure
       .input(z.object({
-        originPlanetId: z.string().uuid(),
         ships: z.record(z.string(), z.number().int().min(0)),
       }))
       .mutation(async ({ ctx, input }) => {

@@ -50,9 +50,11 @@ export function createAnomalyService(
 
     /**
      * Engage an anomaly: validate flagship + ships available, spend Exilium,
-     * lock fleet, create the run row.
+     * lock fleet, create the run row. The origin planet is automatically
+     * the one where the flagship is currently stationed — no client-side
+     * choice to avoid mismatch.
      */
-    async engage(userId: string, input: { originPlanetId: string; ships: Record<string, number> }) {
+    async engage(userId: string, input: { ships: Record<string, number> }) {
       // 1. Already active?
       const active = await loadActive(userId);
       if (active) {
@@ -67,20 +69,18 @@ export function createAnomalyService(
       if (flagship.status !== 'active') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Vaisseau amiral indisponible' });
       }
-      if (flagship.planetId !== input.originPlanetId) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: "Le vaisseau amiral n'est pas sur cette planète" });
-      }
+      const originPlanetId = flagship.planetId;
 
-      // 3. Origin must be a planet owned by the user
+      // 3. Confirm the origin planet belongs to the user
       const [origin] = await db.select({ id: planets.id, userId: planets.userId })
-        .from(planets).where(eq(planets.id, input.originPlanetId)).limit(1);
+        .from(planets).where(eq(planets.id, originPlanetId)).limit(1);
       if (!origin || origin.userId !== userId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Planète invalide' });
       }
 
       // 4. Ships available
       const [shipsRow] = await db.select().from(planetShips)
-        .where(eq(planetShips.planetId, input.originPlanetId)).limit(1);
+        .where(eq(planetShips.planetId, originPlanetId)).limit(1);
       if (!shipsRow) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucun vaisseau sur cette planète' });
       }
@@ -118,7 +118,7 @@ export function createAnomalyService(
       }
       if (Object.keys(shipUpdates).length > 0) {
         await db.update(planetShips).set(shipUpdates as never)
-          .where(eq(planetShips.planetId, input.originPlanetId));
+          .where(eq(planetShips.planetId, originPlanetId));
       }
 
       // 8. Build initial fleet (with flagship + selected ships, all hullPercent=1)
@@ -133,7 +133,7 @@ export function createAnomalyService(
       const nextNodeAt = new Date(Date.now() + nodeTravelMs(config));
       const [created] = await db.insert(anomalies).values({
         userId,
-        originPlanetId: input.originPlanetId,
+        originPlanetId,
         status: 'active',
         currentDepth: 0,
         fleet,
