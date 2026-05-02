@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { pirateTemplates, flagships } from '@exilium/db';
+import { flagships } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import {
   simulateCombat,
@@ -46,6 +46,36 @@ async function loadFlagshipCombatConfig(
 export interface FleetEntry {
   count: number;
   hullPercent: number;
+}
+
+/**
+ * Pyramid weights for the anomaly enemy composition. Tuned manually so the
+ * resulting fleet "feels" like a balanced pirate raid : many lights, few
+ * capital threats. Any combat ship not listed here gets a fallback weight
+ * of 2, so admin-added units automatically appear in anomaly fights.
+ */
+const ANOMALY_FLEET_WEIGHTS: Record<string, number> = {
+  interceptor: 6,
+  frigate: 4,
+  cruiser: 2,
+  battlecruiser: 1,
+};
+
+/**
+ * Build the synthetic enemy composition from ALL combat ships in the
+ * config. Returns a `templateShips` map (shipId → count) that
+ * `scaleFleetToFP` will then scale to the desired FP target.
+ */
+function buildAnomalyTemplateShips(
+  config: Awaited<ReturnType<GameConfigService['getFullConfig']>>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [id, def] of Object.entries(config.ships)) {
+    if (id === 'flagship') continue;
+    if ((def as { role?: string }).role !== 'combat') continue;
+    out[id] = ANOMALY_FLEET_WEIGHTS[id] ?? 2;
+  }
+  return out;
 }
 
 
@@ -141,16 +171,18 @@ export async function generateAnomalyEnemy(
     maxRatio: Number(config.universe.anomaly_enemy_max_ratio) || undefined,
   });
 
-  // Anomaly compositions are drawn from the FULL pirate pool (all tiers).
-  // Maximum variety in encounters — scouts, war parties and armadas may
-  // appear at any depth. The FP scaling (capped at 1.3× player) does the
-  // difficulty work; the template only dictates the *flavor* of the fleet.
-  const templates = await db.select().from(pirateTemplates);
-  if (templates.length === 0) {
-    throw new Error('No pirate templates available for anomaly combat');
+  // Anomaly compositions include EVERY combat ship type (interceptor,
+  // frigate, cruiser, battlecruiser, …) in a pyramid ratio so the player
+  // always faces a mixed-arms opposition. The scaling logic adjusts the
+  // counts to match the FP target — at depth 1 you might face 3 of each,
+  // at depth 15 dozens.
+  //
+  // Pyramid weights : light units are common, heavy units are rare.
+  // Unknown ships (admin-added) default to weight 2.
+  const templateShips = buildAnomalyTemplateShips(config);
+  if (Object.keys(templateShips).length === 0) {
+    throw new Error('No combat ships available for anomaly composition');
   }
-  const template = templates[Math.floor(Math.random() * templates.length)];
-  const templateShips = template.ships as Record<string, number>;
 
   const enemyFleet = scaleFleetToFP(templateShips, Math.max(1, Math.round(targetEnemyFP)), shipStatsForFP, fpConfig);
   const enemyFP = computeFleetFP(enemyFleet, shipStatsForFP, fpConfig);
