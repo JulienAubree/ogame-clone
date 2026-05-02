@@ -112,7 +112,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const fleetService = createFleetService(db, resourceService, fleetQueue, messageService, gameConfigService, redis, pveService, asteroidBeltService, pirateService, reportService, exiliumService, dailyQuestService, flagshipService, talentService, gameEventService, colonizationService, allianceLogService);
   const allianceService = createAllianceService(db, redis, allianceLogService);
   const contactService = createContactService(db, friendService, allianceService);
-  const playerAdminService = createPlayerAdminService(db, fleetQueue);
+  const playerAdminService = createPlayerAdminService(db, fleetQueue, planetService);
   const dashboardService = createDashboardService(db, {
     'build-completion': buildCompletionQueue,
     fleet: fleetQueue,
@@ -129,7 +129,7 @@ export function buildAppRouter(db: Database, redis: Redis) {
   const homepageService = createHomepageService(db);
   const anomalyContentService = createAnomalyContentService(db);
 
-  const authRouter = createAuthRouter(authService, planetService);
+  const authRouter = createAuthRouter(db, authService, planetService);
   const planetRouter = createPlanetRouter(planetService, planetAbandonService);
   const resourceRouter = createResourceRouter(resourceService, planetService, db, gameConfigService);
   const buildingRouter = createBuildingRouter(buildingService);

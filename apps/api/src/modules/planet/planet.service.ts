@@ -1,7 +1,7 @@
 import { eq, asc, desc, and, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { planets, planetBuildings, planetShips, planetDefenses, buildQueue, fleetEvents, flagships, planetBiomes } from '@exilium/db';
-import type { Database } from '@exilium/db';
+import type { Database, DbOrTx } from '@exilium/db';
 import {
   calculateMaxTemp,
   calculateMinTemp,
@@ -23,75 +23,194 @@ export function createPlanetService(
     getProductionRates(planetId: string, planet: any, bonus?: any, userId?: string): Promise<any>;
   },
 ) {
+  /**
+   * Pick a free (galaxy, system, position) coordinate for a homeworld insert.
+   *
+   * We previously picked random coordinates and let Postgres reject duplicates
+   * via the `unique_coordinates` index, which:
+   *  1. caused user-facing crashes when two registrations raced (Korbo bug, 2026-05-02), and
+   *  2. left orphan users behind (transaction was non-atomic — see register flow).
+   *
+   * The new strategy reads the occupied positions of a candidate system and
+   * only returns a coordinate that is provably free at read time. The caller
+   * still wraps the subsequent INSERT in a transaction with retry, so the rare
+   * remaining race window (read → another tx commits → our insert collides)
+   * just bumps the attempt counter instead of leaking SQL to the client.
+   */
+  async function findFreeHomeworldCoordinate(
+    dbx: DbOrTx,
+    homeworldClassId: string,
+    universe: Record<string, unknown>,
+  ): Promise<{ galaxy: number; system: number; position: number }> {
+    const systems = Number(universe.systems) || 499;
+    const spawnRadius = Number(universe.spawn_radius) || 10;
+    const posMin = Number(universe.home_planet_position_min) || 4;
+    const posMax = Number(universe.home_planet_position_max) || 12;
+
+    // Anchor near the most recent homeworld so newcomers cluster together.
+    const [lastPlanet] = await dbx
+      .select({ galaxy: planets.galaxy, system: planets.system })
+      .from(planets)
+      .where(eq(planets.planetClassId, homeworldClassId))
+      .orderBy(desc(planets.createdAt))
+      .limit(1);
+
+    const anchor = lastPlanet ?? { galaxy: 1, system: 5 };
+    const galaxy = anchor.galaxy;
+
+    // Phase 1: random search around the anchor with a widening radius.
+    const MAX_RANDOM_ATTEMPTS = 8;
+    for (let attempt = 0; attempt < MAX_RANDOM_ATTEMPTS; attempt++) {
+      const radius = spawnRadius * (1 + attempt); // widen each retry
+      const candidateSystem = Math.max(
+        1,
+        Math.min(systems, anchor.system + randomInt(-radius, radius)),
+      );
+
+      const occupied = await dbx
+        .select({ position: planets.position })
+        .from(planets)
+        .where(
+          and(
+            eq(planets.galaxy, galaxy),
+            eq(planets.system, candidateSystem),
+            eq(planets.planetType, 'planet'),
+          ),
+        );
+      const occupiedSet = new Set(occupied.map((o) => o.position));
+
+      const free: number[] = [];
+      for (let p = posMin; p <= posMax; p++) {
+        if (!occupiedSet.has(p)) free.push(p);
+      }
+      if (free.length > 0) {
+        return { galaxy, system: candidateSystem, position: free[randomInt(0, free.length - 1)]! };
+      }
+    }
+
+    // Phase 2: sequential scan of every system until we find one with a free
+    // homeworld slot. This is O(systems) but only triggers when the random
+    // phase fails repeatedly (extremely dense galaxies, late game).
+    for (let s = 1; s <= systems; s++) {
+      const occupied = await dbx
+        .select({ position: planets.position })
+        .from(planets)
+        .where(
+          and(
+            eq(planets.galaxy, galaxy),
+            eq(planets.system, s),
+            eq(planets.planetType, 'planet'),
+          ),
+        );
+      const occupiedSet = new Set(occupied.map((o) => o.position));
+      for (let p = posMin; p <= posMax; p++) {
+        if (!occupiedSet.has(p)) {
+          return { galaxy, system: s, position: p };
+        }
+      }
+    }
+
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Aucun emplacement disponible dans la galaxie. Contactez le support.',
+    });
+  }
+
+  /**
+   * Detect a Postgres unique_violation surfaced through the driver.
+   * Drizzle wraps the underlying `pg` error; the SQLSTATE is exposed as `code`.
+   */
+  function isUniqueViolation(err: unknown): boolean {
+    return typeof err === 'object' && err !== null && 'code' in err && (err as { code: unknown }).code === '23505';
+  }
+
   return {
-    async createHomePlanet(userId: string) {
+    async createHomePlanet(userId: string, txArg?: DbOrTx) {
       const config = await gameConfigService.getFullConfig();
       const homeworldType = findPlanetTypeByRole(config, 'homeworld');
-      const universe = config.universe;
+      const universe = config.universe as Record<string, unknown>;
 
-      const systems = Number(universe.systems) || 499;
-      const spawnRadius = Number(universe.spawn_radius) || 10;
-
-      // Spawn near the most recently created homeworld (cluster new players together)
-      const [lastPlanet] = await db
-        .select({ galaxy: planets.galaxy, system: planets.system })
-        .from(planets)
-        .where(eq(planets.planetClassId, homeworldType.id))
-        .orderBy(desc(planets.createdAt))
-        .limit(1);
-
-      const anchor = lastPlanet ?? { galaxy: 1, system: 5 };
-      const galaxy = anchor.galaxy;
-      const system = Math.max(1, Math.min(systems, anchor.system + randomInt(-spawnRadius, spawnRadius)));
-      const posMin = Number(universe.home_planet_position_min) || 4;
-      const posMax = Number(universe.home_planet_position_max) || 12;
-      const position = randomInt(posMin, posMax);
-
-      const randomOffset = randomInt(-20, 20);
-      const maxTemp = calculateMaxTemp(position, randomOffset);
-      const minTemp = calculateMinTemp(maxTemp);
       const diameter = Number(universe.homePlanetDiameter) || 12000;
-
       const startingMinerai = Number(universe.startingMinerai) || 500;
       const startingSilicium = Number(universe.startingSilicium) || 300;
       const startingHydrogene = Number(universe.startingHydrogene) || 100;
-
-      const [planet] = await db
-        .insert(planets)
-        .values({
-          userId,
-          name: 'Homeworld',
-          galaxy,
-          system,
-          position,
-          planetType: 'planet',
-          planetClassId: homeworldType.id,
-          diameter,
-          minTemp,
-          maxTemp,
-          minerai: String(startingMinerai),
-          silicium: String(startingSilicium),
-          hydrogene: String(startingHydrogene),
-          planetImageIndex: getRandomPlanetImageIndex(homeworldType.id, assetsDir),
-        })
-        .returning();
-
-      // Initialize building levels at 0 for all buildings
       const buildingIds = Object.keys(config.buildings);
-      if (buildingIds.length > 0) {
-        await db.insert(planetBuildings).values(
-          buildingIds.map((buildingId) => ({
-            planetId: planet.id,
-            buildingId,
-            level: 0,
-          })),
-        );
-      }
 
-      await db.insert(planetShips).values({ planetId: planet.id });
-      await db.insert(planetDefenses).values({ planetId: planet.id });
+      // Wrap the whole flow in a transaction so a partial insert never leaves
+      // a planet without its children (planetBuildings / planetShips / planetDefenses).
+      // If a transaction is provided by the caller (e.g. registration flow),
+      // we reuse it so the user+planet creation stays atomic end-to-end.
+      const work = async (dbx: DbOrTx) => {
+        // Up to 3 full attempts: pick coord → insert. If insert collides on
+        // unique_coordinates because another tx committed between our read and
+        // our write, retry with a fresh coord. This is the belt to the
+        // suspenders of findFreeHomeworldCoordinate's pre-check.
+        const MAX_INSERT_RETRIES = 3;
+        let lastErr: unknown = null;
 
-      return planet;
+        for (let attempt = 0; attempt < MAX_INSERT_RETRIES; attempt++) {
+          const coord = await findFreeHomeworldCoordinate(dbx, homeworldType.id, universe);
+          const randomOffset = randomInt(-20, 20);
+          const maxTemp = calculateMaxTemp(coord.position, randomOffset);
+          const minTemp = calculateMinTemp(maxTemp);
+
+          try {
+            const [planet] = await dbx
+              .insert(planets)
+              .values({
+                userId,
+                name: 'Homeworld',
+                galaxy: coord.galaxy,
+                system: coord.system,
+                position: coord.position,
+                planetType: 'planet',
+                planetClassId: homeworldType.id,
+                diameter,
+                minTemp,
+                maxTemp,
+                minerai: String(startingMinerai),
+                silicium: String(startingSilicium),
+                hydrogene: String(startingHydrogene),
+                planetImageIndex: getRandomPlanetImageIndex(homeworldType.id, assetsDir),
+              })
+              .returning();
+
+            if (!planet) {
+              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Insertion planète échouée' });
+            }
+
+            if (buildingIds.length > 0) {
+              await dbx.insert(planetBuildings).values(
+                buildingIds.map((buildingId) => ({
+                  planetId: planet.id,
+                  buildingId,
+                  level: 0,
+                })),
+              );
+            }
+            await dbx.insert(planetShips).values({ planetId: planet.id });
+            await dbx.insert(planetDefenses).values({ planetId: planet.id });
+
+            return planet;
+          } catch (err) {
+            lastErr = err;
+            if (!isUniqueViolation(err)) throw err;
+            // Race on coords — try again with a new one.
+            console.warn(
+              `[planet] homeworld coord race for user ${userId} attempt ${attempt + 1}/${MAX_INSERT_RETRIES}, retrying`,
+            );
+          }
+        }
+
+        // All retries exhausted — bubble up a clean error instead of a raw SQL message.
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'Impossible d\'attribuer une position de planète. Réessayez dans quelques secondes.',
+          cause: lastErr instanceof Error ? lastErr : undefined,
+        });
+      };
+
+      return txArg ? work(txArg) : db.transaction(work);
     },
 
     async listPlanets(userId: string) {

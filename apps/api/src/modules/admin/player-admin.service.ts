@@ -1,9 +1,17 @@
 import { eq, and, like, or, sql, count, inArray } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
 import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings, flagships, userExilium, flagshipTalents, fleetEvents } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { Queue } from 'bullmq';
+import type { createPlanetService } from '../planet/planet.service.js';
 
-export function createPlayerAdminService(db: Database, fleetQueue?: Queue) {
+type PlanetServiceDep = Pick<ReturnType<typeof createPlanetService>, 'createHomePlanet'>;
+
+export function createPlayerAdminService(
+  db: Database,
+  fleetQueue?: Queue,
+  planetService?: PlanetServiceDep,
+) {
   return {
     async listPlayers(offset: number, limit: number, search?: string) {
       const conditions = search
@@ -241,6 +249,44 @@ export function createPlayerAdminService(db: Database, fleetQueue?: Queue) {
 
     async resetFlagshipTalents(flagshipId: string) {
       await db.delete(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagshipId));
+    },
+
+    /**
+     * Recover a user that registered successfully but lost their homeworld
+     * insertion (atomicity bug pre-2026-05-02 fix). Refuses to operate if the
+     * user already owns at least one planet — admins should investigate
+     * first rather than spawn a duplicate.
+     */
+    async repairOrphanHomeworld(userId: string) {
+      if (!planetService) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'planetService not wired into playerAdminService',
+        });
+      }
+
+      const [existingUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      if (!existingUser) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Utilisateur introuvable' });
+      }
+
+      const userPlanets = await db
+        .select({ id: planets.id })
+        .from(planets)
+        .where(eq(planets.userId, userId));
+      if (userPlanets.length > 0) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `L'utilisateur possède déjà ${userPlanets.length} planète(s). Réparation refusée.`,
+        });
+      }
+
+      const planet = await planetService.createHomePlanet(userId);
+      return { planetId: planet.id, galaxy: planet.galaxy, system: planet.system, position: planet.position };
     },
   };
 }

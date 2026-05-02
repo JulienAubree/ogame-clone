@@ -170,5 +170,16 @@ export function createPlayerAdminRouter(
         await playerAdminService.updatePlanetDefenses(input.planetId, input.defenses);
         return { success: true };
       }),
+
+    /**
+     * Spawn a homeworld for a user that registered without one. Used to
+     * recover from the pre-2026-05-02 race where the user INSERT committed
+     * before the homeworld INSERT, leaving an orphan account.
+     */
+    repairOrphanHomeworld: adminProcedure
+      .input(z.object({ userId: z.string().uuid() }))
+      .mutation(async ({ input }) => {
+        return playerAdminService.repairOrphanHomeworld(input.userId);
+      }),
   });
 }

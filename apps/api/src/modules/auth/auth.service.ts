@@ -4,7 +4,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { randomBytes, createHash } from 'crypto';
 import { TRPCError } from '@trpc/server';
 import { users, refreshTokens, loginEvents, passwordResetTokens, emailVerificationTokens } from '@exilium/db';
-import type { Database } from '@exilium/db';
+import type { Database, DbOrTx } from '@exilium/db';
 import type Redis from 'ioredis';
 import { env } from '../../config/env.js';
 import { enforceRateLimit } from '../../lib/rate-limit.js';
@@ -121,22 +121,31 @@ export function createAuthService(db: Database, redis: Redis, mailer: MailerServ
   }
 
   return {
-    async register(email: string, username: string, password: string, ctx: AuthContext = {}) {
+    /**
+     * Insert the user row only. Pass a transaction in `tx` when the caller
+     * needs the registration to be atomic with downstream side-effects
+     * (e.g. creating the homeworld). Returns the new user; the verification
+     * email is NOT sent here — call `sendVerificationEmail` after the
+     * surrounding transaction commits, otherwise a rollback would leak an
+     * email pointing at a user that no longer exists.
+     */
+    async register(email: string, username: string, password: string, ctx: AuthContext = {}, tx?: DbOrTx) {
       await rateLimitAuth('register', ctx);
       const passwordHash = await hash(password);
 
-      const [user] = await db
+      const dbx = tx ?? db;
+      const [user] = await dbx
         .insert(users)
         .values({ email, username, passwordHash })
         .returning({ id: users.id, email: users.email, username: users.username });
 
       if (!user) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      // Fire-and-log: don't block registration if the mailer is misconfigured.
-      await sendVerificationEmail(user);
-
       return user;
     },
+
+    /** Public wrapper for sendVerificationEmail — see comment on register(). */
+    sendVerificationEmail,
 
     async login(email: string, password: string, rememberMe = false, ctx: AuthContext = {}) {
       await rateLimitAuth('login', ctx);
