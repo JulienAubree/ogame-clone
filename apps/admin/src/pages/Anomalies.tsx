@@ -46,13 +46,15 @@ function emptyChoice(label = 'Choix'): ChoiceEntry {
 
 function newEventTemplate(tier: Tier): EventEntry {
   const id = `event-${Math.random().toString(36).slice(2, 9)}`;
+  // Defaults must satisfy the Zod schema (min(1) on title/description) so the
+  // first save after adding a new event doesn't get rejected silently.
   return {
     id,
     enabled: true,
     tier,
     image: '',
     title: 'Nouvel événement',
-    description: '',
+    description: 'Description à remplir.',
     choices: [emptyChoice('Premier choix'), emptyChoice('Second choix')],
   };
 }
@@ -64,6 +66,7 @@ export default function Anomalies() {
 
   const [draft, setDraft] = useState<AnomalyContent | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [resetConfirm, setResetConfirm] = useState(false);
 
   useEffect(() => {
@@ -110,46 +113,79 @@ export default function Anomalies() {
 
   async function handleSave() {
     if (!draft) return;
-    await updateMutation.mutateAsync(draft);
-    setSavedAt(Date.now());
-    await refetch();
-    setTimeout(() => setSavedAt(null), 2500);
+    setSaveError(null);
+    try {
+      await updateMutation.mutateAsync(draft);
+      setSavedAt(Date.now());
+      await refetch();
+      setTimeout(() => setSavedAt(null), 2500);
+    } catch (err) {
+      // Surface validation errors (Zod) and other failures inline so the user
+      // doesn't think the save succeeded when it didn't.
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setSaveError(msg);
+    }
   }
 
   async function handleReset() {
-    await resetMutation.mutateAsync();
-    setResetConfirm(false);
-    await refetch();
+    try {
+      await resetMutation.mutateAsync();
+      setResetConfirm(false);
+      await refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      alert(`Réinitialisation échouée : ${msg}`);
+    }
   }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <div className="sticky top-0 z-10 -mx-6 flex items-center justify-between border-b border-panel-border bg-bg/95 px-6 py-3 backdrop-blur">
-        <div>
-          <h1 className="text-xl font-bold tracking-wide text-hull-300">Anomalies gravitationnelles</h1>
-          <p className="text-xs text-gray-500">
-            Images et textes affichés à chaque profondeur. Pool d&apos;événements aléatoires (V3) au-dessous.
-          </p>
+      <div className="sticky top-0 z-10 -mx-6 border-b border-panel-border bg-bg/95 px-6 py-3 backdrop-blur space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-wide text-hull-300">Anomalies gravitationnelles</h1>
+            <p className="text-xs text-gray-500">
+              Images et textes affichés à chaque profondeur. Pool d&apos;événements aléatoires (V3) au-dessous.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {dirty && !updateMutation.isPending && (
+              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400">
+                Modifications non enregistrées
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setResetConfirm(true)}
+              className="inline-flex items-center gap-1 rounded border border-panel-border px-3 py-1.5 text-xs text-gray-400 hover:text-red-400"
+              disabled={resetMutation.isPending}
+            >
+              <RotateCcw className="h-3 w-3" /> Réinitialiser
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!dirty || updateMutation.isPending}
+              className="inline-flex items-center gap-1 rounded bg-hull-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition-colors hover:bg-hull-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Save className="h-3 w-3" />
+              {updateMutation.isPending ? 'Enregistrement…' : savedAt ? 'Enregistré' : 'Enregistrer'}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setResetConfirm(true)}
-            className="inline-flex items-center gap-1 rounded border border-panel-border px-3 py-1.5 text-xs text-gray-400 hover:text-red-400"
-            disabled={resetMutation.isPending}
-          >
-            <RotateCcw className="h-3 w-3" /> Réinitialiser
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!dirty || updateMutation.isPending}
-            className="inline-flex items-center gap-1 rounded bg-hull-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition-colors hover:bg-hull-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Save className="h-3 w-3" />
-            {updateMutation.isPending ? 'Enregistrement…' : savedAt ? 'Enregistré' : 'Enregistrer'}
-          </button>
-        </div>
+        {saveError && (
+          <div className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            <span className="font-semibold">Sauvegarde échouée :</span>{' '}
+            <span className="break-words">{saveError}</span>
+            <button
+              type="button"
+              onClick={() => setSaveError(null)}
+              className="ml-2 text-red-400/60 hover:text-red-300"
+            >
+              [fermer]
+            </button>
+          </div>
+        )}
       </div>
 
       <Section title={`Profondeurs (1 à ${draft.depths.length})`} defaultOpen>
