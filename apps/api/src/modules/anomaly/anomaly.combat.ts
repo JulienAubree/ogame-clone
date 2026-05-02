@@ -141,18 +141,15 @@ export async function generateAnomalyEnemy(
     maxRatio: Number(config.universe.anomaly_enemy_max_ratio) || undefined,
   });
 
-  // Anomaly compositions are always drawn from the `hard` pool — even at
-  // depth 1 you face cruiser/battlecruiser-led groups (just scaled down to
-  // ~70% of player FP). Reinforces the "this is the dangerous part of
-  // space" fantasy. The FP scaling does the difficulty work.
-  const templates = await db.select().from(pirateTemplates).where(eq(pirateTemplates.tier, 'hard'));
-  const fallbackTemplates = templates.length > 0
-    ? templates
-    : await db.select().from(pirateTemplates).where(eq(pirateTemplates.tier, 'medium'));
-  if (fallbackTemplates.length === 0) {
+  // Anomaly compositions are drawn from the FULL pirate pool (all tiers).
+  // Maximum variety in encounters — scouts, war parties and armadas may
+  // appear at any depth. The FP scaling (capped at 1.3× player) does the
+  // difficulty work; the template only dictates the *flavor* of the fleet.
+  const templates = await db.select().from(pirateTemplates);
+  if (templates.length === 0) {
     throw new Error('No pirate templates available for anomaly combat');
   }
-  const template = fallbackTemplates[Math.floor(Math.random() * fallbackTemplates.length)];
+  const template = templates[Math.floor(Math.random() * templates.length)];
   const templateShips = template.ships as Record<string, number>;
 
   const enemyFleet = scaleFleetToFP(templateShips, Math.max(1, Math.round(targetEnemyFP)), shipStatsForFP, fpConfig);
