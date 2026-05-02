@@ -48,6 +48,20 @@ export interface FleetEntry {
   hullPercent: number;
 }
 
+/**
+ * Map an anomaly depth to a pirate template tier so the late game faces
+ * heavier, more diverse compositions (battlecruisers, cruisers) instead of
+ * the same scaled-up "war party of frigates".
+ *   depth 1-7  → easy   (interceptors, small frigates)
+ *   depth 8-14 → medium (frigates + cruisers)
+ *   depth 15+  → hard   (cruisers + battlecruisers)
+ */
+export function anomalyTemplateTier(depth: number): 'easy' | 'medium' | 'hard' {
+  if (depth <= 7) return 'easy';
+  if (depth <= 14) return 'medium';
+  return 'hard';
+}
+
 export interface AnomalyCombatResult {
   outcome: 'attacker' | 'defender' | 'draw';
   /** Updated player fleet after the fight. Ships dropped to 0 are removed. */
@@ -126,13 +140,21 @@ export async function generateAnomalyEnemy(
   };
   const playerFP = computeFleetFP(playerShipCounts, shipStatsForFP, fpConfig);
 
-  const growth = Number(config.universe.anomaly_difficulty_growth) || 1.3;
-  const targetEnemyFP = anomalyEnemyFP(playerFP, args.depth, growth);
+  // Difficulty curve: baseRatio (0.7 default) × growth^(depth-1), capped at
+  // maxRatio (1.3 default). Tunable via universe_config without redeploy.
+  const targetEnemyFP = anomalyEnemyFP(playerFP, args.depth, {
+    baseRatio: Number(config.universe.anomaly_enemy_base_ratio) || undefined,
+    growth: Number(config.universe.anomaly_difficulty_growth) || undefined,
+    maxRatio: Number(config.universe.anomaly_enemy_max_ratio) || undefined,
+  });
 
-  const templates = await db.select().from(pirateTemplates).where(eq(pirateTemplates.tier, 'medium'));
+  // Tier templates by depth so the visual variety matches the difficulty
+  // arc: scouts at the top, war parties in the middle, armadas at the bottom.
+  const tier = anomalyTemplateTier(args.depth);
+  const templates = await db.select().from(pirateTemplates).where(eq(pirateTemplates.tier, tier));
   const fallbackTemplates = templates.length > 0
     ? templates
-    : await db.select().from(pirateTemplates).where(eq(pirateTemplates.tier, 'easy'));
+    : await db.select().from(pirateTemplates).where(eq(pirateTemplates.tier, 'medium'));
   if (fallbackTemplates.length === 0) {
     throw new Error('No pirate templates available for anomaly combat');
   }

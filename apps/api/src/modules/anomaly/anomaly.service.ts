@@ -452,10 +452,12 @@ export function createAnomalyService(
       // Survived
       const lootBase = Number(config.universe.anomaly_loot_base) || 5000;
       const lootGrowth = Number(config.universe.anomaly_loot_growth) || 1.4;
-      const recoveryRatio = Number(config.universe.anomaly_enemy_recovery_ratio) || 0.15;
+      // Default 0.08 (down from 0.15) + per-type cap = depth — see
+      // packages/game-engine/src/formulas/anomaly.ts for rationale.
+      const recoveryRatio = Number(config.universe.anomaly_enemy_recovery_ratio) || 0.08;
 
       const loot = anomalyLoot(newDepth, lootBase, lootGrowth);
-      const recovered = anomalyEnemyRecoveryCount(result.enemyDestroyed, recoveryRatio);
+      const recovered = anomalyEnemyRecoveryCount(result.enemyDestroyed, newDepth, recoveryRatio);
 
       const currentLootShips = (row.lootShips ?? {}) as LootShipsMap;
       const mergedLootShips: LootShipsMap = { ...currentLootShips };
