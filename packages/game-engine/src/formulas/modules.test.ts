@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseLoadout, applyModulesToStats, getMaxCharges, type ModuleDefinitionLite } from './modules.js';
+import { parseLoadout, applyModulesToStats, getMaxCharges, resolveActiveAbility, type ModuleDefinitionLite } from './modules.js';
 
 const POOL: ModuleDefinitionLite[] = [
   { id: 'm1', hullId: 'combat', rarity: 'common', enabled: true, effect: { type: 'stat', stat: 'damage', value: 0.05 } },
@@ -128,5 +128,66 @@ describe('getMaxCharges', () => {
         effect: { type: 'stat', stat: 'epic_charges_max', value: 1 } },
     ]);
     expect(r).toBe(3); // cap, not 4
+  });
+});
+
+describe('resolveActiveAbility', () => {
+  it('repair / scan / skip → applied immediate', () => {
+    expect(resolveActiveAbility('repair', 0.50)).toEqual({ ability: 'repair', magnitude: 0.50, applied: 'immediate' });
+    expect(resolveActiveAbility('scan', 1.0)).toEqual({ ability: 'scan', magnitude: 1.0, applied: 'immediate' });
+    expect(resolveActiveAbility('skip', 1.0)).toEqual({ ability: 'skip', magnitude: 1.0, applied: 'immediate' });
+  });
+  it('overcharge / shield_burst / damage_burst → applied pending', () => {
+    expect(resolveActiveAbility('overcharge', 1.0)).toEqual({ ability: 'overcharge', magnitude: 1.0, applied: 'pending' });
+    expect(resolveActiveAbility('shield_burst', 2.0)).toEqual({ ability: 'shield_burst', magnitude: 2.0, applied: 'pending' });
+    expect(resolveActiveAbility('damage_burst', 1.5)).toEqual({ ability: 'damage_burst', magnitude: 1.5, applied: 'pending' });
+  });
+});
+
+describe('applyModulesToStats — additional triggers and pending abilities', () => {
+  const baseStats = { damage: 100, hull: 1000, shield: 200, armor: 50, cargo: 5000, speed: 100, regen: 0 };
+  const ctx = { roundIndex: 1, currentHullPercent: 1.0, enemyFP: 500, pendingEpicEffect: null };
+
+  it('pending damage_burst applique +damage comme overcharge', () => {
+    const r = applyModulesToStats(baseStats, [], {
+      ...ctx,
+      pendingEpicEffect: { ability: 'damage_burst', magnitude: 0.50 },
+    });
+    expect(r.damage).toBeCloseTo(150);
+  });
+
+  it('pending shield_burst applique +shield', () => {
+    const r = applyModulesToStats(baseStats, [], {
+      ...ctx,
+      pendingEpicEffect: { ability: 'shield_burst', magnitude: 1.5 },
+    });
+    expect(r.shield).toBeCloseTo(500); // 200 × (1 + 1.5)
+  });
+
+  it('conditional enemy_fp_above déclenché si enemyFP > threshold', () => {
+    const r = applyModulesToStats(baseStats, [
+      { id: 'efa', hullId: 'combat', rarity: 'rare', enabled: true,
+        effect: { type: 'conditional', trigger: 'enemy_fp_above', threshold: 1000,
+          effect: { stat: 'damage', value: 0.20 } } },
+    ], { ...ctx, enemyFP: 1500 });
+    expect(r.damage).toBeCloseTo(120);
+  });
+
+  it('conditional enemy_fp_above NON déclenché si enemyFP ≤ threshold', () => {
+    const r = applyModulesToStats(baseStats, [
+      { id: 'efa', hullId: 'combat', rarity: 'rare', enabled: true,
+        effect: { type: 'conditional', trigger: 'enemy_fp_above', threshold: 1000,
+          effect: { stat: 'damage', value: 0.20 } } },
+    ], { ...ctx, enemyFP: 800 });
+    expect(r.damage).toBe(100);
+  });
+
+  it('conditional last_round déclenché à roundIndex >= 4', () => {
+    const r = applyModulesToStats(baseStats, [
+      { id: 'lr', hullId: 'combat', rarity: 'rare', enabled: true,
+        effect: { type: 'conditional', trigger: 'last_round',
+          effect: { stat: 'damage', value: 0.30 } } },
+    ], { ...ctx, roundIndex: 4 });
+    expect(r.damage).toBeCloseTo(130);
   });
 });
