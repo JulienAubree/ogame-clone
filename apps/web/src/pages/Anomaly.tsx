@@ -27,7 +27,10 @@ interface LootSummaryState {
   drops: Array<{ id: string; name: string; rarity: string; image: string; isFinal?: boolean }>;
   resources: { minerai: number; silicium: number; hydrogene: number };
   exiliumRefunded: number;
-  outcome: 'survived' | 'wiped' | 'forced_retreat';
+  // V4 (2026-05-03) : `forced_retreat` removed — flagship-only means a wipe is
+  // total, no partial retreat outcome any more. The modal type still accepts
+  // it for back-compat but Anomaly.tsx never sets it.
+  outcome: 'survived' | 'wiped';
 }
 
 interface MutationLootSnapshot {
@@ -112,23 +115,6 @@ export default function Anomaly() {
           exiliumRefunded: 0,
           outcome: 'wiped',
         });
-      } else if (data.outcome === 'forced_retreat') {
-        const message = data.flagshipLost
-          ? '⚠️ Vaisseau mère perdu — retour forcé. Loot et Exilium récupérés.'
-          : data.combatOutcome === 'draw'
-            ? '⚠️ Combat indécis — retour avec votre flotte. Loot et Exilium récupérés.'
-            : '⚠️ Combat perdu — retour forcé. Loot et Exilium récupérés.';
-        addToast(message, 'warning');
-        setLootSummary({
-          drops: data.finalDrops ?? [],
-          resources: {
-            minerai: snap?.lootMinerai ?? 0,
-            silicium: snap?.lootSilicium ?? 0,
-            hydrogene: snap?.lootHydrogene ?? 0,
-          },
-          exiliumRefunded: snap?.exiliumPaid ?? 0,
-          outcome: 'forced_retreat',
-        });
       } else {
         addToast(`⚔️ Combat remporté — profondeur ${data.depth}`, 'success');
         // Run completed at MAX_DEPTH — surface the same end-of-run modal as a
@@ -159,7 +145,8 @@ export default function Anomaly() {
               hydrogene: baseHydrogene + Math.floor(Number(nodeLoot.hydrogene ?? 0)),
             },
             // Server's `survived + runComplete` branch does NOT refund Exilium
-            // (only `retreat` and `forced_retreat` do — see anomaly.service.ts).
+            // (only `retreat` does — see anomaly.service.ts ; V4 removed
+            // `forced_retreat`).
             exiliumRefunded: 0,
             outcome: 'survived',
           });
@@ -209,6 +196,20 @@ export default function Anomaly() {
     onSettled: () => {
       mutationSnapshotRef.current = null;
     },
+  });
+
+  // V4 (2026-05-03) : restore +N% hull on the flagship by burning 1 charge.
+  // Charges are seeded at engage and decremented per use ; refused if at 0
+  // or if the flagship is already at full hull.
+  const repairMutation = trpc.anomaly.useRepairCharge.useMutation({
+    onSuccess: (data) => {
+      addToast(
+        `🔧 Hull réparé : ${Math.round(data.newHullPercent * 100)}% (${data.remainingCharges} charges restantes)`,
+        'success',
+      );
+      utils.anomaly.current.invalidate();
+    },
+    onError: (err) => addToast(err.message ?? 'Réparation impossible', 'error'),
   });
 
   if (loadingCurrent) {
@@ -267,6 +268,8 @@ export default function Anomaly() {
           onAdvance={() => advanceMutation.mutate()}
           advancePending={advanceMutation.isPending}
           retreatPending={retreatMutation.isPending}
+          onRepair={() => repairMutation.mutate()}
+          repairPending={repairMutation.isPending}
         />
       </div>
 
@@ -479,6 +482,9 @@ interface AnomalyRow {
   /** Snapshot of equipped modules at engage : Record<hullId, { epic, rare[], common[] }>. */
   equippedModules?: unknown;
   pendingEpicEffect?: unknown;
+  /** V4 : repair charges seeded at engage, burned via `useRepairCharge`. */
+  repairChargesCurrent?: number;
+  repairChargesMax?: number;
 }
 
 function RunView({
@@ -486,11 +492,15 @@ function RunView({
   onAdvance,
   advancePending,
   retreatPending,
+  onRepair,
+  repairPending,
 }: {
   anomaly: AnomalyRow;
   onAdvance: () => void;
   advancePending: boolean;
   retreatPending: boolean;
+  onRepair: () => void;
+  repairPending: boolean;
 }) {
   const fleet = (anomaly.fleet ?? {}) as Record<string, FleetEntry>;
   const lootShips = (anomaly.lootShips ?? {}) as Record<string, number>;
@@ -537,6 +547,14 @@ function RunView({
       <main className="min-w-0 space-y-3">
         <EpicActivateButton
           equippedModules={equippedModules}
+          actionInFlight={advancePending || retreatPending}
+        />
+        <RepairChargeButton
+          fleet={fleet}
+          chargesCurrent={anomaly.repairChargesCurrent ?? 0}
+          chargesMax={anomaly.repairChargesMax ?? 0}
+          onRepair={onRepair}
+          repairPending={repairPending}
           actionInFlight={advancePending || retreatPending}
         />
         {anomaly.nextNodeType === 'event' && anomaly.nextEventId ? (
@@ -673,6 +691,71 @@ function EpicActivateButton({
         >
           <Zap className="h-3.5 w-3.5 mr-1" />
           {activateMutation.isPending ? 'Activation…' : 'Activer'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Repair charge button (V4) ──────────────────────────────────────────────
+
+/**
+ * Compact card showing remaining hull-repair charges + a button that burns one
+ * to restore +30% hull on the flagship. Hidden entirely when there are no
+ * charges left (V4 always seeds at least 1, so this only hides mid-run after
+ * the player has spent everything). Disabled when the flagship is at full HP
+ * or when another action is in flight.
+ */
+function RepairChargeButton({
+  fleet,
+  chargesCurrent,
+  chargesMax,
+  onRepair,
+  repairPending,
+  actionInFlight,
+}: {
+  fleet: Record<string, FleetEntry>;
+  chargesCurrent: number;
+  chargesMax: number;
+  onRepair: () => void;
+  repairPending: boolean;
+  actionInFlight: boolean;
+}) {
+  if (chargesCurrent <= 0) return null;
+  const flagshipHp = fleet.flagship?.hullPercent ?? 1.0;
+  const hpPct = Math.round(flagshipHp * 100);
+  const canRepair = flagshipHp < 1.0;
+  const disabled = !canRepair || repairPending || actionInFlight;
+  const title = !canRepair
+    ? 'Vaisseau mère à pleine santé — réparation inutile'
+    : `Restaure +30% du hull (${chargesCurrent}/${chargesMax} charges restantes)`;
+
+  return (
+    <div className="rounded-lg border border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 to-teal-950/20 p-3">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-950/50 text-base">
+          🔧
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300/80">
+            Réparation d'urgence
+          </div>
+          <div className="text-sm font-semibold text-emerald-100 truncate">
+            Hull vaisseau mère <span className="font-mono tabular-nums text-emerald-200/80">{hpPct}%</span>
+          </div>
+        </div>
+        <div className="shrink-0 text-xs font-mono tabular-nums text-emerald-200">
+          {chargesCurrent}/{chargesMax}
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={disabled}
+          onClick={onRepair}
+          title={title}
+          className="shrink-0 border-emerald-500/50 text-emerald-100 hover:bg-emerald-950/40 hover:border-emerald-400/70"
+        >
+          {repairPending ? 'Réparation…' : 'Réparer'}
         </Button>
       </div>
     </div>
