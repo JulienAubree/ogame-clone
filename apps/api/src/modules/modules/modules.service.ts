@@ -67,7 +67,20 @@ export function createModulesService(db: Database) {
     /** Public: list of all enabled modules (for inventory display, lookups). */
     async listAll(): Promise<ModuleDefinition[]> {
       const rows = await db.select().from(moduleDefinitions).orderBy(moduleDefinitions.hullId, moduleDefinitions.rarity, moduleDefinitions.name);
-      return rows.map((r) => moduleDefinitionSchema.parse(r));
+      // Tolerant parse: skip rows that no longer satisfy the current Zod
+      // schema (e.g. legacy `last_round` trigger removed from the engine).
+      // Without this, a single malformed row makes the whole admin /modules
+      // page 500 — the rest of the catalog should still be reachable.
+      const out: ModuleDefinition[] = [];
+      for (const r of rows) {
+        const parsed = moduleDefinitionSchema.safeParse(r);
+        if (parsed.success) {
+          out.push(parsed.data);
+        } else {
+          console.warn(`[modules.listAll] skipping malformed row id=${(r as { id?: string }).id ?? '?'}: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', ')}`);
+        }
+      }
+      return out;
     },
 
     /** Returns the player's inventory grouped by hull/rarity. */
