@@ -5,7 +5,13 @@ import { fetchWithAuth } from '@/trpc';
 interface ModuleImageSlotProps {
   /** Slot key — alphanum + `-` / `_` only (e.g. `module-id`). */
   slot: string;
-  /** Current public path (typically `/assets/module/<slot>.webp`). */
+  /**
+   * Current basename WITHOUT extension (typically `/assets/module/<slot>`).
+   * The image-processing pipeline writes both `<base>.webp` and
+   * `<base>-thumb.webp` to disk, and the web consumers append the suffix
+   * themselves (`${module.image}-thumb.webp` etc.). Storing the basename
+   * keeps both consumers symmetric and avoids `.webp.webp` paths.
+   */
   value: string;
   /** Suggested aspect ratio for the preview tile. */
   aspect?: string;
@@ -16,9 +22,10 @@ interface ModuleImageSlotProps {
 
 /**
  * Upload widget for a Module content slot. Uploads via `/admin/upload-asset`
- * with `category=module`, then reports the resulting public path back via
- * `onChange`. Mirrors the homepage slot pattern but lives in its own file
- * so the two domains evolve independently.
+ * with `category=module`, then reports the resulting basename (NO extension)
+ * back via `onChange`. The web consumers append `.webp` / `-thumb.webp`
+ * themselves (see `ModuleSlot.tsx`, `ModuleDetailModal.tsx`,
+ * `AnomalyLootSummaryModal.tsx`).
  */
 export function ModuleImageSlot({
   slot,
@@ -33,8 +40,11 @@ export function ModuleImageSlot({
   const [cacheBust, setCacheBust] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // The DB value is a basename without extension; we append `.webp` only for
+  // the preview <img>. Cache-bust uses a query string so the browser refreshes
+  // after a re-upload to the same slot.
   const previewUrl = value
-    ? `${value}${cacheBust ? `?t=${cacheBust}` : ''}`
+    ? `${value}.webp${cacheBust ? `?t=${cacheBust}` : ''}`
     : null;
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -55,7 +65,9 @@ export function ModuleImageSlot({
         alert(data?.error ?? 'Upload échoué');
         return;
       }
-      const path = `/assets/module/${slot}.webp`;
+      // Store the basename WITHOUT extension so `${module.image}-thumb.webp`
+      // and `${module.image}.webp` (web consumers) resolve correctly.
+      const path = `/assets/module/${slot}`;
       onChange(path);
       setCacheBust(String(Date.now()));
     } catch {

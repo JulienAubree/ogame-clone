@@ -30,6 +30,19 @@ interface LootSummaryState {
   outcome: 'survived' | 'wiped' | 'forced_retreat';
 }
 
+interface MutationLootSnapshot {
+  lootMinerai: number;
+  lootSilicium: number;
+  lootHydrogene: number;
+  exiliumPaid: number;
+}
+
+const RARITY_LABEL_FR: Record<string, string> = {
+  common: 'Commun',
+  rare: 'Rare',
+  epic: 'Épique',
+};
+
 export default function Anomaly() {
   const { data: gameConfig } = useGameConfig();
   const { data: current, isLoading: loadingCurrent } = trpc.anomaly.current.useQuery(undefined, {
@@ -42,24 +55,35 @@ export default function Anomaly() {
   const [lootSummary, setLootSummary] = useState<LootSummaryState | null>(null);
 
   // Snapshot of the active anomaly row, refreshed each render. We read from
-  // it inside mutation onSuccess to recover the loot/exilium values that the
-  // server wipes from the row when finalizing the run (the mutation response
-  // doesn't echo them back for V1).
+  // it inside `onMutate` (NOT `onSuccess`) to capture the values BEFORE the
+  // mutation fires — otherwise a `refetchInterval` race could land between
+  // mutate and onSuccess, wiping the row server-side and leaving us with
+  // null in `currentRef.current`.
   const currentRef = useRef(current);
   currentRef.current = current;
 
-  function snapshotResources() {
+  // Snapshot captured in `onMutate`, consumed in `onSuccess`, cleared in
+  // `onSettled`. Holds the row state at mutation invocation time so the
+  // modal can show pre-mutation loot/exilium even after the server wipes it.
+  const mutationSnapshotRef = useRef<MutationLootSnapshot | null>(null);
+
+  function captureSnapshot(): MutationLootSnapshot | null {
     const row = currentRef.current;
+    if (!row) return null;
     return {
-      minerai: Math.floor(Number(row?.lootMinerai ?? 0)),
-      silicium: Math.floor(Number(row?.lootSilicium ?? 0)),
-      hydrogene: Math.floor(Number(row?.lootHydrogene ?? 0)),
+      lootMinerai: Math.floor(Number(row.lootMinerai ?? 0)),
+      lootSilicium: Math.floor(Number(row.lootSilicium ?? 0)),
+      lootHydrogene: Math.floor(Number(row.lootHydrogene ?? 0)),
+      exiliumPaid: row.exiliumPaid ?? 0,
     };
   }
 
   const advanceMutation = trpc.anomaly.advance.useMutation({
+    onMutate: () => {
+      mutationSnapshotRef.current = captureSnapshot();
+    },
     onSuccess: (data) => {
-      const preMutationRow = currentRef.current;
+      const snap = mutationSnapshotRef.current;
       utils.anomaly.current.invalidate();
       utils.anomaly.history.invalidate();
       utils.flagship.get.invalidate();
@@ -67,10 +91,13 @@ export default function Anomaly() {
       utils.planet.list.invalidate();
       utils.shipyard.empireOverview.invalidate();
 
-      // In-run drop toast (per-combat module dropped on a survived combat)
+      // In-run drop toast (per-combat module dropped on a survived combat).
+      // Translated rarity to match the modal labelling.
       if (data.outcome === 'survived' && data.droppedModule) {
+        const rarityLabel =
+          RARITY_LABEL_FR[data.droppedModule.rarity] ?? data.droppedModule.rarity;
         addToast(
-          `✨ +1 module : ${data.droppedModule.name} (${data.droppedModule.rarity})`,
+          `✨ +1 module : ${data.droppedModule.name} (${rarityLabel})`,
           'success',
         );
       }
@@ -94,8 +121,12 @@ export default function Anomaly() {
         addToast(message, 'warning');
         setLootSummary({
           drops: data.finalDrops ?? [],
-          resources: snapshotResources(),
-          exiliumRefunded: preMutationRow?.exiliumPaid ?? 0,
+          resources: {
+            minerai: snap?.lootMinerai ?? 0,
+            silicium: snap?.lootSilicium ?? 0,
+            hydrogene: snap?.lootHydrogene ?? 0,
+          },
+          exiliumRefunded: snap?.exiliumPaid ?? 0,
           outcome: 'forced_retreat',
         });
       } else {
@@ -104,18 +135,32 @@ export default function Anomaly() {
         // voluntary retreat. The API includes the new combat's loot in
         // `nodeLoot` but it has not yet been merged into the row snapshot, so
         // we add it on top of the pre-mutation resource totals.
-        const finalDrops = data.finalDrops ?? [];
-        if (finalDrops.length > 0 || data.runComplete) {
-          const base = snapshotResources();
+        // Note: server only returns non-empty `finalDrops` when `runComplete`
+        // is true (rolled in the survived MAX_DEPTH branch in
+        // anomaly.service.ts). So `runComplete` alone is the sufficient
+        // trigger condition.
+        if (data.runComplete) {
+          const baseMinerai = snap?.lootMinerai ?? 0;
+          const baseSilicium = snap?.lootSilicium ?? 0;
+          const baseHydrogene = snap?.lootHydrogene ?? 0;
           const nodeLoot = data.nodeLoot ?? { minerai: 0, silicium: 0, hydrogene: 0 };
+          const finalDrops = data.finalDrops ?? [];
+          // Include the per-combat drop (if any) alongside the final drops so
+          // the player sees ALL modules in the modal, not just the orphan
+          // toast that fired above. Per-combat drop has no `isFinal` flag.
+          const allDrops = data.droppedModule
+            ? [{ ...data.droppedModule, isFinal: false }, ...finalDrops]
+            : finalDrops;
           setLootSummary({
-            drops: finalDrops,
+            drops: allDrops,
             resources: {
-              minerai: base.minerai + Math.floor(Number(nodeLoot.minerai ?? 0)),
-              silicium: base.silicium + Math.floor(Number(nodeLoot.silicium ?? 0)),
-              hydrogene: base.hydrogene + Math.floor(Number(nodeLoot.hydrogene ?? 0)),
+              minerai: baseMinerai + Math.floor(Number(nodeLoot.minerai ?? 0)),
+              silicium: baseSilicium + Math.floor(Number(nodeLoot.silicium ?? 0)),
+              hydrogene: baseHydrogene + Math.floor(Number(nodeLoot.hydrogene ?? 0)),
             },
-            exiliumRefunded: preMutationRow?.exiliumPaid ?? 0,
+            // Server's `survived + runComplete` branch does NOT refund Exilium
+            // (only `retreat` and `forced_retreat` do — see anomaly.service.ts).
+            exiliumRefunded: 0,
             outcome: 'survived',
           });
         }
@@ -131,11 +176,17 @@ export default function Anomaly() {
         isEventPending ? 'success' : 'error',
       );
     },
+    onSettled: () => {
+      mutationSnapshotRef.current = null;
+    },
   });
 
   const retreatMutation = trpc.anomaly.retreat.useMutation({
+    onMutate: () => {
+      mutationSnapshotRef.current = captureSnapshot();
+    },
     onSuccess: (data) => {
-      const preMutationRow = currentRef.current;
+      const snap = mutationSnapshotRef.current;
       utils.anomaly.current.invalidate();
       utils.anomaly.history.invalidate();
       utils.exilium.getBalance.invalidate();
@@ -145,12 +196,19 @@ export default function Anomaly() {
       addToast('🛑 Retour avec votre butin. Anomalie scellée.', 'success');
       setLootSummary({
         drops: data.finalDrops ?? [],
-        resources: snapshotResources(),
-        exiliumRefunded: preMutationRow?.exiliumPaid ?? 0,
+        resources: {
+          minerai: snap?.lootMinerai ?? 0,
+          silicium: snap?.lootSilicium ?? 0,
+          hydrogene: snap?.lootHydrogene ?? 0,
+        },
+        exiliumRefunded: snap?.exiliumPaid ?? 0,
         outcome: 'survived',
       });
     },
     onError: (err) => addToast(err.message ?? 'Retraite impossible', 'error'),
+    onSettled: () => {
+      mutationSnapshotRef.current = null;
+    },
   });
 
   if (loadingCurrent) {
