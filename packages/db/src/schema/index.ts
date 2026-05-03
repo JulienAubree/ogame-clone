@@ -28,7 +28,8 @@ export * from './push-subscriptions.js';
 export * from './user-exilium.js';
 export * from './exilium-log.js';
 export * from './flagships.js';
-export * from './flagship-talents.js';
+// archived 2026-05-03 — see migration 0069
+// export * from './flagship-talents.js';
 export * from './flagship-cooldowns.js';
 export * from './flagship-module-inventory.js';
 export * from './module-definitions.js';

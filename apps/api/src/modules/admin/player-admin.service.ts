@@ -1,6 +1,6 @@
 import { eq, and, like, or, sql, count, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings, flagships, userExilium, flagshipTalents, fleetEvents } from '@exilium/db';
+import { users, planets, userResearch, planetShips, planetDefenses, rankings, planetBuildings, flagships, userExilium, fleetEvents } from '@exilium/db';
 import type { Database } from '@exilium/db';
 import type { Queue } from 'bullmq';
 import type { createPlanetService } from '../planet/planet.service.js';
@@ -91,12 +91,9 @@ export function createPlayerAdminService(
         buildingLevels: buildingsByPlanet.get(planet.id) ?? {},
       }));
 
-      // Load flagship, exilium balance, and talents
+      // Load flagship + exilium balance (talents removed 2026-05-03 — see Task 7 for admin UI cleanup)
       const [flagshipRow] = await db.select().from(flagships).where(eq(flagships.userId, userId)).limit(1);
       const [exiliumRow] = await db.select().from(userExilium).where(eq(userExilium.userId, userId)).limit(1);
-      const talentRows = flagshipRow
-        ? await db.select().from(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagshipRow.id))
-        : [];
 
       return {
         user: { id: user.id, email: user.email, username: user.username, isAdmin: user.isAdmin, bannedAt: user.bannedAt, createdAt: user.createdAt },
@@ -105,7 +102,7 @@ export function createPlayerAdminService(
         ranking: ranking[0] ?? null,
         flagship: flagshipRow ?? null,
         exilium: exiliumRow ?? null,
-        flagshipTalents: talentRows,
+        flagshipTalents: [] as { talentId: string; currentRank: number }[],
       };
     },
 
@@ -247,8 +244,8 @@ export function createPlayerAdminService(
         .where(eq(planets.id, newCapitalPlanetId));
     },
 
-    async resetFlagshipTalents(flagshipId: string) {
-      await db.delete(flagshipTalents).where(eq(flagshipTalents.flagshipId, flagshipId));
+    async resetFlagshipTalents(_flagshipId: string) {
+      // No-op (talents removed 2026-05-03). Router endpoint kept until Task 7 strips the admin UI.
     },
 
     /**

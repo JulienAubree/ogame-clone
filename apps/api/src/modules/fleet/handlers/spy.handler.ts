@@ -1,6 +1,6 @@
 import { eq, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { planets, planetShips, planetDefenses, planetBuildings, userResearch, flagships, flagshipTalents, allianceMembers, alliances } from '@exilium/db';
+import { planets, planetShips, planetDefenses, planetBuildings, userResearch, flagships, allianceMembers, alliances } from '@exilium/db';
 import { calculateSpyReport, calculateDetectionChance, totalCargoCapacity, simulateCombat } from '@exilium/game-engine';
 import type { Database } from '@exilium/db';
 import type { CombatInput } from '@exilium/game-engine';
@@ -224,24 +224,11 @@ export class SpyHandler implements MissionHandler {
         .limit(1);
 
       if (defenderFlagship) {
-        // Compute talent stat bonuses
-        const talentRows = await ctx.db
-          .select({ talentId: flagshipTalents.talentId, currentRank: flagshipTalents.currentRank })
-          .from(flagshipTalents)
-          .where(eq(flagshipTalents.flagshipId, defenderFlagship.id));
-
-        let bonusWeapons = 0, bonusShield = 0, bonusHull = 0, bonusCargo = 0;
-        for (const row of talentRows) {
-          if (row.currentRank <= 0) continue;
-          const def = config.talents[row.talentId];
-          if (!def || def.effectType !== 'modify_stat') continue;
-          const params = def.effectParams as { stat: string; perRank: number };
-          const bonus = params.perRank * row.currentRank;
-          if (params.stat === 'weapons') bonusWeapons += bonus;
-          else if (params.stat === 'shield') bonusShield += bonus;
-          else if (params.stat === 'hull') bonusHull += bonus;
-          else if (params.stat === 'cargoCapacity') bonusCargo += bonus;
-        }
+        // Talent stat bonuses removed (2026-05-03). Hull passives only.
+        let bonusWeapons = 0;
+        const bonusShield = 0;
+        const bonusHull = 0;
+        const bonusCargo = 0;
 
         // Apply hull passive bonuses
         const hullConfig = defenderFlagship.hullId ? (config.hulls?.[defenderFlagship.hullId] ?? null) : null;

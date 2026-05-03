@@ -15,8 +15,6 @@ import {
   productionConfig,
   universeConfig,
   planetTypes,
-  talentBranchDefinitions,
-  talentDefinitions,
 } from './schema/game-config.js';
 import { pirateTemplates } from './schema/pve-missions.js';
 import { biomeDefinitions } from './schema/biomes.js';
@@ -646,27 +644,6 @@ const UNIVERSE_CONFIG = [
   // ── Daily Quests ──
   { key: 'daily_quest_count', value: 3 },
   { key: 'daily_quest_miner_threshold', value: 5000 },
-
-  // ── Talent Tree ──
-  { key: 'talent_cost_tier_1', value: 1 },
-  { key: 'talent_cost_tier_2', value: 2 },
-  { key: 'talent_cost_tier_3', value: 3 },
-  { key: 'talent_cost_tier_4', value: 4 },
-  { key: 'talent_cost_tier_5', value: 5 },
-  { key: 'talent_tier_2_threshold', value: 5 },
-  { key: 'talent_tier_3_threshold', value: 10 },
-  { key: 'talent_tier_4_threshold', value: 15 },
-  { key: 'talent_tier_5_threshold', value: 20 },
-  { key: 'talent_respec_ratio', value: 0 },       // TODO: remettre à 0.5 quand les talents seront finalisés
-  { key: 'talent_full_reset_cost', value: 0 },    // TODO: remettre à 50 quand les talents seront finalisés
-];
-
-// ── Talent Branches ──
-
-const TALENT_BRANCHES = [
-  { id: 'militaire', name: 'Militaire', description: 'Combat, attaque & defense', color: '#ff6b6b', sortOrder: 0 },
-  { id: 'scientifique', name: 'Scientifique', description: 'Recherche, espionnage & information', color: '#4ecdc4', sortOrder: 1 },
-  { id: 'industriel', name: 'Industriel', description: 'Production, minage & commerce', color: '#ffd93d', sortOrder: 2 },
 ];
 
 // ── Hull Definitions ──
@@ -679,6 +656,7 @@ const HULLS = [
     playstyle: 'warrior',
     passiveBonuses: {
       combat_build_time_reduction: 0.20,
+      repair_time_reduction:       0.45,    // ex mil_repair max (3 rangs × 15%)
       bonus_armor: 6,
       bonus_shot_count: 2,
       bonus_weapons: 8,
@@ -689,6 +667,7 @@ const HULLS = [
       '+2 attaques',
       '+8 armes',
       '-20% temps construction vaisseaux militaires',
+      '-45% temps de réparation du flagship',
     ],
     changeCost: { baseMultiplier: 500, resourceRatio: { minerai: 3, silicium: 2, hydrogene: 1 } },
     unavailabilitySeconds: 300,
@@ -701,6 +680,8 @@ const HULLS = [
     playstyle: 'miner',
     passiveBonuses: {
       industrial_build_time_reduction: 0.20,
+      mining_speed_bonus:              0.45,  // ex ind_mining_speed max (3 rangs × 15%)
+      prospection_speed_bonus:         0.45,  // ex ind_prospect_speed max (3 rangs × 15%)
     },
     abilities: [
       {
@@ -721,6 +702,8 @@ const HULLS = [
     ],
     bonusLabels: [
       '-20% temps construction vaisseaux industriels',
+      '+45% vitesse de minage',
+      '+45% vitesse de prospection',
       'Permet le minage et recyclage',
     ],
     changeCost: { baseMultiplier: 500, resourceRatio: { minerai: 3, silicium: 2, hydrogene: 1 } },
@@ -753,44 +736,6 @@ const HULLS = [
     unavailabilitySeconds: 300,
     cooldownSeconds: 300,
   },
-];
-
-// ── Talent Definitions ──
-
-const TALENT_DEFINITIONS: Record<string, unknown>[] = [
-  // === MILITAIRE === (combat, attaque, defense)
-  // Tier 1
-  { id: 'mil_weapons', branchId: 'militaire', tier: 1, position: 'left', name: 'Armes renforcees', description: '+2 armes par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'weapons', perRank: 2 }, sortOrder: 0 },
-  { id: 'mil_armor', branchId: 'militaire', tier: 1, position: 'center', name: 'Blindage reactif', description: '+2 blindage par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'baseArmor', perRank: 2 }, sortOrder: 1 },
-  { id: 'mil_shield', branchId: 'militaire', tier: 1, position: 'right', name: 'Boucliers amplifies', description: '+3 bouclier par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'shield', perRank: 3 }, sortOrder: 2 },
-  // Tier 2
-  { id: 'mil_build_time', branchId: 'militaire', tier: 2, position: 'center', name: 'Chaine de production', description: '-10% temps de construction vaisseaux militaires', maxRanks: 1, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'military_build_time', perRank: 0.10 }, sortOrder: 3 },
-  { id: 'mil_repair', branchId: 'militaire', tier: 2, position: 'left', name: 'Reparation rapide', description: '-15% temps de reparation par rang', maxRanks: 3, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'flagship_repair_time', perRank: 0.15 }, sortOrder: 4 },
-  // Tier 3
-  { id: 'mil_parallel_build', branchId: 'militaire', tier: 3, position: 'center', name: 'Production militaire parallele', description: '+1 slot de construction militaire parallele (planete du flagship)', maxRanks: 1, prerequisiteId: 'mil_build_time', effectType: 'planet_bonus', effectParams: { key: 'military_parallel_build', perRank: 1 }, sortOrder: 5 },
-
-  // === INDUSTRIEL === (production, minage, commerce)
-  // Tier 1
-  { id: 'ind_cargo', branchId: 'industriel', tier: 1, position: 'left', name: 'Soute etendue', description: '+1000 cargo par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'cargoCapacity', perRank: 1000 }, sortOrder: 0 },
-  { id: 'ind_speed', branchId: 'industriel', tier: 1, position: 'center', name: 'Reacteurs optimises', description: '+10% vitesse par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'speedPercent', perRank: 0.10 }, sortOrder: 1 },
-  { id: 'ind_hull', branchId: 'industriel', tier: 1, position: 'right', name: 'Coque renforcee', description: '+5 coque par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'hull', perRank: 5 }, sortOrder: 2 },
-  // Tier 2
-  { id: 'ind_build_time', branchId: 'industriel', tier: 2, position: 'center', name: 'Chaine de montage', description: '-10% temps de construction vaisseaux industriels', maxRanks: 1, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'industrial_build_time', perRank: 0.10 }, sortOrder: 3 },
-  { id: 'ind_mining_speed', branchId: 'industriel', tier: 2, position: 'left', name: 'Forage accelere', description: '+15% vitesse de minage par rang', maxRanks: 3, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'mining_speed', perRank: 0.15 }, sortOrder: 4 },
-  { id: 'ind_prospect_speed', branchId: 'industriel', tier: 2, position: 'right', name: 'Prospection avancee', description: '+15% vitesse de prospection par rang', maxRanks: 3, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'prospection_speed', perRank: 0.15 }, sortOrder: 5 },
-  // Tier 3
-  { id: 'ind_parallel_build', branchId: 'industriel', tier: 3, position: 'center', name: 'Production parallele', description: '+1 slot de construction industrielle parallele (planete du flagship)', maxRanks: 1, prerequisiteId: 'ind_build_time', effectType: 'planet_bonus', effectParams: { key: 'industrial_parallel_build', perRank: 1 }, sortOrder: 6 },
-
-  // === SCIENTIFIQUE === (recherche, espionnage, information)
-  // Tier 1
-  { id: 'sci_fuel', branchId: 'scientifique', tier: 1, position: 'left', name: 'Economiseur', description: '-1 consommation carburant par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'fuelConsumption', perRank: -1 }, sortOrder: 0 },
-  { id: 'sci_shots', branchId: 'scientifique', tier: 1, position: 'center', name: 'Tirs de precision', description: '+1 tir par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'shotCount', perRank: 1 }, sortOrder: 1 },
-  { id: 'sci_shield', branchId: 'scientifique', tier: 1, position: 'right', name: 'Champ de force', description: '+2 bouclier par rang', maxRanks: 3, prerequisiteId: null, effectType: 'modify_stat', effectParams: { stat: 'shield', perRank: 2 }, sortOrder: 2 },
-  // Tier 2
-  { id: 'sci_research_time', branchId: 'scientifique', tier: 2, position: 'center', name: 'Protocoles avances', description: '-10% temps de recherche', maxRanks: 1, prerequisiteId: null, effectType: 'global_bonus', effectParams: { key: 'research_time', perRank: 0.10 }, sortOrder: 3 },
-  { id: 'sci_energy', branchId: 'scientifique', tier: 2, position: 'left', name: 'Amplification energetique', description: '+2% production d\'energie par rang (planete du flagship)', maxRanks: 3, prerequisiteId: null, effectType: 'planet_bonus', effectParams: { key: 'energy_production', perRank: 0.02 }, sortOrder: 4 },
-  // Tier 3
-  { id: 'sci_shield_boost', branchId: 'scientifique', tier: 3, position: 'center', name: 'Bouclier renforce', description: '+1 niveau de bouclier planetaire par rang (planete du flagship)', maxRanks: 2, prerequisiteId: 'sci_energy', effectType: 'planet_bonus', effectParams: { key: 'shield_level_bonus', perRank: 1 }, sortOrder: 6 },
 ];
 
 async function seed() {
@@ -1015,24 +960,12 @@ async function seed() {
   `);
   console.log(`  ✓ Migrated ${(relayMigration as { count?: number }).count ?? 0} colony missionCenter rows to missionRelay`);
 
-  // 16. Talent branches
-  await db.delete(talentDefinitions);
-  await db.delete(talentBranchDefinitions);
-  await db.insert(talentBranchDefinitions).values(TALENT_BRANCHES);
-  console.log(`  ✓ ${TALENT_BRANCHES.length} talent branches`);
-
-  // 17. Talent definitions
-  if (TALENT_DEFINITIONS.length > 0) {
-    await db.insert(talentDefinitions).values(TALENT_DEFINITIONS);
-  }
-  console.log(`  ✓ ${TALENT_DEFINITIONS.length} talent definitions`);
-
-  // 18. Hull definitions (stored as JSON in universe_config)
+  // 16. Hull definitions (stored as JSON in universe_config)
   await db.insert(universeConfig).values({ key: 'hulls', value: HULLS })
     .onConflictDoUpdate({ target: universeConfig.key, set: { value: HULLS } });
   console.log(`  ✓ ${HULLS.length} hull definitions`);
 
-  // 19. Migrate existing flagships to industrial hull (idempotent)
+  // 17. Migrate existing flagships to industrial hull (idempotent)
   await db.execute(sql`
     UPDATE flagships SET hull_id = 'industrial' WHERE hull_id IS NULL
   `);
