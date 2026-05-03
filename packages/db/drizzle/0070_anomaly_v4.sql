@@ -6,9 +6,10 @@ ALTER TABLE anomalies
   ADD COLUMN repair_charges_max     SMALLINT NOT NULL DEFAULT 3;
 
 -- Universe config tunables
+-- Note : universe_config.value est jsonb, donc on cast les valeurs scalaires.
 INSERT INTO universe_config (key, value) VALUES
-  ('anomaly_repair_charges_per_run', 3),
-  ('anomaly_repair_charge_hull_pct', 0.30)
+  ('anomaly_repair_charges_per_run', '3'::jsonb),
+  ('anomaly_repair_charge_hull_pct', '0.30'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- Marker idempotence
