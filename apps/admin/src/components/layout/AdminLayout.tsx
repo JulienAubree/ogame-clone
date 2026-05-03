@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Building2, FlaskConical, Rocket, Shield, Zap,
   Factory, Globe, Users, LogOut, LayoutGrid, Orbit,
-  Skull, GraduationCap, Compass, Tag, Sparkles, MessageSquare, FileText, Bolt, Key,
+  Skull, GraduationCap, Compass, Tag, MessageSquare, FileText, Bolt, Key,
   Menu, X, CircleUserRound, Megaphone, LayoutDashboard, Home, Atom,
 } from 'lucide-react';
 
@@ -36,7 +36,7 @@ const NAV_SECTIONS = [
       { to: '/pve-missions', label: 'Missions PvE', icon: Skull },
       { to: '/anomalies', label: 'Anomalies', icon: Atom },
       { to: '/modules', label: 'Modules Flagship', icon: Atom },
-      { to: '/talents', label: 'Talents Flagship', icon: Sparkles },
+      { to: '/flagship', label: 'Flagship', icon: Rocket },
       { to: '/hull-abilities', label: 'Capacites Flagship', icon: Bolt },
       { to: '/gameplay-keys', label: 'Cles de gameplay', icon: Key },
       { to: '/tutorial-quests', label: 'Onboarding', icon: GraduationCap },
