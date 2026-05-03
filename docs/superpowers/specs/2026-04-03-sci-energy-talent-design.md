@@ -1,3 +1,7 @@
+> 🗄️ **ARCHIVÉ** — Le système de Talents a été retiré le 2026-05-03. Voir [`2026-05-03-talents-removal-design.md`](2026-05-03-talents-removal-design.md) pour la migration.
+
+---
+
 # Talent: Amplification Energétique (`sci_energy`)
 
 ## Résumé

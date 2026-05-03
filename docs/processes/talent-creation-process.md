@@ -1,3 +1,7 @@
+> 🗄️ **ARCHIVÉ** — Le système de Talents a été retiré le 2026-05-03. Voir [`../superpowers/specs/2026-05-03-talents-removal-design.md`](../superpowers/specs/2026-05-03-talents-removal-design.md) pour la migration.
+
+---
+
 # Process de création d'un talent
 
 Ce process est utilisé à chaque fois qu'on veut créer un nouveau talent pour le flagship.
