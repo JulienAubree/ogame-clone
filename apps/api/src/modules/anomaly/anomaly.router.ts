@@ -37,6 +37,10 @@ export function createAnomalyRouter(anomalyService: ReturnType<typeof createAnom
         return anomalyService.activateEpic(ctx.userId!, input.hullId);
       }),
 
+    useRepairCharge: protectedProcedure.mutation(async ({ ctx }) => {
+      return anomalyService.useRepairCharge(ctx.userId!);
+    }),
+
     history: protectedProcedure
       .input(z.object({ limit: z.number().int().min(1).max(50).default(10) }).optional())
       .query(async ({ ctx, input }) => {

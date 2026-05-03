@@ -104,6 +104,52 @@ export function createAnomalyService(
     },
 
     /**
+     * V4 (2026-05-03) : use 1 repair charge — restores +N% hull on the flagship
+     * (clamped at 1.0). Refused if no charges left, no active anomaly, or hull
+     * already at 1.0.
+     */
+    async useRepairCharge(userId: string) {
+      const config = await gameConfigService.getFullConfig();
+      const repairPct = Number(config.universe.anomaly_repair_charge_hull_pct) || 0.30;
+
+      return await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}::text))`);
+
+        const [active] = await tx.select().from(anomalies)
+          .where(and(eq(anomalies.userId, userId), eq(anomalies.status, 'active')))
+          .for('update').limit(1);
+        if (!active) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Aucune anomalie active' });
+        }
+        if (active.repairChargesCurrent <= 0) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Aucune charge de réparation' });
+        }
+
+        const fleet = (active.fleet ?? {}) as Record<string, { count: number; hullPercent: number }>;
+        const currentHp = fleet.flagship?.hullPercent ?? 1.0;
+        if (currentHp >= 1.0) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Flagship à pleine santé' });
+        }
+
+        const newHp = Math.min(1.0, currentHp + repairPct);
+        const newFleet = {
+          ...fleet,
+          flagship: { count: 1, hullPercent: newHp },
+        };
+
+        await tx.update(anomalies).set({
+          fleet: newFleet,
+          repairChargesCurrent: sql`${anomalies.repairChargesCurrent} - 1`,
+        }).where(eq(anomalies.id, active.id));
+
+        return {
+          newHullPercent: newHp,
+          remainingCharges: active.repairChargesCurrent - 1,
+        };
+      });
+    },
+
+    /**
      * V4 (2026-05-03) : flagship-only engagement.
      *
      * No more escort selection — the flagship is the only ship engaged.
