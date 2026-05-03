@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { getBuildingIllustrationUrl } from '@/lib/assets';
 import { useGameConfig } from '@/hooks/useGameConfig';
+import { HeroAtmosphere } from './HeroAtmosphere';
 
 interface FacilityHeroProps {
   buildingId: string;
@@ -28,20 +29,10 @@ export function FacilityHero({
   children,
 }: FacilityHeroProps) {
   const { data: gameConfig } = useGameConfig();
+  const heroImage = getBuildingIllustrationUrl(gameConfig, buildingId, planetClassId, 'full');
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-0">
-        <img
-          src={getBuildingIllustrationUrl(gameConfig, buildingId, planetClassId, 'full')}
-          alt=""
-          className="h-full w-full object-cover opacity-40 blur-sm scale-110"
-          decoding="async"
-          fetchPriority="low"
-          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/50 via-slate-950/70 to-purple-950/50" />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+      <HeroAtmosphere imageUrl={heroImage} variant="cyan-purple" />
 
       <div className="relative px-5 pt-8 pb-6 lg:px-8 lg:pt-10 lg:pb-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">

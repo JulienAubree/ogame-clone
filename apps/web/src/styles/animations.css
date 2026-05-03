@@ -122,3 +122,108 @@
     animation: none;
   }
 }
+
+/* ==========================================================================
+   Cinematic hero / landing background animations
+   ========================================================================== */
+
+/* Slow Ken Burns: zoom + drift to make a still image feel alive. */
+@keyframes hero-kenburns {
+  0%   { transform: scale(1.05) translate(0, 0); }
+  50%  { transform: scale(1.12) translate(-1.5%, -1%); }
+  100% { transform: scale(1.05) translate(0, 0); }
+}
+.animate-hero-kenburns {
+  animation: hero-kenburns 28s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Twinkling stars — soft pulse to give the starfield depth. */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1;    }
+}
+.animate-star-twinkle {
+  animation: star-twinkle 4s ease-in-out infinite;
+}
+.animate-star-twinkle-slow {
+  animation: star-twinkle 7s ease-in-out infinite;
+}
+.animate-star-twinkle-fast {
+  animation: star-twinkle 2.4s ease-in-out infinite;
+}
+
+/* Shooting star: streak that crosses the viewport occasionally. The
+   movement uses translate so the parent's overflow:hidden clips off-screen. */
+@keyframes shooting-star {
+  0%   { transform: translate(-10%, -10%) rotate(20deg); opacity: 0; }
+  6%   { opacity: 1; }
+  20%  { transform: translate(60%, 40%) rotate(20deg); opacity: 0; }
+  100% { transform: translate(60%, 40%) rotate(20deg); opacity: 0; }
+}
+.animate-shooting-star {
+  animation: shooting-star 9s ease-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Nebula breathing: soft pulse on the colored radial blobs. */
+@keyframes nebula-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.05); }
+}
+.animate-nebula-breathe {
+  animation: nebula-breathe 12s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Light beam sweep across the hero. */
+@keyframes hero-beam {
+  0%   { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
+  20%  { opacity: 0.18; }
+  60%  { opacity: 0.18; }
+  80%  { transform: translateX(120%) skewX(-20deg); opacity: 0; }
+  100% { transform: translateX(120%) skewX(-20deg); opacity: 0; }
+}
+.animate-hero-beam {
+  animation: hero-beam 14s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Slow vignette pulse to make the darken feel alive. */
+@keyframes hero-vignette-pulse {
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.78; }
+}
+.animate-hero-vignette {
+  animation: hero-vignette-pulse 9s ease-in-out infinite;
+}
+
+/* Title halo pulsation — gives the EXILIUM wordmark a slow breath. */
+@keyframes title-halo {
+  0%, 100% {
+    text-shadow: 0 0 30px hsla(200, 100%, 70%, 0.18),
+                 0 0 60px hsla(200, 100%, 70%, 0.08);
+  }
+  50% {
+    text-shadow: 0 0 50px hsla(200, 100%, 80%, 0.32),
+                 0 0 90px hsla(200, 100%, 80%, 0.14);
+  }
+}
+.animate-title-halo {
+  animation: title-halo 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-kenburns,
+  .animate-star-twinkle,
+  .animate-star-twinkle-slow,
+  .animate-star-twinkle-fast,
+  .animate-shooting-star,
+  .animate-nebula-breathe,
+  .animate-hero-beam,
+  .animate-hero-vignette,
+  .animate-title-halo {
+    animation: none;
+  }
+}

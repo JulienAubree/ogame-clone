@@ -6,6 +6,7 @@ import { FlagshipIcon } from '@/lib/icons';
 import { MineraiIcon, SiliciumIcon, HydrogeneIcon, EnergieIcon } from '@/components/common/ResourceIcons';
 import { getPlanetImageUrl } from '@/lib/assets';
 import { EntityDetailOverlay } from '@/components/common/EntityDetailOverlay';
+import { HeroAtmosphere } from '@/components/common/HeroAtmosphere';
 import { AbandonColonyModal, type AbandonModalPlanet } from '@/components/empire/AbandonColonyModal';
 import { trpc } from '@/trpc';
 
@@ -107,23 +108,15 @@ export function OverviewHero({ planet, flagshipOnPlanet, planetTypeName, planetT
   }
   const hasBonuses = Object.keys(cumulatedBonuses).length > 0;
 
+  const planetImageUrl =
+    planet.planetClassId && planet.planetImageIndex != null
+      ? getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)
+      : null;
+
   return (
     <>
       <div className="relative overflow-hidden">
-        {/* Background image */}
-        <div className="absolute inset-0">
-          {planet.planetClassId && planet.planetImageIndex != null ? (
-            <img
-              src={getPlanetImageUrl(planet.planetClassId, planet.planetImageIndex)}
-              alt=""
-              className="h-full w-full object-cover opacity-40 blur-sm scale-110"
-              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-indigo-950 via-purple-900/60 to-slate-950" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-        </div>
+        <HeroAtmosphere imageUrl={planetImageUrl} variant="cyan-purple" />
 
         {/* Actions menu (top-right) */}
         {hasMenu && (

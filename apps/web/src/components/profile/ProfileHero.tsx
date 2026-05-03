@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HeroAtmosphere } from '@/components/common/HeroAtmosphere';
 import { AllianceTagBadge } from './AllianceTagBadge';
 
 const PLAYSTYLE_LABELS: Record<string, string> = {
@@ -71,20 +72,7 @@ export function ProfileHero({
 
   return (
     <div className="relative overflow-hidden">
-      {/* Background image (blurred avatar) with gradient fallback */}
-      <div className="absolute inset-0">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt=""
-            className="h-full w-full object-cover opacity-40 blur-sm scale-110"
-            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-indigo-950 via-purple-900/60 to-slate-950" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-      </div>
+      <HeroAtmosphere imageUrl={avatarUrl} variant="indigo" />
 
       {/* Alliance monogram (top-right corner) */}
       {allianceTag && (
