@@ -49,7 +49,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'signal-detresse',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'early',
     image: '',
     title: 'Signal de Détresse',
@@ -103,7 +103,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'station-abandonnee',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'early',
     image: '',
     title: 'Station Abandonnée',
@@ -133,7 +133,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'marchand-nomade',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'early',
     image: '',
     title: 'Marchand Nomade',
@@ -186,7 +186,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'coque-fantome',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'early',
     image: '',
     title: 'Coque Fantôme',
@@ -238,7 +238,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'pirate-renegat',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'early',
     image: '',
     title: 'Pirate Rénégat',
@@ -287,7 +287,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   // ─── MID (depths 8-14) ─────────────────────────────────────────────────────
   {
     id: 'flotte-fantome',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'mid',
     image: '',
     title: 'Flotte Fantôme',
@@ -317,7 +317,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'base-pirate-effondree',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'mid',
     image: '',
     title: 'Base Pirate Effondrée',
@@ -341,7 +341,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'marchand-anomal',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'mid',
     image: '',
     title: 'Marchand Anomal',
@@ -400,7 +400,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'embuscade-pirate',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'mid',
     image: '',
     title: 'Embuscade Pirate',
@@ -476,7 +476,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'convoi-perdu',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'mid',
     image: '',
     title: 'Convoi Perdu',
@@ -500,7 +500,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'mineur-renegat',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'mid',
     image: '',
     title: 'Mineur Rénégat',
@@ -548,7 +548,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   // ─── DEEP (depths 15-20) ───────────────────────────────────────────────────
   {
     id: 'sanctuaire-ancien',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'deep',
     image: '',
     title: 'Sanctuaire Ancien',
@@ -571,7 +571,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'flotte-cimetiere',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'deep',
     image: '',
     title: 'Flotte Cimetière',
@@ -619,7 +619,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'fantome-imperial',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'deep',
     image: '',
     title: 'Fantôme Impérial',
@@ -643,7 +643,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'convoi-marchand-prospere',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'deep',
     image: '',
     title: 'Convoi Marchand Prospère',
@@ -695,7 +695,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'gardien-eveille',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'deep',
     image: '',
     title: 'Gardien Éveillé',
@@ -748,7 +748,7 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
   },
   {
     id: 'reine-pirate',
-    enabled: true,
+    enabled: false, // V4 (2026-05-03) : outcome shipsGain/shipsLoss incompatible flagship-only — à refondre en V5
     tier: 'deep',
     image: '',
     title: 'Reine Pirate',
