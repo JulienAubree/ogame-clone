@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { anomalies, flagships, moduleDefinitions, planets, planetShips, users, userExilium, exiliumLog, userResearch } from '@exilium/db';
 import type { Database } from '@exilium/db';
@@ -1253,6 +1253,31 @@ export function createAnomalyService(
         .where(and(eq(anomalies.userId, userId), inArray(anomalies.status, ['completed', 'wiped'])))
         .orderBy(desc(anomalies.completedAt))
         .limit(limit);
+    },
+
+    /**
+     * V5-Tiers (2026-05-04) : leaderboard PvE basé sur le palier max complété.
+     * Tiebreakers : level pilote DESC, puis xp DESC.
+     */
+    async getLeaderboard(limit: number) {
+      const rows = await db.select({
+        username: users.username,
+        maxTierCompleted: flagships.maxTierCompleted,
+        maxTierUnlocked: flagships.maxTierUnlocked,
+        level: flagships.level,
+        xp: flagships.xp,
+        hullId: flagships.hullId,
+      })
+        .from(flagships)
+        .innerJoin(users, eq(users.id, flagships.userId))
+        .where(gt(flagships.maxTierCompleted, 0))
+        .orderBy(
+          desc(flagships.maxTierCompleted),
+          desc(flagships.level),
+          desc(flagships.xp),
+        )
+        .limit(limit);
+      return { entries: rows };
     },
   };
 }

@@ -46,5 +46,11 @@ export function createAnomalyRouter(anomalyService: ReturnType<typeof createAnom
       .query(async ({ ctx, input }) => {
         return anomalyService.history(ctx.userId!, input?.limit);
       }),
+
+    leaderboard: protectedProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(100).default(50) }).optional())
+      .query(async ({ input }) => {
+        return anomalyService.getLeaderboard(input?.limit ?? 50);
+      }),
   });
 }
