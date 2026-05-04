@@ -3,7 +3,7 @@ import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { useToastStore } from '@/stores/toast.store';
 import { Button } from '@/components/ui/button';
-import { Zap, Sparkles, Wrench, X } from 'lucide-react';
+import { Zap, Sparkles, Wrench, X, Star } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -77,6 +77,16 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
           <div className="flex justify-between"><span className="text-gray-500">Hull</span><span>{effectiveStats?.hull ?? flagship.hull}</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Bouclier</span><span>{effectiveStats?.shield ?? flagship.shield}</span></div>
           <div className="flex justify-between"><span className="text-gray-500">Armes</span><span>{effectiveStats?.weapons ?? flagship.weapons}</span></div>
+          <div className="flex justify-between">
+            <span className="text-gray-500 flex items-center gap-1.5">
+              <Star className="h-3 w-3" /> Niveau pilote
+            </span>
+            <span>
+              {(flagship as { level?: number }).level ?? 1}
+              {' '}
+              (×{(1 + ((flagship as { level?: number }).level ?? 1) * 0.05).toFixed(2)} stats)
+            </span>
+          </div>
           <div className="flex justify-between items-center pt-1 border-t border-panel-border/50">
             <span className="text-gray-500 flex items-center gap-1.5"><Wrench className="h-3 w-3" /> Charges réparation</span>
             <span>{repairCharges}/{repairCharges}</span>

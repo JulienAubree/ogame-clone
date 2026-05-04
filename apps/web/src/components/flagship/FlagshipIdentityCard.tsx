@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { Star } from 'lucide-react';
+import { xpRequiredForLevel } from '@exilium/game-engine';
 import { trpc } from '@/trpc';
 import { cn } from '@/lib/utils';
 import { getFlagshipImageUrl, getPlanetImageUrl } from '@/lib/assets';
@@ -72,6 +74,15 @@ export function FlagshipIdentityCard({
     color: 'text-muted-foreground',
     dot: 'bg-muted-foreground',
   };
+
+  const maxLevel = 60;
+  const flagshipLevel = (flagship as { level?: number }).level ?? 1;
+  const flagshipXp = (flagship as { xp?: number }).xp ?? 0;
+  const currentLevelXp = xpRequiredForLevel(flagshipLevel);
+  const nextLevelXp = flagshipLevel >= maxLevel ? flagshipXp : xpRequiredForLevel(flagshipLevel + 1);
+  const xpProgress = flagshipLevel >= maxLevel
+    ? 1
+    : (flagshipXp - currentLevelXp) / (nextLevelXp - currentLevelXp);
 
   function startEditName() {
     setName(flagship.name);
@@ -201,6 +212,29 @@ export function FlagshipIdentityCard({
           <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
             <Link to="/fleet" className="text-[11px] text-primary/70 hover:text-primary transition-colors">Flotte</Link>
             <Link to="/fleet/movements" className="text-[11px] text-primary/70 hover:text-primary transition-colors">Mouvements</Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Level + XP bar */}
+      <div className="flex items-center gap-3 text-sm border-t border-panel-border pt-3 mt-3">
+        <div className="flex items-center gap-1.5">
+          <Star className="h-4 w-4 text-yellow-400" />
+          <span className="font-bold">Niveau {flagshipLevel}</span>
+          <span className="text-gray-500">/ {maxLevel}</span>
+        </div>
+        <div className="flex-1">
+          <div className="h-1.5 bg-panel-light/50 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-yellow-400/80 transition-all"
+              style={{ width: `${Math.round(xpProgress * 100)}%` }}
+            />
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            {flagshipLevel >= maxLevel
+              ? `${flagshipXp.toLocaleString()} XP (max)`
+              : `${flagshipXp.toLocaleString()} / ${nextLevelXp.toLocaleString()} XP`
+            }
           </div>
         </div>
       </div>

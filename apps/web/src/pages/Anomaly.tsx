@@ -94,6 +94,17 @@ export default function Anomaly() {
       utils.planet.list.invalidate();
       utils.shipyard.empireOverview.invalidate();
 
+      // XP toasts — defensive casts in case tRPC inference doesn't expose
+      // the new fields yet.
+      const xpGained = (data as { xpGained?: number }).xpGained;
+      const levelUp = (data as { levelUp?: { newLevel: number } | null }).levelUp;
+      if (xpGained && xpGained > 0) {
+        addToast(`✨ +${xpGained} XP`, 'success');
+      }
+      if (levelUp) {
+        addToast(`🌟 NIVEAU ${levelUp.newLevel} atteint !`, 'success');
+      }
+
       // In-run drop toast (per-combat module dropped on a survived combat).
       // Translated rarity to match the modal labelling.
       if (data.outcome === 'survived' && data.droppedModule) {
@@ -181,6 +192,18 @@ export default function Anomaly() {
       utils.planet.list.invalidate();
       utils.shipyard.empireOverview.invalidate();
       addToast('🛑 Retour avec votre butin. Anomalie scellée.', 'success');
+
+      // XP toasts — defensive casts in case tRPC inference doesn't expose
+      // the new fields yet.
+      const xpGained = (data as { xpGained?: number }).xpGained;
+      const levelUp = (data as { levelUp?: { newLevel: number } | null }).levelUp;
+      if (xpGained && xpGained > 0) {
+        addToast(`✨ +${xpGained} XP`, 'success');
+      }
+      if (levelUp) {
+        addToast(`🌟 NIVEAU ${levelUp.newLevel} atteint !`, 'success');
+      }
+
       setLootSummary({
         drops: data.finalDrops ?? [],
         resources: {
