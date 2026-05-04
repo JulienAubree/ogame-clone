@@ -515,6 +515,42 @@ describe('multi-battery weapons', () => {
     expect(destroyedRound1).toBeLessThanOrEqual(6);    // max 3 + 3 chainkills
   });
 
+  it('damageMultiplier scales battery damage with the shooter baseWeaponDamage (V8.1)', () => {
+    // Batterie A : damage absolu 5 ×1 (V7 fallback)
+    // Batterie B : damageMultiplier 2.0 ×1 — devrait faire 100 × 2 = 200 dmg/shot
+    // Cible "paper" (200 hull, no shield/armor) → 1 hit B = mort, 1 hit A = -5 hull seulement.
+    const configs: Record<string, ShipCombatConfig> = {
+      ...SHIP_CONFIGS,
+      multTester: {
+        shipType: 'multTester', categoryId: 'heavy',
+        baseShield: 0, baseArmor: 0, baseHull: 1000,
+        baseWeaponDamage: 100, // référence pour le multiplier
+        baseShotCount: 1,
+        weapons: [
+          { damage: 5, shots: 1, targetCategory: 'medium' },              // V7 absolu = 5
+          { damage: 0, damageMultiplier: 2.0, shots: 1, targetCategory: 'medium' }, // V8.1 = 100×2 = 200
+        ],
+      },
+      paperHull: {
+        shipType: 'paperHull', categoryId: 'medium',
+        baseShield: 0, baseArmor: 0, baseHull: 200,
+        baseWeaponDamage: 0, baseShotCount: 0,
+        weapons: [],
+      },
+    };
+    const r = simulateCombat(makeInput({
+      attackerFleet: { multTester: 1 },
+      defenderFleet: { paperHull: 5 },
+      shipConfigs: configs,
+      shipIds: new Set([...SHIP_IDS, 'multTester', 'paperHull']),
+      rngSeed: 1042,
+    }));
+    // Round 1 : la batterie B (200 dmg) one-shot 1 cible (200 HP), la batterie A (5 dmg) ne fait que la rayer.
+    // Donc exactement 1 destruction au round 1.
+    const destroyedRound1 = 5 - (r.rounds[0].defenderShips.paperHull ?? 0);
+    expect(destroyedRound1).toBe(1);
+  });
+
   it('multi-battery: each weapon selects its own target independently', () => {
     // Frégate: bat1 (12×1 medium) + bat2 (6×2 light).
     // Contre 1 frégate (medium) + 3 intercepteurs (light) : les deux batteries ont chacune leurs cibles.

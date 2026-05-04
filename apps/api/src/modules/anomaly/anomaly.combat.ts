@@ -121,9 +121,19 @@ async function loadFlagshipCombatConfig(
   const moduleBatteries: WeaponBattery[] = [];
   for (const m of modulesContext?.weaponModules ?? []) {
     if (m.effect.type !== 'weapon') continue;
-    const p = m.effect.profile;
+    const p = m.effect.profile as {
+      damage: number;
+      damageMultiplier?: number;
+      shots: number;
+      targetCategory?: string;
+      rafale?: { category?: string; count: number };
+      hasChainKill?: boolean;
+    };
     moduleBatteries.push({
-      damage: p.damage,
+      damage: p.damage, // fallback absolu (V7) — utilisé si damageMultiplier absent
+      // V8.1 — propagation du multiplicateur. Si présent, le combat consomme
+      // baseWeaponDamage × damageMultiplier au lieu du `damage` absolu.
+      ...(p.damageMultiplier !== undefined ? { damageMultiplier: p.damageMultiplier } : {}),
       shots: p.shots,
       targetCategory: p.targetCategory ?? 'medium',
       ...(p.rafale && p.rafale.category

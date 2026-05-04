@@ -1,6 +1,18 @@
 export interface UnitWeaponProfile {
   damage: number;
   shots: number;
+  /**
+   * V8.1 — Multiplicateur du damage du tireur (le flagship dans le cas
+   * des weapon modules). Si présent, le combat consomme
+   * `tireurBaseDamage × damageMultiplier` au lieu du `damage` absolu.
+   * Permet aux modules d'arme de scaler avec l'armement principal sans
+   * re-tuner les valeurs à chaque progression de niveau / recherche /
+   * passive boost.
+   *
+   * Le champ `damage` reste défini comme fallback (V7 et avant) et comme
+   * valeur d'affichage par défaut quand on n'a pas de tireur de référence.
+   */
+  damageMultiplier?: number;
   /** Target category. When all of a unit's weapons share the same category,
    *  the unit is treated as a specialist (FP penalty). */
   targetCategory?: string;

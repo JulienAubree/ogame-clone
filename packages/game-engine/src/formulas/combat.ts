@@ -18,6 +18,15 @@ export interface ShipCategory {
 export interface WeaponProfile {
   damage: number;
   shots: number;
+  /**
+   * V8.1 — multiplicateur du damage du tireur. Quand présent, le damage
+   * effectif d'une battery devient `tireur.baseWeaponDamage × damageMultiplier`
+   * (cf. createUnits ci-dessous). Permet aux weapon modules du flagship de
+   * scaler automatiquement avec l'armement principal (level / research /
+   * passive boost) sans hardcoder une valeur absolue par module.
+   * Si absent, comportement V7 : `damage` est utilisé tel quel.
+   */
+  damageMultiplier?: number;
   targetCategory: string;
   rafale?: { category: string; count: number };
   hasChainKill?: boolean;
@@ -180,8 +189,19 @@ function createUnits(
     // Build the weapon profile list. If the config has explicit batteries, use them
     // (applying the weapons research multiplier to each battery's damage). Otherwise
     // synthesize a single battery from the legacy baseWeaponDamage/baseShotCount fields.
+    //
+    // V8.1 : si une battery déclare un `damageMultiplier`, son damage effectif
+    // est `config.baseWeaponDamage × damageMultiplier` au lieu du `damage` absolu.
+    // Ça permet aux weapon modules du flagship de suivre la progression de
+    // l'armement principal (level × hull bonus × passives × research) sans
+    // re-tuner les valeurs absolues à chaque palier.
     const profiles: WeaponProfile[] = config.weapons && config.weapons.length > 0
-      ? config.weapons.map(w => ({ ...w, damage: w.damage * multipliers.weapons }))
+      ? config.weapons.map(w => {
+          const baseDamage = w.damageMultiplier !== undefined
+            ? config.baseWeaponDamage * w.damageMultiplier
+            : w.damage;
+          return { ...w, damage: baseDamage * multipliers.weapons };
+        })
       : [{
           damage: config.baseWeaponDamage * multipliers.weapons,
           shots: config.baseShotCount,
