@@ -106,11 +106,12 @@ function ArsenalSlot({ rarity, module, onClick, onUnequip }: SlotProps) {
         onClick={module ? onUnequip : onClick}
         aria-label={module ? `${module.name} — clic pour déséquiper` : `Clic pour équiper une arme ${RARITY_LABEL[rarity].toLowerCase()}`}
         className={cn(
-          'group relative h-32 sm:h-36 w-full rounded-md border-2 transition-all',
-          'flex flex-col items-stretch justify-between p-2',
-          module
-            ? 'bg-gradient-to-br from-stone-900/80 via-amber-950/40 to-orange-950/40 hover:from-stone-900 hover:to-orange-900/50'
-            : 'border-dashed bg-stone-950/40 hover:bg-stone-900/40',
+          'group relative h-32 sm:h-36 w-full rounded-md border-2 transition-all overflow-hidden',
+          module && !invalid
+            ? 'bg-stone-950/40 hover:bg-stone-900/40'
+            : 'flex flex-col items-stretch justify-between p-2',
+          !module && 'border-dashed bg-stone-950/40 hover:bg-stone-900/40',
+          invalid && 'bg-gradient-to-br from-stone-900/80 via-amber-950/40 to-orange-950/40',
           invalid ? 'border-rose-500/60' : RARITY_BORDER[rarity],
           isEpic && module && !invalid && 'ring-1 ring-orange-500/30',
         )}
@@ -130,43 +131,48 @@ function ArsenalSlot({ rarity, module, onClick, onUnequip }: SlotProps) {
             </>
           ) : (
             <>
-              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-full bg-rose-500/80 p-0.5">
+              {/* Full-bleed icon : image (or fallback Crosshair) couvre tout le slot */}
+              {module.image ? (
+                <img
+                  src={`${module.image}-thumb.webp`}
+                  alt={module.name}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-stone-950/40">
+                  <Crosshair className={cn('h-12 w-12 sm:h-14 sm:w-14', RARITY_ACCENT_TEXT[rarity])} />
+                </div>
+              )}
+
+              {/* Cross unequip top-right (au-dessus du gradient) */}
+              <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity rounded-full bg-rose-500/90 p-0.5 shadow-md">
                 <X className="h-3 w-3 text-white" />
               </div>
-              <div className="flex-1 flex items-center justify-center min-h-0">
-                {module.image ? (
-                  <img
-                    src={`${module.image}-thumb.webp`}
-                    alt={module.name}
-                    className="h-12 w-12 rounded object-cover"
-                  />
-                ) : (
-                  <Crosshair className={cn('h-7 w-7', RARITY_ACCENT_TEXT[rarity])} />
-                )}
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-[10px] font-semibold text-foreground/95 text-center leading-tight line-clamp-2">
+
+              {/* Bottom overlay : nom + badges, fond gradient pour lisibilité */}
+              <div className="absolute inset-x-0 bottom-0 z-10 px-1.5 pt-3 pb-1.5 bg-gradient-to-t from-stone-950 via-stone-950/85 to-transparent space-y-0.5">
+                <div className="text-[10px] font-semibold text-foreground text-center leading-tight line-clamp-2">
                   {module.name}
                 </div>
                 {profile && (
                   <div className="flex flex-wrap items-center justify-center gap-0.5">
                     {profile.shots !== undefined && (
-                      <span className="rounded bg-orange-900/50 border border-orange-500/30 text-orange-200 text-[8px] font-mono px-1 py-0">
+                      <span className="rounded bg-orange-900/70 border border-orange-500/40 text-orange-200 text-[8px] font-mono px-1 py-0">
                         ×{profile.shots}
                       </span>
                     )}
                     {profile.targetCategory && (
-                      <span className="rounded bg-stone-900/60 border border-stone-500/40 text-stone-200 text-[8px] font-mono px-1 py-0">
+                      <span className="rounded bg-stone-900/80 border border-stone-500/50 text-stone-200 text-[8px] font-mono px-1 py-0">
                         vs {formatTargetCategory(profile.targetCategory)}
                       </span>
                     )}
                     {profile.rafale && (
-                      <span className="rounded bg-amber-900/50 border border-amber-500/40 text-amber-200 text-[8px] font-mono px-1 py-0" title={`Rafale ×${profile.rafale.count}${profile.rafale.category ? ` vs ${formatTargetCategory(profile.rafale.category)}` : ''}`}>
+                      <span className="rounded bg-amber-900/70 border border-amber-500/50 text-amber-200 text-[8px] font-mono px-1 py-0" title={`Rafale ×${profile.rafale.count}${profile.rafale.category ? ` vs ${formatTargetCategory(profile.rafale.category)}` : ''}`}>
                         rafale
                       </span>
                     )}
                     {profile.hasChainKill && (
-                      <span className="rounded bg-rose-900/50 border border-rose-500/40 text-rose-200 text-[8px] font-mono px-1 py-0" title="Chaîne de kill : tir bonus à chaque destruction">
+                      <span className="rounded bg-rose-900/70 border border-rose-500/50 text-rose-200 text-[8px] font-mono px-1 py-0" title="Chaîne de kill : tir bonus à chaque destruction">
                         chain
                       </span>
                     )}

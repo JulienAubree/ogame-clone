@@ -4,6 +4,53 @@ import { cn } from '@/lib/utils';
 import { ModuleTooltip } from './ModuleTooltip';
 import { getHullCardStyles } from './hullCardStyles';
 
+/** V8.5 — Thumbnail icon utilisé dans la liste d'inventaire.
+ *  - Image module si dispo (rendered en object-cover, dot rareté top-left)
+ *  - Sinon icône Crosshair pour les armes / Sparkles pour les passives,
+ *    teintée selon la rareté. Carré 32×32 fixe, ne prend pas plus de place
+ *    que les boutons à côté. */
+const RARITY_DOT_THUMB: Record<string, string> = {
+  common: 'bg-gray-400',
+  rare:   'bg-blue-400',
+  epic:   'bg-violet-400 shadow-[0_0_4px_rgba(167,139,250,0.5)]',
+};
+
+const RARITY_TINT: Record<string, string> = {
+  common: 'text-gray-300',
+  rare:   'text-blue-300',
+  epic:   'text-violet-300',
+};
+
+function ModuleThumbnail({ module }: { module: InventoryItem }) {
+  const isWeapon = (module.kind ?? 'passive') === 'weapon';
+  return (
+    <div className="relative shrink-0 h-9 w-9 rounded-md overflow-hidden bg-card/40 border border-border/40">
+      {module.image ? (
+        <img
+          src={`${module.image}-thumb.webp`}
+          alt={module.name}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
+          {isWeapon ? (
+            <Crosshair className={cn('h-4 w-4', RARITY_TINT[module.rarity] ?? 'text-foreground/60')} />
+          ) : (
+            <Sparkles className={cn('h-4 w-4', RARITY_TINT[module.rarity] ?? 'text-foreground/60')} />
+          )}
+        </div>
+      )}
+      <span
+        className={cn(
+          'absolute top-0.5 left-0.5 h-1.5 w-1.5 rounded-full',
+          RARITY_DOT_THUMB[module.rarity] ?? RARITY_DOT_THUMB.common,
+        )}
+        aria-hidden
+      />
+    </div>
+  );
+}
+
 interface InventoryItem {
   moduleId: string;
   count: number;
@@ -394,12 +441,17 @@ function ItemList({
               placement="right"
               wrapperClassName="flex-1 min-w-0 block"
             >
-              <div className="flex-1 min-w-0 cursor-help">
-                <div className="text-xs font-semibold text-foreground/90 truncate flex items-center gap-1">
-                  {m.name}
-                  {m.count > 1 && <span className="text-[9px] text-muted-foreground">×{m.count}</span>}
+              <div className="flex flex-1 min-w-0 cursor-help items-center gap-2">
+                {/* Thumbnail icon */}
+                <ModuleThumbnail module={m} />
+                {/* Name + description */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-semibold text-foreground/90 truncate flex items-center gap-1">
+                    {m.name}
+                    {m.count > 1 && <span className="text-[9px] text-muted-foreground">×{m.count}</span>}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground truncate">{m.description}</div>
                 </div>
-                <div className="text-[10px] text-muted-foreground truncate">{m.description}</div>
               </div>
             </ModuleTooltip>
             <button
