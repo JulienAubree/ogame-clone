@@ -1,10 +1,36 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { useToastStore } from '@/stores/toast.store';
 import { Button } from '@/components/ui/button';
-import { Zap, Sparkles, Wrench, X, Star, Trophy } from 'lucide-react';
+import { Zap, Sparkles, Wrench, X, Star, Trophy, Crosshair } from 'lucide-react';
 import { resolveBonus } from '@exilium/game-engine';
+
+/**
+ * V7-WeaponProfiles : descriptor d'un weaponProfile pour le preview.
+ * Couvre à la fois le profil de coque (hull defaultWeaponProfile) et les
+ * profils des modules d'arme équipés.
+ */
+interface WeaponProfilePreview {
+  source: 'hull' | 'module';
+  label: string;
+  shots?: number;
+  targetCategory?: string;
+  rafale?: { category?: string; count: number };
+  hasChainKill?: boolean;
+}
+
+function formatWeaponProfile(p: WeaponProfilePreview): string {
+  const parts: string[] = [];
+  if (p.shots !== undefined) parts.push(`${p.shots} tir${p.shots > 1 ? 's' : ''}`);
+  if (p.targetCategory) parts.push(`anti-${p.targetCategory}`);
+  if (p.rafale) {
+    const cat = p.rafale.category ? ` vs ${p.rafale.category}` : '';
+    parts.push(`rafale ×${p.rafale.count}${cat}`);
+  }
+  if (p.hasChainKill) parts.push('chainKill');
+  return parts.join(' · ');
+}
 
 interface Props {
   open: boolean;
@@ -20,6 +46,9 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
   const { data: gameConfig } = useGameConfig();  // wraps trpc.gameConfig.getAll
   const { data: exilium } = trpc.exilium.getBalance.useQuery(undefined, { enabled: open });
   const { data: researchData } = trpc.research.list.useQuery(undefined, { enabled: open });
+  // V7-WeaponProfiles : on a besoin de la liste complète des modules pour
+  // résoudre les ids des weapon slots équipés (nom + profile).
+  const { data: allModules } = trpc.modules.list.useQuery(undefined, { enabled: open });
 
   const cost = Number(gameConfig?.universe?.anomaly_entry_cost_exilium) || 5;
   const repairCharges = Number(gameConfig?.universe?.anomaly_repair_charges_per_run) || 3;
@@ -64,6 +93,65 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
     },
     onError: (err) => addToast(err.message ?? 'Engage impossible', 'error'),
   });
+
+  // V7-WeaponProfiles : compose les weaponProfiles utilisés au combat :
+  //  - 1 profil "hull" (defaultWeaponProfile + shotCount du flagship)
+  //  - 1 profil par weapon module équipé (slots weaponEpic/Rare/Common)
+  // Les modules invalides (kind != 'weapon') sont silencieusement ignorés —
+  // côté Arsenal UI, ils sont déjà signalés en rouge.
+  // IMPORTANT : ce hook DOIT être appelé avant tout early-return — sinon
+  // l'ordre des hooks varie entre les renders et React lève une erreur.
+  const weaponProfiles = useMemo<WeaponProfilePreview[]>(() => {
+    const out: WeaponProfilePreview[] = [];
+    if (!flagship || !gameConfig) return out;
+
+    const hullId = (flagship as { hullId?: string | null }).hullId ?? '';
+    const hullsConfig = (gameConfig as { hulls?: Record<string, {
+      name?: string;
+      defaultWeaponProfile?: { targetCategory?: string; rafale?: { category?: string; count: number }; hasChainKill?: boolean };
+    }> }).hulls ?? {};
+    const hullCfg = hullsConfig[hullId];
+    const hullProfile = hullCfg?.defaultWeaponProfile;
+    const hullShotCount = Number((flagship as { effectiveStats?: { shotCount?: number } }).effectiveStats?.shotCount ?? (flagship as { shotCount?: number }).shotCount ?? 1);
+    out.push({
+      source: 'hull',
+      label: hullCfg?.name ?? 'Vaisseau base',
+      shots: hullShotCount,
+      targetCategory: hullProfile?.targetCategory ?? 'medium',
+      rafale: hullProfile?.rafale,
+      hasChainKill: hullProfile?.hasChainKill,
+    });
+
+    // Equipped weapon module ids on the flagship's current hull.
+    const moduleLoadout = ((flagship as { moduleLoadout?: unknown }).moduleLoadout ?? {}) as
+      Record<string, { weaponEpic?: string | null; weaponRare?: string | null; weaponCommon?: string | null } | undefined>;
+    const slot = hullId ? moduleLoadout[hullId] : undefined;
+    const weaponIds = [
+      slot?.weaponCommon ?? null,
+      slot?.weaponRare ?? null,
+      slot?.weaponEpic ?? null,
+    ].filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+    const byId = new Map<string, { name: string; effect?: unknown; kind?: string }>();
+    for (const m of (allModules ?? []) as Array<{ id: string; name: string; effect?: unknown; kind?: string }>) {
+      byId.set(m.id, { name: m.name, effect: m.effect, kind: m.kind });
+    }
+    for (const id of weaponIds) {
+      const mod = byId.get(id);
+      if (!mod) continue;
+      const effect = mod.effect as { type?: string; profile?: { shots?: number; targetCategory?: string; rafale?: { category?: string; count: number }; hasChainKill?: boolean } } | undefined;
+      if (!effect || effect.type !== 'weapon' || !effect.profile) continue; // module invalide — silently skip
+      out.push({
+        source: 'module',
+        label: mod.name,
+        shots: effect.profile.shots,
+        targetCategory: effect.profile.targetCategory,
+        rafale: effect.profile.rafale,
+        hasChainKill: effect.profile.hasChainKill,
+      });
+    }
+    return out;
+  }, [flagship, gameConfig, allModules]);
 
   if (!open) return null;
   if (!flagship) return null;
@@ -132,6 +220,34 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
             <span className="text-gray-500 flex items-center gap-1.5"><Wrench className="h-3 w-3" /> Charges réparation</span>
             <span>{repairCharges}/{repairCharges}</span>
           </div>
+        </div>
+
+        {/* V7-WeaponProfiles : preview des profils d'arme effectivement
+            utilisés au combat (coque + modules d'armes équipés). Le combat
+            tire avec chacun de ces profils par tour. */}
+        <div className="rounded-md border border-orange-500/30 bg-gradient-to-br from-orange-950/30 via-stone-900/50 to-amber-950/20 p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-orange-300">
+            <Crosshair className="h-3.5 w-3.5" /> Arsenal
+            <span className="ml-auto text-[10px] text-muted-foreground font-mono normal-case">
+              {weaponProfiles.length} profil{weaponProfiles.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <ul className="space-y-1 text-[11px]">
+            {weaponProfiles.length === 0 ? (
+              <li className="text-muted-foreground italic">Aucun profil — vérifier la configuration du flagship.</li>
+            ) : (
+              weaponProfiles.map((p, idx) => (
+                <li key={`${p.source}-${idx}`} className="flex items-baseline justify-between gap-2">
+                  <span className={p.source === 'hull' ? 'text-stone-200' : 'text-amber-200'}>
+                    {p.source === 'hull' ? 'Coque' : '·'} <span className="font-semibold">{p.label}</span>
+                  </span>
+                  <span className="text-muted-foreground font-mono text-[10px] truncate">
+                    {formatWeaponProfile(p)}
+                  </span>
+                </li>
+              ))
+            )}
+          </ul>
         </div>
 
         <div className="border-t border-panel-border pt-3 space-y-2">

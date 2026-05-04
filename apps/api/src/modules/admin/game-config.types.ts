@@ -69,6 +69,18 @@ export interface HullAbility {
   params?: Record<string, unknown>;
 }
 
+/**
+ * V7-WeaponProfiles : profil d'arme "de base" du hull. Combiné avec
+ * `weapons` / `shotCount` du flagship pour produire le tir de coque.
+ * Les modules d'arme équipés (kind='weapon') ajoutent des profils
+ * supplémentaires en plus de celui-ci.
+ */
+export interface HullDefaultWeaponProfile {
+  targetCategory?: string;
+  rafale?: { category?: string; count: number };
+  hasChainKill?: boolean;
+}
+
 export interface HullConfig {
   id: string;
   name: string;
@@ -83,6 +95,8 @@ export interface HullConfig {
   unavailabilitySeconds: number;
   cooldownSeconds: number;
   bonusLabels: string[];
+  /** V7-WeaponProfiles : profil d'arme de base du hull. Optional pour back-compat. */
+  defaultWeaponProfile?: HullDefaultWeaponProfile;
 }
 
 export interface BiomeConfig {
