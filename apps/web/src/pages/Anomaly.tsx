@@ -2,6 +2,9 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Zap, ChevronLeft, ChevronDown, Trophy, Skull, X, FileText, Sparkles, Star, Crosshair } from 'lucide-react';
 import { ModuleTooltip } from '@/components/flagship/ModuleTooltip';
+import {
+  HullIcon, ShieldIcon, ArmorIcon, WeaponsIcon,
+} from '@/components/entity-details/stat-components';
 import { resolveBonus } from '@exilium/game-engine';
 import { trpc } from '@/trpc';
 import { useGameConfig } from '@/hooks/useGameConfig';
@@ -235,7 +238,7 @@ export default function Anomaly() {
   const repairMutation = trpc.anomaly.useRepairCharge.useMutation({
     onSuccess: (data) => {
       addToast(
-        `🔧 Hull réparé : ${Math.round(data.newHullPercent * 100)}% (${data.remainingCharges} charges restantes)`,
+        `🔧 Coque réparée : ${Math.round(data.newHullPercent * 100)}% (${data.remainingCharges} charges restantes)`,
         'success',
       );
       utils.anomaly.current.invalidate();
@@ -652,9 +655,11 @@ function RunView({
 
       {/* ─── Status sidebar ─────────────────────────────────────────────── */}
       <aside className="space-y-3 min-w-0">
-        <RunFlagshipStatsCard />
+        <RunFlagshipStatsCard hullPercent={fleet['flagship']?.hullPercent ?? 1.0} />
         <RunFlagshipLoadoutCard equippedModules={equippedModules} />
-        <FleetCard fleet={fleet} totalShips={totalShips} gameConfig={gameConfig} />
+        {/* V8 sidebar refresh : FleetCard supprimé — l'info hull% a migré dans
+            RunFlagshipStatsCard. En mode anomaly flagship-only, lister "flagship ×1"
+            était redondant et exposait le mot anglais à l'écran. */}
         {hasLoot && (
           <LootCard
             minerai={minerai}
@@ -798,8 +803,8 @@ function RepairChargeButton({
   const canRepair = flagshipHp < 1.0;
   const disabled = !canRepair || repairPending || actionInFlight;
   const title = !canRepair
-    ? 'Vaisseau mère à pleine santé — réparation inutile'
-    : `Restaure +30% du hull (${chargesCurrent}/${chargesMax} charges restantes)`;
+    ? 'Vaisseau amiral à pleine santé — réparation inutile'
+    : `Restaure +30% de coque (${chargesCurrent}/${chargesMax} charges restantes)`;
 
   return (
     <div className="rounded-lg border border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 to-teal-950/20 p-3">
@@ -812,7 +817,7 @@ function RepairChargeButton({
             Réparation d'urgence
           </div>
           <div className="text-sm font-semibold text-emerald-100 truncate">
-            Hull vaisseau mère <span className="font-mono tabular-nums text-emerald-200/80">{hpPct}%</span>
+            Coque du vaisseau amiral <span className="font-mono tabular-nums text-emerald-200/80">{hpPct}%</span>
           </div>
         </div>
         <div className="shrink-0 text-xs font-mono tabular-nums text-emerald-200">
@@ -842,8 +847,13 @@ function RepairChargeButton({
  * player sees, in-run, the exact stats used by combat resolution :
  *   effectiveStats (level mult + hull passive bonuses + module modifiers)
  *   × research multipliers (weapons / shielding / armor)
+ *
+ * V8 sidebar refresh : design aligné sur `FlagshipStatsClearCard` (icônes
+ * SVG personnalisées, tones cohérents) + nom dynamique du vaisseau (au lieu
+ * du label "Flagship" en dur) + barre d'intégrité de coque intégrée (remplace
+ * la `FleetCard` redondante en mode flagship-only).
  */
-function RunFlagshipStatsCard() {
+function RunFlagshipStatsCard({ hullPercent }: { hullPercent: number }) {
   const { data: flagship } = trpc.flagship.get.useQuery();
   const { data: researchData } = trpc.research.list.useQuery();
   const { data: gameConfig } = useGameConfig();
@@ -869,34 +879,71 @@ function RunFlagshipStatsCard() {
   const finalWeapons = Math.round(baseWeapons * weaponsMult);
 
   const level = (flagship as { level?: number }).level ?? 1;
-  const hullName = flagship.hullConfig?.name ?? 'Flagship';
+  const flagshipName = flagship.name ?? 'Vaisseau amiral';
+  const hullName = flagship.hullConfig?.name ?? 'Coque inconnue';
+  const hullPct = Math.max(0, Math.min(100, Math.round(hullPercent * 100)));
 
   return (
-    <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm p-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-mono uppercase tracking-[0.2em] font-semibold text-violet-300 truncate">
+    <div className="rounded-lg border border-violet-500/20 bg-card/30 backdrop-blur-sm p-3 space-y-3">
+      {/* Header : nom du vaisseau + niveau, sous-ligne hull */}
+      <div className="space-y-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="text-sm font-bold text-foreground truncate">
+            {flagshipName}
+          </h3>
+          <span className="text-[10px] font-mono tabular-nums text-violet-300/80 flex items-center gap-1 shrink-0">
+            <Star className="h-3 w-3" /> Niv. {level}
+          </span>
+        </div>
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-mono truncate">
           {hullName}
-        </span>
-        <span className="text-[10px] font-mono tabular-nums text-muted-foreground/70 flex items-center gap-1 shrink-0">
-          <Star className="h-3 w-3" /> Niv. {level}
-        </span>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Coque</span>
-          <span className="font-mono tabular-nums">{finalHull}</span>
+
+      {/* Hull bar — intégrité coque vivante (récupère hullPercent de l'anomaly fleet) */}
+      <div className="space-y-1">
+        <div className="flex items-baseline justify-between text-[10px]">
+          <span className="text-muted-foreground">Intégrité de coque</span>
+          <span className="font-mono tabular-nums text-foreground/85">{hullPct}%</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Bouclier</span>
-          <span className="font-mono tabular-nums">{finalShield}</span>
+        <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+          <div
+            className={cn(
+              'h-full transition-all',
+              hullPct > 60 ? 'bg-emerald-500/70' : hullPct > 30 ? 'bg-amber-500/70' : 'bg-red-500/70',
+            )}
+            style={{ width: `${hullPct}%` }}
+          />
         </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Blindage</span>
-          <span className="font-mono tabular-nums">{finalArmor}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Armement</span>
-          <span className="font-mono tabular-nums">{finalWeapons}</span>
+      </div>
+
+      {/* Stat tiles — pattern aligné sur FlagshipStatsClearCard */}
+      <div className="grid grid-cols-2 gap-2">
+        <SidebarStatTile icon={<HullIcon size={14} />} label="Coque" value={finalHull} tone="text-slate-200" iconTone="text-slate-400" />
+        <SidebarStatTile icon={<ShieldIcon size={14} />} label="Bouclier" value={finalShield} tone="text-sky-300" iconTone="text-sky-400" />
+        <SidebarStatTile icon={<ArmorIcon size={14} />} label="Blindage" value={finalArmor} tone="text-amber-300" iconTone="text-amber-400" />
+        <SidebarStatTile icon={<WeaponsIcon size={14} />} label="Armement" value={finalWeapons} tone="text-red-300" iconTone="text-red-400" />
+      </div>
+    </div>
+  );
+}
+
+function SidebarStatTile({
+  icon, label, value, tone, iconTone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  tone: string;
+  iconTone: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-md bg-[#0f172a]/60 border border-panel-border/50 px-2 py-1.5">
+      <span className={cn('shrink-0', iconTone)}>{icon}</span>
+      <div className="min-w-0">
+        <div className="text-[9px] uppercase tracking-wide text-slate-500 truncate">{label}</div>
+        <div className={cn('text-sm font-bold font-mono tabular-nums leading-tight', tone)}>
+          {value.toLocaleString('fr-FR')}
         </div>
       </div>
     </div>
@@ -1044,7 +1091,7 @@ function RunFlagshipLoadoutCard({
                             <span className="text-[8px] font-mono text-amber-300" title="Rafale">R</span>
                           )}
                           {profile.hasChainKill && (
-                            <span className="text-[8px] font-mono text-rose-300" title="ChainKill">C</span>
+                            <span className="text-[8px] font-mono text-rose-300" title="Cascade">C</span>
                           )}
                         </span>
                       )}
@@ -1093,56 +1140,12 @@ function SidebarCard({
   );
 }
 
-function FleetCard({
-  fleet,
-  totalShips,
-  gameConfig,
-}: {
-  fleet: Record<string, FleetEntry>;
-  totalShips: number;
-  gameConfig: ReturnType<typeof useGameConfig>['data'];
-}) {
-  return (
-    <SidebarCard label="Flotte engagée" count={`${totalShips} VSX`} accent="violet">
-      {totalShips === 0 ? (
-        <div className="text-xs text-red-400 italic">Aucun vaisseau survivant.</div>
-      ) : (
-        <div className="space-y-1.5 text-xs">
-          {Object.entries(fleet).map(([shipId, entry]) => {
-            const def = gameConfig?.ships?.[shipId];
-            const hullPct = Math.round(entry.hullPercent * 100);
-            return (
-              <div key={shipId} className="flex items-center gap-2">
-                <span className="flex-1 truncate text-foreground/90">
-                  {def?.name ?? shipId}
-                </span>
-                <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
-                  ×{entry.count}
-                </span>
-                <div className="w-12 h-1 rounded-full bg-white/[0.04] overflow-hidden shrink-0">
-                  <div
-                    className={cn(
-                      'h-full transition-all',
-                      hullPct > 60
-                        ? 'bg-emerald-500/70'
-                        : hullPct > 30
-                          ? 'bg-amber-500/70'
-                          : 'bg-red-500/70',
-                    )}
-                    style={{ width: `${hullPct}%` }}
-                  />
-                </div>
-                <span className="w-7 text-right text-[10px] tabular-nums text-muted-foreground shrink-0">
-                  {hullPct}%
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </SidebarCard>
-  );
-}
+// V8 sidebar refresh : `FleetCard` supprimée. En mode anomaly flagship-only,
+// la liste "flagship ×1 · 82%" doublonnait avec la barre d'intégrité de
+// `RunFlagshipStatsCard` et exposait le mot anglais à l'écran (le seul ship
+// possible étant `flagship`, sans entrée dans `gameConfig.ships`, le label
+// retombait sur l'id). Le hull% est désormais propagé via
+// `RunFlagshipStatsCard hullPercent={fleet['flagship']?.hullPercent ?? 1.0}`.
 
 function LootCard({
   minerai,
@@ -1371,7 +1374,7 @@ function HistoryList({ history, compact = false }: { history: AnomalyRow[]; comp
                 </span>
                 <span className="flex-1 text-[11px] text-muted-foreground/70 truncate">
                   {totalLoot > 0 ? `+${formatNumber(totalLoot)} ressources` : ''}
-                  {totalShips > 0 ? ` · +${totalShips} ships` : ''}
+                  {totalShips > 0 ? ` · +${totalShips} vaisseaux` : ''}
                 </span>
               </div>
               {reportIds.length > 0 && (
