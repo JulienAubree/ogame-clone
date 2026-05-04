@@ -132,9 +132,19 @@ export function computeFleetFP(
 }
 
 /**
- * Scale a template fleet (ratios) to reach a target FP using incremental addition.
- * Adds ships one by one following the template ratios until FP target is reached.
- * Never scales below the template's base composition.
+ * Scale a template fleet (ratios) to reach a target FP.
+ *
+ * Algorithm (V6, 2026-05-04) : allocate budget proportional to ratios, then
+ * top up with the lightest type to close the residual gap. Avoids the V1
+ * overshoot bug where the template counts were used as a *minimum floor*
+ * (e.g. "always include 1 BC") which made low-FP targets impossible (a
+ * target of 80 FP would always overshoot to 300+ because the BC alone costs
+ * 144 FP).
+ *
+ * Pure ratios in : `templateRatios = {interceptor: 6, frigate: 4, cruiser: 2,
+ * battlecruiser: 1}` means "for every 13 ships of FP-budget, allocate
+ * 6/13 to interceptors, 4/13 to frigates, etc.". Heavy ships are absent
+ * from low-FP fleets when their unit cost exceeds their proportional budget.
  */
 export function scaleFleetToFP(
   templateRatios: Record<string, number>,
@@ -143,52 +153,49 @@ export function scaleFleetToFP(
   config: FPConfig,
 ): Record<string, number> {
   const types = Object.entries(templateRatios).filter(([, r]) => r > 0);
-  if (types.length === 0) return {};
+  if (types.length === 0 || targetFP <= 0) return {};
 
-  // Start with the base template
-  const fleet: Record<string, number> = {};
-  for (const [id, count] of types) fleet[id] = count;
-
-  let currentFP = computeFleetFP(fleet, shipStats, config);
-  if (currentFP >= targetFP) return fleet;
-
-  // Precompute FP per unit for each type
+  // Precompute FP per unit; skip types we can't price.
   const unitFPs = new Map<string, number>();
   for (const [id] of types) {
     const stats = shipStats[id];
-    if (stats) unitFPs.set(id, computeUnitFP(stats, config));
+    if (stats) {
+      const fp = computeUnitFP(stats, config);
+      if (fp > 0) unitFPs.set(id, fp);
+    }
+  }
+  if (unitFPs.size === 0) return {};
+
+  const usableTypes = types.filter(([id]) => unitFPs.has(id));
+  const totalRatio = usableTypes.reduce((s, [, r]) => s + r, 0);
+
+  // Step 1 : proportional allocation, floored to integers.
+  const fleet: Record<string, number> = {};
+  for (const [id, ratio] of usableTypes) {
+    const unitFP = unitFPs.get(id)!;
+    const budget = targetFP * (ratio / totalRatio);
+    const count = Math.floor(budget / unitFP);
+    if (count > 0) fleet[id] = count;
   }
 
-  // Total ratio for proportional addition
-  const totalRatio = types.reduce((s, [, r]) => s + r, 0);
-
-  // Incremental addition: add ships following ratios
-  while (currentFP < targetFP) {
-    let added = false;
-    for (const [id, ratio] of types) {
-      const unitFP = unitFPs.get(id) ?? 0;
-      if (unitFP === 0) continue;
-
-      const toAdd = Math.max(1, Math.round(ratio / totalRatio * types.length));
-      fleet[id] = (fleet[id] ?? 0) + toAdd;
-      currentFP += unitFP * toAdd;
-      added = true;
-
-      if (currentFP >= targetFP) break;
+  // Step 2 : top up the residual with the lightest unit so we hit/just exceed
+  // the target. Always pick the lightest available — guarantees we can close
+  // any gap without massive overshoot.
+  let lightestId = '';
+  let lightestFP = Infinity;
+  for (const [id] of usableTypes) {
+    const fp = unitFPs.get(id)!;
+    if (fp < lightestFP) {
+      lightestFP = fp;
+      lightestId = id;
     }
-    if (!added) break;
   }
 
-  // If we overshot, try removing the last added unit if it brings us closer
-  for (const [id] of [...types].reverse()) {
-    const unitFP = unitFPs.get(id) ?? 0;
-    if (unitFP === 0 || fleet[id] <= templateRatios[id]) continue;
-    const withoutLast = currentFP - unitFP;
-    if (Math.abs(withoutLast - targetFP) < Math.abs(currentFP - targetFP)) {
-      fleet[id]--;
-      currentFP = withoutLast;
-    }
-    break;
+  const currentFP = computeFleetFP(fleet, shipStats, config);
+  if (currentFP < targetFP && lightestId) {
+    const remaining = targetFP - currentFP;
+    const extra = Math.ceil(remaining / lightestFP);
+    fleet[lightestId] = (fleet[lightestId] ?? 0) + extra;
   }
 
   return fleet;

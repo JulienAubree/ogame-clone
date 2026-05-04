@@ -206,15 +206,44 @@ describe('scaleFleetToFP', () => {
     expect(result.interceptor).toBeGreaterThan(result.frigate);
   });
 
-  it('does not scale below template base', () => {
+  it('V6 : low target produces a low-FP fleet (no overshoot floor)', () => {
+    // V1 behavior locked to a template minimum (3 inter + 1 frig ≈ 60 FP)
+    // even when target was 5 FP, which broke V6-AbsoluteFP paliers where
+    // tier-1 enemies need to actually be tier-1 sized.
     const result = scaleFleetToFP(
       { interceptor: 3, frigate: 1 },
       5,
       shipStats,
       DEFAULT_FP_CONFIG,
     );
-    expect(result.interceptor).toBe(3);
-    expect(result.frigate).toBe(1);
+    const resultFP = computeFleetFP(result, shipStats, DEFAULT_FP_CONFIG);
+    // Should be close to 5, not the old ~60 floor.
+    expect(resultFP).toBeLessThanOrEqual(15);
+    expect(resultFP).toBeGreaterThan(0);
+  });
+
+  it('V6 : large mixed template hits low target without forcing a heavy unit', () => {
+    // Regression test for the bug spotted in prod : tier 1 anomaly target ≈ 95 FP
+    // produced a fleet with 1 BC + 2 cruisers + 4 frigates + 6 interceptors ≈ 314 FP
+    // because the V1 algo used template counts as a minimum.
+    const fullStats = {
+      interceptor: { weapons: 4, shotCount: 3, shield: 8, hull: 12 },
+      frigate: { weapons: 12, shotCount: 2, shield: 16, hull: 30 },
+      cruiser: { weapons: 45, shotCount: 1, shield: 32, hull: 55 },
+      battlecruiser: { weapons: 70, shotCount: 1, shield: 40, hull: 120 },
+    };
+    const result = scaleFleetToFP(
+      { interceptor: 6, frigate: 4, cruiser: 2, battlecruiser: 1 },
+      95,
+      fullStats,
+      DEFAULT_FP_CONFIG,
+    );
+    const resultFP = computeFleetFP(result, fullStats, DEFAULT_FP_CONFIG);
+    // ±20% acceptable, no massive overshoot
+    expect(resultFP).toBeGreaterThanOrEqual(75);
+    expect(resultFP).toBeLessThanOrEqual(120);
+    // Heavy units should NOT be forced into low-FP fleets
+    expect(result.battlecruiser ?? 0).toBe(0);
   });
 
   it('handles single ship type', () => {
