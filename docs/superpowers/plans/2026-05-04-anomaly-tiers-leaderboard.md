@@ -20,6 +20,7 @@
 |---|---|
 | `packages/db/drizzle/0072_anomaly_tiers.sql` | +1 col anomalies + 2 cols flagships + 3 universe_config + marker |
 | `apps/web/src/pages/AnomalyLeaderboard.tsx` | Page leaderboard top 50 |
+| `apps/web/src/components/common/RankMedalIcon.tsx` | SVG médailles top 3 (or, argent, bronze) — pattern ExiliumIcon |
 
 ### Files to MODIFY
 
@@ -646,37 +647,35 @@ const insufficientFundsScaled = balance < scaledCost;
 
 - [ ] **Step 2: Add tier selector UI**
 
-Find the stats card block (the `<div className="rounded-md bg-panel-light/50 ...">`). AFTER this block, BEFORE the cost display block, insert the tier selector :
+Find the stats card block (the `<div className="rounded-md bg-panel-light/50 ...">`). AFTER this block, BEFORE the cost display block, insert the tier selector. **Toujours visible** (même à maxUnlocked=1) pour que les nouveaux joueurs voient l'existence du système :
 
 ```tsx
-{maxUnlocked > 1 && (
-  <div className="border-t border-panel-border pt-3 space-y-2">
-    <div className="flex items-center gap-3">
-      <span className="text-gray-500 text-sm flex items-center gap-1.5">
-        <Trophy className="h-4 w-4 text-yellow-400" /> Palier
-      </span>
-      <button
-        onClick={() => setSelectedTier(Math.max(1, selectedTier - 1))}
-        disabled={selectedTier <= 1}
-        className="px-2 py-1 rounded hover:bg-panel-hover disabled:opacity-30 text-sm"
-      >◀</button>
-      <span className="font-bold text-lg w-8 text-center">{selectedTier}</span>
-      <button
-        onClick={() => setSelectedTier(Math.min(maxUnlocked, selectedTier + 1))}
-        disabled={selectedTier >= maxUnlocked}
-        className="px-2 py-1 rounded hover:bg-panel-hover disabled:opacity-30 text-sm"
-      >▶</button>
-      <span className="text-xs text-gray-500">/ {maxUnlocked}</span>
-    </div>
-    <div className="text-xs text-gray-500 flex justify-between">
-      <span>Difficulté : ×{tierMult.toFixed(1)} enemy FP</span>
-      <span>Loot : ×{lootMult} ressources</span>
-    </div>
+<div className="border-t border-panel-border pt-3 space-y-2">
+  <div className="flex items-center gap-3">
+    <span className="text-gray-500 text-sm flex items-center gap-1.5">
+      <Trophy className="h-4 w-4 text-yellow-400" /> Palier
+    </span>
+    <button
+      onClick={() => setSelectedTier(Math.max(1, selectedTier - 1))}
+      disabled={selectedTier <= 1}
+      className="px-2 py-1 rounded hover:bg-panel-hover disabled:opacity-30 text-sm"
+    >◀</button>
+    <span className="font-bold text-lg w-8 text-center">{selectedTier}</span>
+    <button
+      onClick={() => setSelectedTier(Math.min(maxUnlocked, selectedTier + 1))}
+      disabled={selectedTier >= maxUnlocked}
+      className="px-2 py-1 rounded hover:bg-panel-hover disabled:opacity-30 text-sm"
+    >▶</button>
+    <span className="text-xs text-gray-500">/ {maxUnlocked}</span>
   </div>
-)}
+  <div className="text-xs text-gray-500 flex justify-between">
+    <span>Difficulté : ×{tierMult.toFixed(1)} enemy FP</span>
+    <span>Loot : ×{lootMult} ressources</span>
+  </div>
+</div>
 ```
 
-(The `maxUnlocked > 1` guard hides the selector for new players who only have palier 1 — no point cluttering the UI.)
+Note : sélecteur visible dès le palier 1 (même si maxUnlocked=1), pour éducation du joueur. Les boutons ◀▶ sont disabled si on ne peut pas changer.
 
 - [ ] **Step 3: Update the cost display + button**
 
@@ -809,13 +808,84 @@ Do NOT push.
 
 ---
 
-## Task 8 : Frontend leaderboard page + route
+## Task 8 : Frontend leaderboard page + route + RankMedalIcon SVG
 
 **Files :**
+- Create: `apps/web/src/components/common/RankMedalIcon.tsx`
 - Create: `apps/web/src/pages/AnomalyLeaderboard.tsx`
 - Modify: `apps/web/src/router.tsx`
 
-- [ ] **Step 1: Create the leaderboard page**
+- [ ] **Step 1: Create the RankMedalIcon SVG component**
+
+Create `/opt/exilium/apps/web/src/components/common/RankMedalIcon.tsx` (pattern repris de `ExiliumIcon.tsx` — SVG inline avec `currentColor` + `size`/`className` props) :
+
+```tsx
+/**
+ * SVG médaille pour les rangs leaderboard top 3.
+ * rank 1 → médaille or, rank 2 → argent, rank 3 → bronze.
+ * Pour rang ≥ 4, retourne null (le caller affiche `#N` à la place).
+ */
+interface Props {
+  rank: number;
+  size?: number;
+  className?: string;
+}
+
+const MEDAL_COLORS: Record<number, { fill: string; stroke: string; ribbon: string }> = {
+  1: { fill: '#FCD34D', stroke: '#F59E0B', ribbon: '#DC2626' },  // Or
+  2: { fill: '#E5E7EB', stroke: '#9CA3AF', ribbon: '#3B82F6' },  // Argent
+  3: { fill: '#FCA561', stroke: '#C2410C', ribbon: '#16A34A' },  // Bronze
+};
+
+export function RankMedalIcon({ rank, size = 20, className = '' }: Props) {
+  const colors = MEDAL_COLORS[rank];
+  if (!colors) return null;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-label={`Rang ${rank}`}
+    >
+      {/* Ribbon (drape de la médaille) */}
+      <path
+        d="M8 2 L10 11 L12 9 L14 11 L16 2"
+        stroke={colors.ribbon}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill={colors.ribbon}
+        opacity="0.9"
+      />
+      {/* Disque de la médaille */}
+      <circle
+        cx="12"
+        cy="16"
+        r="6"
+        fill={colors.fill}
+        stroke={colors.stroke}
+        strokeWidth="1.5"
+      />
+      {/* Numéro du rang centré */}
+      <text
+        x="12"
+        y="19"
+        textAnchor="middle"
+        fontSize="7"
+        fontWeight="bold"
+        fill={colors.stroke}
+      >
+        {rank}
+      </text>
+    </svg>
+  );
+}
+```
+
+- [ ] **Step 2: Create the leaderboard page**
 
 Create `/opt/exilium/apps/web/src/pages/AnomalyLeaderboard.tsx` :
 
@@ -823,6 +893,7 @@ Create `/opt/exilium/apps/web/src/pages/AnomalyLeaderboard.tsx` :
 import { Link } from 'react-router';
 import { trpc } from '@/trpc';
 import { PageHeader } from '@/components/common/PageHeader';
+import { RankMedalIcon } from '@/components/common/RankMedalIcon';
 import { Button } from '@/components/ui/button';
 import { Trophy, ArrowLeft } from 'lucide-react';
 
@@ -860,27 +931,34 @@ export default function AnomalyLeaderboard() {
               </tr>
             </thead>
             <tbody>
-              {leaderboard.entries.map((entry, i) => (
-                <tr
-                  key={entry.username + '-' + i}
-                  className="border-t border-panel-border hover:bg-panel-hover transition-colors"
-                >
-                  <td className="px-3 py-2 font-mono">
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
-                  </td>
-                  <td className="px-3 py-2 font-medium">{entry.username}</td>
-                  <td className="px-3 py-2 text-right">
-                    <span className="inline-flex items-center gap-1 font-bold text-yellow-400">
-                      <Trophy className="h-3.5 w-3.5" />
-                      {entry.maxTierCompleted}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right">{entry.level}</td>
-                  <td className="px-3 py-2 text-right text-gray-400">
-                    {entry.xp.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
+              {leaderboard.entries.map((entry, i) => {
+                const rank = i + 1;
+                return (
+                  <tr
+                    key={entry.username + '-' + i}
+                    className="border-t border-panel-border hover:bg-panel-hover transition-colors"
+                  >
+                    <td className="px-3 py-2 font-mono">
+                      {rank <= 3 ? (
+                        <RankMedalIcon rank={rank} size={24} />
+                      ) : (
+                        `#${rank}`
+                      )}
+                    </td>
+                    <td className="px-3 py-2 font-medium">{entry.username}</td>
+                    <td className="px-3 py-2 text-right">
+                      <span className="inline-flex items-center gap-1 font-bold text-yellow-400">
+                        <Trophy className="h-3.5 w-3.5" />
+                        {entry.maxTierCompleted}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right">{entry.level}</td>
+                    <td className="px-3 py-2 text-right text-gray-400">
+                      {entry.xp.toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -894,7 +972,7 @@ export default function AnomalyLeaderboard() {
 }
 ```
 
-- [ ] **Step 2: Add the route**
+- [ ] **Step 3: Add the route**
 
 Read `/opt/exilium/apps/web/src/router.tsx`. Find the `path: 'anomalies'` route entry (around line 186). Add a sibling route for the leaderboard right after :
 
@@ -911,7 +989,7 @@ Read `/opt/exilium/apps/web/src/router.tsx`. Find the `path: 'anomalies'` route 
 },
 ```
 
-- [ ] **Step 3: Lint + typecheck**
+- [ ] **Step 4: Lint + typecheck**
 
 ```bash
 cd /opt/exilium && pnpm turbo lint typecheck --filter=@exilium/web 2>&1 | tail -10
@@ -919,11 +997,11 @@ cd /opt/exilium && pnpm turbo lint typecheck --filter=@exilium/web 2>&1 | tail -
 
 Expected : 0 errors.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add apps/web/src/pages/AnomalyLeaderboard.tsx apps/web/src/router.tsx
-git commit -m "feat(web): page leaderboard /anomalies/leaderboard (V5-Tiers)"
+git add apps/web/src/pages/AnomalyLeaderboard.tsx apps/web/src/components/common/RankMedalIcon.tsx apps/web/src/router.tsx
+git commit -m "feat(web): page leaderboard + RankMedalIcon SVG (V5-Tiers)"
 ```
 
 Do NOT push.
