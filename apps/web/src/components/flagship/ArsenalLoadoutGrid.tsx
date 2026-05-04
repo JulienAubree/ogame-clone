@@ -1,5 +1,6 @@
 import { Crosshair, Plus, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ModuleTooltip } from './ModuleTooltip';
 
 /**
  * V7-WeaponProfiles : Arsenal section. Présente 3 slots horizontaux
@@ -34,6 +35,8 @@ export interface ArsenalModuleLite {
   kind?: string;
   /** Module effect — used to extract weaponProfile for badges. */
   effect?: unknown;
+  /** Description for tooltip popover. */
+  description?: string;
 }
 
 interface Slot {
@@ -96,18 +99,11 @@ function ArsenalSlot({ rarity, module, onClick, onUnequip }: SlotProps) {
   const profile = extractProfile(module);
   const isEpic = rarity === 'epic';
 
-  return (
-    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-      <div className={cn(
-        'text-[9px] font-mono uppercase tracking-widest text-center',
-        RARITY_ACCENT_TEXT[rarity],
-      )}>
-        {RARITY_LABEL[rarity]}
-      </div>
+  const slotButton = (
       <button
         type="button"
         onClick={module ? onUnequip : onClick}
-        title={module ? `${module.name} — clic pour déséquiper` : `Clic pour équiper une arme ${RARITY_LABEL[rarity].toLowerCase()}`}
+        aria-label={module ? `${module.name} — clic pour déséquiper` : `Clic pour équiper une arme ${RARITY_LABEL[rarity].toLowerCase()}`}
         className={cn(
           'group relative h-32 sm:h-36 w-full rounded-md border-2 transition-all',
           'flex flex-col items-stretch justify-between p-2',
@@ -195,6 +191,34 @@ function ArsenalSlot({ rarity, module, onClick, onUnequip }: SlotProps) {
           </>
         )}
       </button>
+  );
+
+  return (
+    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+      <div className={cn(
+        'text-[9px] font-mono uppercase tracking-widest text-center',
+        RARITY_ACCENT_TEXT[rarity],
+      )}>
+        {RARITY_LABEL[rarity]}
+      </div>
+      {module && !invalid ? (
+        <ModuleTooltip
+          module={{
+            id: module.id,
+            name: module.name,
+            description: module.description,
+            rarity: module.rarity,
+            kind: module.kind,
+            effect: module.effect,
+          }}
+          placement="bottom"
+          wrapperClassName="block"
+        >
+          {slotButton}
+        </ModuleTooltip>
+      ) : (
+        slotButton
+      )}
     </div>
   );
 }

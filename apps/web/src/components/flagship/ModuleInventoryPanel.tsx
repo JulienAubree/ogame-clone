@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ModuleTooltip } from './ModuleTooltip';
 
 interface InventoryItem {
   moduleId: string;
@@ -12,6 +13,8 @@ interface InventoryItem {
   image: string;
   enabled: boolean;
   effect?: unknown;
+  /** V7-WeaponProfiles : kind ('passive' | 'weapon'). */
+  kind?: string;
 }
 
 interface Props {
@@ -84,13 +87,22 @@ export function ModuleInventoryPanel({ items, hullFilter, selectedSlotType, equi
                 RARITY_TONE[m.rarity] ?? '',
                 equipped && 'opacity-50',
               )}>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-foreground/90 truncate flex items-center gap-1">
-                    {m.name}
-                    {m.count > 1 && <span className="text-[9px] text-muted-foreground">×{m.count}</span>}
+                <ModuleTooltip
+                  module={{
+                    id: m.moduleId, name: m.name, description: m.description,
+                    rarity: m.rarity, kind: m.kind, effect: m.effect,
+                  }}
+                  placement="right"
+                  wrapperClassName="flex-1 min-w-0 block"
+                >
+                  <div className="flex-1 min-w-0 cursor-help">
+                    <div className="text-xs font-semibold text-foreground/90 truncate flex items-center gap-1">
+                      {m.name}
+                      {m.count > 1 && <span className="text-[9px] text-muted-foreground">×{m.count}</span>}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">{m.description}</div>
                   </div>
-                  <div className="text-[10px] text-muted-foreground truncate">{m.description}</div>
-                </div>
+                </ModuleTooltip>
                 <button
                   onClick={() => onDetails(m.moduleId)}
                   className="text-[10px] text-muted-foreground hover:text-foreground"

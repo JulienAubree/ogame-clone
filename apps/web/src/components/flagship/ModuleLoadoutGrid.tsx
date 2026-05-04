@@ -5,6 +5,9 @@ interface ModuleLite {
   name: string;
   image: string;
   rarity: string;
+  description?: string;
+  kind?: string;
+  effect?: unknown;
 }
 
 interface Slot {

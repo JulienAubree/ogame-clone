@@ -181,12 +181,13 @@ function ModulesTab({ activeHullId }: { activeHullId: string }) {
   // au ArsenalLoadoutGrid pour afficher les badges (X tirs, anti-cat, rafale,
   // chainKill) directement sur les slots.
   const inventoryMap = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; image: string; rarity: string; kind?: string; effect?: unknown }>();
+    const map = new Map<string, { id: string; name: string; image: string; rarity: string; kind?: string; effect?: unknown; description?: string }>();
     for (const m of allModules ?? []) {
       map.set(m.id, {
         id: m.id, name: m.name, image: m.image, rarity: m.rarity,
         kind: (m as { kind?: string }).kind ?? 'passive',
         effect: m.effect,
+        description: (m as { description?: string }).description,
       });
     }
     return map;

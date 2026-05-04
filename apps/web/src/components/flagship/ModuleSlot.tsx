@@ -1,9 +1,18 @@
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ModuleTooltip } from './ModuleTooltip';
 
 interface Props {
   size: 'epic' | 'rare' | 'common';
-  module: { id: string; name: string; image: string; rarity: string } | null;
+  module: {
+    id: string;
+    name: string;
+    image: string;
+    rarity: string;
+    description?: string;
+    kind?: string;
+    effect?: unknown;
+  } | null;
   onClick: () => void;
   onUnequip?: () => void;
 }
@@ -21,7 +30,7 @@ const RARITY_BORDER = {
 };
 
 export function ModuleSlot({ size, module, onClick, onUnequip }: Props) {
-  return (
+  const slotButton = (
     <button
       type="button"
       onClick={module && onUnequip ? onUnequip : onClick}
@@ -31,7 +40,7 @@ export function ModuleSlot({ size, module, onClick, onUnequip }: Props) {
         module && RARITY_BORDER[module.rarity as 'epic' | 'rare' | 'common'],
         !module && 'border-dashed',
       )}
-      title={module ? `${module.name} — clic pour déséquiper` : 'Clic pour équiper'}
+      aria-label={module ? `${module.name} — clic pour déséquiper` : 'Clic pour équiper'}
     >
       {module ? (
         module.image ? (
@@ -48,5 +57,13 @@ export function ModuleSlot({ size, module, onClick, onUnequip }: Props) {
         <Plus className="absolute inset-0 m-auto h-4 w-4 text-muted-foreground/50" />
       )}
     </button>
+  );
+
+  if (!module) return slotButton;
+
+  return (
+    <ModuleTooltip module={module} placement="bottom">
+      {slotButton}
+    </ModuleTooltip>
   );
 }
