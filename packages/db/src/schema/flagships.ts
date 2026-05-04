@@ -50,6 +50,11 @@ export const flagships = pgTable('flagships', {
   /** Level dérivé de xp via xpToLevel formula, persisté pour query rapide. */
   level: smallint('level').notNull().default(1),
 
+  /** Anomaly tiers (2026-05-04) : palier max débloqué (peut engager 1..maxTierUnlocked). */
+  maxTierUnlocked:  smallint('max_tier_unlocked').notNull().default(1),
+  /** Anomaly tiers : palier max complété (depth 20 atteint). Utilisé par leaderboard. */
+  maxTierCompleted: smallint('max_tier_completed').notNull().default(0),
+
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -48,6 +48,8 @@ export const anomalies = pgTable('anomalies', {
   repairChargesCurrent: smallint('repair_charges_current').notNull().default(0),
   /** Max charges réparation (initialisé à `anomaly_repair_charges_per_run` à l'engage). */
   repairChargesMax:     smallint('repair_charges_max').notNull().default(3),
+  /** Anomaly tiers (2026-05-04) : palier sélectionné à l'engage. */
+  tier: smallint('tier').notNull().default(1),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 });
