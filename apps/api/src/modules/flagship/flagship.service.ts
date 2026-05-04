@@ -122,7 +122,9 @@ export function createFlagshipService(
       const hullConfig = flagship.hullId ? (config.hulls[flagship.hullId] ?? null) : null;
 
       // V4-XP : compute level multiplier from config + flagship.level
-      const levelPct = Number(config.universe.flagship_xp_level_multiplier_pct) || 0.05;
+      // Number.isFinite preserves intentional 0 (admin kill-switch via universe_config)
+      const rawLevelPct = Number(config.universe.flagship_xp_level_multiplier_pct);
+      const levelPct = Number.isFinite(rawLevelPct) ? rawLevelPct : 0.05;
       const levelMult = levelMultiplier(flagship.level, levelPct);
 
       const effectiveStats = {
@@ -191,7 +193,9 @@ export function createFlagshipService(
       if (amount <= 0) return { newXp: 0, oldLevel: 1, newLevel: 1, levelUp: false };
 
       const config = await gameConfigService.getFullConfig();
-      const maxLevel = Number(config.universe.flagship_max_level) || 60;
+      // Number.isFinite preserves intentional 0 (admin kill-switch via universe_config)
+      const rawMaxLevel = Number(config.universe.flagship_max_level);
+      const maxLevel = Number.isFinite(rawMaxLevel) ? rawMaxLevel : 60;
 
       // Inner work — same logic, just runs against either the provided executor
       // or a fresh transaction. The executor branch skips the advisory lock
