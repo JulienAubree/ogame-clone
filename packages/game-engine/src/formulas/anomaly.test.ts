@@ -1,29 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { anomalyEnemyFP, anomalyLoot, anomalyEnemyRecoveryCount } from './anomaly.js';
+import { anomalyEnemyFP, anomalyLoot, anomalyEnemyRecoveryCount, tierMultiplier } from './anomaly.js';
 
 describe('anomalyEnemyFP', () => {
-  it('depth 1 par défaut = 70% du FP joueur (baseRatio 0.7)', () => {
-    expect(anomalyEnemyFP(1000, 1)).toBeCloseTo(700);
+  it('depth 1 par défaut = 50% du FP joueur (baseRatio 0.5)', () => {
+    expect(anomalyEnemyFP(1000, 1)).toBeCloseTo(500);
   });
-  it('depth 2 par défaut = 0.7 × 1.15 = 80.5%', () => {
-    expect(anomalyEnemyFP(1000, 2)).toBeCloseTo(805);
+  it('depth 2 par défaut = 0.5 × 1.15 = 57.5%', () => {
+    expect(anomalyEnemyFP(1000, 2)).toBeCloseTo(575);
   });
-  it('depth 5 par défaut = 0.7 × 1.15^4 ≈ 122.4%', () => {
-    expect(anomalyEnemyFP(1000, 5)).toBeCloseTo(1224, 0);
+  it('depth 5 par défaut = 0.5 × 1.15^4 ≈ 87.4%', () => {
+    expect(anomalyEnemyFP(1000, 5)).toBeCloseTo(874.5, 0);
   });
   it('cap maxRatio à 1.3 dès que la formule dépasse', () => {
-    // depth 7 : 0.7 × 1.15^6 ≈ 1.62 → capped 1.3
-    expect(anomalyEnemyFP(1000, 7)).toBeCloseTo(1300);
+    // depth 8 : 0.5 × 1.15^7 ≈ 1.33 → capped 1.3
+    expect(anomalyEnemyFP(1000, 8)).toBeCloseTo(1300);
     // depth 20 : énorme → toujours capped 1.3
     expect(anomalyEnemyFP(1000, 20)).toBeCloseTo(1300);
   });
   it('paramètres custom (override partiel)', () => {
     // baseRatio override seul
-    expect(anomalyEnemyFP(1000, 1, { baseRatio: 0.5 })).toBeCloseTo(500);
+    expect(anomalyEnemyFP(1000, 1, { baseRatio: 0.7 })).toBeCloseTo(700);
     // growth override
-    expect(anomalyEnemyFP(1000, 3, { growth: 1.3 })).toBeCloseTo(1183, 0);
+    expect(anomalyEnemyFP(1000, 3, { growth: 1.3 })).toBeCloseTo(845, 0);
     // cap relâché → permet ratio bien au-dessus de 1.3 (sinon plafonné à 1300)
-    expect(anomalyEnemyFP(1000, 10, { maxRatio: 5 })).toBeGreaterThan(2000);
+    expect(anomalyEnemyFP(1000, 10, { maxRatio: 5 })).toBeGreaterThan(1500);
   });
   it('FP <= 0 → 0', () => {
     expect(anomalyEnemyFP(0, 1)).toBe(0);
@@ -169,5 +169,40 @@ describe('anomalyEnemyRecoveryCount', () => {
     // 5 cruisers × ~10.7% = 0.535 → floor 0 → absent
     const r = anomalyEnemyRecoveryCount({ cruiser: 5 }, stats, fpConfig);
     expect(r.cruiser).toBeUndefined();
+  });
+});
+
+describe('tierMultiplier (V5-Tiers)', () => {
+  it('returns 1.0 at tier 1 (default factor)', () => {
+    expect(tierMultiplier(1)).toBe(1.0);
+    expect(tierMultiplier(1, 1.0)).toBe(1.0);
+    expect(tierMultiplier(1, 2.5)).toBe(1.0);
+  });
+  it('returns N at tier N with factor 1.0 (linear)', () => {
+    expect(tierMultiplier(5, 1.0)).toBe(5.0);
+    expect(tierMultiplier(10, 1.0)).toBe(10.0);
+    expect(tierMultiplier(50, 1.0)).toBe(50.0);
+  });
+  it('respects custom factor', () => {
+    expect(tierMultiplier(5, 2.0)).toBe(9.0);
+    expect(tierMultiplier(10, 0.5)).toBe(5.5);
+  });
+});
+
+describe('anomalyEnemyFP with tierMultiplier (V5-Tiers)', () => {
+  it('returns same as V4 baseline when tierMultiplier=1.0', () => {
+    const v4 = anomalyEnemyFP(1000, 5);
+    const v5 = anomalyEnemyFP(1000, 5, { tierMultiplier: 1.0 });
+    expect(v5).toBe(v4);
+  });
+  it('multiplies enemy FP by tierMultiplier post-cap', () => {
+    // depth 5 : ratio = min(1.3, 0.5 × 1.15^4) = min(1.3, 0.874) = 0.874
+    // playerFP 1000 × 0.874 × 3 (tier 3) = 2624
+    const result = anomalyEnemyFP(1000, 5, { tierMultiplier: 3.0 });
+    expect(result).toBeCloseTo(2624, 0);
+  });
+  it('high tier breaks past the maxRatio cap', () => {
+    const result = anomalyEnemyFP(1000, 20, { tierMultiplier: 10.0 });
+    expect(result).toBeCloseTo(13000, 0);
   });
 });

@@ -286,7 +286,7 @@ export async function generateAnomalyEnemy(
   };
   const playerFP = computeFleetFP(playerShipCounts, shipStatsForFP, fpConfig);
 
-  // Difficulty curve: baseRatio (0.7 default) × growth^(depth-1), capped at
+  // Difficulty curve: baseRatio (0.5 default V5) × growth^(depth-1), capped at
   // maxRatio (1.3 default). Tunable via universe_config without redeploy.
   const targetEnemyFP = anomalyEnemyFP(playerFP, args.depth, {
     baseRatio: Number(config.universe.anomaly_enemy_base_ratio) || undefined,

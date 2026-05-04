@@ -10,18 +10,21 @@ export interface AnomalyLoot {
 }
 
 export interface AnomalyDifficulty {
-  /** FP ratio at depth 1 (e.g. 0.7 = enemy is 70% of player FP). */
+  /** Base ratio at depth 1 (default 0.5). */
   baseRatio: number;
-  /** Geometric growth applied each depth. */
+  /** Geometric growth applied each depth (default 1.15). */
   growth: number;
-  /** Hard cap on FP ratio so the late game is brutal but not unwinnable. */
+  /** Cap on the intra-tier ratio (default 1.3). */
   maxRatio: number;
+  /** V5-Tiers (2026-05-04) : multiplier appliqué APRÈS le cap intra-palier (default 1.0 = palier 1). */
+  tierMultiplier?: number;
 }
 
 export const DEFAULT_DIFFICULTY: AnomalyDifficulty = {
-  baseRatio: 0.7,
+  baseRatio: 0.5,
   growth: 1.15,
   maxRatio: 1.3,
+  tierMultiplier: 1.0,
 };
 
 /**
@@ -30,9 +33,8 @@ export const DEFAULT_DIFFICULTY: AnomalyDifficulty = {
  * `maxRatio` keeps late-game attrition steady (no exponential cliff that
  * one-shots the run at depth 7).
  *
- * With defaults (0.7 base, 1.15 growth, 1.3 cap):
- *   depth=1 → 0.70×, depth=3 → 0.93×, depth=5 → 1.22×,
- *   depth=7+ → 1.30× (capped).
+ * V5-Tiers : tierMultiplier applied post-cap so each tier multiplies the
+ * intra-tier ratio (tier 1 = 1.0×, tier N linear = N×).
  */
 export function anomalyEnemyFP(
   playerFP: number,
@@ -43,9 +45,20 @@ export function anomalyEnemyFP(
   const baseRatio = difficulty.baseRatio ?? DEFAULT_DIFFICULTY.baseRatio;
   const growth = difficulty.growth ?? DEFAULT_DIFFICULTY.growth;
   const maxRatio = difficulty.maxRatio ?? DEFAULT_DIFFICULTY.maxRatio;
+  const tierMult = difficulty.tierMultiplier ?? DEFAULT_DIFFICULTY.tierMultiplier!;
   const rawRatio = baseRatio * Math.pow(growth, depth - 1);
   const ratio = Math.min(maxRatio, rawRatio);
-  return playerFP * ratio;
+  // V5-Tiers : tierMultiplier appliqué post-cap pour différencier les paliers
+  return playerFP * ratio * tierMult;
+}
+
+/**
+ * V5-Tiers (2026-05-04) : compute the difficulty multiplier for a given tier.
+ * Linear by default (factor=1.0) : tier N → multiplier = N.
+ * For exponential progression, increase factor : tier N → 1 + (N-1) × factor.
+ */
+export function tierMultiplier(tier: number, factor: number = 1.0): number {
+  return 1 + (tier - 1) * factor;
 }
 
 /**
