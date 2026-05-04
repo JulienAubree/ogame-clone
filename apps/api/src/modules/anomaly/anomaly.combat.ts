@@ -10,6 +10,7 @@ import {
   anomalyEnemyFP,
   applyModulesToStats,
   parseLoadout,
+  levelMultiplier,
   type CombatInput,
   type ShipCombatConfig,
   type CombatMultipliers,
@@ -29,17 +30,19 @@ import {
 import { buildCombatConfig } from '@exilium/game-engine';
 
 /**
- * Loads the flagship's combat config and forces categoryId='capital' so it
- * is targeted only as the last resort (after the whole escort has fallen).
+ * Loads the flagship's combat config including:
+ *  - baseStats from DB row
+ *  - +hull passive bonuses (bonus_weapons / bonus_armor / bonus_shot_count) when status='active'
+ *  - ×level multiplier (V4-XP : 1 + level × 0.05) on weapons/shield/hull/baseArmor
+ *  - ×hullPercent on the (multiplied) hull
+ *  - modules applied via applyModulesToStats on the (effective) stats
  *
- * When `modulesContext` is provided, equipped modules are applied to the
- * flagship's damage / hull / shield / armor via the pure
- * `applyModulesToStats` formula (passive stats + conditional triggers +
- * pending epic effect). Pass an empty `equippedModules` array for a
- * neutral baseline (no modules in play, e.g. legacy scaling).
+ * Forces categoryId='capital' so the flagship is targeted last in V3 logic
+ * (V4 flagship-only : irrelevant since no escort, but cohérent).
  */
 async function loadFlagshipCombatConfig(
   db: Database,
+  gameConfigService: GameConfigService,
   userId: string,
   hullPercent: number,
   modulesContext?: {
@@ -50,10 +53,26 @@ async function loadFlagshipCombatConfig(
   const [flagship] = await db.select().from(flagships).where(eq(flagships.userId, userId)).limit(1);
   if (!flagship) return null;
 
-  let baseDamage = flagship.weapons;
-  let baseShield = flagship.shield;
-  let baseHull = Math.max(1, Math.floor(flagship.hull * hullPercent));
-  let baseArmor = flagship.baseArmor ?? 0;
+  const config = await gameConfigService.getFullConfig();
+  const hullConfig = flagship.hullId ? (config.hulls[flagship.hullId] ?? null) : null;
+
+  // Compute level multiplier (V4-XP)
+  const rawLevelPct = Number(config.universe.flagship_xp_level_multiplier_pct);
+  const levelPct = Number.isFinite(rawLevelPct) ? rawLevelPct : 0.05;
+  const levelMult = levelMultiplier(flagship.level, levelPct);
+
+  // Apply hull passive bonuses (only when stationed) BEFORE level mult
+  const hullBonusWeapons = (hullConfig && flagship.status === 'active') ? (hullConfig.passiveBonuses.bonus_weapons ?? 0) : 0;
+  const hullBonusArmor = (hullConfig && flagship.status === 'active') ? (hullConfig.passiveBonuses.bonus_armor ?? 0) : 0;
+  const hullBonusShotCount = (hullConfig && flagship.status === 'active') ? (hullConfig.passiveBonuses.bonus_shot_count ?? 0) : 0;
+
+  // Effective stats with level mult applied (weapons/shield/hull/armor only)
+  let baseDamage = Math.round((flagship.weapons + hullBonusWeapons) * levelMult);
+  let baseShield = Math.round(flagship.shield * levelMult);
+  let baseHull = Math.max(1, Math.floor(Math.round(flagship.hull * levelMult) * hullPercent));
+  let baseArmor = Math.round((flagship.baseArmor + hullBonusArmor) * levelMult);
+  // shotCount = base + hull bonus (NOT multiplied by level — count entier)
+  const baseShotCount = (flagship.shotCount ?? 1) + hullBonusShotCount;
 
   if (modulesContext) {
     const modified = applyModulesToStats(
@@ -74,7 +93,7 @@ async function loadFlagshipCombatConfig(
     baseArmor,
     baseHull,
     baseWeaponDamage: baseDamage,
-    baseShotCount: flagship.shotCount ?? 1,
+    baseShotCount,
   };
 }
 
@@ -219,6 +238,7 @@ export async function generateAnomalyEnemy(
     });
     const flagshipConfig = await loadFlagshipCombatConfig(
       db,
+      gameConfigService,
       args.userId,
       flagshipEntry.hullPercent,
       equipped.length > 0
@@ -347,6 +367,7 @@ export async function runAnomalyNode(
     });
     const flagshipConfig = await loadFlagshipCombatConfig(
       db,
+      gameConfigService,
       args.userId,
       flagshipEntry.hullPercent,
       equipped.length > 0 || args.pendingEpicEffect
