@@ -1,36 +1,53 @@
 import { describe, it, expect } from 'vitest';
-import { anomalyEnemyFP, anomalyLoot, anomalyEnemyRecoveryCount, tierMultiplier } from './anomaly.js';
+import { anomalyEnemyFP, anomalyLoot, anomalyEnemyRecoveryCount } from './anomaly.js';
 
-describe('anomalyEnemyFP', () => {
-  it('depth 1 par défaut = 50% du FP joueur (baseRatio 0.5)', () => {
-    expect(anomalyEnemyFP(1000, 1)).toBeCloseTo(500);
+describe('anomalyEnemyFP (V6-AbsoluteFP)', () => {
+  it('tier 1 depth 1 par défaut = tierBaseFp (80)', () => {
+    expect(anomalyEnemyFP(1, 1)).toBeCloseTo(80);
   });
-  it('depth 2 par défaut = 0.5 × 1.15 = 57.5%', () => {
-    expect(anomalyEnemyFP(1000, 2)).toBeCloseTo(575);
+  it('tier 1 depth 20 = tierBaseFp × cap maxRatio 3.0', () => {
+    // 1.06^19 ≈ 3.025 → capped à 3.0 → 80 × 3 = 240
+    expect(anomalyEnemyFP(1, 20)).toBeCloseTo(240, 0);
   });
-  it('depth 5 par défaut = 0.5 × 1.15^4 ≈ 87.4%', () => {
-    expect(anomalyEnemyFP(1000, 5)).toBeCloseTo(874.5, 0);
+  it('tier 5 depth 1 = 80 × 1.7^4 ≈ 668', () => {
+    expect(anomalyEnemyFP(5, 1)).toBeCloseTo(80 * Math.pow(1.7, 4), 0);
   });
-  it('cap maxRatio à 1.3 dès que la formule dépasse', () => {
-    // depth 8 : 0.5 × 1.15^7 ≈ 1.33 → capped 1.3
-    expect(anomalyEnemyFP(1000, 8)).toBeCloseTo(1300);
-    // depth 20 : énorme → toujours capped 1.3
-    expect(anomalyEnemyFP(1000, 20)).toBeCloseTo(1300);
+  it('tier 10 depth 1 ≈ 80 × 1.7^9 ≈ 9056', () => {
+    const expected = 80 * Math.pow(1.7, 9);
+    expect(anomalyEnemyFP(10, 1)).toBeCloseTo(expected, 0);
+  });
+  it('tier 20 depth 20 dans la zone hardcore (>1M FP)', () => {
+    const fp = anomalyEnemyFP(20, 20);
+    expect(fp).toBeGreaterThan(1_000_000);
+  });
+  it('intra-palier growth augmente le FP avec depth', () => {
+    const d1 = anomalyEnemyFP(5, 1);
+    const d10 = anomalyEnemyFP(5, 10);
+    const d20 = anomalyEnemyFP(5, 20);
+    expect(d10).toBeGreaterThan(d1);
+    expect(d20).toBeGreaterThan(d10);
+    // d20 capped à 3× d1
+    expect(d20 / d1).toBeCloseTo(3.0, 1);
   });
   it('paramètres custom (override partiel)', () => {
-    // baseRatio override seul
-    expect(anomalyEnemyFP(1000, 1, { baseRatio: 0.7 })).toBeCloseTo(700);
-    // growth override
-    expect(anomalyEnemyFP(1000, 3, { growth: 1.3 })).toBeCloseTo(845, 0);
-    // cap relâché → permet ratio bien au-dessus de 1.3 (sinon plafonné à 1300)
-    expect(anomalyEnemyFP(1000, 10, { maxRatio: 5 })).toBeGreaterThan(1500);
+    expect(anomalyEnemyFP(1, 1, { tierBaseFp: 200 })).toBeCloseTo(200);
+    expect(anomalyEnemyFP(2, 1, { tierFpGrowth: 2.0 })).toBeCloseTo(160);
+    // maxRatio cap relâché → croissance non-cappée
+    expect(anomalyEnemyFP(1, 20, { maxRatio: 100 })).toBeGreaterThan(240);
   });
-  it('FP <= 0 → 0', () => {
+  it('tier <= 0 → 0', () => {
     expect(anomalyEnemyFP(0, 1)).toBe(0);
-    expect(anomalyEnemyFP(-100, 1)).toBe(0);
+    expect(anomalyEnemyFP(-1, 1)).toBe(0);
   });
   it('depth <= 0 → 0', () => {
-    expect(anomalyEnemyFP(1000, 0)).toBe(0);
+    expect(anomalyEnemyFP(1, 0)).toBe(0);
+  });
+  it('décorrélé du player FP (sanity check V6)', () => {
+    // La formule ne prend plus playerFP en input — un débutant à 50 FP
+    // et un hardcore à 50000 FP affrontent EXACTEMENT le même enemy au tier 1.
+    // Test conceptuel : l'output ne dépend que de tier et depth.
+    const fp = anomalyEnemyFP(1, 5);
+    expect(fp).toBeCloseTo(80 * Math.pow(1.06, 4), 0);
   });
 });
 
@@ -172,37 +189,5 @@ describe('anomalyEnemyRecoveryCount', () => {
   });
 });
 
-describe('tierMultiplier (V5-Tiers)', () => {
-  it('returns 1.0 at tier 1 (default factor)', () => {
-    expect(tierMultiplier(1)).toBe(1.0);
-    expect(tierMultiplier(1, 1.0)).toBe(1.0);
-    expect(tierMultiplier(1, 2.5)).toBe(1.0);
-  });
-  it('returns N at tier N with factor 1.0 (linear)', () => {
-    expect(tierMultiplier(5, 1.0)).toBe(5.0);
-    expect(tierMultiplier(10, 1.0)).toBe(10.0);
-    expect(tierMultiplier(50, 1.0)).toBe(50.0);
-  });
-  it('respects custom factor', () => {
-    expect(tierMultiplier(5, 2.0)).toBe(9.0);
-    expect(tierMultiplier(10, 0.5)).toBe(5.5);
-  });
-});
-
-describe('anomalyEnemyFP with tierMultiplier (V5-Tiers)', () => {
-  it('returns same as V4 baseline when tierMultiplier=1.0', () => {
-    const v4 = anomalyEnemyFP(1000, 5);
-    const v5 = anomalyEnemyFP(1000, 5, { tierMultiplier: 1.0 });
-    expect(v5).toBe(v4);
-  });
-  it('multiplies enemy FP by tierMultiplier post-cap', () => {
-    // depth 5 : ratio = min(1.3, 0.5 × 1.15^4) = min(1.3, 0.874) = 0.874
-    // playerFP 1000 × 0.874 × 3 (tier 3) = 2624
-    const result = anomalyEnemyFP(1000, 5, { tierMultiplier: 3.0 });
-    expect(result).toBeCloseTo(2624, 0);
-  });
-  it('high tier breaks past the maxRatio cap', () => {
-    const result = anomalyEnemyFP(1000, 20, { tierMultiplier: 10.0 });
-    expect(result).toBeCloseTo(13000, 0);
-  });
-});
+// V6-AbsoluteFP : tierMultiplier helper retiré — la croissance entre paliers
+// est désormais portée par tierBaseFp × tierFpGrowth^(tier-1) (cf. anomalyEnemyFP).

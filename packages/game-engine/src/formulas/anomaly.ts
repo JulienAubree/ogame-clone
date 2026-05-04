@@ -10,55 +10,47 @@ export interface AnomalyLoot {
 }
 
 export interface AnomalyDifficulty {
-  /** Base ratio at depth 1 (default 0.5). */
-  baseRatio: number;
-  /** Geometric growth applied each depth (default 1.15). */
+  /** V6-AbsoluteFP (2026-05-04) : FP enemy de base au tier 1, depth 1 (default 80). */
+  tierBaseFp: number;
+  /** V6-AbsoluteFP : croissance géométrique du FP enemy entre paliers (default 1.7). */
+  tierFpGrowth: number;
+  /** Intra-palier geometric growth applied each depth (default 1.06). */
   growth: number;
-  /** Cap on the intra-tier ratio (default 1.3). */
+  /** Cap on the intra-tier ratio (default 3.0 = max ×3 au depth 20). */
   maxRatio: number;
-  /** V5-Tiers (2026-05-04) : multiplier appliqué APRÈS le cap intra-palier (default 1.0 = palier 1). */
-  tierMultiplier?: number;
 }
 
 export const DEFAULT_DIFFICULTY: AnomalyDifficulty = {
-  baseRatio: 0.5,
-  growth: 1.15,
-  maxRatio: 1.3,
-  tierMultiplier: 1.0,
+  tierBaseFp: 80,
+  tierFpGrowth: 1.7,
+  growth: 1.06,
+  maxRatio: 3.0,
 };
 
 /**
- * Enemy fleet power (FP) target at depth N.
- * Scales relative to the player's currently-alive FP. The hard cap on
- * `maxRatio` keeps late-game attrition steady (no exponential cliff that
- * one-shots the run at depth 7).
+ * Enemy fleet power (FP) target at tier T, depth N.
  *
- * V5-Tiers : tierMultiplier applied post-cap so each tier multiplies the
- * intra-tier ratio (tier 1 = 1.0×, tier N linear = N×).
+ * V6-AbsoluteFP (2026-05-04) : décorrélé du player FP. Le FP enemy est défini
+ * absolument par palier : palier 1 ≈ 80 FP (débutant), palier 10 ≈ 30k FP,
+ * palier 20 ≈ 6.5M FP. Cela permet de garder le palier 1 accessible aux
+ * débutants quel que soit le niveau du player, et de réserver les paliers
+ * élevés aux hardcore.
+ *
+ * Formule : enemyFP = tierBaseFp × tierFpGrowth^(tier-1) × min(maxRatio, growth^(depth-1))
  */
 export function anomalyEnemyFP(
-  playerFP: number,
+  tier: number,
   depth: number,
   difficulty: Partial<AnomalyDifficulty> = {},
 ): number {
-  if (playerFP <= 0 || depth <= 0) return 0;
-  const baseRatio = difficulty.baseRatio ?? DEFAULT_DIFFICULTY.baseRatio;
+  if (tier <= 0 || depth <= 0) return 0;
+  const tierBaseFp = difficulty.tierBaseFp ?? DEFAULT_DIFFICULTY.tierBaseFp;
+  const tierFpGrowth = difficulty.tierFpGrowth ?? DEFAULT_DIFFICULTY.tierFpGrowth;
   const growth = difficulty.growth ?? DEFAULT_DIFFICULTY.growth;
   const maxRatio = difficulty.maxRatio ?? DEFAULT_DIFFICULTY.maxRatio;
-  const tierMult = difficulty.tierMultiplier ?? DEFAULT_DIFFICULTY.tierMultiplier!;
-  const rawRatio = baseRatio * Math.pow(growth, depth - 1);
-  const ratio = Math.min(maxRatio, rawRatio);
-  // V5-Tiers : tierMultiplier appliqué post-cap pour différencier les paliers
-  return playerFP * ratio * tierMult;
-}
-
-/**
- * V5-Tiers (2026-05-04) : compute the difficulty multiplier for a given tier.
- * Linear by default (factor=1.0) : tier N → multiplier = N.
- * For exponential progression, increase factor : tier N → 1 + (N-1) × factor.
- */
-export function tierMultiplier(tier: number, factor: number = 1.0): number {
-  return 1 + (tier - 1) * factor;
+  const tierFp = tierBaseFp * Math.pow(tierFpGrowth, tier - 1);
+  const intraRatio = Math.min(maxRatio, Math.pow(growth, depth - 1));
+  return tierFp * intraRatio;
 }
 
 /**

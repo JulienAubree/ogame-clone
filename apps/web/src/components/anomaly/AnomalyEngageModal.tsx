@@ -33,8 +33,10 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
     setSelectedTier((prev) => Math.min(prev, maxUnlocked));
   }, [maxUnlocked]);
 
-  const tierFactor = Number(gameConfig?.universe?.anomaly_tier_multiplier_factor) || 1.0;
-  const tierMult = 1 + (selectedTier - 1) * tierFactor;
+  // V6-AbsoluteFP : enemy FP absolu par palier, indépendant du player.
+  const tierBaseFp = Number(gameConfig?.universe?.anomaly_tier_base_fp) || 80;
+  const tierFpGrowth = Number(gameConfig?.universe?.anomaly_tier_fp_growth) || 1.7;
+  const enemyFpAtDepth1 = Math.round(tierBaseFp * Math.pow(tierFpGrowth, selectedTier - 1));
   const lootTierCap = Number(gameConfig?.universe?.anomaly_loot_tier_cap) || 10;
   const lootMult = Math.min(selectedTier, lootTierCap);
   const costFactor = Number(gameConfig?.universe?.anomaly_tier_engage_cost_factor) || 1.0;
@@ -151,7 +153,7 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
             <span className="text-xs text-gray-500">/ {maxUnlocked}</span>
           </div>
           <div className="text-xs text-gray-500 flex justify-between">
-            <span>Difficulté : ×{tierMult.toFixed(1)} enemy FP</span>
+            <span>Enemy FP : ~{enemyFpAtDepth1.toLocaleString()} (depth 1)</span>
             <span>Loot : ×{lootMult} ressources</span>
           </div>
         </div>

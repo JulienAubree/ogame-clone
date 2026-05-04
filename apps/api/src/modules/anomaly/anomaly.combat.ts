@@ -11,7 +11,6 @@ import {
   applyModulesToStats,
   parseLoadout,
   levelMultiplier,
-  tierMultiplier,
   type CombatInput,
   type ShipCombatConfig,
   type CombatMultipliers,
@@ -237,10 +236,6 @@ export async function generateAnomalyEnemy(
 ): Promise<{ enemyFleet: Record<string, number>; enemyFP: number; playerFP: number }> {
   const config = await gameConfigService.getFullConfig();
 
-  // V5-Tiers : compute the difficulty multiplier for this tier
-  const tierFactor = parseConfigNumber(config.universe.anomaly_tier_multiplier_factor, 1.0);
-  const tierMult = tierMultiplier(args.tier, tierFactor);
-
   const baseShipConfigs = buildShipCombatConfigs(config);
 
   // Inject flagship config so its FP is included in the player's total. We
@@ -302,14 +297,17 @@ export async function generateAnomalyEnemy(
   };
   const playerFP = computeFleetFP(playerShipCounts, shipStatsForFP, fpConfig);
 
-  // Difficulty curve: baseRatio (0.5 default V5) × growth^(depth-1), capped at
-  // maxRatio (1.3 default). Tunable via universe_config without redeploy.
-  // V5-Tiers : tierMultiplier applied post-cap to differentiate paliers.
-  const targetEnemyFP = anomalyEnemyFP(playerFP, args.depth, {
-    baseRatio: parseConfigNumber(config.universe.anomaly_enemy_base_ratio, 0.5),
-    growth: parseConfigNumber(config.universe.anomaly_difficulty_growth, 1.15),
-    maxRatio: parseConfigNumber(config.universe.anomaly_enemy_max_ratio, 1.3),
-    tierMultiplier: tierMult,
+  // V6-AbsoluteFP (2026-05-04) : enemy FP est désormais ABSOLU par palier,
+  // décorrélé du player FP. Palier 1 ≈ 80 FP (débutant), palier 10 ≈ 30k FP,
+  // palier 20 ≈ 6.5M FP. Le player apporte ce qu'il veut — palier 1 reste
+  // accessible aux débutants, paliers élevés réservés aux hardcore.
+  // playerFP reste calculé pour les logs/observability mais ne pilote plus
+  // le scaling enemy.
+  const targetEnemyFP = anomalyEnemyFP(args.tier, args.depth, {
+    tierBaseFp: parseConfigNumber(config.universe.anomaly_tier_base_fp, 80),
+    tierFpGrowth: parseConfigNumber(config.universe.anomaly_tier_fp_growth, 1.7),
+    growth: parseConfigNumber(config.universe.anomaly_difficulty_growth, 1.06),
+    maxRatio: parseConfigNumber(config.universe.anomaly_enemy_max_ratio, 3.0),
   });
 
   // Anomaly compositions include EVERY combat ship type (interceptor,
