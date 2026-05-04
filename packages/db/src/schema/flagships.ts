@@ -45,6 +45,11 @@ export const flagships = pgTable('flagships', {
   epicChargesCurrent:   smallint('epic_charges_current').notNull().default(0),
   epicChargesMax:       smallint('epic_charges_max').notNull().default(1),
 
+  /** Flagship XP system (2026-05-04) : XP cumulée. */
+  xp:    integer('xp').notNull().default(0),
+  /** Level dérivé de xp via xpToLevel formula, persisté pour query rapide. */
+  level: smallint('level').notNull().default(1),
+
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
