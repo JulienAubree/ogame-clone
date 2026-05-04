@@ -13,9 +13,10 @@ INSERT INTO universe_config (key, value) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- Tune parallèle V4 : adoucir le early-game pour les flagships rang 1
-UPDATE universe_config
-SET value = '0.5'::jsonb
-WHERE key = 'anomaly_enemy_base_ratio';
+-- (upsert : la clé n'a jamais été seedée par les migrations antérieures)
+INSERT INTO universe_config (key, value)
+VALUES ('anomaly_enemy_base_ratio', '0.5'::jsonb)
+ON CONFLICT (key) DO UPDATE SET value = '0.5'::jsonb;
 
 -- Marker idempotence
 INSERT INTO _migrations_state (key, value)
