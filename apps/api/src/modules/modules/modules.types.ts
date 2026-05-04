@@ -15,9 +15,18 @@ const TARGET_CATEGORY_KEYS = ['light', 'medium', 'heavy', 'shield', 'defense', '
 
 /** V7-WeaponProfiles : weaponProfile shape — mirrors UnitWeaponProfile from
  *  the engine but kept inline so the API doesn't depend on engine private
- *  shapes for input validation. */
+ *  shapes for input validation.
+ *
+ *  V8.1 : `damage` est désormais OPTIONNEL — un module peut spécifier soit
+ *  `damage` (valeur absolue, ancien comportement V7) soit `damageMultiplier`
+ *  (% du damage de coque, comportement V8.1+). Migration 0078 a remplacé tous
+ *  les modules existants par damageMultiplier ; sans cet assouplissement le
+ *  safeParse échouait et les modules étaient invisibles côté front.
+ *
+ *  Le `.refine()` garantit qu'au moins un des deux est présent. */
 const weaponProfileSchema = z.object({
-  damage: z.number().int().min(0),
+  damage: z.number().min(0).optional(),
+  damageMultiplier: z.number().min(0).optional(),
   shots: z.number().int().min(0),
   targetCategory: z.enum(TARGET_CATEGORY_KEYS).optional(),
   rafale: z.object({
@@ -25,7 +34,10 @@ const weaponProfileSchema = z.object({
     count: z.number().int().min(0),
   }).optional(),
   hasChainKill: z.boolean().optional(),
-});
+}).refine(
+  (p) => p.damage !== undefined || p.damageMultiplier !== undefined,
+  { message: 'profile must specify damage or damageMultiplier' },
+);
 
 export const moduleEffectSchema = z.discriminatedUnion('type', [
   z.object({

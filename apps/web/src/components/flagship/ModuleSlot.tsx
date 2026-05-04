@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ModuleTooltip } from './ModuleTooltip';
 
@@ -53,6 +53,22 @@ export function ModuleSlot({ size, module, onClick, onUnequip }: Props) {
           )}
           aria-hidden
         />
+      )}
+
+      {/* V8.4 — Unequip cross at top-right, visible on hover */}
+      {module && onUnequip && (
+        <span
+          className={cn(
+            'absolute top-0.5 right-0.5 h-4 w-4 rounded-full',
+            'flex items-center justify-center',
+            'bg-rose-500/80 text-white',
+            'opacity-0 group-hover:opacity-100 transition-opacity',
+            'pointer-events-none',
+          )}
+          aria-hidden
+        >
+          <X className="h-2.5 w-2.5" />
+        </span>
       )}
 
       {module ? (
