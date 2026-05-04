@@ -64,7 +64,19 @@ export interface ProductionRates {
   mineraiPerHour: number;
   siliciumPerHour: number;
   hydrogenePerHour: number;
+  /** Energy efficiency factor — 1.0 means full energy, < 1 means brownout. */
   productionFactor: number;
+  /**
+   * True per-resource multipliers cumulating *all* sources except the energy
+   * brownout (planet type bonus × biomes × research × talents). Stays at 1.0
+   * for a vanilla planet with no research and no biomes; goes above (or
+   * below for governance malus) once bonuses are active.
+   */
+  mineraiMultiplier: number;
+  siliciumMultiplier: number;
+  hydrogeneMultiplier: number;
+  /** Energy production multiplier (research + talents on energy_production). */
+  energyMultiplier: number;
   energyProduced: number;
   energyConsumed: number;
   mineraiMineEnergyConsumption: number;
@@ -117,6 +129,10 @@ export function calculateProductionRates(
     siliciumPerHour: Math.floor(siliciumProduction(planet.siliciumMineLevel, siliciumPct * factor, prodConfig.silicium) * sBonus * tSilicium),
     hydrogenePerHour: Math.floor(hydrogeneProduction(planet.hydrogeneSynthLevel, planet.maxTemp, hydrogenePct * factor, prodConfig.hydrogene) * hBonus * tHydrogene),
     productionFactor: factor,
+    mineraiMultiplier: mBonus * tMinerai,
+    siliciumMultiplier: sBonus * tSilicium,
+    hydrogeneMultiplier: hBonus * tHydrogene,
+    energyMultiplier: energyBonus,
     energyProduced,
     energyConsumed,
     mineraiMineEnergyConsumption: mineraiEnergy,

@@ -114,11 +114,14 @@ export default function Resources() {
   const siliciumBuilding = findBuilding(BUILDING_IDS.silicium);
   const hydrogeneBuilding = findBuilding(BUILDING_IDS.hydrogene);
 
-  // Compute "next level" production via game-engine formulas. Uses the same
-  // productionFactor returned by the API so all biome/type/research bonuses
-  // are reflected. For energy, no factor is applied (matches the game-engine
-  // signature which doesn't take one).
+  // Production scaling factor reflects the energy brownout (1.0 by default).
+  // The cumulated *bonus* multipliers (planet type × biomes × research × talents)
+  // are now exposed per-resource so each card can show its own real bonus
+  // instead of an empty 0% derived from productionFactor.
   const productionFactor = resourceData?.rates.productionFactor ?? 1;
+  const mineraiMultiplier = resourceData?.rates.mineraiMultiplier ?? 1;
+  const siliciumMultiplier = resourceData?.rates.siliciumMultiplier ?? 1;
+  const hydrogeneMultiplier = resourceData?.rates.hydrogeneMultiplier ?? 1;
   const maxTemp = resourceData?.maxTemp ?? 0;
 
   const handleUpgrade = (buildingId: string) => () => {
@@ -212,15 +215,15 @@ export default function Resources() {
             perHour={resourceData?.rates.mineraiPerHour ?? 0}
             current={liveResources.minerai}
             capacity={resourceData?.rates.storageMineraiCapacity ?? 0}
-            productionFactor={productionFactor}
+            bonusMultiplier={mineraiMultiplier}
             productionAtCurrentLevel={
               mineraiBuilding && mineraiBuilding.currentLevel > 0
-                ? mineraiProduction(mineraiBuilding.currentLevel, productionFactor)
+                ? Math.floor(mineraiProduction(mineraiBuilding.currentLevel, productionFactor) * mineraiMultiplier)
                 : undefined
             }
             productionAtNextLevel={
               mineraiBuilding
-                ? mineraiProduction(mineraiBuilding.currentLevel + 1, productionFactor)
+                ? Math.floor(mineraiProduction(mineraiBuilding.currentLevel + 1, productionFactor) * mineraiMultiplier)
                 : undefined
             }
             building={mineraiBuilding}
@@ -248,15 +251,15 @@ export default function Resources() {
             perHour={resourceData?.rates.siliciumPerHour ?? 0}
             current={liveResources.silicium}
             capacity={resourceData?.rates.storageSiliciumCapacity ?? 0}
-            productionFactor={productionFactor}
+            bonusMultiplier={siliciumMultiplier}
             productionAtCurrentLevel={
               siliciumBuilding && siliciumBuilding.currentLevel > 0
-                ? siliciumProduction(siliciumBuilding.currentLevel, productionFactor)
+                ? Math.floor(siliciumProduction(siliciumBuilding.currentLevel, productionFactor) * siliciumMultiplier)
                 : undefined
             }
             productionAtNextLevel={
               siliciumBuilding
-                ? siliciumProduction(siliciumBuilding.currentLevel + 1, productionFactor)
+                ? Math.floor(siliciumProduction(siliciumBuilding.currentLevel + 1, productionFactor) * siliciumMultiplier)
                 : undefined
             }
             building={siliciumBuilding}
@@ -284,15 +287,15 @@ export default function Resources() {
             perHour={resourceData?.rates.hydrogenePerHour ?? 0}
             current={liveResources.hydrogene}
             capacity={resourceData?.rates.storageHydrogeneCapacity ?? 0}
-            productionFactor={productionFactor}
+            bonusMultiplier={hydrogeneMultiplier}
             productionAtCurrentLevel={
               hydrogeneBuilding && hydrogeneBuilding.currentLevel > 0
-                ? hydrogeneProduction(hydrogeneBuilding.currentLevel, maxTemp, productionFactor)
+                ? Math.floor(hydrogeneProduction(hydrogeneBuilding.currentLevel, maxTemp, productionFactor) * hydrogeneMultiplier)
                 : undefined
             }
             productionAtNextLevel={
               hydrogeneBuilding
-                ? hydrogeneProduction(hydrogeneBuilding.currentLevel + 1, maxTemp, productionFactor)
+                ? Math.floor(hydrogeneProduction(hydrogeneBuilding.currentLevel + 1, maxTemp, productionFactor) * hydrogeneMultiplier)
                 : undefined
             }
             building={hydrogeneBuilding}

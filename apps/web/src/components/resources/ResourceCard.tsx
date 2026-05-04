@@ -43,8 +43,13 @@ interface ResourceCardProps {
   current: number;
   /** Max storage capacity */
   capacity: number;
-  /** Cumulated multiplier (1.0 = neutral, 1.34 = +34% bonuses, 0.7 = -30% malus) */
-  productionFactor: number;
+  /**
+   * Cumulated *bonus* multiplier for this specific resource (planet type,
+   * biomes, research, talents). 1.0 = neutral, 1.34 = +34% bonuses, 0.7 =
+   * -30% malus. Note: this is NOT the energy efficiency factor — that one
+   * stays at 1.0 in normal play and only drops in a brownout.
+   */
+  bonusMultiplier: number;
 
   /** Production at the current level — for displaying the next-level gain */
   productionAtCurrentLevel?: number;
@@ -95,7 +100,7 @@ export function ResourceCard({
   perHour,
   current,
   capacity,
-  productionFactor,
+  bonusMultiplier,
   productionAtCurrentLevel,
   productionAtNextLevel,
   building,
@@ -115,7 +120,7 @@ export function ResourceCard({
   const remaining = Math.max(0, capacity - current);
   const secondsUntilFull = perHour > 0 ? (remaining / perHour) * 3600 : Infinity;
 
-  const factorPercent = Math.round((productionFactor - 1) * 100);
+  const factorPercent = Math.round((bonusMultiplier - 1) * 100);
   const factorTrend: 'up' | 'down' | 'flat' =
     factorPercent > 1 ? 'up' : factorPercent < -1 ? 'down' : 'flat';
 
