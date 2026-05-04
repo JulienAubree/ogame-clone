@@ -31,6 +31,15 @@ type AnomalyRow = typeof anomalies.$inferSelect;
 type FleetMap = Record<string, FleetEntry>;
 type LootShipsMap = Record<string, number>;
 
+/**
+ * Robust parser for game-config numbers : preserves intentional 0 values
+ * (kill-switch). `Number(x) || default` would clobber 0 with `default`.
+ */
+function parseConfigNumber(val: unknown, fallback: number): number {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export function createAnomalyService(
   db: Database,
   gameConfigService: GameConfigService,
@@ -503,15 +512,15 @@ export function createAnomalyService(
       // Mutualisé entre la branche runComplete et la branche survived classique
       // car les deux branches surviennent au même point (combat gagné).
       const xpConfig: XpConfig = {
-        perKillFpFactor: Number(config.universe.flagship_xp_per_kill_fp_factor) || 0.10,
-        perDepthBonus: Number(config.universe.flagship_xp_per_depth_bonus) || 100,
-        levelMultiplierPct: Number(config.universe.flagship_xp_level_multiplier_pct) || 0.05,
-        maxLevel: Number(config.universe.flagship_max_level) || 60,
+        perKillFpFactor: parseConfigNumber(config.universe.flagship_xp_per_kill_fp_factor, 0.10),
+        perDepthBonus: parseConfigNumber(config.universe.flagship_xp_per_depth_bonus, 100),
+        levelMultiplierPct: parseConfigNumber(config.universe.flagship_xp_level_multiplier_pct, 0.05),
+        maxLevel: parseConfigNumber(config.universe.flagship_max_level, 60),
       };
       const xpGainedCombat = xpFromCombat(result.enemyFP, xpConfig);
       const xpGainedDepthBonus = runComplete ? xpFromRunDepth(newDepth, xpConfig) : 0;
       const xpGainedTotal = xpGainedCombat + xpGainedDepthBonus;
-      const xpResult = await flagshipService.grantXp(userId, xpGainedTotal);
+      const xpResult = await flagshipService.grantXp(userId, xpGainedTotal, tx as unknown as Database);
       const levelUpPayload = xpResult.levelUp
         ? { newLevel: xpResult.newLevel, oldLevel: xpResult.oldLevel }
         : null;
@@ -1020,13 +1029,13 @@ export function createAnomalyService(
         // Pas de combat ici, donc seulement le bonus de profondeur.
         const config = await gameConfigService.getFullConfig();
         const xpConfig: XpConfig = {
-          perKillFpFactor: Number(config.universe.flagship_xp_per_kill_fp_factor) || 0.10,
-          perDepthBonus: Number(config.universe.flagship_xp_per_depth_bonus) || 100,
-          levelMultiplierPct: Number(config.universe.flagship_xp_level_multiplier_pct) || 0.05,
-          maxLevel: Number(config.universe.flagship_max_level) || 60,
+          perKillFpFactor: parseConfigNumber(config.universe.flagship_xp_per_kill_fp_factor, 0.10),
+          perDepthBonus: parseConfigNumber(config.universe.flagship_xp_per_depth_bonus, 100),
+          levelMultiplierPct: parseConfigNumber(config.universe.flagship_xp_level_multiplier_pct, 0.05),
+          maxLevel: parseConfigNumber(config.universe.flagship_max_level, 60),
         };
         const xpGainedDepth = xpFromRunDepth(row.currentDepth, xpConfig);
-        const xpResult = await flagshipService.grantXp(userId, xpGainedDepth);
+        const xpResult = await flagshipService.grantXp(userId, xpGainedDepth, tx as unknown as Database);
 
         return {
           ok: true,

@@ -172,10 +172,17 @@ export function createFlagshipService(
 
     /**
      * V4-XP (2026-05-04) : grant XP to the flagship + recompute level.
-     * No-op for amount <= 0. Wrapped in transaction with advisory lock for
-     * concurrent safety (multiple grantXp calls from concurrent advance/retreat).
+     * No-op for amount <= 0.
+     *
+     * If `executor` is provided (typically a tx from a caller's transaction),
+     * runs WITHOUT opening a new transaction or taking an advisory lock — assumes
+     * the caller already holds them. Prevents two-connection deadlock when called
+     * from within anomalyService.advance/retreat (which already lock on userId).
+     *
+     * If `executor` is omitted, opens its own transaction with advisory lock
+     * (standalone usage).
      */
-    async grantXp(userId: string, amount: number): Promise<{
+    async grantXp(userId: string, amount: number, executor?: Database): Promise<{
       newXp: number;
       oldLevel: number;
       newLevel: number;
@@ -186,9 +193,10 @@ export function createFlagshipService(
       const config = await gameConfigService.getFullConfig();
       const maxLevel = Number(config.universe.flagship_max_level) || 60;
 
-      return await db.transaction(async (tx) => {
-        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}::text))`);
-
+      // Inner work — same logic, just runs against either the provided executor
+      // or a fresh transaction. The executor branch skips the advisory lock
+      // (caller already holds it for the same userId).
+      const work = async (tx: Database) => {
         const [flagship] = await tx.select({
           id: flagships.id,
           xp: flagships.xp,
@@ -209,6 +217,17 @@ export function createFlagshipService(
         }).where(eq(flagships.id, flagship.id));
 
         return { newXp, oldLevel, newLevel, levelUp: newLevel > oldLevel };
+      };
+
+      if (executor) {
+        // Caller's transaction — skip new tx + advisory lock (caller holds it)
+        return work(executor);
+      }
+
+      // Standalone — fresh transaction with advisory lock
+      return await db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}::text))`);
+        return work(tx as unknown as Database);
       });
     },
 
