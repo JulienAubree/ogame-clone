@@ -96,30 +96,43 @@ async function loadFlagshipCombatConfig(
     baseArmor = Math.round(modified.armor);
   }
 
-  // V7-WeaponProfiles : build the flagship weaponProfiles array.
-  //  - base profile (hull's defaultWeaponProfile, with damage/shots derived
-  //    from the post-mods baseDamage / baseShotCount)
+  // V7-WeaponProfiles : build the flagship weapon batteries.
+  //  - 1 base profile from the hull's defaultWeaponProfile (damage/shots
+  //    derived from the post-mods baseDamage / baseShotCount)
   //  - +1 profile per equipped weapon module (effect.profile)
-  // The combat engine will tire avec tous ces profils par tour (jusqu'à 4 :
-  // 1 hull + 3 modules max).
+  // ShipCombatConfig's `weapons` field (NOT `weaponProfiles`) is what the
+  // combat engine consumes — see combat.ts line ~183 where it maps over
+  // `config.weapons` and falls back to a single synthetic battery if absent.
+  type WeaponBattery = NonNullable<ShipCombatConfig['weapons']>[number];
   const hullDefaultProfile = (hullConfig as { defaultWeaponProfile?: {
     targetCategory?: string;
     rafale?: { category?: string; count: number };
     hasChainKill?: boolean;
   } } | null)?.defaultWeaponProfile;
-  const baseWeaponProfile = {
+  const baseWeaponProfile: WeaponBattery = {
     damage: baseDamage,
     shots: baseShotCount,
     targetCategory: hullDefaultProfile?.targetCategory ?? 'medium',
-    ...(hullDefaultProfile?.rafale ? { rafale: hullDefaultProfile.rafale } : {}),
+    ...(hullDefaultProfile?.rafale && hullDefaultProfile.rafale.category
+      ? { rafale: { category: hullDefaultProfile.rafale.category, count: hullDefaultProfile.rafale.count } }
+      : {}),
     ...(hullDefaultProfile?.hasChainKill ? { hasChainKill: true } : {}),
   };
-  const weaponProfiles = [
-    baseWeaponProfile,
-    ...((modulesContext?.weaponModules ?? [])
-      .filter((m) => m.effect.type === 'weapon')
-      .map((m) => (m.effect as { type: 'weapon'; profile: typeof baseWeaponProfile }).profile)),
-  ];
+  const moduleBatteries: WeaponBattery[] = [];
+  for (const m of modulesContext?.weaponModules ?? []) {
+    if (m.effect.type !== 'weapon') continue;
+    const p = m.effect.profile;
+    moduleBatteries.push({
+      damage: p.damage,
+      shots: p.shots,
+      targetCategory: p.targetCategory ?? 'medium',
+      ...(p.rafale && p.rafale.category
+        ? { rafale: { category: p.rafale.category, count: p.rafale.count } }
+        : {}),
+      ...(p.hasChainKill ? { hasChainKill: true } : {}),
+    });
+  }
+  const weapons: WeaponBattery[] = [baseWeaponProfile, ...moduleBatteries];
 
   return {
     shipType: 'flagship',
@@ -129,8 +142,8 @@ async function loadFlagshipCombatConfig(
     baseHull,
     baseWeaponDamage: baseDamage,
     baseShotCount,
-    weaponProfiles,
-  } as ShipCombatConfig;
+    weapons,
+  };
 }
 
 /**
