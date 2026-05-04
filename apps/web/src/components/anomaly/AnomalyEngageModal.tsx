@@ -4,6 +4,7 @@ import { useGameConfig } from '@/hooks/useGameConfig';
 import { useToastStore } from '@/stores/toast.store';
 import { Button } from '@/components/ui/button';
 import { Zap, Sparkles, Wrench, X, Star } from 'lucide-react';
+import { resolveBonus } from '@exilium/game-engine';
 
 interface Props {
   open: boolean;
@@ -18,11 +19,23 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
   const { data: flagship } = trpc.flagship.get.useQuery(undefined, { enabled: open });
   const { data: gameConfig } = useGameConfig();  // wraps trpc.gameConfig.getAll
   const { data: exilium } = trpc.exilium.getBalance.useQuery(undefined, { enabled: open });
+  const { data: researchData } = trpc.research.list.useQuery(undefined, { enabled: open });
 
   const cost = Number(gameConfig?.universe?.anomaly_entry_cost_exilium) || 5;
   const repairCharges = Number(gameConfig?.universe?.anomaly_repair_charges_per_run) || 3;
   const balance = exilium?.balance ?? 0;
   const insufficientFunds = balance < cost;
+
+  // Research multipliers — applied on top of effective stats (level mult + hull bonuses)
+  // to match what the combat actually uses (see FlagshipStatsCard for reference).
+  const researchLevels: Record<string, number> = {};
+  for (const r of researchData?.items ?? []) {
+    researchLevels[r.id] = r.currentLevel;
+  }
+  const bonusDefs = gameConfig?.bonuses ?? [];
+  const weaponsMult = resolveBonus('weapons', null, researchLevels, bonusDefs);
+  const shieldingMult = resolveBonus('shielding', null, researchLevels, bonusDefs);
+  const armorMult = resolveBonus('armor', null, researchLevels, bonusDefs);
 
   const engageMutation = trpc.anomaly.engage.useMutation({
     onSuccess: () => {
@@ -49,6 +62,16 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
   const hullName = flagship.hullConfig?.name ?? 'Flagship';
   const effectiveStats = flagship.effectiveStats as Record<string, number | string> | null;
 
+  // Compose final combat stats : effectiveStats × research multipliers (combat-realistic)
+  const baseHull = Number(effectiveStats?.hull ?? flagship.hull);
+  const baseShield = Number(effectiveStats?.shield ?? flagship.shield);
+  const baseArmor = Number(effectiveStats?.baseArmor ?? flagship.baseArmor);
+  const baseWeapons = Number(effectiveStats?.weapons ?? flagship.weapons);
+  const finalHull = Math.round(baseHull * armorMult);
+  const finalShield = Math.round(baseShield * shieldingMult);
+  const finalArmor = Math.round(baseArmor * armorMult);
+  const finalWeapons = Math.round(baseWeapons * weaponsMult);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -74,9 +97,10 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
         </p>
 
         <div className="rounded-md bg-panel-light/50 border border-panel-border p-3 space-y-1.5 text-xs">
-          <div className="flex justify-between"><span className="text-gray-500">Hull</span><span>{effectiveStats?.hull ?? flagship.hull}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Bouclier</span><span>{effectiveStats?.shield ?? flagship.shield}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Armes</span><span>{effectiveStats?.weapons ?? flagship.weapons}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Coque</span><span>{finalHull}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Bouclier</span><span>{finalShield}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Blindage</span><span>{finalArmor}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Armement</span><span>{finalWeapons}</span></div>
           <div className="flex justify-between">
             <span className="text-gray-500 flex items-center gap-1.5">
               <Star className="h-3 w-3" /> Niveau pilote
