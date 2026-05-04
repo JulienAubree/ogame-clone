@@ -10,7 +10,7 @@ import { ModuleTooltip } from './ModuleTooltip';
  *   - layout horizontal au lieu de grid radiale
  *   - cards rectangulaires plus grandes
  *   - palette orange/amber au lieu de violet/indigo
- *   - badges "X tirs", "vs {cat}", "rafale", "chainKill"
+ *   - badges "X tirs", "vs {cat}", "rafale", "cascade"
  *
  * Le composant accepte un `inventory` Map (id → { name, image, kind, effect })
  * pour résoudre les slots équipés. Si le module n'a pas le bon kind ('weapon'),
@@ -172,8 +172,8 @@ function ArsenalSlot({ rarity, module, onClick, onUnequip }: SlotProps) {
                       </span>
                     )}
                     {profile.hasChainKill && (
-                      <span className="rounded bg-rose-900/70 border border-rose-500/50 text-rose-200 text-[8px] font-mono px-1 py-0" title="Chaîne de kill : tir bonus à chaque destruction">
-                        chain
+                      <span className="rounded bg-rose-900/70 border border-rose-500/50 text-rose-200 text-[8px] font-mono px-1 py-0" title="Cascade : tir bonus à chaque destruction">
+                        cascade
                       </span>
                     )}
                   </div>

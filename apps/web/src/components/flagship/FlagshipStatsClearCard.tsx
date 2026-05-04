@@ -454,7 +454,7 @@ export function FlagshipStatsClearCard({ flagship }: FlagshipStatsClearCardProps
                 {b.rafale && (
                   <> · rafale ×{b.rafale.count}{b.rafale.category ? ` vs ${formatTargetCategory(b.rafale.category)}` : ''}</>
                 )}
-                {b.hasChainKill && <> · chainKill</>}
+                {b.hasChainKill && <> · cascade</>}
               </div>
             </li>
           ))}

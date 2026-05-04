@@ -92,7 +92,7 @@ function OutcomeLine({ outcome }: { outcome: OutcomeApplied }) {
     const pct = Math.round(r.hullDelta * 100);
     parts.push(
       <span key="hull" className={pct > 0 ? 'text-emerald-400' : 'text-red-400'}>
-        Hull {pct > 0 ? '+' : ''}{pct}%
+        Coque {pct > 0 ? '+' : ''}{pct}%
       </span>,
     );
   }

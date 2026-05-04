@@ -35,7 +35,7 @@ function formatWeaponProfile(p: WeaponProfilePreview): string {
     const cat = p.rafale.category ? ` vs ${formatTargetCategory(p.rafale.category)}` : '';
     parts.push(`rafale ×${p.rafale.count}${cat}`);
   }
-  if (p.hasChainKill) parts.push('chainKill');
+  if (p.hasChainKill) parts.push('cascade');
   return parts.join(' · ');
 }
 
@@ -92,13 +92,13 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
 
   const engageMutation = trpc.anomaly.engage.useMutation({
     onSuccess: () => {
-      addToast(`✨ Anomaly engagée — flagship en mission`, 'success');
+      addToast(`✨ Anomalie engagée — vaisseau amiral en mission`, 'success');
       utils.anomaly.current.invalidate();
       utils.exilium.getBalance.invalidate();
       utils.flagship.get.invalidate();
       onClose();
     },
-    onError: (err) => addToast(err.message ?? 'Engage impossible', 'error'),
+    onError: (err) => addToast(err.message ?? 'Engagement impossible', 'error'),
   });
 
   // V7-WeaponProfiles : compose les weaponProfiles utilisés au combat :
@@ -171,7 +171,8 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
     engageMutation.mutate({ ships: {}, tier: selectedTier });
   }
 
-  const hullName = flagship.hullConfig?.name ?? 'Flagship';
+  const flagshipName = flagship.name ?? 'Vaisseau amiral';
+  const hullName = flagship.hullConfig?.name ?? 'Coque inconnue';
   const effectiveStats = flagship.effectiveStats as Record<string, number | string> | null;
 
   // Compose final combat stats : effectiveStats × research multipliers (combat-realistic)
@@ -213,7 +214,8 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-bold text-foreground leading-tight">Engager une anomalie</h2>
               <p className="text-[11px] text-violet-200/70 mt-0.5 truncate">
-                <strong className="text-foreground/90">{hullName}</strong> part seule — modules + charges feront la différence.
+                <strong className="text-foreground/90">{flagshipName}</strong>
+                <span className="text-violet-200/60"> · {hullName}</span> part seul — modules + charges feront la différence.
               </p>
             </div>
             <button
@@ -283,7 +285,7 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
             </div>
             <ul className="space-y-0.5 text-[11px]">
               {weaponProfiles.length === 0 ? (
-                <li className="text-muted-foreground italic">Aucun profil — vérifier la configuration du flagship.</li>
+                <li className="text-muted-foreground italic">Aucun profil — vérifier la configuration du vaisseau amiral.</li>
               ) : (
                 weaponProfiles.map((p, idx) => (
                   <li key={`${p.source}-${idx}`} className="flex items-baseline justify-between gap-2">
@@ -337,11 +339,11 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
             </div>
             <div className="grid grid-cols-2 gap-2 text-[10px]">
               <div className="flex items-center justify-between rounded bg-card/40 px-2 py-1">
-                <span className="text-muted-foreground">Enemy FP</span>
+                <span className="text-muted-foreground">FP ennemi</span>
                 <span className="font-mono tabular-nums text-foreground/90">~{enemyFpAtDepth1.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between rounded bg-card/40 px-2 py-1">
-                <span className="text-muted-foreground">Loot</span>
+                <span className="text-muted-foreground">Butin</span>
                 <span className="font-mono tabular-nums text-emerald-300">×{lootMult}</span>
               </div>
             </div>
@@ -378,7 +380,7 @@ export function AnomalyEngageModal({ open, onClose }: Props) {
               )}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              {confirming ? 'Confirmer ?' : engageMutation.isPending ? 'Engage…' : 'Engager'}
+              {confirming ? 'Confirmer ?' : engageMutation.isPending ? 'Engagement…' : 'Engager'}
             </Button>
           </div>
         </div>

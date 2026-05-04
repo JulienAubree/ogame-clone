@@ -27,7 +27,7 @@ export function FlagshipHelp({ open, onClose }: FlagshipHelpProps) {
       >
         Trois familles, chacune avec son rôle&nbsp;:
         <span className="block mt-1.5 space-y-0.5">
-          <span className="block"><span className="text-red-400 font-medium">Combat</span> — armement+, blindage+, profil de tir agressif (anti-medium / rafales / chainKill).</span>
+          <span className="block"><span className="text-red-400 font-medium">Combat</span> — armement+, blindage+, profil de tir agressif (anti-medium / rafales / cascade).</span>
           <span className="block"><span className="text-amber-400 font-medium">Industrielle</span> — coque robuste, missions de minage et recyclage de débris.</span>
           <span className="block"><span className="text-cyan-400 font-medium">Scientifique</span> — vitesse, capacités scan/exploration, missions de découverte.</span>
         </span>
@@ -45,7 +45,7 @@ export function FlagshipHelp({ open, onClose }: FlagshipHelpProps) {
         icon={<Crosshair className="h-3.5 w-3.5 text-orange-400" />}
         title="Arsenal"
       >
-        Trois slots d'arme indépendants des passives&nbsp;: <span className="text-foreground font-medium">1 commun</span>, <span className="text-foreground font-medium">1 rare</span>, <span className="text-foreground font-medium">1 épique</span>. Chaque arme ajoute un <span className="text-foreground font-medium">profil de tir</span> distinct (dégâts, nombre de tirs, cible privilégiée, rafale, chainKill) qui se cumule avec celui de la coque. Le combat tire avec <span className="text-foreground font-medium">tous</span> les profils par tour.
+        Trois slots d'arme indépendants des passives&nbsp;: <span className="text-foreground font-medium">1 commun</span>, <span className="text-foreground font-medium">1 rare</span>, <span className="text-foreground font-medium">1 épique</span>. Chaque arme ajoute un <span className="text-foreground font-medium">profil de tir</span> distinct (dégâts, nombre de tirs, cible privilégiée, rafale, cascade) qui se cumule avec celui de la coque. Le combat tire avec <span className="text-foreground font-medium">tous</span> les profils par tour.
       </FacilityHelpSection>
 
       <FacilityHelpSection
