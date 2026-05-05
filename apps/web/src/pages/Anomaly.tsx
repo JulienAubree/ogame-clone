@@ -19,6 +19,8 @@ import { AnomalyEngageModal } from '@/components/anomaly/AnomalyEngageModal';
 import { AnomalyEventCard } from '@/components/anomaly/AnomalyEventCard';
 import { AnomalyEventLog } from '@/components/anomaly/AnomalyEventLog';
 import { AnomalyCombatPreview } from '@/components/anomaly/AnomalyCombatPreview';
+import { AnomalyBossPreview } from '@/components/anomaly/AnomalyBossPreview';
+import { AnomalyBossVictoryModal } from '@/components/anomaly/AnomalyBossVictoryModal';
 import { AnomalyLootSummaryModal } from '@/components/anomaly/AnomalyLootSummaryModal';
 
 interface FleetEntry {
@@ -27,6 +29,19 @@ interface FleetEntry {
 }
 
 const MAX_DEPTH = 20;
+
+type BossBuffType =
+  | 'damage_boost'
+  | 'hull_repair'
+  | 'shield_amp'
+  | 'armor_amp'
+  | 'extra_charge'
+  | 'module_unlock';
+
+interface BossVictoryState {
+  boss: { id: string; name: string; title: string };
+  buffChoices: Array<{ type: BossBuffType; magnitude: number }>;
+}
 
 interface LootSummaryState {
   drops: Array<{ id: string; name: string; rarity: string; image: string; isFinal?: boolean }>;
@@ -61,6 +76,8 @@ export default function Anomaly() {
   const addToast = useToastStore((s) => s.addToast);
   const [engageOpen, setEngageOpen] = useState(false);
   const [lootSummary, setLootSummary] = useState<LootSummaryState | null>(null);
+  // V9 Boss : modal de récompense, ouvert quand advance() renvoie bossVictory != null.
+  const [bossVictory, setBossVictory] = useState<BossVictoryState | null>(null);
 
   // Snapshot of the active anomaly row, refreshed each render. We read from
   // it inside `onMutate` (NOT `onSuccess`) to capture the values BEFORE the
@@ -114,6 +131,18 @@ export default function Anomaly() {
       // number when this run cleared a max-depth threshold for the first time.
       if (data.newTierUnlocked) {
         addToast(`🏆 PALIER ${data.newTierUnlocked} DÉBLOQUÉ !`, 'success');
+      }
+
+      // V9 Boss — victoire boss : ouvre le modal de récompense (sauf wipe et
+      // sauf runComplete final, où le run est de toute façon fini). Le serveur
+      // marque defeated_boss_ids → applyBossBuff vérifiera le bon LIFO.
+      const bossVictoryData = (data as { bossVictory?: BossVictoryState | null }).bossVictory;
+      if (
+        data.outcome === 'survived' &&
+        bossVictoryData &&
+        bossVictoryData.buffChoices.length > 0
+      ) {
+        setBossVictory(bossVictoryData);
       }
 
       // In-run drop toast (per-combat module dropped on a survived combat).
@@ -321,6 +350,12 @@ export default function Anomaly() {
         resources={lootSummary?.resources ?? { minerai: 0, silicium: 0, hydrogene: 0 }}
         exiliumRefunded={lootSummary?.exiliumRefunded ?? 0}
         outcome={lootSummary?.outcome ?? 'survived'}
+      />
+      <AnomalyBossVictoryModal
+        open={!!bossVictory}
+        boss={bossVictory?.boss ?? null}
+        buffChoices={bossVictory?.buffChoices ?? []}
+        onClose={() => setBossVictory(null)}
       />
     </div>
   );
@@ -541,6 +576,13 @@ interface AnomalyRow {
   /** V4 : repair charges seeded at engage, burned via `useRepairCharge`. */
   repairChargesCurrent?: number;
   repairChargesMax?: number;
+  /** V9 Boss : id du boss à affronter au prochain noeud (set quand
+   *  nextNodeType='boss'). */
+  pendingBossId?: string | null;
+  /** V9 Boss : ids des boss déjà battus dans cette run. */
+  defeatedBossIds?: unknown;
+  /** V9 Boss : buffs actifs (cumulés des victoires boss). */
+  activeBuffs?: unknown;
 }
 
 function RunView({
@@ -568,8 +610,18 @@ function RunView({
     outcomeApplied: Record<string, unknown>;
     resolvedAt: string;
   }>;
+  const activeBuffs = (anomaly.activeBuffs ?? []) as Array<{
+    type: BossBuffType;
+    magnitude: number;
+    sourceBossId: string;
+  }>;
   const { data: gameConfig } = useGameConfig();
   const { data: content } = trpc.anomalyContent.get.useQuery();
+  // V9 Boss : récupère la pool une seule fois (statique seedée backend).
+  const { data: bossesPoolData } = trpc.anomaly.bossesPool.useQuery();
+  const currentBoss = anomaly.pendingBossId
+    ? (bossesPoolData?.bosses ?? []).find((b) => b.id === anomaly.pendingBossId) ?? null
+    : null;
   const equippedModules = (anomaly.equippedModules ?? {}) as Record<
     string,
     {
@@ -629,7 +681,20 @@ function RunView({
           repairPending={repairPending}
           actionInFlight={advancePending || retreatPending}
         />
-        {anomaly.nextNodeType === 'event' && anomaly.nextEventId ? (
+        {anomaly.nextNodeType === 'boss' && currentBoss ? (
+          <AnomalyBossPreview
+            boss={currentBoss}
+            depth={nextDepth}
+            enemyFleet={anomaly.nextEnemyFleet as Record<string, number> | null}
+            enemyFp={anomaly.nextEnemyFp ?? null}
+            ready={ready}
+            disabled={retreatPending}
+            totalShips={totalShips}
+            nextAt={nextAt}
+            advancePending={advancePending}
+            onAdvance={onAdvance}
+          />
+        ) : anomaly.nextNodeType === 'event' && anomaly.nextEventId ? (
           <EventNodeBlock
             eventId={anomaly.nextEventId}
             event={content?.events.find((e) => e.id === anomaly.nextEventId)}
@@ -657,6 +722,14 @@ function RunView({
       <aside className="space-y-3 min-w-0">
         <RunFlagshipStatsCard hullPercent={fleet['flagship']?.hullPercent ?? 1.0} />
         <RunFlagshipLoadoutCard equippedModules={equippedModules} />
+        {activeBuffs.length > 0 && (
+          <ActiveBuffsCard
+            buffs={activeBuffs}
+            bossesById={
+              new Map((bossesPoolData?.bosses ?? []).map((b) => [b.id, b]))
+            }
+          />
+        )}
         {/* V8 sidebar refresh : FleetCard supprimé — l'info hull% a migré dans
             RunFlagshipStatsCard. En mode anomaly flagship-only, lister "flagship ×1"
             était redondant et exposait le mot anglais à l'écran. */}
@@ -1342,6 +1415,84 @@ function LootCard({
           </div>
         )}
       </div>
+    </SidebarCard>
+  );
+}
+
+/**
+ * V9 Boss — sidebar card listing les buffs actifs accordés par les boss
+ * vaincus dans la run. Cachée si aucun buff n'est actif (côté caller).
+ * Pliable comme les autres cards du sidebar.
+ */
+const BUFF_LABELS_FR: Record<BossBuffType, string> = {
+  damage_boost:  'Surcharge offensive',
+  hull_repair:   'Réparation héroïque',
+  shield_amp:    'Bouclier renforcé',
+  armor_amp:     'Blindage renforcé',
+  extra_charge:  'Charge épique additionnelle',
+  module_unlock: 'Batterie improvisée',
+};
+
+const BUFF_TONES_FR: Record<BossBuffType, string> = {
+  damage_boost:  'text-rose-300 bg-rose-500/10 border-rose-500/30',
+  hull_repair:   'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
+  shield_amp:    'text-sky-300 bg-sky-500/10 border-sky-500/30',
+  armor_amp:     'text-amber-300 bg-amber-500/10 border-amber-500/30',
+  extra_charge:  'text-violet-300 bg-violet-500/10 border-violet-500/30',
+  module_unlock: 'text-orange-300 bg-orange-500/10 border-orange-500/30',
+};
+
+function describeBuff(type: BossBuffType, magnitude: number): string {
+  switch (type) {
+    case 'damage_boost':  return `+${Math.round(magnitude * 100)}% dégâts`;
+    case 'hull_repair':   return `+${Math.round(magnitude * 100)}% coque appliqué`;
+    case 'shield_amp':    return `+${Math.round(magnitude * 100)}% bouclier`;
+    case 'armor_amp':     return `+${Math.round(magnitude * 100)}% blindage`;
+    case 'extra_charge':  return `+${Math.floor(magnitude)} charge épique`;
+    case 'module_unlock': return '+1 batterie weapon';
+  }
+}
+
+function ActiveBuffsCard({
+  buffs,
+  bossesById,
+}: {
+  buffs: Array<{ type: BossBuffType; magnitude: number; sourceBossId: string }>;
+  bossesById: Map<string, { id: string; name: string }>;
+}) {
+  return (
+    <SidebarCard
+      label="Bénédictions de boss"
+      count={buffs.length}
+      accent="amber"
+      collapsibleKey="boss-buffs"
+    >
+      <ul className="space-y-1.5">
+        {buffs.map((b, i) => {
+          const boss = bossesById.get(b.sourceBossId);
+          return (
+            <li
+              key={`${b.sourceBossId}-${i}`}
+              className={cn(
+                'rounded-md border px-2 py-1.5 text-[11px] flex items-baseline gap-2',
+                BUFF_TONES_FR[b.type],
+              )}
+            >
+              <span className="font-mono font-semibold tracking-tight">
+                {BUFF_LABELS_FR[b.type]}
+              </span>
+              <span className="opacity-80 truncate flex-1">
+                {describeBuff(b.type, b.magnitude)}
+              </span>
+              {boss && (
+                <span className="text-[9px] opacity-60 truncate" title={`Source : ${boss.name}`}>
+                  ← {boss.name}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </SidebarCard>
   );
 }
