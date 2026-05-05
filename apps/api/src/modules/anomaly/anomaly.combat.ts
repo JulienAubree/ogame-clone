@@ -5,6 +5,7 @@ import type { Database } from '@exilium/db';
 import { DEFAULT_HULL_ID } from '@exilium/shared';
 import {
   simulateCombat,
+  computeUnitFP,
   computeFleetFP,
   scaleFleetToFP,
   anomalyEnemyFP,
@@ -20,7 +21,8 @@ import {
   type CombatContext,
   type BossSkillRuntime,
 } from '@exilium/game-engine';
-import type { ActiveBossBuff } from '../anomaly-content/anomaly-bosses.types.js';
+import type { ActiveBossBuff, BossEntry, BossStats, BossWeaponProfile } from '../anomaly-content/anomaly-bosses.types.js';
+import { bossUnitId } from '../anomaly-content/anomaly-bosses.types.js';
 import type { GameConfigService } from '../admin/game-config.service.js';
 import type { createModulesService } from '../modules/modules.service.js';
 import {
@@ -259,6 +261,67 @@ function buildAnomalyTemplateShips(
   return out;
 }
 
+/**
+ * V9.2 — Construit la `ShipCombatConfig` d'un boss-as-unit à partir de ses
+ * `bossStats`. Toujours `categoryId='boss'` pour qu'il soit ciblé en dernier
+ * (cf. COMBAT_CATEGORIES). Si `weaponProfiles` non défini, un profile unique
+ * est synthétisé depuis weapons / shotCount.
+ */
+export function buildBossShipConfig(boss: BossEntry, stats: BossStats): ShipCombatConfig {
+  const profiles: NonNullable<ShipCombatConfig['weapons']> = stats.weaponProfiles && stats.weaponProfiles.length > 0
+    ? stats.weaponProfiles.map((p: BossWeaponProfile) => {
+        // V8.1 — un profile peut déclarer damageMultiplier (× baseWeaponDamage)
+        // OU damage absolu. On propage les deux ; combat.ts choisit lequel
+        // appliquer (priorité au multiplicateur si présent).
+        const baseEntry: NonNullable<ShipCombatConfig['weapons']>[number] = {
+          damage: p.damage ?? 0,
+          shots: p.shots,
+          targetCategory: p.targetCategory ?? 'medium',
+        };
+        if (p.damageMultiplier !== undefined) baseEntry.damageMultiplier = p.damageMultiplier;
+        if (p.rafale && p.rafale.count > 0) {
+          baseEntry.rafale = {
+            category: p.rafale.category ?? 'medium',
+            count: p.rafale.count,
+          };
+        }
+        if (p.hasChainKill) baseEntry.hasChainKill = true;
+        return baseEntry;
+      })
+    : [{
+        damage: stats.weapons,
+        shots: stats.shotCount,
+        targetCategory: 'medium',
+      }];
+  return {
+    shipType: bossUnitId(boss.id),
+    categoryId: 'boss',
+    baseShield: stats.shield,
+    baseArmor: stats.armor,
+    baseHull: stats.hull,
+    baseWeaponDamage: stats.weapons,
+    baseShotCount: stats.shotCount,
+    weapons: profiles,
+  };
+}
+
+/**
+ * V9.2 — Convertit une ShipCombatConfig en UnitCombatStats (pour computeUnitFP /
+ * computeFleetFP). DRY helper utilisé dans le code anomaly et qui pourrait
+ * monter dans game-engine plus tard.
+ */
+function shipConfigToUnitStats(sc: ShipCombatConfig): UnitCombatStats {
+  return {
+    weapons: sc.baseWeaponDamage,
+    shotCount: sc.baseShotCount,
+    shield: sc.baseShield,
+    hull: sc.baseHull,
+    armor: sc.baseArmor,
+    weaponProfiles: sc.weapons,
+    categoryId: sc.categoryId,
+  };
+}
+
 
 export interface AnomalyCombatResult {
   outcome: 'attacker' | 'defender' | 'draw';
@@ -315,8 +378,23 @@ export async function generateAnomalyEnemy(
     /** V9 Boss — fpMultiplier additionnel appliqué au FP target (boss = 1.5×
      *  un combat normal de la même depth). */
     bossFpMultiplier?: number;
+    /**
+     * V9.2 — Boss à injecter dans la flotte. Si défini ET que `boss.bossStats`
+     * existe, l'unité boss apparaît dans `enemyFleet` avec id `boss:{id}` et
+     * count=1, et le FP target est réparti entre boss et escortes selon
+     * `boss.escortFpRatio`. Si `bossStats` absent, comportement V9 (FP
+     * boost diffus, pas de visuel boss en combat).
+     */
+    boss?: BossEntry | null;
   },
-): Promise<{ enemyFleet: Record<string, number>; enemyFP: number; playerFP: number }> {
+): Promise<{
+  enemyFleet: Record<string, number>;
+  enemyFP: number;
+  playerFP: number;
+  /** V9.2 — Stats du boss-as-unit injecté (si applicable), pour que le caller
+   *  puisse les passer à `runAnomalyNode` (qui les attache à shipConfigs). */
+  bossShipConfig?: ShipCombatConfig;
+}> {
   const config = await gameConfigService.getFullConfig();
 
   const baseShipConfigs = buildShipCombatConfigs(config);
@@ -412,10 +490,49 @@ export async function generateAnomalyEnemy(
     throw new Error('No combat ships available for anomaly composition');
   }
 
-  const enemyFleet = scaleFleetToFP(templateShips, Math.max(1, Math.round(targetEnemyFP)), shipStatsForFP, fpConfig);
+  // V9.2 — Boss-as-unit : si le boss a des bossStats, on l'injecte comme
+  // une vraie unité dans la flotte ennemie. Le FP target restant après
+  // déduction du FP boss est utilisé pour scaler les escortes (gardant
+  // la cohérence avec `targetEnemyFP`).
+  let bossShipConfig: ShipCombatConfig | undefined;
+  let bossUnitFP = 0;
+  if (args.boss && args.boss.bossStats) {
+    bossShipConfig = buildBossShipConfig(args.boss, args.boss.bossStats);
+    const bossStats = shipConfigToUnitStats(bossShipConfig);
+    bossUnitFP = computeUnitFP(bossStats, fpConfig);
+    // Inject le shipStats du boss pour que computeFleetFP le voie.
+    shipStatsForFP[bossShipConfig.shipType] = bossStats;
+  }
+
+  // FP target des escortes : le reste du target après déduction du FP boss,
+  // multiplié par `escortFpRatio` (default 0.4 = boss prend 60%, escortes 40%).
+  // Floor à 50 FP pour garantir au moins une petite escorte (sinon le boss
+  // en solo signifie pas de progression de combat = trop facile/dur selon
+  // les stats). Si bossUnitFP > targetEnemyFP, on n'a pas d'escorte (cas
+  // extrême : un boss sur-statué).
+  const escortRatio = args.boss?.escortFpRatio ?? 0.4;
+  const escortBudget = bossShipConfig
+    ? Math.max(50, Math.round((targetEnemyFP - bossUnitFP) * escortRatio))
+    : Math.max(1, Math.round(targetEnemyFP));
+
+  const enemyFleet = scaleFleetToFP(
+    templateShips,
+    escortBudget,
+    shipStatsForFP,
+    fpConfig,
+  );
+  // V9.2 — Inject le boss avec count=1 dans la flotte enemy.
+  if (bossShipConfig) {
+    enemyFleet[bossShipConfig.shipType] = 1;
+  }
   const enemyFP = computeFleetFP(enemyFleet, shipStatsForFP, fpConfig);
 
-  return { enemyFleet, enemyFP, playerFP };
+  return {
+    enemyFleet,
+    enemyFP,
+    playerFP,
+    ...(bossShipConfig ? { bossShipConfig } : {}),
+  };
 }
 
 /**
@@ -446,6 +563,13 @@ export async function runAnomalyNode(
     activeBuffs?: ActiveBossBuff[];
     /** V9 Boss — skills runtime injectés au combat quand le node est un boss. */
     bossSkills?: BossSkillRuntime[];
+    /**
+     * V9.2 — Boss à injecter dans la flotte ennemie. Si défini, son
+     * `bossStats` est convertie en `ShipCombatConfig` et merge dans
+     * `shipConfigs` pour que la simulation reconnaisse l'unité boss
+     * (id `boss:{id}`, count=1, category='boss').
+     */
+    boss?: BossEntry | null;
   },
 ): Promise<AnomalyCombatResult> {
   const config = await gameConfigService.getFullConfig();
@@ -509,6 +633,15 @@ export async function runAnomalyNode(
     }
   }
 
+  // V9.2 — Boss-as-unit : inject la ShipCombatConfig du boss s'il a des
+  // bossStats. Le combat reconnaît alors `boss:{id}` comme une unité full
+  // (hull/shield/armor/weapons) côté défender. Si bossStats absent, on
+  // skip et la fight reste en mode V9 (FP boost diffus).
+  if (args.boss && args.boss.bossStats) {
+    const bossConfig = buildBossShipConfig(args.boss, args.boss.bossStats);
+    shipConfigs[bossConfig.shipType] = bossConfig;
+  }
+
   // 3. Compute player FP on the *current* (degraded) stats
   const shipStatsForFP: Record<string, UnitCombatStats> = {};
   for (const [id, sc] of Object.entries(shipConfigs)) {
@@ -550,6 +683,14 @@ export async function runAnomalyNode(
   shipCosts['flagship'] = { minerai: 0, silicium: 0 }; // No debris from flagship
   const shipIdSet = new Set(Object.keys(config.ships));
   shipIdSet.add('flagship');
+  // V9.2 — Boss-as-unit : déclare l'unité boss dans shipIds + shipCosts pour
+  // que les phases d'analyse (debris, recovery) ne bronchent pas. Pas de
+  // debris ni de recovery sur un boss : c'est une entité unique.
+  if (args.boss && args.boss.bossStats) {
+    const bossId = bossUnitId(args.boss.id);
+    shipIdSet.add(bossId);
+    shipCosts[bossId] = { minerai: 0, silicium: 0 };
+  }
 
   const combatInput: CombatInput = {
     attackerFleet: playerShipCounts,

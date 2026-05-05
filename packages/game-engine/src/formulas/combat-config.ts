@@ -11,7 +11,14 @@ export const COMBAT_CATEGORIES: ShipCategory[] = [
   // une fois l'escorte de combat tombée. Cohérent avec une formation où les
   // supports sont à l'arrière de la ligne.
   { id: 'capital', name: 'Vaisseau amiral', targetable: false, targetOrder: 6 },
+  // V9.2 Boss-as-unit : le boss est non-targetable tant que des escortes vivent.
+  // targetOrder=8 pour qu'il soit ciblé APRES support (=7) en dernier ressort,
+  // mais en pratique le combat se résout avant car les escortes meurent d'abord.
+  // Le boss fait office de "dernier rempart" — quand le boss est solo (pas
+  // d'escorte), selectTarget le pickup via le fallback non-targetable comme
+  // pour capital aujourd'hui.
   { id: 'support', name: 'Support', targetable: false, targetOrder: 7 },
+  { id: 'boss', name: 'Boss', targetable: false, targetOrder: 8 },
 ];
 
 export function buildCombatConfig(

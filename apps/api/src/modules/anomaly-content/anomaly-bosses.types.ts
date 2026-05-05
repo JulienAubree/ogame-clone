@@ -49,6 +49,42 @@ const buffEntrySchema = z.object({
   magnitude: z.number().min(0).default(0.20),
 });
 
+/**
+ * V9.2 — Profile d'arme du boss-as-unit. Subset des champs supportés par
+ * `WeaponProfile` côté combat. Si `damage` est omis et `damageMultiplier`
+ * fourni, le combat consomme `bossStats.weapons × damageMultiplier`. Les
+ * boss anomaly peuvent cibler la category 'boss' aussi (utile pour des
+ * skills de boss qui se buffent eux-mêmes — non implémenté pour l'instant
+ * mais on garde l'option ouverte).
+ */
+const bossWeaponProfileSchema = z.object({
+  damage: z.number().min(0).optional(),
+  damageMultiplier: z.number().min(0).optional(),
+  shots: z.number().int().min(1),
+  targetCategory: z.enum(['light', 'medium', 'heavy', 'shield', 'defense', 'capital', 'support', 'boss']).optional(),
+  rafale: z.object({
+    category: z.enum(['light', 'medium', 'heavy', 'shield', 'defense', 'capital', 'support', 'boss']).optional(),
+    count: z.number().int().min(0),
+  }).optional(),
+  hasChainKill: z.boolean().optional(),
+});
+
+/**
+ * V9.2 Boss-as-unit — stats propres du vaisseau boss qui apparaît au combat.
+ * Quand fourni, le boss est injecté comme une vraie unité (1 unité de category
+ * 'boss', non-targetable tant que des escortes vivent). Quand absent, fallback
+ * sur le comportement V9 où le boss n'était qu'un fpMultiplier sur la flotte
+ * ennemie générique (boss-as-FP-multiplier, pas de visuel boss en combat).
+ */
+const bossStatsSchema = z.object({
+  hull: z.number().int().min(1),
+  shield: z.number().int().min(0).default(0),
+  armor: z.number().int().min(0).default(0),
+  weapons: z.number().int().min(0),
+  shotCount: z.number().int().min(1).default(1),
+  weaponProfiles: z.array(bossWeaponProfileSchema).max(4).optional(),
+}).optional();
+
 export const bossEntrySchema = z.object({
   id: z.string().min(1).max(40),
   enabled: z.boolean().default(true),
@@ -66,10 +102,23 @@ export const bossEntrySchema = z.object({
   skills: z.array(skillEntrySchema).min(1).max(2),
   /** Récompense au choix entre 2-3 buffs. Le joueur choisit dans le modal. */
   buffChoices: z.array(buffEntrySchema).min(1).max(3),
+  /** V9.2 — Stats propres du vaisseau boss. Si présent, boss-as-unit est
+   *  activé (cf. anomaly.combat.ts). Si absent, comportement V9 (boss-as-
+   *  FP-multiplier sur horde générique). */
+  bossStats: bossStatsSchema,
+  /**
+   * V9.2 — Part du FP target allouée aux escortes (le reste va à l'unité
+   * boss). Default 0.4 = 40% du FP target part aux escortes, 60% au boss.
+   * Si le boss n'a pas de `bossStats`, ce champ est ignoré (legacy V9 :
+   * 100% du FP target va à la horde générique).
+   */
+  escortFpRatio: z.number().min(0).max(1).default(0.4),
 });
 
 export type BossEntry = z.infer<typeof bossEntrySchema>;
 export type BossEntryInput = z.input<typeof bossEntrySchema>;
+export type BossStats = NonNullable<z.infer<typeof bossStatsSchema>>;
+export type BossWeaponProfile = z.infer<typeof bossWeaponProfileSchema>;
 
 /** Active buff entry stored on the anomaly row (jsonb array). */
 export interface ActiveBossBuff {
@@ -81,17 +130,33 @@ export interface ActiveBossBuff {
 /**
  * Convertit les skills d'un boss seedé en BossSkillRuntime[] (format attendu
  * par simulateCombat). Tous les skills d'un boss anomaly sont 'defender'.
+ *
+ * V9.2 — Si le boss possède un `bossStats`, on attache `bossShipType` au
+ * runtime pour que les hooks (shield_aura, regen, last_stand) ciblent
+ * uniquement l'unité boss (et pas les escortes qui partagent la même side).
  */
 export function bossSkillsToRuntime(boss: BossEntry): Array<{
   type: BossSkill;
   magnitude: number;
   side: 'defender';
   summonShipId?: string;
+  bossShipType?: string;
 }> {
+  const bossShipType = boss.bossStats ? bossUnitId(boss.id) : undefined;
   return boss.skills.map(s => ({
     type: s.type,
     magnitude: s.magnitude,
     side: 'defender' as const,
     ...(s.type === 'summon_drones' ? { summonShipId: 'interceptor' } : {}),
+    ...(bossShipType ? { bossShipType } : {}),
   }));
+}
+
+/**
+ * V9.2 — Identifiant de l'unité boss injectée dans la flotte enemy. On
+ * préfixe `boss:` pour qu'il ne collide jamais avec un shipId déclaré
+ * dans game-config (interceptor / frigate / cruiser / etc.).
+ */
+export function bossUnitId(bossId: string): string {
+  return `boss:${bossId}`;
 }

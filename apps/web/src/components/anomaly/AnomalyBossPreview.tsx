@@ -1,4 +1,4 @@
-import { Skull, Swords } from 'lucide-react';
+import { Heart, Shield, Skull, Swords } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Timer } from '@/components/common/Timer';
 import { useGameConfig } from '@/hooks/useGameConfig';
@@ -37,6 +37,14 @@ interface BossSkillEntry {
   magnitude: number;
 }
 
+interface BossStatsLite {
+  hull: number;
+  shield: number;
+  armor: number;
+  weapons: number;
+  shotCount: number;
+}
+
 interface BossEntry {
   id: string;
   name: string;
@@ -44,6 +52,8 @@ interface BossEntry {
   description: string;
   image?: string;
   skills: BossSkillEntry[];
+  /** V9.2 — Si présent, le boss apparaît comme une unité distincte avec HP bar. */
+  bossStats?: BossStatsLite | null;
 }
 
 interface Props {
@@ -79,8 +89,15 @@ export function AnomalyBossPreview({
   onAdvance,
 }: Props) {
   const { data: gameConfig } = useGameConfig();
-  const enemies = enemyFleet ? Object.entries(enemyFleet) : [];
+  const bossUnitKey = `boss:${boss.id}`;
+  // V9.2 — sépare le boss-as-unit des escortes (id préfixé `boss:` n'est
+  // pas dans game-config, donc on le filtre explicitement).
+  const enemies = enemyFleet
+    ? Object.entries(enemyFleet).filter(([id]) => id !== bossUnitKey)
+    : [];
   const hasEnemies = enemies.length > 0;
+  const hasBossUnit = !!boss.bossStats;
+  const escortLabel = hasBossUnit ? 'Escortes' : 'Escorte boss';
 
   return (
     <div className="border-t border-border/30 pt-4 -mx-2">
@@ -132,6 +149,11 @@ export function AnomalyBossPreview({
           </div>
         )}
 
+        {/* V9.2 — Stats boss (HP bar) si bossStats défini */}
+        {hasBossUnit && boss.bossStats && (
+          <BossStatsBlock stats={boss.bossStats} />
+        )}
+
         {/* Bloc menace */}
         <div className="px-4 sm:px-5 py-3 space-y-3">
           {hasEnemies ? (
@@ -139,7 +161,7 @@ export function AnomalyBossPreview({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-rose-300 font-semibold">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" />
-                  Escorte boss
+                  {escortLabel}
                 </div>
                 {enemyFp != null && (
                   <span className="text-rose-200 font-bold tabular-nums text-sm">
@@ -161,7 +183,9 @@ export function AnomalyBossPreview({
             </div>
           ) : (
             <div className="rounded-lg border border-border/30 bg-card/30 p-3 text-xs text-muted-foreground/80 text-center">
-              Composition ennemie non disponible — l'anomalie brouille vos capteurs.
+              {hasBossUnit
+                ? "Le boss se dresse seul — pas d'escorte."
+                : "Composition ennemie non disponible — l'anomalie brouille vos capteurs."}
             </div>
           )}
 
@@ -183,6 +207,52 @@ export function AnomalyBossPreview({
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * V9.2 — Bloc HP/shield/armor du boss-as-unit. Affiché entre les skills et
+ * les escortes pour bien marquer la séparation : le boss a sa barre, l'escorte
+ * sa liste. Pas de vraie barre de damage en preview (full HP avant combat),
+ * mais on affiche les stats brutes pour donner une idée de la difficulté.
+ */
+function BossStatsBlock({ stats }: { stats: BossStatsLite }) {
+  return (
+    <div className="px-4 sm:px-5 py-3 border-b border-rose-500/15 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[10px] uppercase tracking-[0.2em] font-mono font-semibold text-rose-300/80">
+          Coque ennemie
+        </div>
+        <div className="flex items-center gap-3 text-[11px] font-mono tabular-nums text-rose-200">
+          <span className="inline-flex items-center gap-1">
+            <Heart className="h-3 w-3 text-rose-400" />
+            {formatNumber(stats.hull)}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Shield className="h-3 w-3 text-sky-300" />
+            {formatNumber(stats.shield)}
+          </span>
+          {stats.armor > 0 && (
+            <span className="inline-flex items-center gap-1 text-amber-200/90">
+              ◆ {formatNumber(stats.armor)}
+            </span>
+          )}
+        </div>
+      </div>
+      {/* Barre HP visuelle (full pour le preview pre-combat) */}
+      <div className="h-2 rounded-full bg-rose-950/60 overflow-hidden border border-rose-500/30">
+        <div
+          className="h-full bg-gradient-to-r from-rose-500 via-rose-400 to-rose-500"
+          style={{ width: '100%' }}
+        />
+      </div>
+      <div className="flex items-center justify-between text-[10px] font-mono text-rose-300/70">
+        <span>
+          {formatNumber(stats.weapons)} dmg × {stats.shotCount} tir{stats.shotCount > 1 ? 's' : ''}
+        </span>
+        <span>Ciblé en dernier</span>
       </div>
     </div>
   );
