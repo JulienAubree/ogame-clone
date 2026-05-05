@@ -91,7 +91,7 @@ export default function FlagshipProfile() {
       />
 
       {(isIncapacitated || isHullRefit) && (
-        <div className="px-4 lg:px-6 space-y-3">
+        <div className="px-3 sm:px-4 lg:px-6 space-y-3">
           {isIncapacitated && (
             <IncapacitatedBanner
               name={flagship.name}
@@ -112,7 +112,7 @@ export default function FlagshipProfile() {
         </div>
       )}
 
-      <div className="px-4 lg:px-6">
+      <div className="px-3 sm:px-4 lg:px-6">
         <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-4 lg:gap-6">
           {/* Main : Modules + Arsenal + Inventory */}
           <main className="min-w-0 space-y-4">
@@ -120,7 +120,7 @@ export default function FlagshipProfile() {
           </main>
 
           {/* Sidebar : Stats clairs + Hull abilities (sticky on desktop) */}
-          <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
             <FlagshipStatsClearCard
               flagship={{
                 shield: flagship.shield,
@@ -298,7 +298,7 @@ function ModulesTab({ activeHullId }: { activeHullId: string }) {
       />
 
       <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
-        <div>
+        <div className="min-w-0">
           <ModuleLoadoutGrid
             slot={slot}
             inventory={inventoryMap}

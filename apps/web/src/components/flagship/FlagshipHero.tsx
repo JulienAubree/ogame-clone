@@ -99,8 +99,8 @@ export function FlagshipHero({
         }}
       />
 
-      <div className="relative px-4 pt-6 pb-5 lg:px-8 lg:pt-10 lg:pb-7">
-        <div className="flex items-start gap-3 sm:gap-4 lg:gap-5">
+      <div className="relative px-3 pt-5 pb-4 sm:px-4 sm:pt-6 sm:pb-5 lg:px-8 lg:pt-10 lg:pb-7">
+        <div className="flex items-start gap-2.5 sm:gap-4 lg:gap-5">
           {/* Cliquable round → opens FlagshipHelp */}
           <button
             type="button"
@@ -136,20 +136,20 @@ export function FlagshipHero({
             {statusBadge && (
               <span
                 className={cn(
-                  'absolute -top-1 -right-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider shadow-sm',
+                  'absolute -top-1 -right-1 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 sm:px-2 text-[9px] font-mono uppercase tracking-wider shadow-sm whitespace-nowrap',
                   statusBadge.tone,
                 )}
                 title={statusBadge.label}
               >
-                <AlertTriangle className="h-2.5 w-2.5" />
-                {statusBadge.label}
+                <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                <span className="hidden sm:inline">{statusBadge.label}</span>
               </span>
             )}
           </button>
 
           {/* Center : name + level + planet */}
           <div className="flex-1 min-w-0 pt-0.5 lg:pt-1">
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground truncate">
+            <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-foreground truncate">
               {flagship.name}
             </h1>
 
@@ -169,7 +169,7 @@ export function FlagshipHero({
                     style={{ width: `${Math.round(xpProgress * 100)}%` }}
                   />
                 </div>
-                <div className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono tabular-nums">
+                <div className="text-[10px] text-muted-foreground/80 mt-0.5 font-mono tabular-nums truncate">
                   {isMaxLevel
                     ? `${xp.toLocaleString('fr-FR')} XP (max)`
                     : `${xp.toLocaleString('fr-FR')} / ${nextLevelXp.toLocaleString('fr-FR')} XP`
@@ -182,10 +182,10 @@ export function FlagshipHero({
             {stationedPlanet && (
               <Link
                 to="/"
-                className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="mt-1.5 inline-flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <span className="truncate max-w-[180px]">{stationedPlanet.name}</span>
-                <span className="text-muted-foreground/50 font-mono text-[10px]">
+                <span className="truncate max-w-[140px] sm:max-w-[180px]">{stationedPlanet.name}</span>
+                <span className="text-muted-foreground/50 font-mono text-[10px] shrink-0">
                   [{stationedPlanet.galaxy}:{stationedPlanet.system}:{stationedPlanet.position}]
                 </span>
               </Link>
@@ -204,15 +204,18 @@ export function FlagshipHero({
             )}
           </div>
 
-          {/* Right : compact action buttons */}
-          <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 shrink-0">
+          {/* Right : compact action buttons.
+              Mobile : icônes seules, alignées en ligne avec un tap-target ≥36px
+              (h-9 w-9). Desktop : grandes pills label visible. */}
+          <div className="flex flex-row gap-1.5 sm:gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={onOpenImagePicker}
-              className="gap-1.5 border-violet-500/30 hover:bg-violet-950/40 hover:border-violet-400/60"
+              aria-label="Choisir une image"
+              className="gap-1.5 px-2 h-9 w-9 sm:w-auto sm:px-3 border-violet-500/30 hover:bg-violet-950/40 hover:border-violet-400/60"
             >
-              <ImageIcon className="h-3.5 w-3.5" />
+              <ImageIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               <span className="hidden sm:inline">Image</span>
             </Button>
             <Button
@@ -220,10 +223,11 @@ export function FlagshipHero({
               size="sm"
               onClick={onOpenHullChange}
               disabled={flagship.status !== 'active'}
-              className="gap-1.5 border-violet-500/30 hover:bg-violet-950/40 hover:border-violet-400/60"
+              aria-label="Changer de coque"
+              className="gap-1.5 px-2 h-9 w-9 sm:w-auto sm:px-3 border-violet-500/30 hover:bg-violet-950/40 hover:border-violet-400/60"
               title={flagship.status !== 'active' ? 'Coque modifiable uniquement quand active' : undefined}
             >
-              <HullIcon size={13} />
+              <HullIcon size={15} />
               <span className="hidden sm:inline">Coque</span>
             </Button>
           </div>
