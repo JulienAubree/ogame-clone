@@ -799,4 +799,283 @@ export const DEFAULT_ANOMALY_EVENTS: AnomalyEventEntryInput[] = [
       },
     ],
   },
+
+  // ─── V8.14 (2026-05-04) — Multi-choice + tone + skill checks ─────────────────
+  // Ajouts qui exploitent les nouvelles features : 4-5 choix, tones explicites,
+  // tests techniques avec failureOutcome (recherche insuffisante = malus au lieu
+  // de blocage). Conçus pour être lisibles côté UI : positive/risky/negative
+  // donnent au joueur une lecture rapide du danger.
+  {
+    id: 'embuscade-pirate-v2',
+    enabled: true,
+    tier: 'mid',
+    image: '',
+    title: 'Embuscade Pirate (Renforcée)',
+    description:
+      "Une bande de pirates émerge de l'anomalie. Leur chef hurle vos coordonnées sur la fréquence d'urgence. Quatre options s'offrent à vous.",
+    choices: [
+      {
+        label: 'Combattre frontalement',
+        tone: 'risky',
+        outcome: { hullDelta: -0.15, minerai: 2000 },
+        resolutionText: 'Vous repoussez l\'attaque mais votre coque encaisse de lourds dégâts. Le butin pirate est récupéré.',
+      },
+      {
+        label: 'Négocier (−2 exilium)',
+        tone: 'neutral',
+        outcome: { exilium: -2 },
+        resolutionText: 'Le pirate empoche le tribut et libère le passage.',
+      },
+      {
+        label: 'Bluffer en signature impériale (Énergie 5)',
+        tone: 'risky',
+        requiredResearch: { researchId: 'energyTech', minLevel: 5 },
+        outcome: { exilium: 1, hydrogene: 1500, silicium: 1000 },
+        resolutionText:
+          "Vous projetez une signature falsifiée d'escorte impériale. Les pirates s'enfuient et abandonnent une cache.",
+        failureOutcome: { hullDelta: -0.25, exilium: -1 },
+        failureResolutionText: 'Votre bluff échoue lamentablement. Les pirates rient avant de tirer — votre coque morfle.',
+      },
+      {
+        label: 'Fuir à pleine puissance',
+        tone: 'positive',
+        outcome: { hydrogene: -800 },
+        resolutionText: 'Vous brûlez du carburant pour fuir, mais sortez intact.',
+      },
+    ],
+  },
+  {
+    id: 'artefact-cite-tombeau',
+    enabled: true,
+    tier: 'deep',
+    image: '',
+    title: 'Artefact de la Cité-Tombeau',
+    description:
+      "Un artefact pulse au cœur d'un nid de capteurs anciens. Cinq options, chacune avec ses propres règles.",
+    choices: [
+      {
+        label: 'Le saisir à mains nues',
+        tone: 'negative',
+        hidden: true,
+        outcome: { hullDelta: -0.3, exilium: 4 },
+        resolutionText: 'Une décharge fauche votre équipage. L\'artefact contient toutefois de l\'exilium pur.',
+      },
+      {
+        label: 'Le scanner (Capteurs 6)',
+        tone: 'positive',
+        requiredResearch: { researchId: 'sensorNetwork', minLevel: 6 },
+        outcome: { exilium: 6, silicium: 4000 },
+        resolutionText: 'Le scan révèle une fréquence de désactivation. L\'artefact se laisse cueillir sans dégâts.',
+        failureOutcome: { hullDelta: -0.15 },
+        failureResolutionText:
+          'Vos capteurs sont trop primitifs. Le scan déclenche les défenses de l\'artefact et secoue la coque.',
+      },
+      {
+        label: 'Forcer avec des boucliers (Boucliers 7)',
+        tone: 'risky',
+        requiredResearch: { researchId: 'shielding', minLevel: 7 },
+        outcome: { exilium: 5, minerai: 6000 },
+        resolutionText: 'Vos boucliers absorbent la décharge. L\'artefact tombe dans vos mains sans casse.',
+        failureOutcome: { hullDelta: -0.4 },
+        failureResolutionText: 'Vos boucliers craquent sous la décharge. La coque morfle gravement mais vous repartez bredouille.',
+      },
+      {
+        label: 'Détruire à distance',
+        tone: 'neutral',
+        outcome: { silicium: 1500 },
+        resolutionText: 'L\'artefact explose. Vous récupérez quelques fragments dans les débris.',
+      },
+      {
+        label: 'Laisser dériver',
+        tone: 'positive',
+        outcome: {},
+        resolutionText: 'Vous gardez le cap, prudemment. L\'artefact reste là, intouché.',
+      },
+    ],
+  },
+  {
+    id: 'champ-asteroides-dense',
+    enabled: true,
+    tier: 'early',
+    image: '',
+    title: 'Champ d\'Astéroïdes Dense',
+    description:
+      'Un champ d\'astéroïdes traverse votre route. Riche en minerais, mais traverser à l\'aveugle peut coûter cher.',
+    choices: [
+      {
+        label: 'Foncer dans le tas',
+        tone: 'negative',
+        outcome: { hullDelta: -0.2, minerai: 2500 },
+        resolutionText: 'Les impacts sont nombreux mais votre coque ramène un beau butin de minerai.',
+      },
+      {
+        label: 'Naviguer en propulsion fine (Impulsion 4)',
+        tone: 'positive',
+        requiredResearch: { researchId: 'impulse', minLevel: 4 },
+        outcome: { minerai: 3500, silicium: 1000 },
+        resolutionText: 'Vos vaisseaux dansent entre les rochers. Récolte propre et abondante.',
+        failureOutcome: { hullDelta: -0.1, minerai: 800 },
+        failureResolutionText:
+          'Sans propulsion fine, vous frottez plus que prévu. Récolte modeste, coque cabossée.',
+      },
+      {
+        label: 'Contourner par le vide',
+        tone: 'positive',
+        outcome: { hydrogene: -500 },
+        resolutionText: 'Détour propre, peu de carburant consommé.',
+      },
+    ],
+  },
+  {
+    id: 'cache-imperiale-abandonnee',
+    enabled: true,
+    tier: 'mid',
+    image: '',
+    title: 'Cache Impériale Abandonnée',
+    description:
+      "Un dépôt impérial scellé, oublié dans une poche stable de l'anomalie. Le verrouillage est ancien mais coriace.",
+    choices: [
+      {
+        label: 'Forcer la porte au laser',
+        tone: 'risky',
+        outcome: { hullDelta: -0.1, minerai: 4000 },
+        resolutionText: 'La porte cède. Le butin est solide, mais l\'auto-défense vous a éraflé.',
+      },
+      {
+        label: 'Pirater le verrou (Informatique 5)',
+        tone: 'positive',
+        requiredResearch: { researchId: 'computerTech', minLevel: 5 },
+        outcome: { minerai: 6000, silicium: 4000, exilium: 2 },
+        resolutionText: 'Le verrou cède sous votre intrusion. Cache vidée proprement.',
+        failureOutcome: { hullDelta: -0.2 },
+        failureResolutionText: 'Le verrou détecte votre intrusion. Une charge piégée explose contre votre coque.',
+      },
+      {
+        label: 'Décoder le manifest (Espionnage 4)',
+        tone: 'risky',
+        requiredResearch: { researchId: 'espionageTech', minLevel: 4 },
+        outcome: { exilium: 3 },
+        resolutionText: 'Le manifest révèle l\'emplacement d\'un cache plus juteux ailleurs. Données monétisées en exilium.',
+        failureOutcome: {},
+        failureResolutionText: 'Sans expertise en espionnage, le manifest reste illisible. Vous repartez bredouille.',
+      },
+      {
+        label: 'Marquer la cache et passer',
+        tone: 'neutral',
+        outcome: {},
+        resolutionText: 'Vous notez les coordonnées et continuez la route. La cache attendra.',
+      },
+    ],
+  },
+  {
+    id: 'cache-abandonnee-paisible',
+    enabled: true,
+    tier: 'early',
+    image: '',
+    title: 'Cache Abandonnée',
+    description:
+      'Une vieille cache de prospecteurs, sans piège ni surveillance. Le seul choix qui se pose, c\'est ce que vous prenez.',
+    choices: [
+      {
+        label: 'Charger les minerais',
+        tone: 'positive',
+        outcome: { minerai: 2500 },
+        resolutionText: 'Caissons remplis. Travail propre.',
+      },
+      {
+        label: 'Charger le silicium',
+        tone: 'positive',
+        outcome: { silicium: 2500 },
+        resolutionText: 'Cristaux récupérés en bon état.',
+      },
+      {
+        label: 'Charger l\'hydrogène',
+        tone: 'positive',
+        outcome: { hydrogene: 2000 },
+        resolutionText: 'Réservoirs remplis sans incident.',
+      },
+    ],
+  },
+  {
+    id: 'tempete-electromagnetique',
+    enabled: true,
+    tier: 'deep',
+    image: '',
+    title: 'Tempête Électromagnétique',
+    description:
+      'Une tempête EM enveloppe le secteur. Elle paralyse les capteurs mais agit comme un brouilleur naturel — risque ou opportunité ?',
+    choices: [
+      {
+        label: 'Traverser sans réfléchir',
+        tone: 'negative',
+        outcome: { hullDelta: -0.25 },
+        resolutionText: 'Les surcharges grillent vos systèmes. Coque salement abîmée.',
+      },
+      {
+        label: 'Blindage spécial (Armure 8)',
+        tone: 'positive',
+        requiredResearch: { researchId: 'armor', minLevel: 8 },
+        outcome: { hullDelta: 0.1, exilium: 3 },
+        resolutionText: 'Votre blindage canalise les décharges et capte de l\'exilium en condensé.',
+        failureOutcome: { hullDelta: -0.3 },
+        failureResolutionText: 'Votre blindage est insuffisant. La tempête le fait fondre par endroits.',
+      },
+      {
+        label: 'Recharger les boucliers à la tempête (Boucliers 6)',
+        tone: 'risky',
+        requiredResearch: { researchId: 'shielding', minLevel: 6 },
+        outcome: { hullDelta: 0.2 },
+        resolutionText: 'Vos boucliers absorbent l\'énergie ambiante. Coque réparée par auto-régulation.',
+        failureOutcome: { hullDelta: -0.15 },
+        failureResolutionText: 'Vos boucliers obsolètes ne supportent pas la charge. Surchauffe et dégâts internes.',
+      },
+      {
+        label: 'Attendre la fin de la tempête',
+        tone: 'neutral',
+        outcome: { hydrogene: -1000 },
+        resolutionText: 'Vous brûlez du carburant à tourner sur place, mais en sortez intact.',
+      },
+    ],
+  },
+  {
+    id: 'derelict-armes-experimentales',
+    enabled: true,
+    tier: 'deep',
+    image: '',
+    title: 'Derelict Armé Expérimental',
+    description:
+      'Un destroyer expérimental, ses tourelles encore armées et asservies à un IA dégradée. Quatre approches possibles, chacune avec son tempo.',
+    choices: [
+      {
+        label: 'Désactiver à mains nues',
+        tone: 'negative',
+        outcome: { hullDelta: -0.4, silicium: 5000 },
+        resolutionText: 'L\'IA se défend férocement. Vous récupérez le butin mais payez le prix fort.',
+      },
+      {
+        label: 'Pirater l\'IA (Informatique 8)',
+        tone: 'positive',
+        requiredResearch: { researchId: 'computerTech', minLevel: 8 },
+        outcome: { silicium: 8000, exilium: 5 },
+        resolutionText: 'L\'IA se rend. Vous démantelez le destroyer pièce par pièce, sans dégâts.',
+        failureOutcome: { hullDelta: -0.35 },
+        failureResolutionText: 'L\'IA détecte votre tentative et active toutes ses défenses. Combat brutal pour battre en retraite.',
+      },
+      {
+        label: 'Surcharger ses armes (Armes 7)',
+        tone: 'risky',
+        requiredResearch: { researchId: 'weapons', minLevel: 7 },
+        outcome: { silicium: 6000, minerai: 4000 },
+        resolutionText: 'Vous induisez une surcharge des batteries. L\'IA explose, le butin reste intact.',
+        failureOutcome: { hullDelta: -0.5 },
+        failureResolutionText: 'Votre tentative de surcharge échoue. Les armes se retournent contre vous violemment.',
+      },
+      {
+        label: 'Saluer et passer',
+        tone: 'positive',
+        outcome: {},
+        resolutionText: 'Vous gardez le cap. L\'IA ne vous voit même pas.',
+      },
+    ],
+  },
 ];
