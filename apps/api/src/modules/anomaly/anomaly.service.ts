@@ -778,7 +778,7 @@ export function createAnomalyService(
      */
     async resolveEvent(userId: string, input: { choiceIndex: number }) {
       const choiceIndex = Math.floor(input.choiceIndex);
-      if (choiceIndex < 0 || choiceIndex > 2) {
+      if (choiceIndex < 0 || choiceIndex > 4) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Indice de choix invalide' });
       }
 
@@ -852,6 +852,10 @@ export function createAnomalyService(
         // V4 : gating par recherche — `researchId` correspond à un nom de
         // colonne camelCase sur la table user_research (ex: 'weapons',
         // 'energyTech'). On lit la ligne complète puis on extrait dynamiquement.
+        // V8.14 : skill check soft — si `failureOutcome` est défini, on bascule
+        // sur l'outcome d'échec au lieu de bloquer (UX rogue-lite : le joueur
+        // peut tenter sa chance même mal préparé).
+        let researchFailed = false;
         if (choice.requiredResearch) {
           const researchKey = choice.requiredResearch.researchId as keyof typeof userResearch;
           const column = userResearch[researchKey];
@@ -865,14 +869,22 @@ export function createAnomalyService(
             .where(eq(userResearch.userId, userId)).limit(1);
           const level = (research?.[researchKey as keyof typeof research] as number | undefined) ?? 0;
           if (level < choice.requiredResearch.minLevel) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Recherche ${choice.requiredResearch.researchId} niveau ${choice.requiredResearch.minLevel} requis`,
-            });
+            if (choice.failureOutcome) {
+              researchFailed = true;
+            } else {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Recherche ${choice.requiredResearch.researchId} niveau ${choice.requiredResearch.minLevel} requis`,
+              });
+            }
           }
         }
 
-        const outcome = choice.outcome;
+        // V8.14 : sélectionne l'outcome effectif (success vs failure skill check).
+        const outcome = researchFailed ? choice.failureOutcome! : choice.outcome;
+        const effectiveResolutionText = researchFailed
+          ? (choice.failureResolutionText || choice.resolutionText)
+          : choice.resolutionText;
 
         // Apply outcome (pure) on the fleet snapshot.
         const fleetBefore = row.fleet as FleetMap;
@@ -939,14 +951,16 @@ export function createAnomalyService(
 
         // V4 : moduleDrop outcome — grant 1 module of requested rarity
         // Doit être calculé AVANT newLogEntry pour persister le drop dans eventLog (audit/replay).
+        // V8.14 : on lit `outcome.moduleDrop` (effectif) et non `choice.outcome.moduleDrop` —
+        // le failureOutcome peut très bien NE PAS contenir de drop alors que le success oui.
         let droppedEventModule: { id: string; name: string; rarity: string; image: string } | null = null;
-        if (choice.outcome.moduleDrop) {
+        if (outcome.moduleDrop) {
           const [flagshipForDrop] = await tx.select({ id: flagships.id, hullId: flagships.hullId })
             .from(flagships).where(eq(flagships.userId, userId)).limit(1);
           if (flagshipForDrop && flagshipForDrop.hullId) {
             const moduleId = await modulesService.rollByRarity({
               flagshipHullId: flagshipForDrop.hullId,
-              rarity: choice.outcome.moduleDrop,
+              rarity: outcome.moduleDrop,
               executor: tx as unknown as Database,
             });
             if (moduleId) {
@@ -974,6 +988,10 @@ export function createAnomalyService(
             shipsLoss: outcome.shipsLoss ?? {},
             moduleDropId: droppedEventModule?.id ?? null,  // V4 : trace du drop pour audit
           },
+          // V8.14 — narrative qui matche l'outcome réellement appliqué.
+          resolutionText: effectiveResolutionText,
+          // V8.14 — flag explicite pour que le front puisse afficher "échec" différemment.
+          researchFailed,
           resolvedAt: new Date().toISOString(),
         };
 
@@ -1006,11 +1024,13 @@ export function createAnomalyService(
           outcome: 'event_resolved' as const,
           eventId: event.id,
           choiceIndex,
-          resolutionText: choice.resolutionText,
+          resolutionText: effectiveResolutionText,
           outcomeApplied: newLogEntry.outcomeApplied,
           nextNodeAt: nextNodeAt.toISOString(),
           nextEnemyFp: Math.round(nextEnemy.enemyFP),
           droppedModule: droppedEventModule,  // V4
+          // V8.14 : flag explicite pour le front (toast d'échec, etc.).
+          researchFailed,
         };
       });
     },

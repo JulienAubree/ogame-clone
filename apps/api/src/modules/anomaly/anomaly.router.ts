@@ -22,7 +22,7 @@ export function createAnomalyRouter(anomalyService: ReturnType<typeof createAnom
     }),
 
     resolveEvent: protectedProcedure
-      .input(z.object({ choiceIndex: z.number().int().min(0).max(2) }))
+      .input(z.object({ choiceIndex: z.number().int().min(0).max(4) }))
       .mutation(async ({ ctx, input }) => {
         return anomalyService.resolveEvent(ctx.userId!, input);
       }),

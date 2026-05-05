@@ -42,11 +42,25 @@ const choiceSchema = z.object({
   resolutionText: z.string().max(500).default(''),
   /** V4 : restreint l'éligibilité à un hull spécifique. */
   requiredHull: z.enum(['combat', 'industrial', 'scientific']).optional(),
-  /** V4 : restreint l'éligibilité à un niveau de recherche. */
+  /** V4 : restreint l'éligibilité à un niveau de recherche.
+   *  V8.14 : si `failureOutcome` est défini, le choix reste cliquable et
+   *  applique `failureOutcome` quand le niveau n'est pas atteint (skill
+   *  check raté). Sinon, comportement legacy = gate dur (throw 400). */
   requiredResearch: z.object({
     researchId: z.string(),
     minLevel: z.number().int().min(1),
   }).optional(),
+  /** V8.14 — outcome appliqué quand `requiredResearch` n'est pas rempli.
+   *  Permet les "skill checks" ratés (ex: "Étudier l'anomalie" → failure
+   *  = explosion qui endommage la coque). Si non défini, le choix devient
+   *  un gate dur (throw 400 comme avant V8.14). */
+  failureOutcome: outcomeSchema.optional(),
+  /** V8.14 — narrative shown after a failed skill check ; fallback sur
+   *  resolutionText si absent. */
+  failureResolutionText: z.string().max(500).optional(),
+  /** V8.14 — tag visuel pour aider le joueur à identifier le risque.
+   *  L'engine ne s'en sert PAS — pure UX hint pour le front. */
+  tone: z.enum(['positive', 'negative', 'risky', 'neutral']).optional(),
 });
 
 /**
@@ -72,7 +86,7 @@ const eventEntrySchema = z.object({
   image: z.string().max(500).default(''),
   title: z.string().min(1).max(80),
   description: z.string().min(1).max(1000),
-  choices: z.array(choiceSchema).min(2).max(3),
+  choices: z.array(choiceSchema).min(2).max(5),
 });
 
 export const anomalyContentSchema = z.object({
