@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Sparkles, AlertTriangle, Loader2, Lock, Package } from 'lucide-react';
+import { Sparkles, AlertTriangle, Loader2, Lock, Package, Zap, FlaskConical } from 'lucide-react';
 import { trpc } from '@/trpc';
 import { useToastStore } from '@/stores/toast.store';
 import { useGameConfig } from '@/hooks/useGameConfig';
 import { ExiliumIcon } from '@/components/common/ExiliumIcon';
 import { Timer } from '@/components/common/Timer';
 import { formatNumber } from '@/lib/format';
+import { resolveResearchName } from '@/lib/entity-details';
 import { cn } from '@/lib/utils';
 
 type HullId = 'combat' | 'industrial' | 'scientific';
 type ModuleRarity = 'common' | 'rare' | 'epic';
+type ChoiceTone = 'positive' | 'negative' | 'risky' | 'neutral';
 
 const HULL_LABELS: Record<HullId, string> = {
   combat: 'Combat',
@@ -29,6 +31,17 @@ const RARITY_COLORS: Record<ModuleRarity, string> = {
   epic: 'text-violet-300',
 };
 
+interface AnomalyEventOutcomeShape {
+  minerai: number;
+  silicium: number;
+  hydrogene: number;
+  exilium: number;
+  hullDelta: number;
+  shipsGain: Record<string, number>;
+  shipsLoss: Record<string, number>;
+  moduleDrop?: ModuleRarity;
+}
+
 interface AnomalyEvent {
   id: string;
   enabled: boolean;
@@ -39,19 +52,15 @@ interface AnomalyEvent {
   choices: Array<{
     label: string;
     hidden: boolean;
-    outcome: {
-      minerai: number;
-      silicium: number;
-      hydrogene: number;
-      exilium: number;
-      hullDelta: number;
-      shipsGain: Record<string, number>;
-      shipsLoss: Record<string, number>;
-      moduleDrop?: ModuleRarity;
-    };
+    outcome: AnomalyEventOutcomeShape;
     resolutionText: string;
     requiredHull?: HullId;
     requiredResearch?: { researchId: string; minLevel: number };
+    /** V8.14 — outcome appliqué quand requiredResearch n'est pas atteint. */
+    failureOutcome?: AnomalyEventOutcomeShape;
+    failureResolutionText?: string;
+    /** V8.14 — tag visuel pur UX. */
+    tone?: ChoiceTone;
   }>;
 }
 
@@ -77,6 +86,7 @@ export function AnomalyEventCard({ event, ready, disabled, nextAt }: Props) {
   // V4 : pré-validation gating côté front pour griser les choix non éligibles.
   const { data: flagship } = trpc.flagship.get.useQuery();
   const { data: researchData } = trpc.research.list.useQuery();
+  const { data: gameConfig } = useGameConfig();
   const flagshipHullId = (flagship?.hullId ?? null) as HullId | null;
   const researchLevels: Record<string, number> = {};
   for (const r of researchData?.items ?? []) {
@@ -87,6 +97,13 @@ export function AnomalyEventCard({ event, ready, disabled, nextAt }: Props) {
     return researchLevels[researchId] ?? 0;
   }
 
+  /**
+   * V8.14 : on distingue 2 niveaux d'inéligibilité.
+   *  - hull mismatch → gate dur (toujours bloquant)
+   *  - recherche insuffisante SANS failureOutcome → gate dur
+   *  - recherche insuffisante AVEC failureOutcome → cliquable mais "test
+   *    technique raté" (badge rouge, applique failureOutcome serveur-side).
+   */
   function getIneligibilityReason(
     choice: AnomalyEvent['choices'][number],
   ): string | null {
@@ -96,11 +113,31 @@ export function AnomalyEventCard({ event, ready, disabled, nextAt }: Props) {
     }
     if (
       choice.requiredResearch &&
-      getResearchLevel(choice.requiredResearch.researchId) < choice.requiredResearch.minLevel
+      getResearchLevel(choice.requiredResearch.researchId) < choice.requiredResearch.minLevel &&
+      !choice.failureOutcome  // V8.14 : avec failureOutcome → toujours cliquable
     ) {
-      return `Requiert ${choice.requiredResearch.researchId} niv. ${choice.requiredResearch.minLevel}`;
+      const name = resolveResearchName(choice.requiredResearch.researchId, gameConfig ?? undefined);
+      return `Requiert ${name} niv. ${choice.requiredResearch.minLevel}`;
     }
     return null;
+  }
+
+  /**
+   * V8.14 : retourne l'état du test technique pour un choix donné.
+   * `null` si pas de requiredResearch, sinon { current, min, passed }.
+   */
+  function getSkillCheck(
+    choice: AnomalyEvent['choices'][number],
+  ): { researchId: string; researchName: string; current: number; min: number; passed: boolean } | null {
+    if (!choice.requiredResearch) return null;
+    const current = getResearchLevel(choice.requiredResearch.researchId);
+    return {
+      researchId: choice.requiredResearch.researchId,
+      researchName: resolveResearchName(choice.requiredResearch.researchId, gameConfig ?? undefined),
+      current,
+      min: choice.requiredResearch.minLevel,
+      passed: current >= choice.requiredResearch.minLevel,
+    };
   }
 
   const resolveMutation = trpc.anomaly.resolveEvent.useMutation({
@@ -171,12 +208,14 @@ export function AnomalyEventCard({ event, ready, disabled, nextAt }: Props) {
           {event.choices.map((choice, idx) => {
             const ineligibilityReason = getIneligibilityReason(choice);
             const eligible = ineligibilityReason === null;
+            const skillCheck = getSkillCheck(choice);
             return (
               <ChoiceButton
                 key={idx}
                 choice={choice}
                 disabled={disabled || !ready || resolveMutation.isPending || !eligible}
                 ineligibilityReason={ineligibilityReason}
+                skillCheck={skillCheck}
                 onClick={() => eligible && handleChoice(idx, choice.hidden)}
               />
             );
@@ -203,20 +242,69 @@ export function AnomalyEventCard({ event, ready, disabled, nextAt }: Props) {
   );
 }
 
+/**
+ * V8.14 — palette par tone. `hidden` reste prioritaire (amber question-mark)
+ * mais on layer le tone par-dessus si défini. Neutral = style legacy.
+ */
+const TONE_STYLES: Record<ChoiceTone, { border: string; bg: string; hover: string; icon: React.ReactNode; label: string }> = {
+  positive: {
+    border: 'border-emerald-500/40',
+    bg: 'bg-emerald-500/5',
+    hover: 'hover:bg-emerald-500/10',
+    icon: <Sparkles className="h-3 w-3" />,
+    label: 'Favorable',
+  },
+  negative: {
+    border: 'border-red-500/40',
+    bg: 'bg-red-500/5',
+    hover: 'hover:bg-red-500/10',
+    icon: <AlertTriangle className="h-3 w-3" />,
+    label: 'Défavorable',
+  },
+  risky: {
+    border: 'border-amber-500/40',
+    bg: 'bg-amber-500/5',
+    hover: 'hover:bg-amber-500/10',
+    icon: <Zap className="h-3 w-3" />,
+    label: 'Risqué',
+  },
+  neutral: {
+    border: 'border-border/50',
+    bg: 'bg-card/40',
+    hover: 'hover:bg-card/70',
+    icon: null,
+    label: 'Neutre',
+  },
+};
+
+const TONE_TEXT_COLOR: Record<ChoiceTone, string> = {
+  positive: 'text-emerald-300',
+  negative: 'text-red-300',
+  risky: 'text-amber-300',
+  neutral: 'text-foreground/70',
+};
+
 function ChoiceButton({
   choice,
   disabled,
   ineligibilityReason,
+  skillCheck,
   onClick,
 }: {
   choice: AnomalyEvent['choices'][number];
   disabled: boolean;
   ineligibilityReason: string | null;
+  skillCheck: { researchId: string; researchName: string; current: number; min: number; passed: boolean } | null;
   onClick: () => void;
 }) {
   const ineligible = ineligibilityReason !== null;
   const summary = choice.hidden ? null : <OutcomeSummary outcome={choice.outcome} />;
   const moduleRarity = choice.outcome.moduleDrop;
+  const tone: ChoiceTone = choice.tone ?? 'neutral';
+  const toneStyle = TONE_STYLES[tone];
+  // V8.14 : un skill check raté avec failureOutcome rend le bouton cliquable
+  // mais on l'affiche en rouge "Test technique : échec probable".
+  const willFailSkillCheck = skillCheck !== null && !skillCheck.passed && choice.failureOutcome !== undefined;
   return (
     <button
       type="button"
@@ -225,9 +313,10 @@ function ChoiceButton({
       title={ineligibilityReason ?? undefined}
       className={cn(
         'w-full text-left rounded-md border px-3 py-2.5 transition-colors',
+        // hidden → amber (priorité) ; sinon palette par tone
         choice.hidden
           ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10'
-          : 'border-border/50 bg-card/40 hover:bg-card/70',
+          : cn(toneStyle.border, toneStyle.bg, toneStyle.hover),
         disabled && 'opacity-50 cursor-not-allowed hover:bg-transparent',
         ineligible && 'opacity-40 cursor-not-allowed hover:bg-transparent',
       )}
@@ -235,6 +324,18 @@ function ChoiceButton({
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm font-semibold text-foreground/90 flex-1">{choice.label}</span>
         <div className="flex items-center gap-2 shrink-0">
+          {!choice.hidden && tone !== 'neutral' && toneStyle.icon && (
+            <span
+              className={cn(
+                'text-[11px] uppercase tracking-wider flex items-center gap-1 rounded border px-1.5 py-0.5',
+                toneStyle.border,
+                TONE_TEXT_COLOR[tone],
+              )}
+            >
+              {toneStyle.icon}
+              {toneStyle.label}
+            </span>
+          )}
           {moduleRarity && (
             <span
               className={cn(
@@ -254,6 +355,28 @@ function ChoiceButton({
         </div>
       </div>
       {summary && <div className="mt-1.5">{summary}</div>}
+      {/* V8.14 — badge "test technique" : vert si réussi, rouge si raté
+          (ou amber si bloquant / pas de failureOutcome → géré via ineligible). */}
+      {skillCheck && !ineligible && (
+        <div
+          className={cn(
+            'mt-1.5 flex items-center gap-1 text-[11px]',
+            skillCheck.passed
+              ? 'text-emerald-400'
+              : willFailSkillCheck
+                ? 'text-red-400'
+                : 'text-amber-400/80',
+          )}
+        >
+          <FlaskConical className="h-3 w-3" />
+          <span>
+            Test {skillCheck.researchName} {skillCheck.current}/{skillCheck.min}
+          </span>
+          {!skillCheck.passed && willFailSkillCheck && (
+            <span className="font-semibold">— échec probable</span>
+          )}
+        </div>
+      )}
       {ineligible && (
         <div className="mt-1.5 flex items-center gap-1 text-[11px] text-amber-400/80">
           <Lock className="h-3 w-3" />

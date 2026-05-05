@@ -1392,6 +1392,17 @@ function ReportsCard({ reportIds }: { reportIds: string[] }) {
 
 // ─── Event node wrapper (auto-scroll into view) ─────────────────────────────
 
+interface AnomalyEventOutcomeShape {
+  minerai: number;
+  silicium: number;
+  hydrogene: number;
+  exilium: number;
+  hullDelta: number;
+  shipsGain: Record<string, number>;
+  shipsLoss: Record<string, number>;
+  moduleDrop?: 'common' | 'rare' | 'epic';
+}
+
 interface AnomalyEventShape {
   id: string;
   enabled: boolean;
@@ -1402,16 +1413,15 @@ interface AnomalyEventShape {
   choices: Array<{
     label: string;
     hidden: boolean;
-    outcome: {
-      minerai: number;
-      silicium: number;
-      hydrogene: number;
-      exilium: number;
-      hullDelta: number;
-      shipsGain: Record<string, number>;
-      shipsLoss: Record<string, number>;
-    };
+    outcome: AnomalyEventOutcomeShape;
     resolutionText: string;
+    requiredHull?: 'combat' | 'industrial' | 'scientific';
+    requiredResearch?: { researchId: string; minLevel: number };
+    /** V8.14 — outcome de skill check raté. */
+    failureOutcome?: AnomalyEventOutcomeShape;
+    failureResolutionText?: string;
+    /** V8.14 — tag visuel UX. */
+    tone?: 'positive' | 'negative' | 'risky' | 'neutral';
   }>;
 }
 
