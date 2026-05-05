@@ -47,6 +47,7 @@ export function createFeedbackService(db: Database, redis: Redis) {
           status: feedbacks.status,
           upvoteCount: feedbacks.upvoteCount,
           commentCount: feedbacks.commentCount,
+          pagePath: feedbacks.pagePath,
           createdAt: feedbacks.createdAt,
         })
         .from(feedbacks)
@@ -93,6 +94,7 @@ export function createFeedbackService(db: Database, redis: Redis) {
           status: feedbacks.status,
           upvoteCount: feedbacks.upvoteCount,
           commentCount: feedbacks.commentCount,
+          pagePath: feedbacks.pagePath,
           createdAt: feedbacks.createdAt,
           updatedAt: feedbacks.updatedAt,
         })
@@ -132,7 +134,7 @@ export function createFeedbackService(db: Database, redis: Redis) {
       return { ...feedback, hasVoted, comments };
     },
 
-    async create(userId: string, input: { type: 'bug' | 'idea' | 'feedback'; title: string; description: string }) {
+    async create(userId: string, input: { type: 'bug' | 'idea' | 'feedback'; title: string; description: string; pagePath?: string }) {
       await enforceRateLimit(redis, {
         key: `ratelimit:feedback:create:${userId}`,
         limit: FEEDBACK_CREATE_LIMIT,
@@ -145,6 +147,7 @@ export function createFeedbackService(db: Database, redis: Redis) {
           type: input.type,
           title: input.title,
           description: input.description,
+          pagePath: input.pagePath ?? null,
         })
         .returning();
 
@@ -231,6 +234,7 @@ export function createFeedbackService(db: Database, redis: Redis) {
           status: feedbacks.status,
           upvoteCount: feedbacks.upvoteCount,
           commentCount: feedbacks.commentCount,
+          pagePath: feedbacks.pagePath,
           createdAt: feedbacks.createdAt,
         })
         .from(feedbacks)
@@ -298,6 +302,7 @@ export function createFeedbackService(db: Database, redis: Redis) {
           upvoteCount: feedbacks.upvoteCount,
           commentCount: feedbacks.commentCount,
           adminNote: feedbacks.adminNote,
+          pagePath: feedbacks.pagePath,
           createdAt: feedbacks.createdAt,
         })
         .from(feedbacks)
@@ -335,6 +340,7 @@ export function createFeedbackService(db: Database, redis: Redis) {
           upvoteCount: feedbacks.upvoteCount,
           commentCount: feedbacks.commentCount,
           adminNote: feedbacks.adminNote,
+          pagePath: feedbacks.pagePath,
           createdAt: feedbacks.createdAt,
         })
         .from(feedbacks)

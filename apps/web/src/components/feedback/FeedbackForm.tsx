@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,12 @@ export function FeedbackForm({ open, onClose }: FeedbackFormProps) {
   const [type, setType] = useState<'bug' | 'idea' | 'feedback' | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [includePage, setIncludePage] = useState(true);
+
+  const location = useLocation();
+  // Capture once when the modal opens — avoids racing with the user
+  // navigating around in another tab while writing the report.
+  const [capturedPagePath] = useState(() => location.pathname + (location.search ?? ''));
 
   const utils = trpc.useUtils();
   const createMutation = trpc.feedback.create.useMutation({
@@ -56,13 +63,19 @@ export function FeedbackForm({ open, onClose }: FeedbackFormProps) {
     setType(null);
     setTitle('');
     setDescription('');
+    setIncludePage(true);
     onClose();
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!type || !title.trim() || !description.trim()) return;
-    createMutation.mutate({ type, title: title.trim(), description: description.trim() });
+    createMutation.mutate({
+      type,
+      title: title.trim(),
+      description: description.trim(),
+      pagePath: includePage ? capturedPagePath : undefined,
+    });
   }
 
   return (
@@ -127,6 +140,21 @@ export function FeedbackForm({ open, onClose }: FeedbackFormProps) {
             />
             <div className="text-right text-[10px] text-muted-foreground">{description.length}/2000</div>
           </div>
+
+          <label className="flex items-start gap-2 rounded-md border border-border/40 bg-card/40 p-2.5 cursor-pointer hover:bg-card/60 transition-colors">
+            <input
+              type="checkbox"
+              checked={includePage}
+              onChange={(e) => setIncludePage(e.target.checked)}
+              className="mt-0.5 h-3.5 w-3.5 accent-primary cursor-pointer"
+            />
+            <div className="flex-1 min-w-0 text-xs">
+              <div className="font-medium text-foreground">Inclure la page consultée</div>
+              <div className="text-muted-foreground font-mono truncate">
+                {capturedPagePath}
+              </div>
+            </div>
+          </label>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={resetAndClose}>Annuler</Button>

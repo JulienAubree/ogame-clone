@@ -163,6 +163,7 @@ export default function Feedbacks() {
             <tr>
               <th>Type</th>
               <th>Titre</th>
+              <th>Page</th>
               <th>Auteur</th>
               <th>Statut</th>
               <th>Votes</th>
@@ -176,6 +177,7 @@ export default function Feedbacks() {
               <tr key={item.id}>
                 <td className="text-center">{TYPE_EMOJIS[item.type] ?? ''}</td>
                 <td className="font-medium max-w-[200px] truncate">{item.title}</td>
+                <td className="text-sm text-gray-400 font-mono max-w-[160px] truncate" title={item.pagePath ?? ''}>{item.pagePath ?? '—'}</td>
                 <td className="text-sm text-gray-400">{item.username ?? '-'}</td>
                 <td>
                   <select
@@ -205,7 +207,7 @@ export default function Feedbacks() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center text-gray-500 py-8">Aucun feedback.</td>
+                <td colSpan={9} className="text-center text-gray-500 py-8">Aucun feedback.</td>
               </tr>
             )}
           </tbody>

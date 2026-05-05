@@ -14,6 +14,8 @@ export const feedbacks = pgTable('feedbacks', {
   upvoteCount: integer('upvote_count').notNull().default(0),
   commentCount: integer('comment_count').notNull().default(0),
   adminNote: text('admin_note'),
+  /** Page path the user was on when submitting (e.g. "/empire", "/missions"). Optional. */
+  pagePath: varchar('page_path', { length: 500 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

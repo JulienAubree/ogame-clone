@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/trpc';
 import { cn } from '@/lib/utils';
 import { timeAgo } from '@/lib/format';
-import { ThumbsUp, ArrowLeft, Send } from 'lucide-react';
+import { ThumbsUp, ArrowLeft, Send, ExternalLink } from 'lucide-react';
 
 const TYPE_CONFIG = {
   bug: { label: 'Bug', emoji: '🐛', className: 'bg-red-500/20 text-red-400' },
@@ -78,6 +78,17 @@ export default function FeedbackDetail() {
         </div>
 
         <p className="text-sm text-foreground/80 whitespace-pre-wrap">{feedback.description}</p>
+
+        {feedback.pagePath && (
+          <Link
+            to={feedback.pagePath}
+            className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors rounded-md border border-border/40 bg-card/40 px-2.5 py-1 font-mono"
+            title="Page consultée par l'auteur lors du report"
+          >
+            <ExternalLink className="h-3 w-3" />
+            <span>{feedback.pagePath}</span>
+          </Link>
+        )}
 
         <div className="flex items-center justify-between pt-2 border-t border-border/30">
           <div className="text-xs text-muted-foreground">

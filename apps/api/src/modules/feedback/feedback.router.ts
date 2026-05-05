@@ -76,6 +76,8 @@ export function createFeedbackRouter(
         type: z.enum(['bug', 'idea', 'feedback']),
         title: z.string().min(1).max(200),
         description: z.string().min(1).max(2000),
+        /** Page path the user was on (e.g. "/empire", "/missions"). Optional. */
+        pagePath: z.string().max(500).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         return feedbackService.create(ctx.userId!, input);
