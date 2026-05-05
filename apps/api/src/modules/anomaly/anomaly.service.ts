@@ -433,7 +433,8 @@ export function createAnomalyService(
         if (wipedRows.length === 0) {
           throw new TRPCError({ code: 'CONFLICT', message: 'État de l\'anomalie a changé entre-temps' });
         }
-        await flagshipService.incapacitate(userId);
+        // V8.13 : tx en arg pour rester sur la même connexion (anti-deadlock).
+        await flagshipService.incapacitate(userId, tx as unknown as Database);
 
         return {
           outcome: 'wiped' as const,
@@ -622,7 +623,9 @@ export function createAnomalyService(
             .where(eq(planetShips.planetId, home.id));
         }
 
-        await flagshipService.returnFromMission(userId, home.id);
+        // V8.13 : passer la tx pour éviter un deadlock (la tx tient déjà un lock
+        // sur la row flagships via grantXp ci-dessus).
+        await flagshipService.returnFromMission(userId, home.id, tx as unknown as Database);
 
         // V5-Tiers : unlock next tier if this run cleared a tier never completed before.
         // Le flagship n'est pas en scope ici — on fetch les colonnes tier dans la même tx
@@ -1093,7 +1096,8 @@ export function createAnomalyService(
             .where(eq(planetShips.planetId, home.id));
         }
 
-        await flagshipService.returnFromMission(userId, home.id);
+        // V8.13 : tx en arg pour éviter le deadlock (cf. branche runComplete).
+        await flagshipService.returnFromMission(userId, home.id, tx as unknown as Database);
 
         // V4-XP : grant XP bonus per-run (depth atteinte au moment du retreat).
         // Pas de combat ici, donc seulement le bonus de profondeur.

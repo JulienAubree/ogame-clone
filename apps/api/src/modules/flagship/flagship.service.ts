@@ -410,7 +410,12 @@ export function createFlagshipService(
       return updated;
     },
 
-    async incapacitate(userId: string) {
+    /**
+     * V8.13 — accepte un `executor` optionnel (`tx` ou `db`) pour pouvoir être
+     * appelée depuis l'intérieur d'une transaction sans risque de deadlock
+     * (cf. `returnFromMission` plus bas).
+     */
+    async incapacitate(userId: string, executor: Database = db) {
       const config = await gameConfigService.getFullConfig();
       const baseRepairSeconds = Number(config.universe['flagship_repair_duration_seconds']) || 7200;
 
@@ -420,7 +425,7 @@ export function createFlagshipService(
       const repairSeconds = Math.round(baseRepairSeconds / (1 + repairBonus));
 
       // Recuperer la planete mere
-      const [homePlanet] = await db
+      const [homePlanet] = await executor
         .select({ id: planets.id })
         .from(planets)
         .where(eq(planets.userId, userId))
@@ -431,7 +436,7 @@ export function createFlagshipService(
 
       const repairEndsAt = new Date(Date.now() + repairSeconds * 1000);
 
-      await db
+      await executor
         .update(flagships)
         .set({
           status: 'incapacitated',
@@ -450,8 +455,18 @@ export function createFlagshipService(
         .where(eq(flagships.userId, userId));
     },
 
-    async returnFromMission(userId: string, planetId: string) {
-      await db
+    /**
+     * V8.13 — accepte un `executor` optionnel (`tx` ou `db`) pour pouvoir être
+     * appelée depuis l'intérieur d'une transaction sans déclencher un deadlock.
+     *
+     * Bug historique : appelé depuis `runComplete` dans `anomaly.service.ts`,
+     * la fonction utilisait `db` (connexion séparée) alors que la tx parent
+     * tenait déjà un lock sur la row `flagships` (via le `select(...).for('update')`
+     * d'autres flows ou via grantXp dans la même tx). Les 2 connexions s'attendaient
+     * mutuellement → deadlock applicatif → "Combat en cours…" bloqué côté UI.
+     */
+    async returnFromMission(userId: string, planetId: string, executor: Database = db) {
+      await executor
         .update(flagships)
         .set({ status: 'active', planetId, updatedAt: new Date() })
         .where(eq(flagships.userId, userId));
