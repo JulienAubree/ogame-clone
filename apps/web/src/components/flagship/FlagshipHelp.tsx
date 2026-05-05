@@ -49,6 +49,13 @@ export function FlagshipHelp({ open, onClose }: FlagshipHelpProps) {
       </FacilityHelpSection>
 
       <FacilityHelpSection
+        icon={<Sparkles className="h-3.5 w-3.5 text-violet-400" />}
+        title="Champ d'application"
+      >
+        <span className="text-violet-300 font-medium">Modules passifs</span> et <span className="text-violet-300 font-medium">Arsenal</span> sont actifs <span className="text-foreground font-medium">uniquement pendant les runs d'anomalie</span>. En PvP, raid pirate, défense de planète ou riposte d'espionnage, le vaisseau amiral combat avec ses <span className="text-foreground font-medium">stats brutes</span> uniquement&nbsp;: niveau pilote, bonus de coque (passifs de hull) et recherches. Les modules et batteries d'armes équipées ici n'apportent aucun bonus hors anomalie.
+      </FacilityHelpSection>
+
+      <FacilityHelpSection
         icon={<Star className="h-3.5 w-3.5 text-yellow-400" />}
         title="XP & niveau pilote"
       >

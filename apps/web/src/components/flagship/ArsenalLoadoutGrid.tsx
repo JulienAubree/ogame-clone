@@ -242,13 +242,19 @@ export function ArsenalLoadoutGrid({ slot, inventory, onSlotClick, onUnequip }: 
   return (
     <section className="rounded-lg border border-orange-500/30 bg-gradient-to-br from-orange-950/30 via-stone-900/80 to-amber-950/30 p-4 space-y-3">
       <header className="flex items-center justify-between gap-2 border-b border-orange-500/20 pb-2">
-        <div className="flex items-center gap-2">
-          <Crosshair className="h-4 w-4 text-orange-400" />
-          <h3 className="text-sm font-bold uppercase tracking-wider text-orange-200">
+        <div className="flex items-center gap-2 min-w-0">
+          <Crosshair className="h-4 w-4 text-orange-400 shrink-0" />
+          <h3 className="text-sm font-bold uppercase tracking-wider text-orange-200 truncate">
             Arsenal de combat
           </h3>
+          <span
+            className="shrink-0 rounded border border-violet-400/40 bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-violet-300"
+            title="L'Arsenal n'est consommé que pendant les runs d'anomalie. En PvP/pirate/raid, les armes équipées ici n'apportent aucun bonus."
+          >
+            Anomalie uniquement
+          </span>
         </div>
-        <span className="text-[10px] text-muted-foreground font-mono">
+        <span className="text-[10px] text-muted-foreground font-mono shrink-0">
           3 armes max · 1 par rareté
         </span>
       </header>

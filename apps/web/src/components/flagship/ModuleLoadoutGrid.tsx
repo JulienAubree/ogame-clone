@@ -33,6 +33,14 @@ export function ModuleLoadoutGrid({ slot, inventory, onSlotClick, onUnequip }: P
 
   return (
     <div className="rounded-lg bg-card/30 backdrop-blur-sm p-4 lg:p-6 space-y-5 max-w-md mx-auto">
+      <div className="flex justify-center">
+        <span
+          className="rounded border border-violet-400/40 bg-violet-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-violet-300"
+          title="Les modules passifs (épique + rares + communs) ne sont consommés que pendant les runs d'anomalie. En PvP/pirate/raid, le vaisseau amiral combat avec ses stats brutes (sans bonus de modules)."
+        >
+          Anomalie uniquement
+        </span>
+      </div>
       {/* ─── ÉPIQUE ─── */}
       <section className="space-y-2">
         <span className={TIER_LABEL_CLASS}>Épique</span>

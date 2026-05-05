@@ -419,11 +419,19 @@ export function FlagshipStatsClearCard({ flagship }: FlagshipStatsClearCardProps
 
       {/* Weapon batteries breakdown */}
       <div>
-        <SectionHeader
-          icon={<Crosshair className="h-3.5 w-3.5 text-orange-400" />}
-          label={`Batteries d'armes (${computed.batteries.length})`}
-          color="text-orange-400"
-        />
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <SectionHeader
+            icon={<Crosshair className="h-3.5 w-3.5 text-orange-400" />}
+            label={`Batteries d'armes (${computed.batteries.length})`}
+            color="text-orange-400"
+          />
+          <span
+            className="shrink-0 rounded border border-violet-400/40 bg-violet-500/10 px-1.5 py-0.5 text-[8px] font-mono uppercase tracking-wider text-violet-300"
+            title="Les batteries d'armes (coque + modules d'arme) ne sont consommées que pendant les runs d'anomalie. En PvP/pirate/raid, le vaisseau amiral combat avec ses stats brutes (sans modules ni profils d'arme avancés)."
+          >
+            Anomalie uniquement
+          </span>
+        </div>
         <ul className="mt-2 space-y-1.5">
           {computed.batteries.map((b, i) => (
             <li
