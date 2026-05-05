@@ -487,23 +487,29 @@ export default function Anomalies() {
           </>
         ) : (
           <>
-            {/* V9.2 — Tab Boss : édition WIP, finalisation prévue.
-                Pour l'instant, affichage en lecture seule du pool actuel
-                (50 boss seedés, modifiable côté seed file). */}
-            <div className="flex h-full flex-1 flex-col items-center justify-center gap-4 rounded-lg border border-hull-700/40 bg-hull-950/40 p-12 text-center">
-              <Skull className="h-10 w-10 text-hull-400/70" />
-              <div>
-                <p className="text-sm font-semibold text-hull-100">
-                  Édition des boss — bientôt disponible
-                </p>
-                <p className="mt-1 text-xs text-hull-300/80">
-                  {draft.bosses.length} boss dans la pool. CRUD admin en cours
-                  d'implémentation. Modifie les valeurs via{' '}
-                  <code className="text-hull-200">anomaly-bosses.seed.ts</code>{' '}
-                  en attendant.
-                </p>
-              </div>
-            </div>
+            <BossRail
+              bosses={draft.bosses}
+              bossesByTier={bossesByTier}
+              selectedId={selectedBossId}
+              tierFilter={bossTierFilter}
+              onTierFilter={setBossTierFilter}
+              onSelect={setSelectedBossId}
+              onAdd={addBoss}
+            />
+            {selectedBoss ? (
+              <BossDetail
+                boss={selectedBoss}
+                onChange={(b) => setBossById(selectedBoss.id, b)}
+                onRemove={() => removeBossById(selectedBoss.id)}
+                onDuplicate={() => dupBoss(selectedBoss)}
+              />
+            ) : (
+              <EmptyDetail
+                icon={<Skull className="h-6 w-6 text-hull-400/60" />}
+                title="Aucun boss sélectionné"
+                hint="Ajoute un boss via le bouton + ou sélectionne-en un dans la pool."
+              />
+            )}
           </>
         )}
       </div>
@@ -1389,6 +1395,626 @@ function ShipDeltaField({
           className="w-14 rounded border border-panel-border bg-bg/60 px-1.5 py-1 text-xs text-foreground tabular-nums focus:border-hull-500 focus:outline-none disabled:opacity-40"
         />
       </div>
+    </div>
+  );
+}
+
+// ─── Boss rail (V9.2) ──────────────────────────────────────────────────────
+
+function BossRail({
+  bosses,
+  bossesByTier,
+  selectedId,
+  tierFilter,
+  onTierFilter,
+  onSelect,
+  onAdd,
+}: {
+  bosses: BossEntry[];
+  bossesByTier: Record<Tier, BossEntry[]>;
+  selectedId: string | null;
+  tierFilter: Tier | 'all';
+  onTierFilter: (t: Tier | 'all') => void;
+  onSelect: (id: string) => void;
+  onAdd: (tier: Tier) => void;
+}) {
+  const filtered = tierFilter === 'all' ? bosses : bosses.filter((b) => b.tier === tierFilter);
+  const totalEnabled = bosses.filter((b) => b.enabled).length;
+
+  return (
+    <aside className="border-r border-panel-border bg-bg/60 overflow-y-auto flex flex-col">
+      <div className="sticky top-0 z-10 border-b border-panel-border/60 bg-bg/95 backdrop-blur p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-gray-500">
+              Pool de boss
+            </div>
+            <div className="text-[10px] text-gray-600">
+              {totalEnabled}/{bosses.length} actifs
+            </div>
+          </div>
+          <div className="relative group">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded border border-rose-700/40 bg-rose-900/30 px-2 py-1 text-[11px] text-rose-300 hover:bg-rose-900/60"
+            >
+              <Plus className="h-3 w-3" /> Nouveau
+            </button>
+            <div className="invisible group-hover:visible group-focus-within:visible absolute right-0 top-full mt-1 z-20 min-w-[140px] rounded border border-panel-border bg-panel shadow-lg overflow-hidden">
+              {TIERS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => onAdd(t)}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-rose-900/40 ${TIER_TONE[t].text}`}
+                >
+                  + {t}{' '}
+                  <span className="text-gray-500 normal-case">({TIER_LABELS[t]})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-1">
+          <FilterChip
+            active={tierFilter === 'all'}
+            onClick={() => onTierFilter('all')}
+            label="Tous"
+            count={bosses.length}
+          />
+          {TIERS.map((t) => (
+            <FilterChip
+              key={t}
+              active={tierFilter === t}
+              onClick={() => onTierFilter(t)}
+              label={t}
+              count={bossesByTier[t].length}
+              tone={TIER_TONE[t].text}
+            />
+          ))}
+        </div>
+      </div>
+
+      <ul className="p-2 space-y-1">
+        {filtered.length === 0 ? (
+          <li className="rounded border border-dashed border-panel-border/40 p-4 text-center text-[11px] text-gray-600">
+            Aucun boss dans ce filtre.
+          </li>
+        ) : (
+          filtered.map((boss) => (
+            <li key={boss.id}>
+              <BossRailRow
+                boss={boss}
+                selected={boss.id === selectedId}
+                onClick={() => onSelect(boss.id)}
+              />
+            </li>
+          ))
+        )}
+      </ul>
+    </aside>
+  );
+}
+
+function BossRailRow({
+  boss,
+  selected,
+  onClick,
+}: {
+  boss: BossEntry;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const tone = TIER_TONE[boss.tier];
+  const hasStats = !!boss.bossStats;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group w-full flex items-center gap-2 rounded border px-2 py-1.5 text-left transition-all ${
+        selected
+          ? 'border-rose-500/50 bg-rose-950/40 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.15)]'
+          : 'border-transparent hover:bg-panel/40 hover:border-panel-border/60'
+      }`}
+    >
+      <span
+        className={`shrink-0 h-2 w-2 rounded-full ${
+          boss.enabled ? tone.dot : 'bg-gray-700'
+        } ${boss.enabled ? 'shadow-[0_0_4px_currentColor]' : ''}`}
+      />
+      <div className="min-w-0 flex-1">
+        <div
+          className={`truncate text-xs ${
+            boss.enabled
+              ? 'text-foreground/90 font-semibold'
+              : 'text-gray-600 italic line-through'
+          }`}
+        >
+          {boss.name}
+        </div>
+        <div className="flex items-center gap-2 text-[9px] font-mono uppercase tracking-wider mt-0.5">
+          <span className={tone.text}>{boss.tier}</span>
+          <span className="text-gray-600">·</span>
+          <span className="text-gray-500">{boss.skills.length}sk · {boss.buffChoices.length}b</span>
+          {hasStats && (
+            <>
+              <span className="text-gray-600">·</span>
+              <span className="text-emerald-400">unit</span>
+            </>
+          )}
+          {!hasStats && (
+            <>
+              <span className="text-gray-600">·</span>
+              <span className="text-amber-400/80">FP-only</span>
+            </>
+          )}
+        </div>
+      </div>
+      {selected && <ChevronRight className="h-3.5 w-3.5 text-rose-300 shrink-0" />}
+    </button>
+  );
+}
+
+// ─── Boss detail (V9.2) ────────────────────────────────────────────────────
+
+function BossDetail({
+  boss,
+  onChange,
+  onRemove,
+  onDuplicate,
+}: {
+  boss: BossEntry;
+  onChange: (b: BossEntry) => void;
+  onRemove: () => void;
+  onDuplicate: () => void;
+}) {
+  const tone = TIER_TONE[boss.tier];
+
+  function setSkill(idx: number, skill: BossSkillEntry) {
+    onChange({
+      ...boss,
+      skills: boss.skills.map((s, i) => (i === idx ? skill : s)),
+    });
+  }
+  function addSkill() {
+    if (boss.skills.length >= 2) return;
+    onChange({
+      ...boss,
+      skills: [...boss.skills, { type: 'armor_pierce', magnitude: 0.30 }],
+    });
+  }
+  function removeSkill(idx: number) {
+    if (boss.skills.length <= 1) return;
+    onChange({ ...boss, skills: boss.skills.filter((_, i) => i !== idx) });
+  }
+
+  function setBuff(idx: number, buff: BossBuffEntry) {
+    onChange({
+      ...boss,
+      buffChoices: boss.buffChoices.map((b, i) => (i === idx ? buff : b)),
+    });
+  }
+  function addBuff() {
+    if (boss.buffChoices.length >= 3) return;
+    onChange({
+      ...boss,
+      buffChoices: [...boss.buffChoices, { type: 'damage_boost', magnitude: 0.20 }],
+    });
+  }
+  function removeBuff(idx: number) {
+    if (boss.buffChoices.length <= 1) return;
+    onChange({ ...boss, buffChoices: boss.buffChoices.filter((_, i) => i !== idx) });
+  }
+
+  function toggleBossStats() {
+    if (boss.bossStats) {
+      // Remove stats — fallback FP-only mode.
+      const { bossStats, ...rest } = boss;
+      void bossStats;
+      onChange(rest as BossEntry);
+    } else {
+      // Inject default stats based on tier.
+      const defaults: Record<Tier, BossStatsEntry> = {
+        early: { hull: 280, shield: 110, armor: 7, weapons: 45, shotCount: 1 },
+        mid: { hull: 1100, shield: 400, armor: 18, weapons: 150, shotCount: 2 },
+        deep: { hull: 4500, shield: 1500, armor: 38, weapons: 600, shotCount: 3 },
+      };
+      onChange({ ...boss, bossStats: defaults[boss.tier] });
+    }
+  }
+
+  function setStats(patch: Partial<BossStatsEntry>) {
+    if (!boss.bossStats) return;
+    onChange({ ...boss, bossStats: { ...boss.bossStats, ...patch } });
+  }
+
+  return (
+    <main className="overflow-y-auto bg-bg/40">
+      <DetailHeader
+        eyebrow={`Boss · ${boss.tier}`}
+        eyebrowToneClass={tone.text}
+        title={
+          <span className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                boss.enabled ? tone.dot : 'bg-gray-600'
+              } ${boss.enabled ? 'shadow-[0_0_6px_currentColor]' : ''}`}
+            />
+            <span className="text-base font-semibold text-foreground/90">{boss.name}</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-600">
+              · {boss.id}
+            </span>
+          </span>
+        }
+        hint="Spawn aux profondeurs 1, 5, 10, 15, 20 selon le tier. Skills + buffs parmi les enums fixes."
+        actions={
+          <>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-gray-400">
+              <input
+                type="checkbox"
+                checked={boss.enabled}
+                onChange={(e) => onChange({ ...boss, enabled: e.target.checked })}
+                className="h-3.5 w-3.5 accent-rose-500"
+              />
+              <span className={boss.enabled ? 'text-emerald-300' : 'text-gray-500'}>
+                {boss.enabled ? 'Actif' : 'Désactivé'}
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={onDuplicate}
+              className="inline-flex items-center gap-1 rounded border border-panel-border px-2 py-1 text-[11px] text-gray-400 hover:border-hull-500/40 hover:text-hull-300 transition-colors"
+              title="Dupliquer ce boss"
+            >
+              <Copy className="h-3 w-3" /> Dupliquer
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="inline-flex items-center gap-1 rounded border border-panel-border px-2 py-1 text-[11px] text-gray-400 hover:border-red-500/40 hover:text-red-400 transition-colors"
+              title="Supprimer ce boss"
+            >
+              <Trash2 className="h-3 w-3" /> Supprimer
+            </button>
+          </>
+        }
+      />
+
+      <div className="p-6 space-y-6">
+        {/* Identity + image */}
+        <section className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <AnomalyImageSlot
+            slot={`boss-${boss.id}`}
+            value={boss.image}
+            aspect="16/9"
+            label="Image"
+            hint="1280×720 recommandé"
+            onChange={(path) => onChange({ ...boss, image: path })}
+          />
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="ID (kebab-case, immuable)">
+                <TextInput
+                  value={boss.id}
+                  onChange={(v) => onChange({ ...boss, id: v })}
+                  maxLength={40}
+                  placeholder="boss-id-stable"
+                />
+              </Field>
+              <Field label="Tier (depth pool)">
+                <select
+                  value={boss.tier}
+                  onChange={(e) => onChange({ ...boss, tier: e.target.value as BossEntry['tier'] })}
+                  className="w-full rounded border border-panel-border bg-bg/60 px-2 py-1 text-sm capitalize text-foreground focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500/40"
+                >
+                  <option value="early">early — depth 1, 5</option>
+                  <option value="mid">mid — depth 10, 15</option>
+                  <option value="deep">deep — depth 20</option>
+                </select>
+              </Field>
+            </div>
+            <Field label="Nom (max 80)">
+              <TextInput
+                value={boss.name}
+                onChange={(v) => onChange({ ...boss, name: v })}
+                maxLength={80}
+              />
+            </Field>
+            <Field label="Titre / sous-titre (max 120)">
+              <TextInput
+                value={boss.title}
+                onChange={(v) => onChange({ ...boss, title: v })}
+                maxLength={120}
+              />
+            </Field>
+            <Field label="Description (max 1000)">
+              <TextArea
+                value={boss.description}
+                onChange={(v) => onChange({ ...boss, description: v })}
+                rows={4}
+                maxLength={1000}
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="FP multiplier (1.0–5.0)">
+                <input
+                  type="number"
+                  step={0.1}
+                  min={1}
+                  max={5}
+                  value={boss.fpMultiplier}
+                  onChange={(e) =>
+                    onChange({ ...boss, fpMultiplier: Math.max(1, Math.min(5, Number(e.target.value) || 1)) })
+                  }
+                  className="w-full rounded border border-panel-border bg-bg/60 px-2 py-1.5 text-sm text-foreground tabular-nums focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500/40"
+                />
+              </Field>
+              <Field label="Escort FP ratio (0.0–1.0)">
+                <input
+                  type="number"
+                  step={0.05}
+                  min={0}
+                  max={1}
+                  value={boss.escortFpRatio ?? 0.4}
+                  onChange={(e) =>
+                    onChange({ ...boss, escortFpRatio: Math.max(0, Math.min(1, Number(e.target.value) || 0)) })
+                  }
+                  className="w-full rounded border border-panel-border bg-bg/60 px-2 py-1.5 text-sm text-foreground tabular-nums focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500/40"
+                />
+              </Field>
+            </div>
+          </div>
+        </section>
+
+        {/* Boss-as-unit stats */}
+        <section className="rounded border border-panel-border/60 bg-panel/20 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-[11px] font-mono uppercase tracking-[0.18em] text-rose-400">
+                Stats de l&apos;unité boss (V9.2)
+              </h3>
+              <p className="text-[10px] text-gray-600 mt-0.5">
+                Si activées : le boss apparaît comme une unité distincte (category &apos;boss&apos;), ciblée en dernier.
+                Sinon : boost FP diffus (legacy V9.1).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleBossStats}
+              className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] transition-colors ${
+                boss.bossStats
+                  ? 'border-rose-500/40 bg-rose-500/10 text-rose-300'
+                  : 'border-panel-border bg-panel/40 text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              {boss.bossStats ? 'Boss-as-unit activé' : 'Activer boss-as-unit'}
+            </button>
+          </div>
+          {boss.bossStats && (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <NumberField
+                label="Hull"
+                value={boss.bossStats.hull}
+                onChange={(v) => setStats({ hull: Math.max(1, v) })}
+              />
+              <NumberField
+                label="Shield"
+                value={boss.bossStats.shield}
+                onChange={(v) => setStats({ shield: Math.max(0, v) })}
+              />
+              <NumberField
+                label="Armor"
+                value={boss.bossStats.armor}
+                onChange={(v) => setStats({ armor: Math.max(0, v) })}
+              />
+              <NumberField
+                label="Weapons"
+                value={boss.bossStats.weapons}
+                onChange={(v) => setStats({ weapons: Math.max(0, v) })}
+              />
+              <NumberField
+                label="Shots"
+                value={boss.bossStats.shotCount}
+                onChange={(v) => setStats({ shotCount: Math.max(1, v) })}
+              />
+            </div>
+          )}
+          {boss.bossStats?.weaponProfiles && boss.bossStats.weaponProfiles.length > 0 && (
+            <div className="rounded border border-panel-border/40 bg-bg/30 p-2">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1">
+                Batteries personnalisées ({boss.bossStats.weaponProfiles.length})
+              </div>
+              <ul className="text-[10px] font-mono text-gray-400 space-y-0.5">
+                {boss.bossStats.weaponProfiles.map((p, i) => (
+                  <li key={i} className="truncate">
+                    [{i + 1}] dmg {p.damage ?? '—'} × {p.shots} → {p.targetCategory ?? 'medium'}
+                    {p.rafale && ` · raf ${p.rafale.count}× ${p.rafale.category}`}
+                    {p.hasChainKill && ' · chainKill'}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-1 text-[9px] text-gray-600">
+                Lecture seule (édition fine via seed file).
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Skills */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[11px] font-mono uppercase tracking-[0.18em] text-rose-400">
+              Skills boss ({boss.skills.length}/2)
+            </h3>
+            {boss.skills.length < 2 && (
+              <button
+                type="button"
+                onClick={addSkill}
+                className="inline-flex items-center gap-1 rounded border border-dashed border-rose-700/40 px-2 py-1 text-[10px] text-rose-300 hover:bg-rose-900/30"
+              >
+                <Plus className="h-3 w-3" /> Ajouter un skill
+              </button>
+            )}
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {boss.skills.map((sk, i) => (
+              <SkillEditor
+                key={i}
+                idx={i}
+                skill={sk}
+                canRemove={boss.skills.length > 1}
+                onChange={(s) => setSkill(i, s)}
+                onRemove={() => removeSkill(i)}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Buff choices */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[11px] font-mono uppercase tracking-[0.18em] text-rose-400">
+              Buffs récompense ({boss.buffChoices.length}/3)
+            </h3>
+            {boss.buffChoices.length < 3 && (
+              <button
+                type="button"
+                onClick={addBuff}
+                className="inline-flex items-center gap-1 rounded border border-dashed border-rose-700/40 px-2 py-1 text-[10px] text-rose-300 hover:bg-rose-900/30"
+              >
+                <Plus className="h-3 w-3" /> Ajouter un buff
+              </button>
+            )}
+          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {boss.buffChoices.map((bf, i) => (
+              <BuffEditor
+                key={i}
+                idx={i}
+                buff={bf}
+                canRemove={boss.buffChoices.length > 1}
+                onChange={(b) => setBuff(i, b)}
+                onRemove={() => removeBuff(i)}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function SkillEditor({
+  idx,
+  skill,
+  canRemove,
+  onChange,
+  onRemove,
+}: {
+  idx: number;
+  skill: BossSkillEntry;
+  canRemove: boolean;
+  onChange: (s: BossSkillEntry) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded border border-panel-border/60 bg-bg/40 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-rose-400">
+          Skill {idx + 1}
+        </span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-gray-500 hover:text-red-400"
+            title="Supprimer ce skill"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <Field label="Type">
+        <select
+          value={skill.type}
+          onChange={(e) => onChange({ ...skill, type: e.target.value as BossSkillType })}
+          className="w-full rounded border border-panel-border bg-bg/60 px-2 py-1 text-xs text-foreground focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500/40"
+        >
+          {BOSS_SKILL_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {BOSS_SKILL_LABELS[t]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Magnitude (% ou count)">
+        <input
+          type="number"
+          step={0.05}
+          min={0}
+          value={skill.magnitude}
+          onChange={(e) => onChange({ ...skill, magnitude: Math.max(0, Number(e.target.value) || 0) })}
+          className="w-full rounded border border-panel-border bg-bg/60 px-2 py-1.5 text-xs text-foreground tabular-nums focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500/40"
+        />
+      </Field>
+    </div>
+  );
+}
+
+function BuffEditor({
+  idx,
+  buff,
+  canRemove,
+  onChange,
+  onRemove,
+}: {
+  idx: number;
+  buff: BossBuffEntry;
+  canRemove: boolean;
+  onChange: (b: BossBuffEntry) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded border border-panel-border/60 bg-bg/40 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-rose-400">
+          Buff {idx + 1}
+        </span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-gray-500 hover:text-red-400"
+            title="Supprimer ce buff"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <Field label="Type">
+        <select
+          value={buff.type}
+          onChange={(e) => onChange({ ...buff, type: e.target.value as BossBuffType })}
+          className="w-full rounded border border-panel-border bg-bg/60 px-2 py-1 text-xs text-foreground focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500/40"
+        >
+          {BOSS_BUFF_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {BOSS_BUFF_LABELS[t]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Magnitude (% ou count)">
+        <input
+          type="number"
+          step={0.05}
+          min={0}
+          value={buff.magnitude}
+          onChange={(e) => onChange({ ...buff, magnitude: Math.max(0, Number(e.target.value) || 0) })}
+          className="w-full rounded border border-panel-border bg-bg/60 px-2 py-1.5 text-xs text-foreground tabular-nums focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500/40"
+        />
+      </Field>
     </div>
   );
 }
