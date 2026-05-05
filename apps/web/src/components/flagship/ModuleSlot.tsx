@@ -18,9 +18,9 @@ interface Props {
 }
 
 const SIZE_CLASSES: Record<Props['size'], string> = {
-  epic: 'h-20 w-20',
-  rare: 'h-16 w-16',
-  common: 'h-14 w-14',
+  epic: 'h-16 w-16 sm:h-20 sm:w-20',
+  rare: 'h-14 w-14 sm:h-16 sm:w-16',
+  common: 'h-12 w-12 sm:h-14 sm:w-14',
 };
 
 const RARITY_DOT: Record<string, string> = {

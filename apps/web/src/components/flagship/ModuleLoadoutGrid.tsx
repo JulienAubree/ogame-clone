@@ -32,10 +32,10 @@ export function ModuleLoadoutGrid({ slot, inventory, onSlotClick, onUnequip }: P
   const epicMod = slot.epic ? inventory.get(slot.epic) ?? null : null;
 
   return (
-    <div className="rounded-lg bg-card/30 backdrop-blur-sm p-4 lg:p-6 space-y-5 max-w-md mx-auto">
+    <div className="rounded-lg bg-card/30 backdrop-blur-sm p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 max-w-md mx-auto">
       <div className="flex justify-center">
         <span
-          className="rounded border border-violet-400/40 bg-violet-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-violet-300"
+          className="rounded border border-violet-400/40 bg-violet-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-violet-300 text-center"
           title="Les modules passifs (épique + rares + communs) ne sont consommés que pendant les runs d'anomalie. En PvP/pirate/raid, le vaisseau amiral combat avec ses stats brutes (sans bonus de modules)."
         >
           Anomalie uniquement
@@ -57,7 +57,7 @@ export function ModuleLoadoutGrid({ slot, inventory, onSlotClick, onUnequip }: P
       {/* ─── RARES ─── */}
       <section className="space-y-2">
         <span className={TIER_LABEL_CLASS}>Rares</span>
-        <div className="flex justify-center gap-3">
+        <div className="flex justify-center gap-2 sm:gap-3">
           {[0, 1, 2].map((idx) => {
             const m = slot.rare[idx] ? inventory.get(slot.rare[idx] as string) ?? null : null;
             return (
@@ -76,7 +76,7 @@ export function ModuleLoadoutGrid({ slot, inventory, onSlotClick, onUnequip }: P
       {/* ─── COMMUNS ─── */}
       <section className="space-y-2">
         <span className={TIER_LABEL_CLASS}>Communs</span>
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-1.5 sm:gap-2">
           {[0, 1, 2, 3, 4].map((idx) => {
             const m = slot.common[idx] ? inventory.get(slot.common[idx] as string) ?? null : null;
             return (

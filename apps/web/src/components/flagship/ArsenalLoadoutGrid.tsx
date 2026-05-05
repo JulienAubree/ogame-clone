@@ -106,7 +106,7 @@ function ArsenalSlot({ rarity, module, onClick, onUnequip }: SlotProps) {
         onClick={module ? onUnequip : onClick}
         aria-label={module ? `${module.name} — clic pour déséquiper` : `Clic pour équiper une arme ${RARITY_LABEL[rarity].toLowerCase()}`}
         className={cn(
-          'group relative h-32 sm:h-36 w-full rounded-md border-2 transition-all overflow-hidden',
+          'group relative h-28 sm:h-32 lg:h-36 w-full rounded-md border-2 transition-all overflow-hidden',
           module && !invalid
             ? 'bg-stone-950/40 hover:bg-stone-900/40'
             : 'flex flex-col items-stretch justify-between p-2',
@@ -240,8 +240,8 @@ export function ArsenalLoadoutGrid({ slot, inventory, onSlotClick, onUnequip }: 
   const epicMod = epicId ? inventory.get(epicId) ?? null : null;
 
   return (
-    <section className="rounded-lg border border-orange-500/30 bg-gradient-to-br from-orange-950/30 via-stone-900/80 to-amber-950/30 p-4 space-y-3">
-      <header className="flex items-center justify-between gap-2 border-b border-orange-500/20 pb-2">
+    <section className="rounded-lg border border-orange-500/30 bg-gradient-to-br from-orange-950/30 via-stone-900/80 to-amber-950/30 p-3 sm:p-4 space-y-3">
+      <header className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b border-orange-500/20 pb-2">
         <div className="flex items-center gap-2 min-w-0">
           <Crosshair className="h-4 w-4 text-orange-400 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider text-orange-200 truncate">
@@ -259,7 +259,7 @@ export function ArsenalLoadoutGrid({ slot, inventory, onSlotClick, onUnequip }: 
         </span>
       </header>
 
-      <div className="flex gap-3 sm:gap-4">
+      <div className="flex gap-2 sm:gap-3 lg:gap-4">
         <ArsenalSlot
           rarity="common"
           module={commonMod}
