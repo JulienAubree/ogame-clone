@@ -50,6 +50,17 @@ export const anomalies = pgTable('anomalies', {
   repairChargesMax:     smallint('repair_charges_max').notNull().default(3),
   /** Anomaly tiers (2026-05-04) : palier sélectionné à l'engage. */
   tier: smallint('tier').notNull().default(1),
+  /** V9 Boss (2026-05-04) : liste des buffs actifs accordés par les boss
+   *  vaincus dans cette run. Shape :
+   *  Array<{ type: BossBuff; magnitude: number; sourceBossId: string }>.
+   *  Appliqués au flagship pour le reste de la run. */
+  activeBuffs:        jsonb('active_buffs').notNull().default(sql`'[]'::jsonb`),
+  /** V9 Boss : id du boss à affronter au prochain noeud (set quand
+   *  next_node_type='boss'). Permet de persister la sélection sans
+   *  retoucher la pool à chaque tick. */
+  pendingBossId:      varchar('pending_boss_id', { length: 40 }),
+  /** V9 Boss : ids des boss déjà battus dans cette run (anti-répétition). */
+  defeatedBossIds:    jsonb('defeated_boss_ids').notNull().default(sql`'[]'::jsonb`),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 });
