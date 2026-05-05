@@ -974,7 +974,7 @@ function RunFlagshipLoadoutCard({
   const moduleMap = useMemo(() => {
     const map = new Map<string, {
       id: string; name: string; description?: string; rarity: string;
-      kind?: string; effect?: unknown;
+      kind?: string; effect?: unknown; image?: string;
     }>();
     for (const m of allModules ?? []) {
       map.set(m.id, {
@@ -984,6 +984,7 @@ function RunFlagshipLoadoutCard({
         rarity: m.rarity,
         kind: (m as { kind?: string }).kind ?? 'passive',
         effect: m.effect,
+        image: (m as { image?: string }).image,
       });
     }
     return map;
@@ -1010,10 +1011,48 @@ function RunFlagshipLoadoutCard({
   if (!hasPassives && !hasWeapons) return null;
 
   const TIER_DOT: Record<string, string> = {
-    epic:   'bg-violet-400',
+    epic:   'bg-violet-400 shadow-[0_0_4px_rgba(167,139,250,0.5)]',
     rare:   'bg-blue-400',
     common: 'bg-gray-400',
   };
+
+  /**
+   * V8.11 — mini thumbnail 24×24 pour les listes Modules/Arsenal de la sidebar.
+   * Image module si dispo, sinon fallback Sparkles (passive) / Crosshair (arme)
+   * teinté selon la rareté. Dot rareté en overlay top-left.
+   */
+  function ItemThumb({
+    image, kind, tier, name,
+  }: {
+    image?: string;
+    kind?: string;
+    tier: 'epic' | 'rare' | 'common';
+    name: string;
+  }) {
+    const isWeapon = kind === 'weapon';
+    const tint = tier === 'epic' ? 'text-violet-300' : tier === 'rare' ? 'text-blue-300' : 'text-gray-300';
+    return (
+      <div className="relative shrink-0 h-6 w-6 rounded overflow-hidden bg-card/40 border border-border/30">
+        {image ? (
+          <img
+            src={`${image}-thumb.webp`}
+            alt={name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
+            {isWeapon
+              ? <Crosshair className={cn('h-3 w-3', tint)} />
+              : <Sparkles className={cn('h-3 w-3', tint)} />}
+          </div>
+        )}
+        <span
+          className={cn('absolute top-0 left-0 h-1.5 w-1.5 rounded-br-sm', TIER_DOT[tier])}
+          aria-hidden
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm p-3 space-y-3">
@@ -1041,8 +1080,8 @@ function RunFlagshipLoadoutCard({
               return (
                 <li key={id}>
                   <ModuleTooltip module={mod} placement="left" wrapperClassName="block w-full">
-                    <div className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-card/60 cursor-help">
-                      <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', TIER_DOT[tier])} />
+                    <div className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-card/60 cursor-help">
+                      <ItemThumb image={mod.image} kind={mod.kind} tier={tier} name={mod.name} />
                       <span className="text-[11px] truncate">{mod.name}</span>
                     </div>
                   </ModuleTooltip>
@@ -1079,8 +1118,8 @@ function RunFlagshipLoadoutCard({
               return (
                 <li key={id}>
                   <ModuleTooltip module={mod} placement="left" wrapperClassName="block w-full">
-                    <div className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-card/60 cursor-help">
-                      <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', TIER_DOT[tier])} />
+                    <div className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-card/60 cursor-help">
+                      <ItemThumb image={mod.image} kind={mod.kind} tier={tier} name={mod.name} />
                       <span className="text-[11px] truncate flex-1">{mod.name}</span>
                       {profile && (
                         <span className="flex items-center gap-0.5 shrink-0">
