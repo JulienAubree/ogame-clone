@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Zap, ChevronLeft, ChevronDown, Trophy, Skull, X, FileText, Sparkles, Star, Crosshair } from 'lucide-react';
 import { ModuleTooltip } from '@/components/flagship/ModuleTooltip';
@@ -673,6 +673,8 @@ function RunView({
           <SidebarCard
             label="Événements résolus"
             count={eventLog.length}
+            collapsibleKey="events"
+            defaultCollapsed
           >
             <AnomalyEventLog log={eventLog as never} events={content.events} />
           </SidebarCard>
@@ -853,10 +855,55 @@ function RepairChargeButton({
  * du label "Flagship" en dur) + barre d'intégrité de coque intégrée (remplace
  * la `FleetCard` redondante en mode flagship-only).
  */
+/**
+ * V8.12 — hook de collapse persistant en localStorage. Une key par section
+ * de la sidebar pour que chaque joueur retrouve ses préférences de pliage
+ * entre les runs et reloads.
+ */
+function useCollapsed(key: string, defaultCollapsed = false): [boolean, () => void] {
+  const storageKey = `anomaly-sidebar-${key}-collapsed`;
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return defaultCollapsed;
+    try {
+      const v = window.localStorage.getItem(storageKey);
+      if (v === null) return defaultCollapsed;
+      return v === 'true';
+    } catch {
+      return defaultCollapsed;
+    }
+  });
+  const toggle = useCallback(() => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { window.localStorage.setItem(storageKey, String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, [storageKey]);
+  return [collapsed, toggle];
+}
+
+/**
+ * V8.12 — Header cliquable réutilisable avec chevron qui rotate selon
+ * l'état collapsed. Reste léger pour pouvoir s'imbriquer dans le header
+ * existant des cards custom (RunFlagshipStatsCard etc.).
+ */
+function CollapseChevron({ collapsed }: { collapsed: boolean }) {
+  return (
+    <ChevronDown
+      className={cn(
+        'h-3.5 w-3.5 text-muted-foreground/60 shrink-0 transition-transform duration-150',
+        collapsed && '-rotate-90',
+      )}
+      aria-hidden
+    />
+  );
+}
+
 function RunFlagshipStatsCard({ hullPercent }: { hullPercent: number }) {
   const { data: flagship } = trpc.flagship.get.useQuery();
   const { data: researchData } = trpc.research.list.useQuery();
   const { data: gameConfig } = useGameConfig();
+  const [collapsed, toggleCollapsed] = useCollapsed('flagship-stats');
 
   if (!flagship) return null;
 
@@ -882,48 +929,65 @@ function RunFlagshipStatsCard({ hullPercent }: { hullPercent: number }) {
   const flagshipName = flagship.name ?? 'Vaisseau amiral';
   const hullName = flagship.hullConfig?.name ?? 'Coque inconnue';
   const hullPct = Math.max(0, Math.min(100, Math.round(hullPercent * 100)));
+  const hullBarColor = hullPct > 60 ? 'bg-emerald-500/70' : hullPct > 30 ? 'bg-amber-500/70' : 'bg-red-500/70';
 
   return (
-    <div className="rounded-lg border border-violet-500/20 bg-card/30 backdrop-blur-sm p-3 space-y-3">
-      {/* Header : nom du vaisseau + niveau, sous-ligne hull */}
-      <div className="space-y-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 className="text-sm font-bold text-foreground truncate">
-            {flagshipName}
-          </h3>
-          <span className="text-[10px] font-mono tabular-nums text-violet-300/80 flex items-center gap-1 shrink-0">
-            <Star className="h-3 w-3" /> Niv. {level}
-          </span>
-        </div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-mono truncate">
-          {hullName}
-        </div>
-      </div>
-
-      {/* Hull bar — intégrité coque vivante (récupère hullPercent de l'anomaly fleet) */}
-      <div className="space-y-1">
-        <div className="flex items-baseline justify-between text-[10px]">
-          <span className="text-muted-foreground">Intégrité de coque</span>
-          <span className="font-mono tabular-nums text-foreground/85">{hullPct}%</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-          <div
-            className={cn(
-              'h-full transition-all',
-              hullPct > 60 ? 'bg-emerald-500/70' : hullPct > 30 ? 'bg-amber-500/70' : 'bg-red-500/70',
+    <div className="rounded-lg border border-violet-500/20 bg-card/30 backdrop-blur-sm overflow-hidden">
+      {/* Header cliquable : nom du vaisseau + niveau (toujours visible) */}
+      <button
+        type="button"
+        onClick={toggleCollapsed}
+        aria-expanded={!collapsed}
+        className="w-full p-3 text-left hover:bg-card/50 transition-colors"
+      >
+        <div className="space-y-1">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-sm font-bold text-foreground truncate flex-1">
+              {flagshipName}
+            </h3>
+            <span className="text-[10px] font-mono tabular-nums text-violet-300/80 flex items-center gap-1 shrink-0">
+              <Star className="h-3 w-3" /> Niv. {level}
+            </span>
+            <CollapseChevron collapsed={collapsed} />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-mono truncate flex-1">
+              {hullName}
+            </div>
+            {collapsed && (
+              <span className={cn(
+                'text-[10px] font-mono tabular-nums shrink-0',
+                hullPct > 60 ? 'text-emerald-300/90' : hullPct > 30 ? 'text-amber-300/90' : 'text-red-300/90',
+              )}>
+                ❤ {hullPct}%
+              </span>
             )}
-            style={{ width: `${hullPct}%` }}
-          />
+          </div>
         </div>
-      </div>
+      </button>
 
-      {/* Stat tiles — pattern aligné sur FlagshipStatsClearCard */}
-      <div className="grid grid-cols-2 gap-2">
-        <SidebarStatTile icon={<HullIcon size={14} />} label="Coque" value={finalHull} tone="text-slate-200" iconTone="text-slate-400" />
-        <SidebarStatTile icon={<ShieldIcon size={14} />} label="Bouclier" value={finalShield} tone="text-sky-300" iconTone="text-sky-400" />
-        <SidebarStatTile icon={<ArmorIcon size={14} />} label="Blindage" value={finalArmor} tone="text-amber-300" iconTone="text-amber-400" />
-        <SidebarStatTile icon={<WeaponsIcon size={14} />} label="Armement" value={finalWeapons} tone="text-red-300" iconTone="text-red-400" />
-      </div>
+      {!collapsed && (
+        <div className="px-3 pb-3 space-y-3">
+          {/* Hull bar — intégrité coque vivante */}
+          <div className="space-y-1">
+            <div className="flex items-baseline justify-between text-[10px]">
+              <span className="text-muted-foreground">Intégrité de coque</span>
+              <span className="font-mono tabular-nums text-foreground/85">{hullPct}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+              <div className={cn('h-full transition-all', hullBarColor)} style={{ width: `${hullPct}%` }} />
+            </div>
+          </div>
+
+          {/* Stat tiles */}
+          <div className="grid grid-cols-2 gap-2">
+            <SidebarStatTile icon={<HullIcon size={14} />} label="Coque" value={finalHull} tone="text-slate-200" iconTone="text-slate-400" />
+            <SidebarStatTile icon={<ShieldIcon size={14} />} label="Bouclier" value={finalShield} tone="text-sky-300" iconTone="text-sky-400" />
+            <SidebarStatTile icon={<ArmorIcon size={14} />} label="Blindage" value={finalArmor} tone="text-amber-300" iconTone="text-amber-400" />
+            <SidebarStatTile icon={<WeaponsIcon size={14} />} label="Armement" value={finalWeapons} tone="text-red-300" iconTone="text-red-400" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -970,6 +1034,7 @@ function RunFlagshipLoadoutCard({
 }) {
   const { data: flagship } = trpc.flagship.get.useQuery();
   const { data: allModules } = trpc.modules.list.useQuery();
+  const [collapsed, toggleCollapsed] = useCollapsed('loadout');
 
   const moduleMap = useMemo(() => {
     const map = new Map<string, {
@@ -1008,7 +1073,6 @@ function RunFlagshipLoadoutCard({
 
   const hasPassives = passiveIds.length > 0;
   const hasWeapons = weaponIds.length > 0;
-  if (!hasPassives && !hasWeapons) return null;
 
   const TIER_DOT: Record<string, string> = {
     epic:   'bg-violet-400 shadow-[0_0_4px_rgba(167,139,250,0.5)]',
@@ -1054,8 +1118,31 @@ function RunFlagshipLoadoutCard({
     );
   }
 
+  if (!hasPassives && !hasWeapons) return null;
+
   return (
-    <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm p-3 space-y-3">
+    <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden">
+      {/* Header collapsible global pour les 2 sections */}
+      <button
+        type="button"
+        onClick={toggleCollapsed}
+        aria-expanded={!collapsed}
+        className="w-full flex items-center gap-2 p-3 hover:bg-card/50 transition-colors"
+      >
+        <Sparkles className="h-3 w-3 text-violet-300 shrink-0" />
+        <span className="text-[10px] font-mono uppercase tracking-[0.2em] font-semibold text-violet-300">
+          Équipement
+        </span>
+        <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60 ml-auto">
+          {hasPassives && `${passiveIds.length} mod.`}
+          {hasPassives && hasWeapons && ' · '}
+          {hasWeapons && `${weaponIds.length} arme${weaponIds.length > 1 ? 's' : ''}`}
+        </span>
+        <CollapseChevron collapsed={collapsed} />
+      </button>
+
+      {!collapsed && (
+        <div className="px-3 pb-3 space-y-3">
       {hasPassives && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5">
@@ -1142,6 +1229,8 @@ function RunFlagshipLoadoutCard({
           </ul>
         </div>
       )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1150,11 +1239,17 @@ function SidebarCard({
   label,
   count,
   accent = 'violet',
+  collapsibleKey,
+  defaultCollapsed = false,
   children,
 }: {
   label: string;
   count?: number | string;
   accent?: 'violet' | 'emerald' | 'amber';
+  /** V8.12 — Si fourni, la card devient pliable et l'état est persisté
+   *  en localStorage sous `anomaly-sidebar-{collapsibleKey}-collapsed`. */
+  collapsibleKey?: string;
+  defaultCollapsed?: boolean;
   children: React.ReactNode;
 }) {
   const accentMap = {
@@ -1162,19 +1257,40 @@ function SidebarCard({
     emerald: 'text-emerald-300',
     amber: 'text-amber-300',
   } as const;
+  const [collapsed, toggleCollapsed] = useCollapsed(collapsibleKey ?? '__none', defaultCollapsed);
+  const isCollapsible = !!collapsibleKey;
+
+  const headerContent = (
+    <>
+      <h3 className={cn('text-[10px] font-mono uppercase tracking-[0.2em] font-semibold', accentMap[accent])}>
+        {label}
+      </h3>
+      {count !== undefined && (
+        <span className="text-[10px] font-mono tabular-nums text-muted-foreground/70 ml-auto">
+          {count}
+        </span>
+      )}
+      {isCollapsible && <CollapseChevron collapsed={collapsed} />}
+    </>
+  );
+
   return (
-    <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <h3 className={cn('text-[10px] font-mono uppercase tracking-[0.2em] font-semibold', accentMap[accent])}>
-          {label}
-        </h3>
-        {count !== undefined && (
-          <span className="text-[10px] font-mono tabular-nums text-muted-foreground/70">
-            {count}
-          </span>
-        )}
-      </div>
-      {children}
+    <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden">
+      {isCollapsible ? (
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          className="w-full flex items-center gap-2 p-3 hover:bg-card/50 transition-colors"
+        >
+          {headerContent}
+        </button>
+      ) : (
+        <div className="flex items-center gap-2 p-3">{headerContent}</div>
+      )}
+      {(!isCollapsible || !collapsed) && (
+        <div className="px-3 pb-3 space-y-2">{children}</div>
+      )}
     </div>
   );
 }
@@ -1201,7 +1317,7 @@ function LootCard({
 }) {
   const totalRes = minerai + silicium + hydrogene;
   return (
-    <SidebarCard label="Butin accumulé" accent="emerald">
+    <SidebarCard label="Butin accumulé" accent="emerald" collapsibleKey="loot">
       <div className="space-y-1.5 text-xs">
         {totalRes > 0 && (
           <div className="grid grid-cols-3 gap-1.5">
@@ -1257,7 +1373,7 @@ function ResPill({
 
 function ReportsCard({ reportIds }: { reportIds: string[] }) {
   return (
-    <SidebarCard label="Rapports de combat" count={reportIds.length} accent="violet">
+    <SidebarCard label="Rapports de combat" count={reportIds.length} accent="violet" collapsibleKey="reports" defaultCollapsed>
       <div className="flex flex-wrap gap-1.5">
         {reportIds.map((reportId, i) => (
           <Link
