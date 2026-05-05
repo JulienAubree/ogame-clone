@@ -284,12 +284,15 @@ export function ModuleTooltip({ module, children, placement = 'bottom', wrapperC
       <div
         role="tooltip"
         className={cn(
-          // Tooltip caché sur mobile (no hover, on a la modale Détails) ;
-          // visible dès sm pour tablet/desktop. max-w-[90vw] évite le clip
-          // hors viewport sur les petits écrans tablette.
-          'pointer-events-none absolute z-50 w-64 max-w-[90vw] hidden sm:block',
+          // V9.5 — z-[100] (au-dessus de toute card sticky / aside / modal
+          // backdrop), bg solide bg-popover (pas /95) + ring violet pour
+          // ressortir du fond, shadow-2xl + glow violet pour un peu de
+          // profondeur. Tooltip caché sur mobile (no hover, on a la modale
+          // Détails) ; visible dès sm pour tablet/desktop. max-w-[90vw]
+          // évite le clip hors viewport sur les petits écrans tablette.
+          'pointer-events-none absolute z-[100] w-64 max-w-[90vw] hidden sm:block',
           'opacity-0 group-hover/mt:opacity-100 transition-opacity duration-150 delay-100',
-          'rounded-md border border-border/60 bg-popover/95 backdrop-blur-md shadow-xl',
+          'rounded-md border border-violet-500/40 bg-popover shadow-2xl shadow-violet-950/60 ring-1 ring-violet-500/20',
           'p-3 space-y-2',
           PLACEMENT_CLASSES[placement],
         )}

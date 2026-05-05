@@ -259,8 +259,10 @@ export function ModuleInventoryPanel({
         </div>
       </div>
 
-      {/* List */}
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+      {/* List — V9.5 : pas de scroll local (overflow-y-auto crée un stacking
+           context qui clip les ModuleTooltip placement="right"). La page scroll
+           naturellement. */}
+      <div className="space-y-3">
         {filtered.length === 0 ? (
           <p className="text-xs text-muted-foreground italic text-center p-4">
             Aucun module disponible avec ces filtres.

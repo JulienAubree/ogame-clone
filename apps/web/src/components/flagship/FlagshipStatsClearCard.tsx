@@ -539,11 +539,13 @@ function StatTile({
         <div
           role="tooltip"
           className={cn(
-            // Tooltip caché sur mobile (no hover) ; visible dès sm pour tablet/desktop.
-            'pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50',
+            // V9.5 — z-[100] + bg solide + ring violet pour passer au-dessus
+            // de toute card sticky/aside et ressortir du fond. Tooltip caché
+            // sur mobile (no hover) ; visible dès sm pour tablet/desktop.
+            'pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-[100]',
             'w-60 max-w-[90vw] hidden sm:block',
             'opacity-0 group-hover/stat:opacity-100 transition-opacity duration-150 delay-150',
-            'rounded-md border border-border/60 bg-popover/95 backdrop-blur-md shadow-xl',
+            'rounded-md border border-violet-500/40 bg-popover shadow-2xl shadow-violet-950/60 ring-1 ring-violet-500/20',
             'p-2.5 space-y-1.5',
           )}
         >
