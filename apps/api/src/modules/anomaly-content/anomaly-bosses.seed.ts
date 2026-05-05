@@ -25,6 +25,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.15 },
       { type: 'hull_repair', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 234,
+      shield: 92,
+      armor: 7,
+      weapons: 70,
+      shotCount: 2,
+    },
   },
   {
     id: 'larve-cometaire',
@@ -38,6 +45,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'hull_repair', magnitude: 0.25 },
       { type: 'armor_amp', magnitude: 0.15 },
     ],
+    bossStats: {
+      hull: 338,
+      shield: 141,
+      armor: 8,
+      weapons: 27,
+      shotCount: 1,
+    },
   },
   {
     id: 'reine-essaim-mineur',
@@ -51,6 +65,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.12 },
       { type: 'shield_amp', magnitude: 0.18 },
     ],
+    bossStats: {
+      hull: 298,
+      shield: 117,
+      armor: 8,
+      weapons: 32,
+      shotCount: 1,
+      weaponProfiles: [{damage:32,shots:1,targetCategory:"capital"},{damage:16,shots:1,targetCategory:"light"}],
+    },
   },
   {
     id: 'sonde-corrompue',
@@ -64,6 +86,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.15 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 195,
+      shield: 109,
+      armor: 5,
+      weapons: 37,
+      shotCount: 1,
+    },
   },
   {
     id: 'spectre-vagabond',
@@ -77,6 +106,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.20 },
       { type: 'damage_boost', magnitude: 0.12 },
     ],
+    bossStats: {
+      hull: 210,
+      shield: 116,
+      armor: 6,
+      weapons: 39,
+      shotCount: 1,
+    },
   },
   {
     id: 'crapaud-orbital',
@@ -90,6 +126,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.25 },
       { type: 'hull_repair', magnitude: 0.20 },
     ],
+    bossStats: {
+      hull: 348,
+      shield: 146,
+      armor: 8,
+      weapons: 28,
+      shotCount: 1,
+    },
   },
   {
     id: 'gardien-bois-flotte',
@@ -103,6 +146,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.18 },
       { type: 'armor_amp', magnitude: 0.20 },
     ],
+    bossStats: {
+      hull: 184,
+      shield: 72,
+      armor: 5,
+      weapons: 55,
+      shotCount: 2,
+      weaponProfiles: [{damage:55,shots:2,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'lichen-stellaire',
@@ -116,6 +167,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.20 },
       { type: 'hull_repair', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 292,
+      shield: 95,
+      armor: 9,
+      weapons: 35,
+      shotCount: 1,
+    },
   },
   {
     id: 'guepe-rouille',
@@ -132,6 +190,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.15 },
       { type: 'shield_amp', magnitude: 0.15 },
     ],
+    bossStats: {
+      hull: 233,
+      shield: 92,
+      armor: 7,
+      weapons: 25,
+      shotCount: 1,
+      weaponProfiles: [{damage:25,shots:1,targetCategory:"capital"},{damage:10,shots:1,targetCategory:"light",rafale:{category:"light",count:2}}],
+    },
   },
   {
     id: 'noyau-prophete',
@@ -146,6 +212,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'extra_charge', magnitude: 1 },
       { type: 'hull_repair', magnitude: 0.20 },
     ],
+    bossStats: {
+      hull: 249,
+      shield: 98,
+      armor: 7,
+      weapons: 75,
+      shotCount: 2,
+    },
   },
   {
     id: 'chrysalide-froide',
@@ -159,6 +232,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'hull_repair', magnitude: 0.30 },
       { type: 'shield_amp', magnitude: 0.20 },
     ],
+    bossStats: {
+      hull: 322,
+      shield: 135,
+      armor: 7,
+      weapons: 26,
+      shotCount: 1,
+    },
   },
   {
     id: 'augure-binaire',
@@ -172,6 +252,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.18 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 196,
+      shield: 108,
+      armor: 5,
+      weapons: 37,
+      shotCount: 1,
+    },
   },
   {
     id: 'goule-meta',
@@ -185,6 +272,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.15 },
       { type: 'hull_repair', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 425,
+      shield: 178,
+      armor: 9,
+      weapons: 34,
+      shotCount: 1,
+    },
   },
   {
     id: 'colosse-eleve',
@@ -202,6 +296,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.15 },
       { type: 'shield_amp', magnitude: 0.20 },
     ],
+    bossStats: {
+      hull: 296,
+      shield: 137,
+      armor: 7,
+      weapons: 52,
+      shotCount: 1,
+      weaponProfiles: [{damage:52,shots:1,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'chasseur-cendre',
@@ -215,6 +317,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.15 },
       { type: 'shield_amp', magnitude: 0.20 },
     ],
+    bossStats: {
+      hull: 242,
+      shield: 95,
+      armor: 7,
+      weapons: 26,
+      shotCount: 1,
+      weaponProfiles: [{damage:26,shots:1,targetCategory:"capital"},{damage:13,shots:1,targetCategory:"light"}],
+    },
   },
 
   // ─── MID (20) ────────────────────────────────────────────────────────────
@@ -234,6 +344,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.30 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 1285,
+      shield: 554,
+      armor: 19,
+      weapons: 192,
+      shotCount: 2,
+      weaponProfiles: [{damage:192,shots:2,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'leviathan-fer',
@@ -250,6 +368,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'hull_repair', magnitude: 0.40 },
       { type: 'armor_amp', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 1614,
+      shield: 626,
+      armor: 22,
+      weapons: 109,
+      shotCount: 2,
+    },
   },
   {
     id: 'carillon-mort',
@@ -266,6 +391,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.30 },
       { type: 'hull_repair', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 1561,
+      shield: 471,
+      armor: 31,
+      weapons: 159,
+      shotCount: 2,
+    },
   },
   {
     id: 'archonte-fractal',
@@ -283,6 +415,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.25 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 978,
+      shield: 354,
+      armor: 18,
+      weapons: 249,
+      shotCount: 3,
+    },
   },
   {
     id: 'matriarche-essaim',
@@ -300,6 +439,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.25 },
       { type: 'hull_repair', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 1653,
+      shield: 647,
+      armor: 23,
+      weapons: 113,
+      shotCount: 2,
+      weaponProfiles: [{damage:113,shots:2,targetCategory:"capital"},{damage:57,shots:1,targetCategory:"light"}],
+    },
   },
   {
     id: 'oracle-byzantin',
@@ -316,6 +463,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.22 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 1237,
+      shield: 485,
+      armor: 18,
+      weapons: 85,
+      shotCount: 2,
+    },
   },
   {
     id: 'forge-vivante',
@@ -333,6 +487,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'module_unlock', magnitude: 1 },
       { type: 'shield_amp', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 1075,
+      shield: 389,
+      armor: 19,
+      weapons: 97,
+      shotCount: 2,
+      weaponProfiles: [{damage:97,shots:2,targetCategory:"capital"},{damage:39,shots:1,targetCategory:"light",rafale:{category:"light",count:2}}],
+    },
   },
   {
     id: 'hydre-photonique',
@@ -349,6 +511,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.25 },
       { type: 'shield_amp', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 705,
+      shield: 383,
+      armor: 14,
+      weapons: 269,
+      shotCount: 3,
+      weaponProfiles: [{damage:269,shots:3,targetCategory:"capital"},{damage:108,shots:1,targetCategory:"light",rafale:{category:"light",count:3}}],
+    },
   },
   {
     id: 'cathedrale-silencieuse',
@@ -366,6 +536,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.30 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 1299,
+      shield: 556,
+      armor: 19,
+      weapons: 192,
+      shotCount: 2,
+      weaponProfiles: [{damage:192,shots:2,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'vermine-glaciale',
@@ -383,6 +561,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.25 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 1264,
+      shield: 385,
+      armor: 26,
+      weapons: 130,
+      shotCount: 2,
+    },
   },
   {
     id: 'monolithe-bourdonnant',
@@ -400,6 +585,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.25 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 1137,
+      shield: 487,
+      armor: 17,
+      weapons: 168,
+      shotCount: 2,
+    },
   },
   {
     id: 'matriarche-nebuleuse',
@@ -416,6 +608,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'hull_repair', magnitude: 0.40 },
       { type: 'shield_amp', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 1602,
+      shield: 627,
+      armor: 22,
+      weapons: 110,
+      shotCount: 2,
+    },
   },
   {
     id: 'spectre-derive',
@@ -432,6 +631,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.25 },
       { type: 'shield_amp', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 772,
+      shield: 279,
+      armor: 15,
+      weapons: 196,
+      shotCount: 3,
+      weaponProfiles: [{damage:196,shots:3,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'hote-parasite',
@@ -449,6 +656,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.20 },
       { type: 'hull_repair', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 1082,
+      shield: 392,
+      armor: 19,
+      weapons: 98,
+      shotCount: 2,
+      weaponProfiles: [{damage:98,shots:2,targetCategory:"capital"},{damage:39,shots:1,targetCategory:"light",rafale:{category:"light",count:2}}],
+    },
   },
   {
     id: 'avatar-zenith',
@@ -466,6 +681,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'extra_charge', magnitude: 1 },
       { type: 'shield_amp', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 1420,
+      shield: 608,
+      armor: 20,
+      weapons: 210,
+      shotCount: 2,
+    },
   },
   {
     id: 'porteuse-sceau',
@@ -483,6 +705,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.20 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 1430,
+      shield: 560,
+      armor: 20,
+      weapons: 98,
+      shotCount: 2,
+      weaponProfiles: [{damage:98,shots:2,targetCategory:"capital"},{damage:49,shots:1,targetCategory:"light"}],
+    },
   },
   {
     id: 'iconoclaste',
@@ -500,6 +730,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.22 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 785,
+      shield: 401,
+      armor: 14,
+      weapons: 125,
+      shotCount: 2,
+    },
   },
   {
     id: 'ouroboros-vide',
@@ -517,6 +754,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.20 },
       { type: 'shield_amp', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 1446,
+      shield: 619,
+      armor: 21,
+      weapons: 214,
+      shotCount: 2,
+    },
   },
   {
     id: 'colosse-jupiterien',
@@ -534,6 +778,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.25 },
       { type: 'armor_amp', magnitude: 0.25 },
     ],
+    bossStats: {
+      hull: 790,
+      shield: 289,
+      armor: 15,
+      weapons: 203,
+      shotCount: 3,
+      weaponProfiles: [{damage:203,shots:3,targetCategory:"capital"},{damage:81,shots:1,targetCategory:"light",rafale:{category:"light",count:3}}],
+    },
   },
   {
     id: 'chevalier-corrompu',
@@ -550,6 +802,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.25 },
       { type: 'extra_charge', magnitude: 1 },
     ],
+    bossStats: {
+      hull: 901,
+      shield: 329,
+      armor: 16,
+      weapons: 232,
+      shotCount: 3,
+      weaponProfiles: [{damage:232,shots:3,targetCategory:"capital",hasChainKill:true}],
+    },
   },
 
   // ─── DEEP (15) ───────────────────────────────────────────────────────────
@@ -569,6 +829,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'extra_charge', magnitude: 2 },
       { type: 'shield_amp', magnitude: 0.35 },
     ],
+    bossStats: {
+      hull: 3201,
+      shield: 1072,
+      armor: 31,
+      weapons: 806,
+      shotCount: 4,
+      weaponProfiles: [{damage:806,shots:4,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'devoreur-flotte',
@@ -586,6 +854,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'hull_repair', magnitude: 0.50 },
       { type: 'damage_boost', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 3262,
+      shield: 1092,
+      armor: 32,
+      weapons: 821,
+      shotCount: 4,
+    },
   },
   {
     id: 'archange-cendre',
@@ -603,6 +878,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.35 },
       { type: 'extra_charge', magnitude: 2 },
     ],
+    bossStats: {
+      hull: 4307,
+      shield: 1430,
+      armor: 39,
+      weapons: 1071,
+      shotCount: 4,
+      weaponProfiles: [{damage:1071,shots:4,targetCategory:"capital"},{damage:536,shots:1,targetCategory:"light"}],
+    },
   },
   {
     id: 'reine-noire',
@@ -620,6 +903,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.30 },
       { type: 'shield_amp', magnitude: 0.40 },
     ],
+    bossStats: {
+      hull: 5194,
+      shield: 1865,
+      armor: 39,
+      weapons: 349,
+      shotCount: 3,
+    },
   },
   {
     id: 'serpent-lumiere',
@@ -637,6 +927,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'damage_boost', magnitude: 0.30 },
       { type: 'shield_amp', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 5400,
+      shield: 1939,
+      armor: 41,
+      weapons: 363,
+      shotCount: 3,
+      weaponProfiles: [{damage:363,shots:3,targetCategory:"capital"},{damage:145,shots:1,targetCategory:"light",rafale:{category:"light",count:3}}],
+    },
   },
   {
     id: 'titan-ressuscite',
@@ -654,6 +952,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.40 },
       { type: 'extra_charge', magnitude: 2 },
     ],
+    bossStats: {
+      hull: 4908,
+      shield: 1942,
+      armor: 38,
+      weapons: 718,
+      shotCount: 3,
+      weaponProfiles: [{damage:718,shots:3,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'choeur-augures',
@@ -671,6 +977,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'extra_charge', magnitude: 2 },
       { type: 'shield_amp', magnitude: 0.35 },
     ],
+    bossStats: {
+      hull: 6166,
+      shield: 2212,
+      armor: 45,
+      weapons: 414,
+      shotCount: 3,
+    },
   },
   {
     id: 'ver-temps',
@@ -688,6 +1001,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'hull_repair', magnitude: 0.45 },
       { type: 'damage_boost', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 3990,
+      shield: 1335,
+      armor: 37,
+      weapons: 1003,
+      shotCount: 4,
+    },
   },
   {
     id: 'cite-flottante',
@@ -705,6 +1025,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.40 },
       { type: 'extra_charge', magnitude: 2 },
     ],
+    bossStats: {
+      hull: 5622,
+      shield: 2018,
+      armor: 42,
+      weapons: 377,
+      shotCount: 3,
+      weaponProfiles: [{damage:377,shots:3,targetCategory:"capital"},{damage:151,shots:1,targetCategory:"light",rafale:{category:"light",count:4}}],
+    },
   },
   {
     id: 'avatar-vide',
@@ -722,6 +1050,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.40 },
       { type: 'extra_charge', magnitude: 2 },
     ],
+    bossStats: {
+      hull: 5671,
+      shield: 2225,
+      armor: 42,
+      weapons: 821,
+      shotCount: 3,
+    },
   },
   {
     id: 'matriarche-finale',
@@ -739,6 +1074,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.35 },
       { type: 'hull_repair', magnitude: 0.45 },
     ],
+    bossStats: {
+      hull: 7268,
+      shield: 2606,
+      armor: 51,
+      weapons: 487,
+      shotCount: 3,
+      weaponProfiles: [{damage:487,shots:3,targetCategory:"capital"},{damage:244,shots:1,targetCategory:"light"}],
+    },
   },
   {
     id: 'lanterne-fin-monde',
@@ -756,6 +1099,14 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'hull_repair', magnitude: 0.50 },
       { type: 'damage_boost', magnitude: 0.30 },
     ],
+    bossStats: {
+      hull: 3866,
+      shield: 1284,
+      armor: 36,
+      weapons: 961,
+      shotCount: 4,
+      weaponProfiles: [{damage:961,shots:4,targetCategory:"capital",hasChainKill:true}],
+    },
   },
   {
     id: 'calife-prismatique',
@@ -773,6 +1124,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'shield_amp', magnitude: 0.40 },
       { type: 'extra_charge', magnitude: 2 },
     ],
+    bossStats: {
+      hull: 5163,
+      shield: 1834,
+      armor: 40,
+      weapons: 342,
+      shotCount: 3,
+    },
   },
   {
     id: 'bastion-imperissable',
@@ -790,6 +1148,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'armor_amp', magnitude: 0.45 },
       { type: 'extra_charge', magnitude: 2 },
     ],
+    bossStats: {
+      hull: 6212,
+      shield: 2228,
+      armor: 45,
+      weapons: 417,
+      shotCount: 3,
+    },
   },
   {
     id: 'omega-singulier',
@@ -808,5 +1173,13 @@ export const DEFAULT_ANOMALY_BOSSES: BossEntryInput[] = [
       { type: 'extra_charge', magnitude: 2 },
       // 3 choices = max — Oméga = boss final, le joueur mérite la flexibilité.
     ],
+    bossStats: {
+      hull: 3024,
+      shield: 1003,
+      armor: 30,
+      weapons: 751,
+      shotCount: 4,
+      weaponProfiles: [{damage:751,shots:4,targetCategory:"capital",hasChainKill:true}],
+    },
   },
 ];
